@@ -1,0 +1,34 @@
+[
+  {
+    "category": "Power Apps",
+    "subCategory": "Power Apps advanced maker patterns",
+    "platform": ["Power Apps", "SharePoint"],
+    "related": ["power-apps-error-handling-iferror-patch", "build-a-queue-dashboard-gallery"],
+    "actions": ["Create", "Build", "Design", "Configure", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot"],
+    "objects": ["a maker handoff checklist", "a component naming standard", "a formula review checklist", "a screen performance review", "a delegation review worksheet", "a release notes panel", "a user acceptance test script", "a production support guide", "a maker onboarding path", "a reusable command bar"]
+  },
+  {
+    "category": "SharePoint",
+    "subCategory": "SharePoint admin and governance patterns",
+    "platform": ["SharePoint", "Microsoft 365"],
+    "related": ["sharepoint-internal-name-safe-column-design", "sharepoint-list-template-release-checklist"],
+    "actions": ["Create", "Build", "Design", "Configure", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot"],
+    "objects": ["a site lifecycle review", "a content owner register", "a metadata standards guide", "a hub navigation review", "a document retention checklist", "an external sharing exception process", "a list schema review board", "a site launch communication plan", "a page quality audit", "a stale content cleanup process"]
+  },
+  {
+    "category": "Power Automate",
+    "subCategory": "Power Automate operations patterns",
+    "platform": ["Power Automate", "SharePoint"],
+    "related": ["power-automate-try-catch-scope-error-handling", "power-automate-email-html-table"],
+    "actions": ["Create", "Build", "Design", "Configure", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot"],
+    "objects": ["a flow ownership transfer checklist", "a connector dependency register", "a failed run triage process", "a service account review", "a run history review cadence", "a notification throttling pattern", "a flow environment inventory", "a reusable approval child flow", "a scheduled maintenance flow", "a production flow support model"]
+  },
+  {
+    "category": "PMO / Project Management",
+    "subCategory": "PMO portfolio operating patterns",
+    "platform": ["PMO", "SharePoint"],
+    "related": ["build-pmo-gate-approval-lifecycle", "pmo-status-report-health-rollup"],
+    "actions": ["Create", "Build", "Design", "Configure", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot"],
+    "objects": ["a portfolio intake calendar", "a project scoring workshop", "a sponsor readiness checklist", "a governance exception register", "a dependency heat map", "a benefits review board", "a resource conflict log", "a delivery confidence score", "a project restart checklist", "a post implementation value review"]
+  }
+]

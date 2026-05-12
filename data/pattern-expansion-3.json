@@ -1,0 +1,34 @@
+[
+  {
+    "category": "Power Apps",
+    "subCategory": "Power Apps solution patterns",
+    "platform": ["Power Apps", "SharePoint"],
+    "related": ["power-apps-error-handling-iferror-patch", "patch-sharepoint-choice-field"],
+    "actions": ["Build", "Design", "Configure", "Create", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot", "Package"],
+    "objects": ["a request escalation screen", "a delegated approval screen", "a service intake workspace", "a mobile field update form", "a role-aware dashboard", "a checklist review experience", "a data quality repair panel", "a reusable app settings panel"]
+  },
+  {
+    "category": "SharePoint",
+    "subCategory": "SharePoint implementation patterns",
+    "platform": ["SharePoint", "Microsoft 365"],
+    "related": ["sharepoint-list-template-release-checklist", "sharepoint-internal-name-safe-column-design"],
+    "actions": ["Build", "Design", "Configure", "Create", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot", "Package"],
+    "objects": ["a department request site", "a governed reference list", "a controlled document workspace", "a site owner review process", "a metadata cleanup view", "a permissions review register", "a launch readiness hub", "a lifecycle archive process"]
+  },
+  {
+    "category": "Power Automate",
+    "subCategory": "Power Automate delivery patterns",
+    "platform": ["Power Automate", "SharePoint"],
+    "related": ["power-automate-try-catch-scope-error-handling", "power-automate-approval-with-sharepoint-status-sync"],
+    "actions": ["Build", "Design", "Configure", "Create", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot", "Package"],
+    "objects": ["a conditional approval flow", "a daily exception digest", "a renewal reminder workflow", "a flow support log", "a document routing automation", "a Teams escalation notice", "a child-task creation flow", "a metadata synchronization flow"]
+  },
+  {
+    "category": "PMO / Project Management",
+    "subCategory": "PMO operating patterns",
+    "platform": ["PMO", "SharePoint"],
+    "related": ["pmo-status-report-health-rollup", "pmo-risk-issue-action-log-schema"],
+    "actions": ["Build", "Design", "Configure", "Create", "Standardize", "Validate", "Document", "Optimize", "Troubleshoot", "Package"],
+    "objects": ["a portfolio intake review", "a sponsor decision workflow", "a red project recovery brief", "a benefits tracking cadence", "a dependency review board", "a launch readiness review", "a change impact summary", "a project closeout playbook"]
+  }
+]
