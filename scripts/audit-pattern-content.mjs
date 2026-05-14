@@ -1,4 +1,5 @@
-﻿import { readFileSync } from "node:fs";
+﻿import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const seed = JSON.parse(readFileSync(new URL("../data/patterns.seed.json", import.meta.url), "utf8"));
 const generatedSources = [
@@ -58,6 +59,22 @@ for (const { file, source } of generatedSources) {
   }
 }
 
+const builtPatternsPath = new URL("../.next/server/app/patterns", import.meta.url).pathname;
+if (existsSync(builtPatternsPath)) {
+  for (const filePath of walk(builtPatternsPath)) {
+    if (!/\.(html|rsc|body|segments)$/i.test(filePath)) {
+      continue;
+    }
+
+    const content = readFileSync(filePath, "utf8");
+    for (const rule of forbidden) {
+      if (rule.test(content)) {
+        errors.push(`Built output contains placeholder text in ${filePath}: ${rule}`);
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`Pattern content audit failed with ${errors.length} issue(s):`);
   for (const error of errors) {
@@ -66,4 +83,17 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`Pattern content audit passed: ${seed.length} seed patterns and ${generatedSources.length} generated packs have concrete implementation snippets and instructions.`);
+console.log(`Pattern content audit passed: ${seed.length} seed patterns, ${generatedSources.length} generated packs, and built output when present have concrete implementation snippets and instructions.`);
+
+function* walk(directory) {
+  for (const entry of readdirSync(directory)) {
+    const filePath = join(directory, entry);
+    const stats = statSync(filePath);
+
+    if (stats.isDirectory()) {
+      yield* walk(filePath);
+    } else {
+      yield filePath;
+    }
+  }
+}

@@ -134,6 +134,126 @@ export function buildStepInstructions({
 }
 
 function buildPowerAppsSnippet(title: string, subCategory: string) {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("gallery") || normalizedTitle.includes("dashboard") || normalizedTitle.includes("queue")) {
+    return `// ${title}
+// Use these formulas on the queue/dashboard screen.
+
+// Screen.OnVisible
+ClearCollect(
+    colQueueStatuses,
+    Table(
+        { Label: "All", Value: Blank() },
+        { Label: "New", Value: "New" },
+        { Label: "In progress", Value: "In Progress" },
+        { Label: "Blocked", Value: "Blocked" },
+        { Label: "Complete", Value: "Complete" }
+    )
+);
+Set(varSelectedStatus, "All");
+Set(varSelectedPriority, "All");
+
+// Gallery.Items
+galQueue.Items =
+SortByColumns(
+    Filter(
+        Requests,
+        (varSelectedStatus = "All" || Status.Value = varSelectedStatus) &&
+        (varSelectedPriority = "All" || Priority.Value = varSelectedPriority) &&
+        (IsBlank(txtQueueSearch.Text) || StartsWith(Title, txtQueueSearch.Text))
+    ),
+    "Modified",
+    SortOrder.Descending
+);
+
+// Summary labels
+lblOpenCount.Text = CountRows(Filter(galQueue.AllItems, Status.Value <> "Complete"));
+lblBlockedCount.Text = CountRows(Filter(galQueue.AllItems, Status.Value = "Blocked"));
+lblHighPriorityCount.Text = CountRows(Filter(galQueue.AllItems, Priority.Value = "High"));
+
+// Gallery.OnSelect
+Set(varSelectedRequest, ThisItem);
+Navigate(scrRequestDetail, ScreenTransition.Cover);`;
+  }
+
+  if (normalizedTitle.includes("filter")) {
+    return `// ${title}
+// Filter panel variables and gallery pattern.
+
+// Screen.OnVisible
+Set(varShowFilters, false);
+Set(varStatusFilter, "All");
+Set(varOwnerFilter, "All");
+Set(varSearchText, Blank());
+
+// Filter icon OnSelect
+Set(varShowFilters, !varShowFilters);
+
+// Reset filters OnSelect
+Set(varStatusFilter, "All");
+Set(varOwnerFilter, "All");
+Reset(txtSearch);
+
+// Gallery.Items
+Filter(
+    Requests,
+    (varStatusFilter = "All" || Status.Value = varStatusFilter) &&
+    (varOwnerFilter = "All" || Owner.Email = User().Email) &&
+    (IsBlank(txtSearch.Text) || StartsWith(Title, txtSearch.Text))
+)`;
+  }
+
+  if (normalizedTitle.includes("form") || normalizedTitle.includes("wizard") || normalizedTitle.includes("screen")) {
+    return `// ${title}
+// Use this as a screen/form state pattern.
+
+// New button OnSelect
+NewForm(frmRequest);
+Set(varFormMode, "New");
+Navigate(scrRequestForm, ScreenTransition.Cover);
+
+// Edit button OnSelect
+EditForm(frmRequest);
+Set(varFormMode, "Edit");
+Navigate(scrRequestForm, ScreenTransition.Cover);
+
+// Save button OnSelect
+If(
+    frmRequest.Valid,
+    SubmitForm(frmRequest),
+    Notify("Review required fields before saving.", NotificationType.Warning)
+);
+
+// Form.OnSuccess
+Set(varSelectedRequest, frmRequest.LastSubmit);
+Notify("Request saved successfully.", NotificationType.Success);
+Back();
+
+// Form.OnFailure
+Notify("Unable to save request: " & frmRequest.Error, NotificationType.Error);`;
+  }
+
+  if (normalizedTitle.includes("validation") || normalizedTitle.includes("required")) {
+    return `// ${title}
+// Use before calling Patch or SubmitForm.
+
+Clear(colValidationErrors);
+If(IsBlank(txtTitle.Text), Collect(colValidationErrors, { Message: "Title is required" }));
+If(IsBlank(ddStatus.Selected.Value), Collect(colValidationErrors, { Message: "Status is required" }));
+If(IsBlank(dpDueDate.SelectedDate), Collect(colValidationErrors, { Message: "Due date is required" }));
+
+If(
+    CountRows(colValidationErrors) > 0,
+    Notify(Concat(colValidationErrors, Message, Char(10)), NotificationType.Warning),
+    IfError(
+        Patch(Requests, Coalesce(varSelectedRequest, Defaults(Requests)), frmRequest.Updates),
+        Notify("Save failed: " & FirstError.Message, NotificationType.Error),
+        Notify("Saved successfully.", NotificationType.Success)
+    )
+);`;
+  }
+
   return `// ${title}
 // Use on the primary Save, Submit, or action button.
 Set(varSaving, true);
@@ -160,7 +280,6 @@ If(
 );
 Set(varSaving, false);`;
 }
-
 function buildPowerAutomateSnippet(title: string, subCategory: string) {
   return `Power Automate implementation for ${title}:
 1. Trigger: When an item is created or modified, When a row is added, or Power Apps (V2).
@@ -297,3 +416,4 @@ Platforms: ${platform.join(", ")}
 function escapeSnippet(value: string) {
   return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
+

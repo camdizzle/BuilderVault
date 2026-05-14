@@ -257,7 +257,7 @@ function getSeoPriority(pattern: Pattern, primaryKeyword: string): "high" | "sta
 }
 
 function cleanTitle(value: string) {
-  return value.replace(/^Create |^Build |^Design |^Configure |^Standardize |^Validate |^Document |^Optimize |^Troubleshoot |^Govern /, "");
+  return value;
 }
 
 function searchableText(pattern: Pattern) {
@@ -275,3 +275,5 @@ function searchableText(pattern: Pattern) {
     .join(" ")
     .toLowerCase();
 }
+
+
