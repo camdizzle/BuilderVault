@@ -1,3 +1,4 @@
+import { buildImplementationSnippet, buildStepInstructions } from "@/lib/patterns/implementation";
 import type { Pattern, PatternCategory, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 type TopicGroup = {
@@ -238,13 +239,8 @@ export const expandedPatterns2: Pattern[] = groups.flatMap((group, groupIndex) =
         "Avoid when the business process has not been agreed with owners.",
         "Avoid when an enterprise platform already governs this workflow with stricter controls."
       ],
-      formulaOrCode: buildFormula(topic, group),
-      stepByStepInstructions: [
-        "Confirm the owner, audience, and decision points.",
-        "Create the required fields, views, controls, or workflow stages.",
-        "Test with a normal case and an exception case.",
-        "Document the support path and review cadence."
-      ],
+      formulaOrCode: buildImplementationSnippet({ category: group.category, platform: group.platform, subCategory: group.subCategory, title: topic }),
+      stepByStepInstructions: buildStepInstructions({ category: group.category, platform: group.platform, subCategory: group.subCategory, title: topic }),
       commonMistakes: [
         "Skipping the ownership model before building the pattern.",
         "Using unstructured text where reporting needs structured fields.",
@@ -282,21 +278,6 @@ function buildTags(topic: string, group: TopicGroup) {
   return [...new Set([group.subCategory, ...words, group.category.split(" ")[0]])].slice(0, 4);
 }
 
-function buildFormula(topic: string, group: TopicGroup) {
-  if (group.category === "Power Apps") {
-    return `// ${topic}\nSet(varWorking, true);\n/* Add Power Apps implementation here */\nSet(varWorking, false);`;
-  }
-
-  if (group.category === "Power Automate") {
-    return `Flow outline:\nTrigger -> Check conditions -> ${topic} -> Update source record -> Notify owner -> Log result`;
-  }
-
-  if (group.category === "SharePoint") {
-    return `Recommended design:\nPurpose, columns, default views, permissions, ownership, review cadence, support notes`;
-  }
-
-  return `Template outline:\nContext, current status, owner, decision needed, next action, due date, escalation path`;
-}
 
 function slugify(value: string) {
   return value

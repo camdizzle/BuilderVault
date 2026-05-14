@@ -1,4 +1,4 @@
-export type PatternCategory =
+﻿export type PatternCategory =
   | "Power Apps"
   | "SharePoint"
   | "Power Automate"
@@ -45,4 +45,15 @@ export interface Pattern {
   relatedPatterns: string[];
   createdAt: string;
   updatedAt: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  searchIntent?: string;
+  primaryKeyword?: string;
+  secondaryKeywords?: string[];
+  faqs?: PatternFaq[];
 }
+
+export type PatternFaq = {
+  question: string;
+  answer: string;
+};

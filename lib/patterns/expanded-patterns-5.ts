@@ -1,4 +1,5 @@
 import expansionGroups from "@/data/pattern-expansion-5.json";
+import { buildImplementationSnippet, buildStepInstructions } from "@/lib/patterns/implementation";
 import type { Pattern, PatternCategory, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 type ExpansionGroup = {
@@ -42,13 +43,8 @@ export const expandedPatterns5: Pattern[] = groups.flatMap((group, groupIndex) =
           "Avoid when the work is a throwaway prototype with no production path.",
           "Avoid when an enterprise standard already provides a required implementation method."
         ],
-        formulaOrCode: buildImplementationOutline(group, title),
-        stepByStepInstructions: [
-          "Confirm the app, flow, data, or admin scenario this pattern supports.",
-          "Define owners, source records, required fields, and exception paths.",
-          "Build the smallest reusable version before adding optional branches.",
-          "Test with realistic records, permissions, and support handoff scenarios."
-        ],
+        formulaOrCode: buildImplementationSnippet({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
+        stepByStepInstructions: buildStepInstructions({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
         commonMistakes: [
           "Skipping ownership details because the builder still remembers how it works.",
           "Treating environment, permission, and connector assumptions as obvious.",
@@ -89,29 +85,6 @@ function buildTags(action: string, object: string, group: ExpansionGroup) {
   return [...new Set([group.subCategory, action, group.category, ...objectTags])].slice(0, 5);
 }
 
-function buildImplementationOutline(group: ExpansionGroup, title: string) {
-  if (group.category === "Dataverse") {
-    return `Dataverse implementation outline:\n1. Define the table, columns, relationships, and ownership model for ${title}.\n2. Add security roles and solution-aware configuration.\n3. Validate forms, views, business rules, and automation triggers.\n4. Document migration, support, and environment assumptions.`;
-  }
-
-  if (group.category === "ALM & Governance") {
-    return `ALM implementation outline:\nSolution scope -> Environment variables -> Connection references -> Build validation -> Managed deployment -> Support handoff -> Rollback notes`;
-  }
-
-  if (group.category === "Power Platform Admin") {
-    return `Admin implementation outline:\nInventory -> Ownership -> Risk review -> Policy decision -> Communication -> Support queue -> Review cadence`;
-  }
-
-  if (group.category === "Power Pages") {
-    return `Power Pages implementation outline:\nSite goal -> Dataverse tables -> Table permissions -> Web roles -> Forms/pages -> Validation -> Launch review`;
-  }
-
-  if (group.category === "Teams & Adaptive Cards") {
-    return `Teams workflow outline:\nTrigger -> Build card payload -> Route to channel or user -> Capture response -> Update source record -> Notify outcome -> Log exceptions`;
-  }
-
-  return `Power Platform implementation outline:\nPurpose, owner, data source, controls, automation, permissions, testing, and support notes for ${title}.`;
-}
 
 function slugify(value: string) {
   return value

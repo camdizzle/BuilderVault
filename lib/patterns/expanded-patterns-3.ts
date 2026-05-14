@@ -1,4 +1,5 @@
 import expansionGroups from "@/data/pattern-expansion-3.json";
+import { buildImplementationSnippet, buildStepInstructions } from "@/lib/patterns/implementation";
 import type { Pattern, PatternCategory, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 type ExpansionGroup = {
@@ -42,13 +43,8 @@ export const expandedPatterns3: Pattern[] = groups.flatMap((group, groupIndex) =
           "Avoid when the workflow is temporary and does not need reusable structure.",
           "Avoid when an existing enterprise system already governs the process end to end."
         ],
-        formulaOrCode: buildImplementationOutline(group, title),
-        stepByStepInstructions: [
-          "Define the business owner and success criteria.",
-          "Create the required fields, views, controls, workflow steps, or template sections.",
-          "Test the normal path, exception path, and ownership handoff.",
-          "Document support notes and review cadence before launch."
-        ],
+        formulaOrCode: buildImplementationSnippet({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
+        stepByStepInstructions: buildStepInstructions({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
         commonMistakes: [
           "Starting with automation before the business rule is agreed.",
           "Using unstructured notes where structured fields are needed for reporting.",
@@ -88,21 +84,6 @@ function buildTags(action: string, object: string, group: ExpansionGroup) {
   return [...new Set([group.subCategory, action, ...objectTags])].slice(0, 4);
 }
 
-function buildImplementationOutline(group: ExpansionGroup, title: string) {
-  if (group.category === "Power Apps") {
-    return `// ${title}\nSet(varWorking, true);\n/* Configure controls, validation, Patch calls, and user feedback */\nSet(varWorking, false);`;
-  }
-
-  if (group.category === "Power Automate") {
-    return `Flow outline:\nTrigger -> Validate inputs -> Execute ${title.toLowerCase()} -> Update source record -> Notify owner -> Log result`;
-  }
-
-  if (group.category === "SharePoint") {
-    return `Design outline:\nPurpose, owner, columns, views, permissions, review cadence, support notes`;
-  }
-
-  return `PMO template:\nPurpose, owner, decision needed, current status, risks, actions, due date, follow-up cadence`;
-}
 
 function slugify(value: string) {
   return value

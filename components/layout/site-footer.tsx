@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export function SiteFooter() {
   return (
@@ -17,8 +17,8 @@ export function SiteFooter() {
         <div>
           <strong style={{ color: "var(--foreground)" }}>BuilderVault</strong>
           <p style={{ lineHeight: 1.6, marginBottom: 0 }}>
-            Practical Microsoft 365 patterns and PMO reporting tools. Static
-            prototype only; auth, payments, and AI come later.
+            Practical Power Platform patterns for Power Apps, Power Automate,
+            SharePoint, Dataverse, ALM, and Microsoft 365 builders.
           </p>
         </div>
         <nav

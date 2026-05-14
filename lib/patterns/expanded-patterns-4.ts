@@ -1,4 +1,5 @@
 import expansionGroups from "@/data/pattern-expansion-4.json";
+import { buildImplementationSnippet, buildStepInstructions } from "@/lib/patterns/implementation";
 import type { Pattern, PatternCategory, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 type ExpansionGroup = {
@@ -42,13 +43,8 @@ export const expandedPatterns4: Pattern[] = groups.flatMap((group, groupIndex) =
           "Avoid when the need is a one-time task with no reuse value.",
           "Avoid when a regulated or enterprise-controlled process already defines the approved method."
         ],
-        formulaOrCode: buildImplementationOutline(group, title),
-        stepByStepInstructions: [
-          "Clarify the business trigger and target audience.",
-          "Define the fields, screens, views, workflow actions, or template sections.",
-          "Add validation, ownership, and exception handling.",
-          "Review the pattern with a realistic scenario before publishing."
-        ],
+        formulaOrCode: buildImplementationSnippet({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
+        stepByStepInstructions: buildStepInstructions({ category: group.category, platform: group.platform, subCategory: group.subCategory, title }),
         commonMistakes: [
           "Publishing the pattern before the owner and support path are known.",
           "Using broad free-text notes when structured values are needed for reporting.",
@@ -88,21 +84,6 @@ function buildTags(action: string, object: string, group: ExpansionGroup) {
   return [...new Set([group.subCategory, action, ...objectTags])].slice(0, 4);
 }
 
-function buildImplementationOutline(group: ExpansionGroup, title: string) {
-  if (group.category === "Power Apps") {
-    return `Power Apps implementation outline:\n1. Define controls and variables for ${title}.\n2. Add validation and user feedback.\n3. Patch or collect the structured output.\n4. Test save, cancel, and exception behavior.`;
-  }
-
-  if (group.category === "Power Automate") {
-    return `Power Automate implementation outline:\nTrigger -> Validate -> Execute ${title.toLowerCase()} -> Update source record -> Notify stakeholders -> Log outcome`;
-  }
-
-  if (group.category === "SharePoint") {
-    return `SharePoint implementation outline:\nPurpose, owners, fields, views, permissions, lifecycle, launch notes, review cadence`;
-  }
-
-  return `PMO implementation outline:\nPurpose, owner, decision path, status model, reporting cadence, risks, actions, handoff notes`;
-}
 
 function slugify(value: string) {
   return value

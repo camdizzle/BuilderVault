@@ -1,3 +1,4 @@
+import { buildImplementationSnippet, buildStepInstructions } from "@/lib/patterns/implementation";
 import type { Pattern, PatternCategory, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 type ExpansionSpec = {
@@ -129,13 +130,8 @@ export const expandedPatterns: Pattern[] = specs.map((spec, index) => {
       "Avoid when the process is still too undefined to standardize.",
       "Avoid when tenant policy, compliance, or licensing requires a different approved architecture."
     ],
-    formulaOrCode: buildFormula(spec),
-    stepByStepInstructions: [
-      "Confirm the business scenario and owner before building.",
-      "Create the supporting SharePoint fields, app controls, flow steps, or PMO template sections.",
-      "Test with a realistic example and at least one edge case.",
-      "Document the expected behavior so future maintainers know what the pattern owns."
-    ],
+    formulaOrCode: buildImplementationSnippet({ category: spec.category, platform: spec.platform, subCategory: spec.subCategory, title: spec.topic }),
+    stepByStepInstructions: buildStepInstructions({ category: spec.category, platform: spec.platform, subCategory: spec.subCategory, title: spec.topic }),
     commonMistakes: [
       "Building the pattern before naming the owner and lifecycle.",
       "Using display labels where stable IDs, internal names, or structured fields are needed.",
@@ -158,18 +154,3 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-function buildFormula(spec: ExpansionSpec) {
-  if (spec.category === "Power Apps") {
-    return `// ${spec.topic}\nIfError(\n    /* Add ${spec.subCategory} implementation here */,\n    Notify(\"The action could not be completed.\", NotificationType.Error),\n    Notify(\"Action completed.\", NotificationType.Success)\n)`;
-  }
-
-  if (spec.category === "Power Automate") {
-    return `Flow outline:\nTrigger -> Validate inputs -> Apply ${spec.subCategory} logic -> Update SharePoint or notify stakeholders -> Log outcome`;
-  }
-
-  if (spec.category === "SharePoint") {
-    return `Recommended structure:\nPurpose, Owner, Key fields, Default views, Permissions, Review cadence, Support notes`;
-  }
-
-  return `Template sections:\nPurpose, Owner, Current state, Decision or action needed, Status, Due date, Follow-up notes`;
-}

@@ -1,4 +1,4 @@
-import type { Pattern } from "@/types/pattern";
+﻿import type { Pattern } from "@/types/pattern";
 import { getAllPatterns, getPatternBySlug } from "@/lib/patterns/patterns";
 
 export type PatternCollection = {
@@ -276,4 +276,10 @@ export function getSuggestedCollections() {
       allPatterns.some((pattern) => pattern.slug === slug)
     ).length
   }));
+}
+
+export function getCollectionsForPattern(patternSlug: string) {
+  return getSuggestedCollections()
+    .filter((collection) => collection.patternSlugs.includes(patternSlug))
+    .slice(0, 3);
 }
