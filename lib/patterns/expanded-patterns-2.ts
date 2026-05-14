@@ -203,7 +203,7 @@ const groups: TopicGroup[] = [
   }
 ];
 
-const categoryDescriptions: Record<PatternCategory, string> = {
+const categoryDescriptions: Partial<Record<PatternCategory, string>> = {
   "PMO / Project Management": "PMO execution and governance",
   "Power Apps": "Power Apps delivery",
   "Power Automate": "Power Automate workflow delivery",

@@ -2,12 +2,21 @@ export type PatternCategory =
   | "Power Apps"
   | "SharePoint"
   | "Power Automate"
+  | "Dataverse"
+  | "ALM & Governance"
+  | "Power Platform Admin"
+  | "Power Pages"
+  | "Teams & Adaptive Cards"
   | "PMO / Project Management";
 
 export type PatternPlatform =
   | "Power Apps"
   | "SharePoint"
   | "Power Automate"
+  | "Dataverse"
+  | "Power Platform"
+  | "Power Pages"
+  | "Teams"
   | "Microsoft 365"
   | "PMO";
 

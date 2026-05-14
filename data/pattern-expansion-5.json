@@ -1,0 +1,187 @@
+[
+  {
+    "category": "Dataverse",
+    "subCategory": "Dataverse app foundation patterns",
+    "platform": [
+      "Dataverse",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "related": [
+      "build-a-queue-dashboard-gallery",
+      "power-automate-trigger-condition-status-changed"
+    ],
+    "actions": [
+      "Create",
+      "Build",
+      "Design",
+      "Configure",
+      "Standardize",
+      "Validate",
+      "Document",
+      "Optimize",
+      "Troubleshoot",
+      "Govern"
+    ],
+    "objects": [
+      "a Dataverse table naming standard",
+      "a request table schema",
+      "a lookup relationship model",
+      "a choice column strategy",
+      "a business rule checklist",
+      "a security role matrix",
+      "an environment variable register",
+      "a solution-aware data model",
+      "a model-driven app sitemap",
+      "a SharePoint-to-Dataverse migration path"
+    ]
+  },
+  {
+    "category": "ALM & Governance",
+    "subCategory": "Power Platform ALM patterns",
+    "platform": [
+      "Power Platform",
+      "Power Apps",
+      "Power Automate",
+      "Dataverse"
+    ],
+    "related": [
+      "create-a-maker-handoff-checklist",
+      "build-a-flow-ownership-transfer-checklist"
+    ],
+    "actions": [
+      "Create",
+      "Build",
+      "Design",
+      "Configure",
+      "Standardize",
+      "Validate",
+      "Document",
+      "Optimize",
+      "Troubleshoot",
+      "Govern"
+    ],
+    "objects": [
+      "a solution layering checklist",
+      "an environment strategy guide",
+      "a deployment readiness review",
+      "a connection reference inventory",
+      "an unmanaged customizations cleanup plan",
+      "a release notes template",
+      "a maker handoff package",
+      "a production support ownership model",
+      "a rollback decision checklist",
+      "a managed solution promotion path"
+    ]
+  },
+  {
+    "category": "Power Platform Admin",
+    "subCategory": "Power Platform admin center patterns",
+    "platform": [
+      "Power Platform",
+      "Microsoft 365"
+    ],
+    "related": [
+      "document-sharepoint-list-ownership-and-support",
+      "build-a-flow-ownership-transfer-checklist"
+    ],
+    "actions": [
+      "Create",
+      "Build",
+      "Design",
+      "Configure",
+      "Standardize",
+      "Validate",
+      "Document",
+      "Optimize",
+      "Troubleshoot",
+      "Govern"
+    ],
+    "objects": [
+      "an environment inventory",
+      "a connector review process",
+      "a data loss prevention policy checklist",
+      "a maker activity review",
+      "an orphaned app cleanup process",
+      "a premium connector exception register",
+      "a tenant settings review",
+      "a support intake queue",
+      "a capacity monitoring checklist",
+      "a center of excellence triage view"
+    ]
+  },
+  {
+    "category": "Power Pages",
+    "subCategory": "Power Pages delivery patterns",
+    "platform": [
+      "Power Pages",
+      "Dataverse",
+      "Power Platform"
+    ],
+    "related": [
+      "create-a-site-lifecycle-review",
+      "design-a-policy-exception-list-schema"
+    ],
+    "actions": [
+      "Create",
+      "Build",
+      "Design",
+      "Configure",
+      "Standardize",
+      "Validate",
+      "Document",
+      "Optimize",
+      "Troubleshoot",
+      "Govern"
+    ],
+    "objects": [
+      "a public intake portal checklist",
+      "a portal table permission model",
+      "a web role matrix",
+      "a basic form validation plan",
+      "a portal content publishing workflow",
+      "a Dataverse-backed contact experience",
+      "a site launch readiness review",
+      "an anonymous access risk checklist",
+      "a portal feedback capture process",
+      "a page template governance guide"
+    ]
+  },
+  {
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams workflow experience patterns",
+    "platform": [
+      "Teams",
+      "Power Automate",
+      "Microsoft 365"
+    ],
+    "related": [
+      "power-automate-email-html-table",
+      "send-teams-cards-for-new-high-priority-issues"
+    ],
+    "actions": [
+      "Create",
+      "Build",
+      "Design",
+      "Configure",
+      "Standardize",
+      "Validate",
+      "Document",
+      "Optimize",
+      "Troubleshoot",
+      "Govern"
+    ],
+    "objects": [
+      "an adaptive card approval summary",
+      "a Teams notification routing rule",
+      "a channel-based exception alert",
+      "a manager response card",
+      "a queue digest card",
+      "a decision capture card",
+      "a user mention notification pattern",
+      "a card retry and timeout path",
+      "a Teams handoff message template",
+      "a card schema versioning checklist"
+    ]
+  }
+]

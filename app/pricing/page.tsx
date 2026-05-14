@@ -10,24 +10,23 @@ export default function PricingPage() {
     <SimplePage
       eyebrow="Pricing"
       lead="BuilderVault is still pre-integration, so these plans are product positioning placeholders rather than active checkout plans."
-      title="Simple pricing for practical builders."
+      title="Simple pricing for Power Platform builders."
     >
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <Plan
           name="Free"
           price="$0"
-          features={["Browse free patterns", "Save local favorites", "Use the local report preview", "View premium previews"]}
+          features={["Browse free patterns", "Save local favorites", "Use public formulas and checklists", "View premium previews"]}
         />
         <Plan
           name="Pro"
           price="$9-$19/mo"
-          features={["Unlock premium patterns", "Save account-based favorites", "Generate full AI-assisted reports", "Keep report history"]}
+          features={["Unlock premium patterns", "Save account-based favorites", "Use curated app and workflow packs", "Export build checklists later"]}
           highlighted
         />
       </div>
       <p>
-        Stripe checkout will be added after the static product experience feels right.
-        For now, use the pattern library and report preview to validate the offer.
+        Stripe checkout will be added after the static product experience feels right. For now, use the Power Platform pattern library to validate the offer.
       </p>
       <Link className="button" href="/patterns" style={{ justifySelf: "start" }}>
         Browse the library

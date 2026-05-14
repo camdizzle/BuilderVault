@@ -11,10 +11,10 @@ export const metadata: Metadata = {
     template: "%s | BuilderVault"
   },
   description:
-    "A practical pattern and report-generation toolkit for Microsoft 365 builders and PMO teams.",
+    "Reusable Power Platform patterns for Power Apps, Power Automate, SharePoint, Dataverse, ALM, and Microsoft 365 builders.",
   openGraph: {
     description:
-      "Copy-ready Power Apps, SharePoint, Power Automate, and PMO patterns for real business builders.",
+      "Copy-ready Power Platform implementation patterns for business app builders, consultants, and internal automation teams.",
     siteName: "BuilderVault",
     title: "BuilderVault",
     type: "website",

@@ -7,36 +7,34 @@ import { getFeaturedPatterns, getPatternStats } from "@/lib/patterns/patterns";
 export default function HomePage() {
   const featuredPatterns = getFeaturedPatterns();
   const stats = getPatternStats();
-  const collections = getSuggestedCollections().slice(0, 3);
+  const collections = getSuggestedCollections().slice(0, 6);
 
   return (
     <>
       <section style={{ padding: "76px 0 48px" }}>
         <div className="container split-grid">
           <div>
-            <div className="eyebrow">Microsoft 365 builder toolkit</div>
-            <h1 className="page-title">Practical patterns for real business apps.</h1>
+            <div className="eyebrow">Power Platform pattern library</div>
+            <h1 className="page-title">Reusable patterns for faster, cleaner Microsoft business apps.</h1>
             <p className="lead">
-              BuilderVault helps Power Apps makers, SharePoint owners, and PMO
-              teams find copy-ready implementation patterns and turn rough
-              project notes into polished status updates.
+              BuilderVault helps Power Platform developers, makers, consultants, and internal automation teams find proven implementation patterns for Power Apps, Power Automate, SharePoint, Dataverse, ALM, and admin governance.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>
               <Link className="button" href="/patterns">
                 Browse patterns
               </Link>
-              <Link className="button secondary" href="/reports/new">
-                Try report preview
+              <Link className="button secondary" href="/collections">
+                Explore collections
               </Link>
             </div>
           </div>
           <div className="card" style={{ alignSelf: "start", padding: 24 }}>
-            <div className="eyebrow">Static library preview</div>
+            <div className="eyebrow">Builder library</div>
             <div className="stat-grid" style={{ marginTop: 18 }}>
-              <Metric label="Patterns" value={stats.totalPatterns} />
+              <Metric label="Power Platform patterns" value={stats.totalPatterns} />
               <Metric label="Free examples" value={stats.freePatterns} />
               <Metric label="Premium previews" value={stats.premiumPatterns} />
-              <Metric label="Categories" value={stats.categories} />
+              <Metric label="Core categories" value={stats.categories} />
             </div>
           </div>
         </div>
@@ -45,11 +43,10 @@ export default function HomePage() {
       <section style={{ padding: "44px 0" }}>
         <div className="container">
           <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
-            <div className="eyebrow">Curated kits</div>
-            <h2 className="section-title">Start with a focused collection.</h2>
+            <div className="eyebrow">Builder workstreams</div>
+            <h2 className="section-title">Start with the thing you are building.</h2>
             <p className="lead" style={{ maxWidth: 760 }}>
-              Collections turn the larger 160-pattern library into practical
-              workstreams for builders, admins, and PMO teams.
+              Collections package the larger library into practical build paths for request apps, approval flows, Dataverse foundations, admin governance, and delivery handoff.
             </p>
           </div>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
@@ -64,11 +61,9 @@ export default function HomePage() {
         <div className="container">
           <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
             <div className="eyebrow">Pattern library</div>
-            <h2 className="section-title">Find the formula before the work stalls.</h2>
+            <h2 className="section-title">Find the pattern before the build slows down.</h2>
             <p className="lead" style={{ maxWidth: 760 }}>
-              The first product is a searchable library of field-tested Power
-              Apps, SharePoint, Power Automate, and PMO patterns with formulas,
-              implementation notes, mistakes, and troubleshooting.
+              Search practical formulas, flow outlines, data model checklists, deployment notes, troubleshooting steps, and support handoff guidance for real Power Platform delivery.
             </p>
           </div>
           <div
@@ -82,38 +77,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="reports" style={{ padding: "48px 0" }}>
+      <section style={{ padding: "48px 0" }}>
         <div className="container">
           <div className="card split-grid" style={{ padding: 28 }}>
             <div>
-              <div className="eyebrow">Coming after foundation</div>
-              <h2 className="section-title">Project status reports without the blank page.</h2>
+              <div className="eyebrow">SEO topic hubs</div>
+              <h2 className="section-title">Focused paths for common Power Platform searches.</h2>
               <p className="lead">
-                The second BuilderVault product will collect project health,
-                accomplishments, risks, issues, decisions, and next steps, then
-                produce business-ready summaries for executives, PMOs, teams,
-                and stakeholders. A local-only preview is available now.
+                Topic hubs help builders and search engines understand the library by platform: Power Apps, Power Automate, SharePoint, Dataverse, ALM, and admin governance.
               </p>
-              <Link className="button" href="/reports/new">
-                Open report preview
-              </Link>
             </div>
-            <div
-              style={{
-                background: "#f3f6f2",
-                border: "1px solid var(--line)",
-                borderRadius: 8,
-                padding: 20
-              }}
-            >
-              <strong>Sample output shape</strong>
-              <ul style={{ color: "var(--muted)", lineHeight: 1.7, marginBottom: 0 }}>
-                <li>Executive summary</li>
-                <li>Weekly status report</li>
-                <li>Steering committee summary</li>
-                <li>Email-ready update</li>
-                <li>Risks, issues, and actions table</li>
-              </ul>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+              <TopicLink href="/power-apps" label="Power Apps" />
+              <TopicLink href="/power-automate" label="Power Automate" />
+              <TopicLink href="/sharepoint" label="SharePoint" />
+              <TopicLink href="/dataverse" label="Dataverse" />
+              <TopicLink href="/alm" label="ALM & governance" />
             </div>
           </div>
         </div>
@@ -123,14 +102,14 @@ export default function HomePage() {
         <div className="container">
           <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
             <div className="eyebrow">Pricing concept</div>
-            <h2 className="section-title">Start useful, then unlock the deeper library.</h2>
+            <h2 className="section-title">Start with public examples, then unlock the deeper builder library.</h2>
           </div>
           <div
             className="grid"
             style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}
           >
-            <Plan name="Free" price="$0" features={["Browse free patterns", "View premium previews", "Copy public formulas"]} />
-            <Plan name="Pro" price="$9-$19/mo" features={["Premium patterns", "Saved favorites later", "Full report generation later"]} />
+            <Plan name="Free" price="$0" features={["Browse free patterns", "Save local favorites", "Copy public formulas"]} />
+            <Plan name="Pro" price="$9-$19/mo" features={["Premium implementation patterns", "Account-based favorites later", "Curated app and workflow packs"]} />
           </div>
         </div>
       </section>
@@ -144,6 +123,14 @@ function Metric({ label, value }: { label: string; value: number }) {
       <div style={{ fontSize: "2rem", fontWeight: 800 }}>{value}</div>
       <div style={{ color: "var(--muted)" }}>{label}</div>
     </div>
+  );
+}
+
+function TopicLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link className="button secondary" href={href}>
+      {label}
+    </Link>
   );
 }
 

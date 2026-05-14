@@ -3,12 +3,13 @@ import { writeFileSync, readFileSync } from "node:fs";
 const patterns = JSON.parse(readFileSync(new URL("../data/patterns.seed.json", import.meta.url), "utf8"));
 const expansionGroups3 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-3.json", import.meta.url), "utf8"));
 const expansionGroups4 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-4.json", import.meta.url), "utf8"));
+const expansionGroups5 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-5.json", import.meta.url), "utf8"));
 const expandedSource = readFileSync(new URL("../lib/patterns/expanded-patterns.ts", import.meta.url), "utf8");
 const expandedSource2 = readFileSync(new URL("../lib/patterns/expanded-patterns-2.ts", import.meta.url), "utf8");
 const expandedRows = [...expandedSource.matchAll(/\{\s*topic: "([^"]+)"[\s\S]*?category: "([^"]+)"[\s\S]*?subCategory: "([^"]+)"[\s\S]*?difficulty: "([^"]+)"[\s\S]*?tags: \[([^\]]*)\][\s\S]*?\}/g)].map((match, index) => ({
   category: match[2],
   difficulty: match[4],
-  id: `pat-${String(index + 81).padStart(3, "0")}`,
+  id: "pat-" + String(index + 81).padStart(3, "0"),
   isPremium: match[0].includes("premium: true"),
   slug: slugify(match[1]),
   subCategory: match[3],
@@ -21,7 +22,7 @@ const expandedRows2 = [...expandedSource2.matchAll(/\{\s*category: "([^"]+)"[\s\
   return topics.map((topic, topicIndex) => ({
     category: match[1],
     difficulty: topicIndex % 5 === 0 ? "Advanced" : topicIndex % 2 === 0 ? "Intermediate" : "Beginner",
-    id: `pat-${String(161 + groupIndex * 40 + topicIndex).padStart(3, "0")}`,
+    id: "pat-" + String(161 + groupIndex * 40 + topicIndex).padStart(3, "0"),
     isPremium: topicIndex % 3 === 0,
     slug: slugify(topic),
     subCategory: match[2],
@@ -29,43 +30,30 @@ const expandedRows2 = [...expandedSource2.matchAll(/\{\s*category: "([^"]+)"[\s\
     title: topic
   }));
 });
-const expandedRows3 = expansionGroups3.flatMap((group, groupIndex) =>
-  group.actions.flatMap((action, actionIndex) =>
-    group.objects.map((object, objectIndex) => {
-      const title = `${action} ${object}`;
-
-      return {
-        category: group.category,
-        difficulty: (actionIndex + objectIndex) % 5 === 0 ? "Advanced" : (actionIndex + objectIndex) % 2 === 0 ? "Intermediate" : "Beginner",
-        id: `pat-${String(321 + groupIndex * 80 + actionIndex * group.objects.length + objectIndex).padStart(3, "0")}`,
-        isPremium: (actionIndex + objectIndex) % 3 === 0,
-        slug: slugify(title),
-        subCategory: group.subCategory,
-        tags: [group.subCategory, action],
-        title
-      };
-    })
-  )
-);
-const expandedRows4 = expansionGroups4.flatMap((group, groupIndex) =>
-  group.actions.flatMap((action, actionIndex) =>
-    group.objects.map((object, objectIndex) => {
-      const title = `${action} ${object}`;
-
-      return {
-        category: group.category,
-        difficulty: (actionIndex + objectIndex) % 6 === 0 ? "Advanced" : (actionIndex + objectIndex) % 2 === 0 ? "Intermediate" : "Beginner",
-        id: `pat-${String(641 + groupIndex * 90 + actionIndex * group.objects.length + objectIndex).padStart(3, "0")}`,
-        isPremium: (actionIndex + objectIndex) % 4 === 0,
-        slug: slugify(title),
-        subCategory: group.subCategory,
-        tags: [group.subCategory, action],
-        title
-      };
-    })
-  )
-);
-const allPatterns = [...patterns, ...expandedRows, ...expandedRows2, ...expandedRows3, ...expandedRows4];
+function rowsFromGroups(groups, start, groupSize, premiumModulo) {
+  return groups.flatMap((group, groupIndex) =>
+    group.actions.flatMap((action, actionIndex) =>
+      group.objects.map((object, objectIndex) => {
+        const title = action + " " + object;
+        const sum = actionIndex + objectIndex;
+        return {
+          category: group.category,
+          difficulty: sum % 6 === 0 ? "Advanced" : sum % 2 === 0 ? "Intermediate" : "Beginner",
+          id: "pat-" + String(start + groupIndex * groupSize + actionIndex * group.objects.length + objectIndex).padStart(start >= 1000 ? 4 : 3, "0"),
+          isPremium: sum % premiumModulo === 0,
+          slug: slugify(title),
+          subCategory: group.subCategory,
+          tags: [group.subCategory, action, group.category],
+          title
+        };
+      })
+    )
+  );
+}
+const expandedRows3 = rowsFromGroups(expansionGroups3, 321, 80, 3);
+const expandedRows4 = rowsFromGroups(expansionGroups4, 641, 90, 4);
+const expandedRows5 = rowsFromGroups(expansionGroups5, 1001, 100, 4);
+const allPatterns = [...patterns, ...expandedRows, ...expandedRows2, ...expandedRows3, ...expandedRows4, ...expandedRows5];
 const rows = [
   ["id", "slug", "title", "category", "subCategory", "difficulty", "isPremium", "tags"].join(","),
   ...allPatterns.map((pattern) =>
@@ -82,11 +70,11 @@ const rows = [
   )
 ];
 
-writeFileSync(new URL("../data/patterns.export.csv", import.meta.url), `${rows.join("\n")}\n`);
-console.log(`Exported ${allPatterns.length} patterns to data/patterns.export.csv`);
+writeFileSync(new URL("../data/patterns.export.csv", import.meta.url), rows.join("\n") + "\n");
+console.log("Exported " + allPatterns.length + " patterns to data/patterns.export.csv");
 
 function quote(value) {
-  return `"${String(value).replaceAll('"', '""')}"`;
+  return '"' + String(value).replaceAll('"', '""') + '"';
 }
 
 function slugify(value) {

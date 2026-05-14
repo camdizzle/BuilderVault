@@ -3,11 +3,13 @@ import { readFileSync } from "node:fs";
 const patterns = JSON.parse(readFileSync(new URL("../data/patterns.seed.json", import.meta.url), "utf8"));
 const expansionGroups3 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-3.json", import.meta.url), "utf8"));
 const expansionGroups4 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-4.json", import.meta.url), "utf8"));
+const expansionGroups5 = JSON.parse(readFileSync(new URL("../data/pattern-expansion-5.json", import.meta.url), "utf8"));
 const expandedSource = readFileSync(new URL("../lib/patterns/expanded-patterns.ts", import.meta.url), "utf8");
 const expandedSource2 = readFileSync(new URL("../lib/patterns/expanded-patterns-2.ts", import.meta.url), "utf8");
 const collectionsSource = readFileSync(new URL("../lib/patterns/collections.ts", import.meta.url), "utf8");
+
 const expandedSpecs = [...expandedSource.matchAll(/\{\s*topic: "([^"]+)"[\s\S]*?related: \[([^\]]*)\][\s\S]*?\}/g)].map((match, index) => ({
-  id: `pat-${String(index + 81).padStart(3, "0")}`,
+  id: "pat-" + String(index + 81).padStart(3, "0"),
   slug: slugify(match[1]),
   relatedPatterns: [...match[2].matchAll(/"([^"]+)"/g)].map((relatedMatch) => relatedMatch[1])
 }));
@@ -16,35 +18,32 @@ const expandedSpecs2 = [...expandedSource2.matchAll(/\{\s*category: "([^"]+)"[\s
   const topics = [...match[3].matchAll(/"([^"]+)"/g)].map((topicMatch) => topicMatch[1]);
 
   return topics.map((topic, topicIndex) => ({
-    id: `pat-${String(161 + groupIndex * 40 + topicIndex).padStart(3, "0")}`,
+    id: "pat-" + String(161 + groupIndex * 40 + topicIndex).padStart(3, "0"),
     relatedPatterns,
     slug: slugify(topic)
   }));
 });
-const expandedSpecs3 = expansionGroups3.flatMap((group, groupIndex) =>
-  group.actions.flatMap((action, actionIndex) =>
-    group.objects.map((object, objectIndex) => ({
-      id: `pat-${String(321 + groupIndex * 80 + actionIndex * group.objects.length + objectIndex).padStart(3, "0")}`,
-      relatedPatterns: group.related,
-      slug: slugify(`${action} ${object}`)
-    }))
-  )
-);
-const expandedSpecs4 = expansionGroups4.flatMap((group, groupIndex) =>
-  group.actions.flatMap((action, actionIndex) =>
-    group.objects.map((object, objectIndex) => ({
-      id: `pat-${String(641 + groupIndex * 90 + actionIndex * group.objects.length + objectIndex).padStart(3, "0")}`,
-      relatedPatterns: group.related,
-      slug: slugify(`${action} ${object}`)
-    }))
-  )
-);
+function specsFromGroups(groups, start, groupSize) {
+  return groups.flatMap((group, groupIndex) =>
+    group.actions.flatMap((action, actionIndex) =>
+      group.objects.map((object, objectIndex) => ({
+        id: "pat-" + String(start + groupIndex * groupSize + actionIndex * group.objects.length + objectIndex).padStart(start >= 1000 ? 4 : 3, "0"),
+        relatedPatterns: group.related,
+        slug: slugify(action + " " + object)
+      }))
+    )
+  );
+}
+const expandedSpecs3 = specsFromGroups(expansionGroups3, 321, 80);
+const expandedSpecs4 = specsFromGroups(expansionGroups4, 641, 90);
+const expandedSpecs5 = specsFromGroups(expansionGroups5, 1001, 100);
 const allPatternRecords = [
   ...patterns,
   ...expandedSpecs,
   ...expandedSpecs2,
   ...expandedSpecs3,
-  ...expandedSpecs4
+  ...expandedSpecs4,
+  ...expandedSpecs5
 ];
 
 const requiredFields = [
@@ -76,6 +75,11 @@ const allowedCategories = new Set([
   "Power Apps",
   "SharePoint",
   "Power Automate",
+  "Dataverse",
+  "ALM & Governance",
+  "Power Platform Admin",
+  "Power Pages",
+  "Teams & Adaptive Cards",
   "PMO / Project Management"
 ]);
 const allowedDifficulties = new Set(["Beginner", "Intermediate", "Advanced"]);
@@ -83,6 +87,10 @@ const allowedPlatforms = new Set([
   "Power Apps",
   "SharePoint",
   "Power Automate",
+  "Dataverse",
+  "Power Platform",
+  "Power Pages",
+  "Teams",
   "Microsoft 365",
   "PMO"
 ]);
@@ -94,34 +102,34 @@ const slugs = new Set();
 for (const pattern of patterns) {
   for (const field of requiredFields) {
     if (!(field in pattern)) {
-      errors.push(`${pattern.id ?? "unknown"} is missing ${field}`);
+      errors.push((pattern.id ?? "unknown") + " is missing " + field);
     }
   }
 
   if (ids.has(pattern.id)) {
-    errors.push(`Duplicate id: ${pattern.id}`);
+    errors.push("Duplicate id: " + pattern.id);
   }
   ids.add(pattern.id);
 
   if (slugs.has(pattern.slug)) {
-    errors.push(`Duplicate slug: ${pattern.slug}`);
+    errors.push("Duplicate slug: " + pattern.slug);
   }
   slugs.add(pattern.slug);
 
   if (!allowedCategories.has(pattern.category)) {
-    errors.push(`${pattern.slug} has unsupported category: ${pattern.category}`);
+    errors.push(pattern.slug + " has unsupported category: " + pattern.category);
   }
 
   if (!allowedDifficulties.has(pattern.difficulty)) {
-    errors.push(`${pattern.slug} has unsupported difficulty: ${pattern.difficulty}`);
+    errors.push(pattern.slug + " has unsupported difficulty: " + pattern.difficulty);
   }
 
   if (!Array.isArray(pattern.platform) || pattern.platform.length === 0) {
-    errors.push(`${pattern.slug} must have at least one platform`);
+    errors.push(pattern.slug + " must have at least one platform");
   } else {
     for (const platform of pattern.platform) {
       if (!allowedPlatforms.has(platform)) {
-        errors.push(`${pattern.slug} has unsupported platform: ${platform}`);
+        errors.push(pattern.slug + " has unsupported platform: " + platform);
       }
     }
   }
@@ -136,19 +144,19 @@ for (const pattern of patterns) {
     "relatedPatterns"
   ]) {
     if (!Array.isArray(pattern[field])) {
-      errors.push(`${pattern.slug} ${field} must be an array`);
+      errors.push(pattern.slug + " " + field + " must be an array");
     }
   }
 }
 
-for (const pattern of [...expandedSpecs, ...expandedSpecs2, ...expandedSpecs3, ...expandedSpecs4]) {
+for (const pattern of [...expandedSpecs, ...expandedSpecs2, ...expandedSpecs3, ...expandedSpecs4, ...expandedSpecs5]) {
   if (ids.has(pattern.id)) {
-    errors.push(`Duplicate id: ${pattern.id}`);
+    errors.push("Duplicate id: " + pattern.id);
   }
   ids.add(pattern.id);
 
   if (slugs.has(pattern.slug)) {
-    errors.push(`Duplicate slug: ${pattern.slug}`);
+    errors.push("Duplicate slug: " + pattern.slug);
   }
   slugs.add(pattern.slug);
 }
@@ -156,7 +164,7 @@ for (const pattern of [...expandedSpecs, ...expandedSpecs2, ...expandedSpecs3, .
 for (const pattern of allPatternRecords) {
   for (const relatedSlug of pattern.relatedPatterns ?? []) {
     if (!slugs.has(relatedSlug)) {
-      errors.push(`${pattern.slug} has missing related pattern: ${relatedSlug}`);
+      errors.push(pattern.slug + " has missing related pattern: " + relatedSlug);
     }
   }
 }
@@ -172,7 +180,7 @@ for (const match of collectionsSource.matchAll(/slug:\s*"([^"]+)"[\s\S]*?pattern
 
   for (const patternSlug of slugsInCollection) {
     if (seenCollectionSlugs.has(patternSlug)) {
-      errors.push(`${collectionSlug} has duplicate collection pattern: ${patternSlug}`);
+      errors.push(collectionSlug + " has duplicate collection pattern: " + patternSlug);
     }
     seenCollectionSlugs.add(patternSlug);
   }
@@ -180,14 +188,14 @@ for (const match of collectionsSource.matchAll(/slug:\s*"([^"]+)"[\s\S]*?pattern
 
 for (const collectionSlug of collectionPatternSlugs) {
   if (!slugs.has(collectionSlug)) {
-    errors.push(`Collection references missing pattern: ${collectionSlug}`);
+    errors.push("Collection references missing pattern: " + collectionSlug);
   }
 }
 
 if (errors.length > 0) {
-  console.error(`Pattern validation failed with ${errors.length} issue(s):`);
+  console.error("Pattern validation failed with " + errors.length + " issue(s):");
   for (const error of errors) {
-    console.error(`- ${error}`);
+    console.error("- " + error);
   }
   process.exit(1);
 }
@@ -207,8 +215,14 @@ const premium =
     const actionIndex = Math.floor(withinGroup / 10);
     const objectIndex = withinGroup % 10;
     return (actionIndex + objectIndex) % 4 === 0;
+  }).length +
+  expandedSpecs5.filter((_, index) => {
+    const withinGroup = index % 100;
+    const actionIndex = Math.floor(withinGroup / 10);
+    const objectIndex = withinGroup % 10;
+    return (actionIndex + objectIndex) % 4 === 0;
   }).length;
-console.log(`Pattern validation passed: ${allPatternRecords.length} patterns, ${premium} premium, ${allPatternRecords.length - premium} free.`);
+console.log("Pattern validation passed: " + allPatternRecords.length + " stored patterns, " + premium + " premium, " + (allPatternRecords.length - premium) + " free.");
 
 function slugify(value) {
   return value

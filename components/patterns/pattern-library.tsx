@@ -126,6 +126,14 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
         ))}
       </div>
 
+      <div className="badge-row" aria-label="Popular searches">
+        {["Patch SharePoint", "Delegation", "Dataverse", "Approvals", "DLP", "Adaptive Cards"].map((item) => (
+          <button className="chip-button" key={item} onClick={() => setQuery(item)} type="button">
+            {item}
+          </button>
+        ))}
+      </div>
+
       <div className="toolbar-card">
         <div
           style={{
@@ -139,7 +147,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
             <input
               id="pattern-search"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Try patch, JSON, approvals, OData..."
+              placeholder="Try patch, delegation, Dataverse, DLP, approvals..."
               type="search"
               value={query}
             />
@@ -219,7 +227,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
           <h2 style={{ marginTop: 0 }}>No patterns match those filters.</h2>
           <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 0 }}>
             Try removing one filter or searching for a broader term like Patch,
-            SharePoint, approval, or checklist.
+            SharePoint, Dataverse, approval, or governance.
           </p>
         </div>
       )}

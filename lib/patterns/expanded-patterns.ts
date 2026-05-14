@@ -94,7 +94,7 @@ const specs: ExpansionSpec[] = [
   { topic: "Create an Etsy listing workflow checklist", category: "PMO / Project Management", subCategory: "Deliverables/checklists", platform: ["PMO"], difficulty: "Beginner", tags: ["Etsy", "Workflow", "Checklist"], related: ["pmo-action-item-owner-due-date-discipline", "pmo-project-closeout-checklist"] }
 ];
 
-const categoryDescriptions: Record<PatternCategory, string> = {
+const categoryDescriptions: Partial<Record<PatternCategory, string>> = {
   "PMO / Project Management": "project governance and reporting",
   "Power Apps": "canvas app implementation",
   "Power Automate": "flow automation",
@@ -110,7 +110,7 @@ export const expandedPatterns: Pattern[] = specs.map((spec, index) => {
     id: `pat-${String(idNumber).padStart(3, "0")}`,
     slug,
     title: spec.topic,
-    shortDescription: `A practical ${spec.subCategory.toLowerCase()} pattern for ${categoryDescriptions[spec.category]}.`,
+    shortDescription: `A practical ${spec.subCategory.toLowerCase()} pattern for ${categoryDescriptions[spec.category] ?? "Power Platform delivery"}.`,
     fullDescription: `${spec.topic} gives builders a repeatable starting point with implementation guidance, common mistakes, and troubleshooting notes for real-world ${categoryDescriptions[spec.category]} work.`,
     category: spec.category,
     subCategory: spec.subCategory,
