@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://buildervault.app"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "BuilderVault",
     template: "%s | BuilderVault"
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     siteName: "BuilderVault",
     title: "BuilderVault",
     type: "website",
-    url: "https://buildervault.app"
+    url: siteUrl
   }
 };
 

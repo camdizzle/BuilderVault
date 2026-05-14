@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
@@ -14,6 +14,7 @@ import {
   getRelatedPatterns
 } from "@/lib/patterns/patterns";
 import { getPatternSeo } from "@/lib/patterns/seo";
+import { absoluteUrl } from "@/lib/site";
 
 type PatternDetailPageProps = {
   params: Promise<{
@@ -82,19 +83,19 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         itemListElement: [
           {
             "@type": "ListItem",
-            item: "https://buildervault.app/patterns",
+            item: absoluteUrl("/patterns"),
             name: "Patterns",
             position: 1
           },
           {
             "@type": "ListItem",
-            item: `https://buildervault.app${seo.topicPath}`,
+            item: absoluteUrl(seo.topicPath),
             name: seo.topicLabel,
             position: 2
           },
           {
             "@type": "ListItem",
-            item: `https://buildervault.app/patterns/${pattern.slug}`,
+            item: absoluteUrl(`/patterns/${pattern.slug}`),
             name: pattern.title,
             position: 3
           }
@@ -110,7 +111,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         headline: seo.seoTitle,
         isAccessibleForFree: !pattern.isPremium,
         keywords: seo.secondaryKeywords.join(", "),
-        mainEntityOfPage: `https://buildervault.app/patterns/${pattern.slug}`,
+        mainEntityOfPage: absoluteUrl(`/patterns/${pattern.slug}`),
         proficiencyLevel: pattern.difficulty,
         publisher: {
           "@type": "Organization",
