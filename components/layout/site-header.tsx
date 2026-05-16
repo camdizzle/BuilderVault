@@ -4,7 +4,7 @@ export function SiteHeader() {
   return (
     <header
       style={{
-        background: "rgba(247, 248, 245, 0.92)",
+        background: "rgba(247, 248, 245, 0.94)",
         borderBottom: "1px solid var(--line)",
         position: "sticky",
         top: 0,
@@ -47,24 +47,14 @@ export function SiteHeader() {
           </span>
           BuilderVault
         </Link>
-        <nav
-          aria-label="Main navigation"
-          style={{
-            alignItems: "center",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 14,
-            justifyContent: "flex-end"
-          }}
-        >
+        <nav aria-label="Main navigation" className="compact-nav-group">
           <Link href="/patterns">Patterns</Link>
-          <Link href="/collections">Collections</Link>
           <Link href="/resources">Resources</Link>
-          <Link href="/power-apps">Power Apps</Link>
-          <Link href="/power-automate">Power Automate</Link>
-          <Link href="/dataverse">Dataverse</Link>
-          <Link href="/dashboard">Workspace</Link>
-          <Link href="/pricing">Pricing</Link>
+          <Link href="/cookbooks">Cookbooks</Link>
+          <Link href="/tools">Tools</Link>
+          <Link className="button secondary" href="/pricing" style={{ minHeight: 38, padding: "0 14px" }}>
+            Pricing
+          </Link>
         </nav>
       </div>
     </header>

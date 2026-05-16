@@ -2,72 +2,77 @@ import Link from "next/link";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { PatternCard } from "@/components/patterns/pattern-card";
 import { ResourceCard } from "@/components/resources/resource-card";
+import { PlatformIcon, platformLinks } from "@/components/platform/platform-icon";
 import { getSuggestedCollections } from "@/lib/patterns/collections";
 import { getFeaturedPatterns, getPatternStats } from "@/lib/patterns/patterns";
-import { cookbooks, standards, cheatSheets, tools } from "@/lib/resources";
+import { cheatSheets, cookbooks, standards, tools } from "@/lib/resources";
 
 export default function HomePage() {
-  const featuredPatterns = getFeaturedPatterns();
+  const featuredPatterns = getFeaturedPatterns().slice(0, 3);
   const stats = getPatternStats();
-  const collections = getSuggestedCollections().slice(0, 6);
+  const collections = getSuggestedCollections().slice(0, 3);
   const resources = [cookbooks[0], cookbooks[2], standards[6], cheatSheets[0], tools[1], tools[6]];
 
   return (
     <>
-      <section style={{ padding: "76px 0 48px" }}>
+      <section style={{ padding: "70px 0 36px" }}>
         <div className="container split-grid">
           <div>
-            <div className="eyebrow">Power Platform pattern library</div>
-            <h1 className="page-title">Reusable patterns for faster, cleaner Microsoft business apps.</h1>
+            <div className="eyebrow">Power Platform pattern vault</div>
+            <h1 className="page-title">Build cleaner Power Apps and flows without starting from scratch.</h1>
             <p className="lead">
-              BuilderVault helps Power Platform developers, makers, consultants, and internal automation teams find proven implementation patterns for Power Apps, Power Automate, SharePoint, Dataverse, ALM, and admin governance.
+              BuilderVault gives Power Platform developers a searchable library of patterns, cookbooks, standards, cheat sheets, and utility pages for real Microsoft business app delivery.
             </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>
-              <Link className="button" href="/patterns">
-                Browse patterns
-              </Link>
-              <Link className="button secondary" href="/collections">
-                Explore collections
-              </Link>
+            <div className="hero-actions">
+              <Link className="button" href="/patterns">Find a pattern</Link>
+              <Link className="button secondary" href="/resources">Explore resources</Link>
             </div>
           </div>
-          <div className="card" style={{ alignSelf: "start", padding: 24 }}>
-            <div className="eyebrow">Builder library</div>
-            <div className="stat-grid" style={{ marginTop: 18 }}>
-              <Metric label="Power Platform patterns" value={stats.totalPatterns} />
-              <Metric label="Free examples" value={stats.freePatterns} />
-              <Metric label="Premium previews" value={stats.premiumPatterns} />
-              <Metric label="Core categories" value={stats.categories} />
+          <div className="card" style={{ alignSelf: "start", display: "grid", gap: 18, padding: 24 }}>
+            <div>
+              <div className="eyebrow">Choose your path</div>
+              <h2 style={{ fontSize: "1.5rem", lineHeight: 1.15, margin: "10px 0 0" }}>What do you need right now?</h2>
             </div>
+            <PathLink href="/patterns" label="I need a pattern" text="Search implementation guidance, formulas, flows, schemas, and troubleshooting notes." />
+            <PathLink href="/cookbooks" label="I need a recipe" text="Use task-based examples for Patch, collections, expressions, and SharePoint schemas." />
+            <PathLink href="/standards" label="I need team standards" text="Standardize naming, ALM, error handling, logging, and support handoff." />
+          </div>
+        </div>
+      </section>
+
+      <section className="surface" style={{ padding: "28px 0" }}>
+        <div className="container" style={{ display: "grid", gap: 18 }}>
+          <div style={{ alignItems: "end", display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "space-between" }}>
+            <div>
+              <div className="eyebrow">Supported technologies</div>
+              <h2 className="section-title" style={{ fontSize: "2rem" }}>Jump in by platform.</h2>
+            </div>
+            <Link className="button secondary" href="/resources">View all resources</Link>
+          </div>
+          <div className="platform-strip">
+            {platformLinks.map((platform) => <PlatformIcon key={platform.href} {...platform} />)}
           </div>
         </div>
       </section>
 
       <section style={{ padding: "44px 0" }}>
         <div className="container">
-          <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
-            <div className="eyebrow">Builder workstreams</div>
-            <h2 className="section-title">Start with the thing you are building.</h2>
-            <p className="lead" style={{ maxWidth: 760 }}>
-              Collections package the larger library into practical build paths for request apps, approval flows, Dataverse foundations, admin governance, and delivery handoff.
-            </p>
-          </div>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            {collections.map((collection) => (
-              <CollectionCard collection={collection} key={collection.slug} />
-            ))}
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+            <Metric label="Power Platform patterns" value={stats.totalPatterns} />
+            <Metric label="Free examples" value={stats.freePatterns} />
+            <Metric label="Resource guides" value={cookbooks.length + standards.length + cheatSheets.length + tools.length} />
+            <Metric label="Core categories" value={stats.categories} />
           </div>
         </div>
       </section>
 
-
-      <section style={{ padding: "44px 0" }}>
-        <div className="container">
-          <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
+      <section style={{ padding: "34px 0" }}>
+        <div className="container" style={{ display: "grid", gap: 24 }}>
+          <div style={{ maxWidth: 780 }}>
             <div className="eyebrow">Builder resources</div>
-            <h2 className="section-title">Cookbooks, standards, cheat sheets, and free tools.</h2>
-            <p className="lead" style={{ maxWidth: 760 }}>
-              Use resource pages when you need a fast reference instead of a full pattern: Patch recipes, expression snippets, naming standards, schema checklists, and utility concepts for Power Platform delivery.
+            <h2 className="section-title">Fast references for the problems makers search for most.</h2>
+            <p className="lead">
+              Inspired by practical Power Platform learning sites, these pages are designed for fast lookup: what to use, starter code, expected result, and common mistakes.
             </p>
           </div>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
@@ -77,62 +82,44 @@ export default function HomePage() {
       </section>
 
       <section className="surface" style={{ padding: "44px 0" }}>
-        <div className="container">
-          <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
-            <div className="eyebrow">Pattern library</div>
-            <h2 className="section-title">Find the pattern before the build slows down.</h2>
-            <p className="lead" style={{ maxWidth: 760 }}>
-              Search practical formulas, flow outlines, data model checklists, deployment notes, troubleshooting steps, and support handoff guidance for real Power Platform delivery.
-            </p>
-          </div>
-          <div
-            className="grid"
-            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}
-          >
-            {featuredPatterns.map((pattern) => (
-              <PatternCard key={pattern.id} pattern={pattern} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ padding: "48px 0" }}>
-        <div className="container">
-          <div className="card split-grid" style={{ padding: 28 }}>
+        <div className="container" style={{ display: "grid", gap: 24 }}>
+          <div style={{ alignItems: "end", display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "space-between" }}>
             <div>
-              <div className="eyebrow">SEO topic hubs</div>
-              <h2 className="section-title">Focused paths for common Power Platform searches.</h2>
-              <p className="lead">
-                Topic hubs help builders and search engines understand the library by platform: Power Apps, Power Automate, SharePoint, Dataverse, ALM, and admin governance.
-              </p>
+              <div className="eyebrow">Build paths</div>
+              <h2 className="section-title">Curated workstreams, not endless menus.</h2>
             </div>
-            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-              <TopicLink href="/power-apps" label="Power Apps" />
-              <TopicLink href="/power-automate" label="Power Automate" />
-              <TopicLink href="/sharepoint" label="SharePoint" />
-              <TopicLink href="/dataverse" label="Dataverse" />
-              <TopicLink href="/alm" label="ALM & governance" />
-            </div>
+            <Link className="button secondary" href="/collections">Explore collections</Link>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {collections.map((collection) => <CollectionCard collection={collection} key={collection.slug} />)}
           </div>
         </div>
       </section>
 
-      <section id="pricing" style={{ padding: "34px 0" }}>
-        <div className="container">
-          <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
-            <div className="eyebrow">Pricing concept</div>
-            <h2 className="section-title">Start with public examples, then unlock the deeper builder library.</h2>
+      <section style={{ padding: "44px 0" }}>
+        <div className="container" style={{ display: "grid", gap: 24 }}>
+          <div style={{ alignItems: "end", display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "space-between" }}>
+            <div>
+              <div className="eyebrow">Featured patterns</div>
+              <h2 className="section-title">Start with proven implementation details.</h2>
+            </div>
+            <Link className="button secondary" href="/patterns">Browse all patterns</Link>
           </div>
-          <div
-            className="grid"
-            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}
-          >
-            <Plan name="Free" price="$0" features={["Browse free patterns", "Save local favorites", "Copy public formulas"]} />
-            <Plan name="Pro" price="$9-$19/mo" features={["Premium implementation patterns", "Account-based favorites later", "Curated app and workflow packs"]} />
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {featuredPatterns.map((pattern) => <PatternCard key={pattern.id} pattern={pattern} />)}
           </div>
         </div>
       </section>
     </>
+  );
+}
+
+function PathLink({ href, label, text }: { href: string; label: string; text: string }) {
+  return (
+    <Link className="path-card card" href={href} style={{ minHeight: 0 }}>
+      <strong style={{ fontSize: "1.08rem" }}>{label}</strong>
+      <p>{text}</p>
+    </Link>
   );
 }
 
@@ -141,36 +128,6 @@ function Metric({ label, value }: { label: string; value: number }) {
     <div className="stat-tile">
       <div style={{ fontSize: "2rem", fontWeight: 800 }}>{value}</div>
       <div style={{ color: "var(--muted)" }}>{label}</div>
-    </div>
-  );
-}
-
-function TopicLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link className="button secondary" href={href}>
-      {label}
-    </Link>
-  );
-}
-
-function Plan({
-  name,
-  price,
-  features
-}: {
-  name: string;
-  price: string;
-  features: string[];
-}) {
-  return (
-    <div className="card" style={{ padding: 22 }}>
-      <h3 style={{ fontSize: "1.3rem", margin: 0 }}>{name}</h3>
-      <div style={{ fontSize: "2rem", fontWeight: 800, margin: "10px 0" }}>{price}</div>
-      <ul style={{ color: "var(--muted)", lineHeight: 1.75, marginBottom: 0 }}>
-        {features.map((feature) => (
-          <li key={feature}>{feature}</li>
-        ))}
-      </ul>
     </div>
   );
 }
