@@ -59,6 +59,7 @@ export function SiteHeader() {
         >
           <Link href="/patterns">Patterns</Link>
           <Link href="/collections">Collections</Link>
+          <Link href="/resources">Resources</Link>
           <Link href="/power-apps">Power Apps</Link>
           <Link href="/power-automate">Power Automate</Link>
           <Link href="/dataverse">Dataverse</Link>

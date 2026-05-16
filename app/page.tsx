@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { PatternCard } from "@/components/patterns/pattern-card";
+import { ResourceCard } from "@/components/resources/resource-card";
 import { getSuggestedCollections } from "@/lib/patterns/collections";
 import { getFeaturedPatterns, getPatternStats } from "@/lib/patterns/patterns";
+import { cookbooks, standards, cheatSheets, tools } from "@/lib/resources";
 
 export default function HomePage() {
   const featuredPatterns = getFeaturedPatterns();
   const stats = getPatternStats();
   const collections = getSuggestedCollections().slice(0, 6);
+  const resources = [cookbooks[0], cookbooks[2], standards[6], cheatSheets[0], tools[1], tools[6]];
 
   return (
     <>
@@ -53,6 +56,22 @@ export default function HomePage() {
             {collections.map((collection) => (
               <CollectionCard collection={collection} key={collection.slug} />
             ))}
+          </div>
+        </div>
+      </section>
+
+
+      <section style={{ padding: "44px 0" }}>
+        <div className="container">
+          <div style={{ display: "grid", gap: 12, marginBottom: 24 }}>
+            <div className="eyebrow">Builder resources</div>
+            <h2 className="section-title">Cookbooks, standards, cheat sheets, and free tools.</h2>
+            <p className="lead" style={{ maxWidth: 760 }}>
+              Use resource pages when you need a fast reference instead of a full pattern: Patch recipes, expression snippets, naming standards, schema checklists, and utility concepts for Power Platform delivery.
+            </p>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {resources.map((resource) => <ResourceCard key={resource.slug} resource={resource} />)}
           </div>
         </div>
       </section>

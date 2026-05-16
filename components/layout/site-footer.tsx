@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export function SiteFooter() {
   return (
@@ -25,6 +25,7 @@ export function SiteFooter() {
           aria-label="Footer navigation"
           style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "flex-end" }}
         >
+          <Link href="/resources">Resources</Link>
           <Link href="/about">About</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/privacy">Privacy</Link>
