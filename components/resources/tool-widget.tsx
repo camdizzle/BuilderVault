@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 
 export function ToolWidget({ slug }: { slug: string }) {
+  if (slug === "power-fx-formatter") return <PowerFxFormatter />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
@@ -12,6 +13,47 @@ export function ToolWidget({ slug }: { slug: string }) {
   return null;
 }
 
+function PowerFxFormatter() {
+  const sampleFormula = `IfError(
+Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,RequestStatus:{Value:"Submitted"},DueDate:dpDueDate.SelectedDate}));Notify("Request saved.",NotificationType.Success),Notify("The request could not be saved.",NotificationType.Error))`;
+  const [formula, setFormula] = useState(sampleFormula);
+  const formatted = useMemo(() => formatPowerFx(formula), [formula]);
+  const checks = useMemo(() => analyzePowerFx(formula, formatted), [formula, formatted]);
+
+  return (
+    <ToolShell title="Power Fx formatter" description="Paste a Power Apps formula, then format it into readable lines and review common maintainability warnings before handoff.">
+      <label className="field">
+        <span>Power Fx formula</span>
+        <textarea
+          className="tool-textarea"
+          onChange={(event) => setFormula(event.target.value)}
+          spellCheck={false}
+          value={formula}
+        />
+      </label>
+      <div className="badge-row">
+        <button className="chip-button" onClick={() => setFormula(sampleFormula)} type="button">
+          Load sample
+        </button>
+        <button className="chip-button" onClick={() => setFormula("")} type="button">
+          Clear
+        </button>
+        <span className="badge">{checks.lineCount} lines</span>
+        <span className="badge">depth {checks.maxDepth}</span>
+      </div>
+      <CopyCodeBlock code={formatted || "Paste a formula to format it."} label="Formatted Power Fx" />
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        {checks.items.map((item) => (
+          <div className="stat-tile" key={item.title}>
+            <div className="eyebrow">{item.level}</div>
+            <strong>{item.title}</strong>
+            <p style={{ color: "#415049", lineHeight: 1.55, marginBottom: 0 }}>{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    </ToolShell>
+  );
+}
 function SharePointInternalNameHelper() {
   const [displayName, setDisplayName] = useState("Request Status");
   const internalName = useMemo(() => toSharePointInternalName(displayName), [displayName]);
@@ -169,6 +211,122 @@ function ToolShell({ children, title, description }: { children: ReactNode; titl
   );
 }
 
+function formatPowerFx(value: string) {
+  const input = value.trim();
+  if (!input) return "";
+
+  const lines: string[] = [];
+  let current = "";
+  let depth = 0;
+  let inString = false;
+
+  function pushLine(nextDepth = depth) {
+    const trimmed = current.trim();
+    if (trimmed) {
+      lines.push("    ".repeat(Math.max(nextDepth, 0)) + trimmed);
+    }
+    current = "";
+  }
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    const previous = input[index - 1];
+
+    if (char === '"' && previous !== "\\") {
+      inString = !inString;
+      current += char;
+      continue;
+    }
+
+    if (inString) {
+      current += char;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      if (current && !current.endsWith(" ")) current += " ";
+      continue;
+    }
+
+    if (char === "(" || char === "{" || char === "[") {
+      current = trimTrailingSpaces(current) + char;
+      pushLine(depth);
+      depth += 1;
+      continue;
+    }
+
+    if (char === ")" || char === "}" || char === "]") {
+      pushLine(depth);
+      depth = Math.max(depth - 1, 0);
+      current = char;
+      continue;
+    }
+
+    if (char === "," || char === ";") {
+      current = trimTrailingSpaces(current) + char;
+      pushLine(depth);
+      continue;
+    }
+
+    if (["=", ">", "<", "+", "-", "*", "/", "&"].includes(char)) {
+      current = trimTrailingSpaces(current) + " " + char + " ";
+      continue;
+    }
+
+    current += char;
+  }
+
+  pushLine(depth);
+  return lines
+    .map((line) => line.replace(/\s+([,;)}\]])/g, "$1").replace(/\s{2,}/g, " ").trimEnd())
+    .join("\n");
+}
+
+function analyzePowerFx(original: string, formatted: string) {
+  const lower = original.toLowerCase();
+  const lineCount = formatted ? formatted.split("\n").length : 0;
+  const maxDepth = Math.max(0, ...formatted.split("\n").map((line) => Math.floor(line.search(/\S|$/) / 4)));
+  const items: Array<{ level: string; title: string; detail: string }> = [];
+
+  if (!original.trim()) {
+    items.push({ level: "Ready", title: "Paste a formula", detail: "Add Power Fx above to format it and see maintainability checks." });
+    return { items, lineCount, maxDepth };
+  }
+
+  if (lower.includes("patch(") && !lower.includes("iferror(")) {
+    items.push({ level: "Review", title: "Patch without IfError", detail: "Important save formulas should usually wrap Patch in IfError so users and support owners know when a save fails." });
+  }
+
+  if ((lower.match(/if\s*\(/g) ?? []).length >= 3) {
+    items.push({ level: "Review", title: "Nested If logic", detail: "Several If calls can become hard to maintain. Consider With, Switch, or named variables for readability." });
+  }
+
+  if (lower.includes("forall(") && lower.includes("patch(")) {
+    items.push({ level: "Caution", title: "ForAll with Patch", detail: "ForAll plus Patch can be valid, but test data volume, errors, and duplicate writes carefully." });
+  }
+
+  if (/\b(button|label|gallery|dropdown|combobox|textinput|form)\d+\b/i.test(original)) {
+    items.push({ level: "Cleanup", title: "Default control names", detail: "Default names such as Button1 or Gallery3 make formulas harder to hand off. Rename controls before release." });
+  }
+
+  if (formatted.split("\n").some((line) => line.length > 120)) {
+    items.push({ level: "Cleanup", title: "Long formatted lines", detail: "Some lines are still long after formatting. Consider breaking logic into With blocks or helper variables." });
+  }
+
+  if (maxDepth >= 5) {
+    items.push({ level: "Cleanup", title: "Deep nesting", detail: "The formula nests several levels deep. Use With blocks or split logic across named formulas where possible." });
+  }
+
+  if (items.length === 0) {
+    items.push({ level: "Looks good", title: "No obvious warnings", detail: "Formatting completed and the simple review checks did not find common handoff issues." });
+  }
+
+  return { items, lineCount, maxDepth };
+}
+
+function trimTrailingSpaces(value: string) {
+  return value.replace(/\s+$/g, "");
+}
 function toSharePointInternalName(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";

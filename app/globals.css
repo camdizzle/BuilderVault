@@ -508,3 +508,13 @@ button {
   font-size: 0.85rem;
   font-weight: 800;
 }
+
+.tool-textarea {
+  font-family: Consolas, "Courier New", monospace;
+  min-height: 240px;
+  white-space: pre;
+}
+
+.tool-panel .stat-tile p {
+  font-size: 0.95rem;
+}
