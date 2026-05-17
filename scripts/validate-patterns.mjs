@@ -200,29 +200,7 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-const premium =
-  patterns.filter((pattern) => pattern.isPremium).length +
-  (expandedSource.match(/premium: true/g) ?? []).length +
-  expandedSpecs2.filter((_, index) => index % 40 % 3 === 0).length +
-  expandedSpecs3.filter((_, index) => {
-    const withinGroup = index % 80;
-    const actionIndex = Math.floor(withinGroup / 8);
-    const objectIndex = withinGroup % 8;
-    return (actionIndex + objectIndex) % 3 === 0;
-  }).length +
-  expandedSpecs4.filter((_, index) => {
-    const withinGroup = index % 90;
-    const actionIndex = Math.floor(withinGroup / 10);
-    const objectIndex = withinGroup % 10;
-    return (actionIndex + objectIndex) % 4 === 0;
-  }).length +
-  expandedSpecs5.filter((_, index) => {
-    const withinGroup = index % 100;
-    const actionIndex = Math.floor(withinGroup / 10);
-    const objectIndex = withinGroup % 10;
-    return (actionIndex + objectIndex) % 4 === 0;
-  }).length;
-console.log("Pattern validation passed: " + allPatternRecords.length + " stored patterns, " + premium + " premium, " + (allPatternRecords.length - premium) + " free.");
+console.log("Pattern validation passed: " + allPatternRecords.length + " stored patterns. Public app access is unlocked for all visible patterns.");
 
 function slugify(value) {
   return value

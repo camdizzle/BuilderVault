@@ -8,9 +8,7 @@ type PatternBadgesProps = {
 export function PatternBadges({ pattern }: PatternBadgesProps) {
   return (
     <div className="badge-row">
-      <Badge tone={pattern.isPremium ? "premium" : "free"}>
-        {pattern.isPremium ? "Premium" : "Free"}
-      </Badge>
+      <Badge tone="free">Free</Badge>
       <Badge tone="difficulty">{pattern.difficulty}</Badge>
       <Badge>{pattern.category}</Badge>
       {pattern.platform.map((platform) => (

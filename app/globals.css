@@ -354,16 +354,7 @@ button {
   color: #166534;
 }
 
-.locked-panel {
-  background: #fffaf0;
-  border: 1px solid #f4d77a;
-  border-radius: 8px;
-  display: grid;
-  gap: 12px;
-  padding: 20px;
-}
-
-.locked-preview {
+.workspace-preview {
   background: linear-gradient(180deg, #f9ead0, #fffaf0);
   border: 1px dashed #d6a64a;
   border-radius: 8px;

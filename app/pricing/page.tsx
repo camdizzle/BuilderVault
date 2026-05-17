@@ -2,16 +2,16 @@
 import { SimplePage } from "@/components/layout/simple-page";
 
 export const metadata = {
-  title: "Pricing Roadmap | BuilderVault",
-  description: "BuilderVault is currently free while the public Power Platform pattern library, examples, and tools are being completed."
+  title: "Free Access | BuilderVault",
+  description: "BuilderVault currently unlocks the public Power Platform pattern library, examples, and tools for free."
 };
 
 export default function PricingPage() {
   return (
     <SimplePage
-      eyebrow="Pricing roadmap"
-      lead="BuilderVault is currently a free public resource while the pattern library, examples, and tools are being completed. Paid plans will wait until the product experience is ready."
-      title="Free now. Paid features later."
+      eyebrow="Free access"
+      lead="BuilderVault is currently an open public resource for Power Platform developers. Patterns, examples, cookbooks, standards, cheat sheets, and browser tools are available without checkout or login."
+      title="Everything public is free right now."
     >
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <Plan
@@ -20,14 +20,14 @@ export default function PricingPage() {
           features={["Browse public Power Platform patterns", "Use examples, cookbooks, standards, and cheat sheets", "Use browser-based tools", "Save favorites locally in your browser"]}
         />
         <Plan
-          name="Future paid options"
-          price="Planned"
-          features={["Deeper curated pattern packs", "Downloadable implementation bundles", "Account-based saved libraries", "PMO and delivery toolkits as a separate offer"]}
+          name="Open developer resources"
+          price="Free"
+          features={["Full pattern details", "Implementation examples", "Troubleshooting notes", "SEO-friendly topic guides"]}
           highlighted
         />
       </div>
       <p>
-        No checkout, billing, account system, or paid access is active yet. Stripe and Supabase will be added only after the public product surface is polished and the paid offer is clear.
+        No checkout, billing, or account system is active. The current product goal is to be the clearest free Power Platform reference library possible.
       </p>
       <Link className="button" href="/tools/power-fx-formatter" style={{ justifySelf: "start" }}>
         Try a free tool

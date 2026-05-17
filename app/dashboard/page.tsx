@@ -17,12 +17,12 @@ export default function DashboardPage() {
           <div className="eyebrow">Workspace preview</div>
           <h1 className="page-title">Your future Power Platform builder workspace.</h1>
           <p className="lead" style={{ maxWidth: 880 }}>
-            This static workspace previews the logged-in experience without auth: local favorites, suggested collections, premium unlocks, and delivery packs for makers and consultants.
+            This static workspace previews the logged-in experience without auth: local favorites, suggested collections, saved workspaces, checklists, and delivery packs for makers and consultants.
           </p>
         </div>
         <div className="stat-grid">
           <Metric label="Patterns" value={stats.totalPatterns} />
-          <Metric label="Premium previews" value={stats.premiumPatterns} />
+          <Metric label="Unlocked patterns" value={stats.freePatterns} />
           <Metric label="Categories" value={stats.categories} />
           <Metric label="Platforms" value={stats.platforms} />
         </div>
@@ -34,10 +34,10 @@ export default function DashboardPage() {
           <aside className="card" style={{ alignSelf: "start", display: "grid", gap: 14, padding: 24 }}>
             <h2 style={{ margin: 0 }}>Builder packs</h2>
             <p style={{ color: "var(--muted)", lineHeight: 1.6, margin: 0 }}>
-              Future Pro workspaces can group favorites into app builds, workflow packs, Dataverse foundations, and admin governance checklists.
+              A future account workspace can group favorites into app builds, workflow packs, Dataverse foundations, and admin governance checklists.
             </p>
-            <div className="locked-preview">
-              Pro preview: account favorites, private collections, deployment checklists, premium unlocks, and exports will appear here after integrations.
+            <div className="workspace-preview">
+              Workspace preview: account favorites, private collections, deployment checklists, and exports can appear here after login integrations.
             </div>
           </aside>
         </div>

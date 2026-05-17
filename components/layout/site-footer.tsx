@@ -26,7 +26,7 @@ export function SiteFooter() {
         </div>
         <FooterGroup title="Learn" links={[["/patterns", "Patterns"], ["/resources", "Resources"], ["/examples", "Examples"], ["/cookbooks", "Cookbooks"]]} />
         <FooterGroup title="Tools" links={[["/tools/power-fx-formatter", "Power Fx Formatter"], ["/tools/sharepoint-internal-name-helper", "Internal Name Helper"], ["/tools/power-automate-expression-builder", "Expression Builder"], ["/tools/solution-layering-checklist-generator", "ALM Checklist"]]} />
-        <FooterGroup title="Company" links={[["/about", "About"], ["/contact", "Contact"], ["/pricing", "Pricing roadmap"]]} />
+        <FooterGroup title="Company" links={[["/about", "About"], ["/contact", "Contact"], ["/pricing", "Free access"]]} />
         <FooterGroup title="Legal" links={[["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]} />
       </div>
     </footer>

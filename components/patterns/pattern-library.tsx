@@ -21,7 +21,6 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
   const [category, setCategory] = useState(allValue);
   const [platform, setPlatform] = useState(allValue);
   const [difficulty, setDifficulty] = useState(allValue);
-  const [access, setAccess] = useState(allValue);
   const [tag, setTag] = useState(allValue);
   const [sort, setSort] = useState("popular");
 
@@ -65,10 +64,6 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
         const matchesPlatform =
           platform === allValue || pattern.platform.some((item) => item === platform);
         const matchesDifficulty = difficulty === allValue || pattern.difficulty === difficulty;
-        const matchesAccess =
-          access === allValue ||
-          (access === "Free" && !pattern.isPremium) ||
-          (access === "Premium preview" && pattern.isPremium);
         const matchesTag = tag === allValue || pattern.tags.includes(tag);
 
         return (
@@ -76,7 +71,6 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
           matchesCategory &&
           matchesPlatform &&
           matchesDifficulty &&
-          matchesAccess &&
           matchesTag
         );
       })
@@ -95,19 +89,18 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
 
         return patterns.indexOf(left) - patterns.indexOf(right);
       });
-  }, [access, category, difficulty, patterns, platform, query, sort, tag]);
+  }, [category, difficulty, patterns, platform, query, sort, tag]);
 
   function resetFilters() {
     setQuery("");
     setCategory(allValue);
     setPlatform(allValue);
     setDifficulty(allValue);
-    setAccess(allValue);
     setTag(allValue);
     setSort("popular");
   }
 
-  const activeFilterCount = [category, platform, difficulty, access, tag].filter(
+  const activeFilterCount = [category, platform, difficulty, tag].filter(
     (value) => value !== allValue
   ).length + (query.trim().length > 0 ? 1 : 0);
 
@@ -169,12 +162,6 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
             onChange={setDifficulty}
             options={difficulties}
             value={difficulty}
-          />
-          <SelectField
-            label="Access"
-            onChange={setAccess}
-            options={["Free", "Premium preview"]}
-            value={access}
           />
           <SelectField label="Tag" onChange={setTag} options={tags} value={tag} />
           <SelectField

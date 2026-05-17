@@ -11,7 +11,7 @@ export type ExampleGuide = {
   relatedLinks: { href: string; label: string }[];
 };
 
-export const exampleGuides: ExampleGuide[] = [
+const baseExampleGuides: ExampleGuide[] = [
   {
     slug: "power-apps-patch-examples",
     title: "Power Apps Patch examples for SharePoint and Dataverse",
@@ -158,6 +158,606 @@ Support Admin:
     relatedLinks: [{ href: "/tools/solution-layering-checklist-generator", label: "Solution Layering Checklist Generator" }, { href: "/alm/solutions", label: "Solution patterns" }, { href: "/standards/environment-variable-standards", label: "Environment variable standards" }]
   }
 ];
+
+const expandedExampleGuides: ExampleGuide[] = [
+  {
+    "slug": "patch-sharepoint-person-field-examples",
+    "title": "Patch SharePoint Person Field Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Patch SharePoint Person Field Examples",
+      "patch sharepoint person field examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Patch(Requests, ThisItem, { AssignedTo: { Claims: \"i:0#.f|membership|\" & Lower(cmbUser.Selected.Mail), DisplayName: cmbUser.Selected.DisplayName, Email: Lower(cmbUser.Selected.Mail), Department: \"\", JobTitle: \"\", Picture: \"\" } });",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "patch-sharepoint-choice-field-examples",
+    "title": "Patch SharePoint Choice Field Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Patch SharePoint Choice Field Examples",
+      "patch sharepoint choice field examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Patch(Requests, ThisItem, { Priority: { Value: cmbPriority.Selected.Value }, ImpactedSystems: ForAll(cmbSystems.SelectedItems, { Value: Value }) });",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "patch-sharepoint-lookup-field-examples",
+    "title": "Patch SharePoint Lookup Field Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Patch SharePoint Lookup Field Examples",
+      "patch sharepoint lookup field examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Patch(Requests, Defaults(Requests), { Department: { Id: cmbDepartment.Selected.ID, Value: cmbDepartment.Selected.Title } });",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-apps-delegation-filter-examples",
+    "title": "Power Apps Delegation Filter Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Apps Delegation Filter Examples",
+      "power apps delegation filter examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Power Apps formula example:\nIfError(Patch(Requests, ThisItem, { Title: txtTitle.Text }), Notify(\"Saved\", Success), Notify(\"Save failed\", Error))",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-apps-form-validation-examples",
+    "title": "Power Apps Form Validation Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Apps Form Validation Examples",
+      "power apps form validation examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Power Apps formula example:\nIfError(Patch(Requests, ThisItem, { Title: txtTitle.Text }), Notify(\"Saved\", Success), Notify(\"Save failed\", Error))",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-apps-gallery-search-sort-examples",
+    "title": "Power Apps Gallery Search Sort Examples",
+    "eyebrow": "Power Apps examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Apps Gallery Search Sort Examples",
+      "power apps gallery search sort examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Power Apps formula example:\nIfError(Patch(Requests, ThisItem, { Title: txtTitle.Text }), Notify(\"Saved\", Success), Notify(\"Save failed\", Error))",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-automate-approval-examples",
+    "title": "Power Automate Approval Examples",
+    "eyebrow": "Power Automate examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Automate Approval Examples",
+      "power automate approval examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Trigger condition: @equals(triggerOutputs()?[body/Status/Value], Submitted)\nUse named Compose actions, run-after settings, and a support log item.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-automate-html-email-examples",
+    "title": "Power Automate Html Email Examples",
+    "eyebrow": "Power Automate examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Automate Html Email Examples",
+      "power automate html email examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Trigger condition: @equals(triggerOutputs()?[body/Status/Value], Submitted)\nUse named Compose actions, run-after settings, and a support log item.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-automate-error-handling-examples",
+    "title": "Power Automate Error Handling Examples",
+    "eyebrow": "Power Automate examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Automate Error Handling Examples",
+      "power automate error handling examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Trigger condition: @equals(triggerOutputs()?[body/Status/Value], Submitted)\nUse named Compose actions, run-after settings, and a support log item.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "power-automate-array-select-filter-examples",
+    "title": "Power Automate Array Select Filter Examples",
+    "eyebrow": "Power Automate examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Power Automate Array Select Filter Examples",
+      "power automate array select filter examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Trigger condition: @equals(triggerOutputs()?[body/Status/Value], Submitted)\nUse named Compose actions, run-after settings, and a support log item.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "sharepoint-internal-name-examples",
+    "title": "SharePoint Internal Name Examples",
+    "eyebrow": "SharePoint examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "SharePoint Internal Name Examples",
+      "sharepoint internal name examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "SharePoint schema example:\nStatus choice, AssignedTo person, DueDate date, FlowRunUrl hyperlink, indexed queue views.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "sharepoint-view-index-examples",
+    "title": "SharePoint View Index Examples",
+    "eyebrow": "SharePoint examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "SharePoint View Index Examples",
+      "sharepoint view index examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "SharePoint schema example:\nStatus choice, AssignedTo person, DueDate date, FlowRunUrl hyperlink, indexed queue views.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "dataverse-relationship-examples",
+    "title": "Dataverse Relationship Examples",
+    "eyebrow": "Dataverse examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Dataverse Relationship Examples",
+      "dataverse relationship examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Dataverse example:\nAccount 1:N Request, Request N:1 Category, security role tested with non-admin user.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "dataverse-choice-column-examples",
+    "title": "Dataverse Choice Column Examples",
+    "eyebrow": "Dataverse examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Dataverse Choice Column Examples",
+      "dataverse choice column examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "Dataverse example:\nAccount 1:N Request, Request N:1 Category, security role tested with non-admin user.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "alm-environment-variable-examples",
+    "title": "ALM Environment Variable Examples",
+    "eyebrow": "ALM examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "ALM Environment Variable Examples",
+      "alm environment variable examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "ALM example:\nEnvironment variables, connection references, managed import, flow enablement, smoke test, rollback note.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "connection-reference-examples",
+    "title": "Connection Reference Examples",
+    "eyebrow": "ALM examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Connection Reference Examples",
+      "connection reference examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "ALM example:\nEnvironment variables, connection references, managed import, flow enablement, smoke test, rollback note.",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  },
+  {
+    "slug": "adaptive-card-teams-approval-examples",
+    "title": "Adaptive Card Teams Approval Examples",
+    "eyebrow": "Teams examples",
+    "description": "Practical example with starter code, implementation steps, and common mistakes for Power Platform developers.",
+    "keywords": [
+      "Adaptive Card Teams Approval Examples",
+      "adaptive card teams approval examples",
+      "BuilderVault example"
+    ],
+    "intro": "Use this example as a working starting point, then replace the sample names with your own app, flow, list, table, or solution names.",
+    "steps": [
+      "Confirm the real data source, columns, and permissions.",
+      "Paste the starter code into a test build first.",
+      "Replace sample names with production names.",
+      "Test blank values, failures, non-admin access, and support handoff."
+    ],
+    "code": "{ \"type\": \"AdaptiveCard\", \"version\": \"1.4\", \"actions\": [{ \"type\": \"Action.Submit\", \"title\": \"Approve\", \"data\": { \"decision\": \"Approve\" } }] }",
+    "mistakes": [
+      "Copying sample names without matching the real schema.",
+      "Testing only as the maker or system admin.",
+      "Skipping blank-value and failure-path tests.",
+      "Leaving the implementation undocumented for the next builder."
+    ],
+    "relatedLinks": [
+      {
+        "href": "/examples",
+        "label": "More examples"
+      },
+      {
+        "href": "/patterns",
+        "label": "Pattern library"
+      }
+    ]
+  }
+];
+
+export const exampleGuides: ExampleGuide[] = [...baseExampleGuides, ...expandedExampleGuides];
 
 export function getExampleGuideBySlug(slug: string) {
   return exampleGuides.find((guide) => guide.slug === slug);

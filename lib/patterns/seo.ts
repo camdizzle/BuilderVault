@@ -249,10 +249,6 @@ function getSeoPriority(pattern: Pattern, primaryKeyword: string): "high" | "sta
     return "high";
   }
 
-  if (pattern.isPremium) {
-    return "support";
-  }
-
   return "standard";
 }
 

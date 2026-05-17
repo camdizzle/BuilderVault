@@ -19,7 +19,7 @@ export default function PatternsPage() {
             Copy-ready Power Platform implementation patterns.
           </h1>
           <p className="lead" style={{ maxWidth: 820 }}>
-            Search by keyword, platform, difficulty, access level, and tag. The core library now focuses on Power Platform builders; PMO tools are reserved for a separate future offer.
+            Search by keyword, platform, difficulty, and tag. The core library is focused on practical Power Platform implementation work for makers, developers, admins, and consultants.
           </p>
         </div>
 

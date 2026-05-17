@@ -13,7 +13,10 @@ const allPatterns = [
   ...expandedPatterns3,
   ...expandedPatterns4,
   ...expandedPatterns5
-];
+].map((pattern) => ({
+  ...pattern,
+  isPremium: false
+}));
 
 const corePatterns = allPatterns.filter((pattern) => pattern.category !== "PMO / Project Management");
 

@@ -5,7 +5,6 @@ import { DetailSection } from "@/components/patterns/detail-section";
 import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { PatternBadges } from "@/components/patterns/pattern-badges";
 import { PatternCard } from "@/components/patterns/pattern-card";
-import { PremiumLock } from "@/components/patterns/premium-lock";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { getCollectionsForPattern } from "@/lib/patterns/collections";
 import {
@@ -109,7 +108,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         datePublished: pattern.createdAt,
         description: seo.seoDescription,
         headline: seo.seoTitle,
-        isAccessibleForFree: !pattern.isPremium,
+        isAccessibleForFree: true,
         keywords: seo.secondaryKeywords.join(", "),
         mainEntityOfPage: absoluteUrl(`/patterns/${pattern.slug}`),
         proficiencyLevel: pattern.difficulty,
@@ -171,24 +170,6 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
           <FavoriteButton patternSlug={pattern.slug} />
         </header>
 
-        {pattern.isPremium ? (
-          <div
-            className="card"
-            style={{
-              background: "#fffaf0",
-              borderColor: "#f4d77a",
-              display: "grid",
-              gap: 10,
-              padding: 20
-            }}
-          >
-            <strong>Premium pattern preview</strong>
-            <p style={{ color: "#6f4d14", lineHeight: 1.6, margin: 0 }}>
-              You can still see the search intent, fit guidance, FAQ, and related resources. The detailed formula and implementation notes are locked to model the Pro experience before subscriptions are wired in.
-            </p>
-          </div>
-        ) : null}
-
         <div
           style={{
             display: "grid",
@@ -222,7 +203,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
             </DetailSection>
 
             <DetailSection title="Solution">
-              {pattern.isPremium ? <PremiumLock title="Formula locked" /> : <CopyCodeBlock code={pattern.formulaOrCode} />}
+<CopyCodeBlock code={pattern.formulaOrCode} />
             </DetailSection>
 
             <DetailSection title="Implementation checklist">
@@ -230,11 +211,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
             </DetailSection>
 
             <DetailSection title="Step-by-step instructions">
-              {pattern.isPremium ? (
-                <PremiumLock title="Implementation steps locked" />
-              ) : (
-                <BulletList items={pattern.stepByStepInstructions} />
-              )}
+<BulletList items={pattern.stepByStepInstructions} />
             </DetailSection>
 
             <DetailSection title="When to use">
@@ -245,21 +222,13 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
               <BulletList items={pattern.whenNotToUse} />
             </DetailSection>
 
-            {!pattern.isPremium ? (
-              <DetailSection title="Common mistakes">
-                <BulletList items={pattern.commonMistakes} />
-              </DetailSection>
-            ) : null}
+            <DetailSection title="Common mistakes">
+              <BulletList items={pattern.commonMistakes} />
+            </DetailSection>
 
-            {!pattern.isPremium ? (
-              <DetailSection title="Troubleshooting">
-                <BulletList items={pattern.troubleshooting} />
-              </DetailSection>
-            ) : (
-              <DetailSection title="Troubleshooting">
-                <PremiumLock title="Troubleshooting locked" />
-              </DetailSection>
-            )}
+            <DetailSection title="Troubleshooting">
+              <BulletList items={pattern.troubleshooting} />
+            </DetailSection>
 
             <DetailSection title="FAQ">
               <div style={{ display: "grid", gap: 16 }}>
