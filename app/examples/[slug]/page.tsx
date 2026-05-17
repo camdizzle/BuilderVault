@@ -37,8 +37,19 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
     notFound();
   }
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: guide.title,
+    description: guide.description,
+    keywords: guide.keywords.join(", "),
+    mainEntityOfPage: "/examples/" + guide.slug,
+    publisher: { "@type": "Organization", name: "BuilderVault" }
+  };
+
   return (
     <article style={{ padding: "54px 0" }}>
+      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} type="application/ld+json" />
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <nav aria-label="Breadcrumb" className="badge-row">
           <Link href="/examples" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Examples</Link>
@@ -67,6 +78,20 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Starter example</h2>
               <CopyCodeBlock code={guide.code} />
             </section>
+            <section style={{ display: "grid", gap: 12 }}>
+              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>FAQ</h2>
+              <div style={{ display: "grid", gap: 14 }}>
+                <div>
+                  <h3 style={{ fontSize: "1rem", margin: "0 0 6px" }}>Can I copy this example directly?</h3>
+                  <p style={{ color: "#415049", lineHeight: 1.65, margin: 0 }}>Use it as a starting point, then adjust data source names, column names, permissions, and validation for your tenant.</p>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1rem", margin: "0 0 6px" }}>Should this be tested before production?</h3>
+                  <p style={{ color: "#415049", lineHeight: 1.65, margin: 0 }}>Yes. Test with realistic records, non-admin users, edge cases, and expected data volume before release.</p>
+                </div>
+              </div>
+            </section>
+
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Common mistakes</h2>
               <ul style={{ color: "#415049", lineHeight: 1.75, margin: 0, paddingLeft: 20 }}>

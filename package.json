@@ -11,7 +11,10 @@
     "content:stats": "node scripts/pattern-stats.mjs",
     "content:audit": "node scripts/audit-pattern-content.mjs",
     "content:export": "node scripts/export-patterns-csv.mjs",
-    "content:slug": "node scripts/slugify.mjs"
+    "content:slug": "node scripts/slugify.mjs",
+    "qa:routes": "node scripts/smoke-routes.mjs",
+    "qa:sitemap": "node scripts/validate-sitemap-source.mjs",
+    "qa": "npm run validate:content && npm run content:audit && npm run qa:routes && npm run qa:sitemap"
   },
   "dependencies": {
     "next": "16.0.7",

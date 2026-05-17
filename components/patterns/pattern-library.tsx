@@ -68,7 +68,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
         const matchesAccess =
           access === allValue ||
           (access === "Free" && !pattern.isPremium) ||
-          (access === "Premium" && pattern.isPremium);
+          (access === "Premium preview" && pattern.isPremium);
         const matchesTag = tag === allValue || pattern.tags.includes(tag);
 
         return (
@@ -127,7 +127,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
       </div>
 
       <div className="badge-row" aria-label="Popular searches">
-        {["Patch SharePoint", "Delegation", "Dataverse", "Approvals", "DLP", "Adaptive Cards"].map((item) => (
+        {["Patch SharePoint", "People picker", "Choice field", "Delegation", "Trigger conditions", "Approvals", "Dataverse security", "SharePoint schema", "Adaptive Cards", "ALM"].map((item) => (
           <button className="chip-button" key={item} onClick={() => setQuery(item)} type="button">
             {item}
           </button>
@@ -147,7 +147,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
             <input
               id="pattern-search"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Try patch, delegation, Dataverse, DLP, approvals..."
+              placeholder="Try patch, people picker, trigger condition, Dataverse security, ALM..."
               type="search"
               value={query}
             />
@@ -173,7 +173,7 @@ export function PatternLibrary({ patterns }: PatternLibraryProps) {
           <SelectField
             label="Access"
             onChange={setAccess}
-            options={["Free", "Premium"]}
+            options={["Free", "Premium preview"]}
             value={access}
           />
           <SelectField label="Tag" onChange={setTag} options={tags} value={tag} />

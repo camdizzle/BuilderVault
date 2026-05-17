@@ -518,3 +518,61 @@ button {
 .tool-panel .stat-tile p {
   font-size: 0.95rem;
 }
+.pattern-detector-panel {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.pattern-detection-card {
+  background: #f3f6f2;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.pattern-detection-card p {
+  color: #415049;
+  line-height: 1.55;
+  margin: 0;
+}
+.formula-explainer-panel {
+  background: #fffdf7;
+  border: 1px solid #ead9a8;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.formula-steps {
+  color: #415049;
+  display: grid;
+  gap: 10px;
+  line-height: 1.65;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.footer-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(240px, 1.3fr) repeat(4, minmax(120px, 0.7fr));
+}
+
+@media (max-width: 920px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+}

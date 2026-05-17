@@ -12,6 +12,12 @@ export default function HomePage() {
   const stats = getPatternStats();
   const collections = getSuggestedCollections().slice(0, 3);
   const resources = [cookbooks[0], cookbooks[2], standards[6], cheatSheets[0], tools[1], tools[6]];
+  const rolePaths = [
+    { href: "/power-apps/patch", label: "Canvas app maker", text: "Patch, forms, galleries, validation, and Power Fx cleanup." },
+    { href: "/power-automate/trigger-conditions", label: "Flow builder", text: "Trigger conditions, approvals, expressions, error handling, and Teams cards." },
+    { href: "/sharepoint/list-schemas", label: "SharePoint app builder", text: "List schemas, internal names, views, indexes, and Power Apps backends." },
+    { href: "/dataverse/security-roles", label: "Dataverse developer", text: "Table design, relationships, security roles, and model-driven access." }
+  ];
 
   return (
     <>
@@ -62,6 +68,20 @@ export default function HomePage() {
             <Metric label="Free examples" value={stats.freePatterns} />
             <Metric label="Resource guides" value={cookbooks.length + standards.length + cheatSheets.length + tools.length} />
             <Metric label="Core categories" value={stats.categories} />
+          </div>
+        </div>
+      </section>
+
+
+      <section style={{ padding: "34px 0" }}>
+        <div className="container" style={{ display: "grid", gap: 24 }}>
+          <div style={{ maxWidth: 820 }}>
+            <div className="eyebrow">Start by role</div>
+            <h2 className="section-title">Open the path closest to your build.</h2>
+            <p className="lead">Each path links to focused examples, standards, tools, and patterns instead of making you hunt through the whole library.</p>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            {rolePaths.map((path) => <PathLink href={path.href} key={path.href} label={path.label} text={path.text} />)}
           </div>
         </div>
       </section>

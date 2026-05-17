@@ -13,13 +13,17 @@ export const metadata: Metadata = {
   },
   description:
     "Reusable Power Platform patterns for Power Apps, Power Automate, SharePoint, Dataverse, ALM, and Microsoft 365 builders.",
+  icons: {
+    icon: "/icon.svg"
+  },
   openGraph: {
     description:
       "Copy-ready Power Platform implementation patterns for business app builders, consultants, and internal automation teams.",
     siteName: "BuilderVault",
     title: "BuilderVault",
     type: "website",
-    url: siteUrl
+    url: siteUrl,
+    images: ["/og-image.svg"]
   }
 };
 

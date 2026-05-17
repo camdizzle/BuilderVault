@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export function SiteHeader() {
   return (
@@ -51,11 +51,8 @@ export function SiteHeader() {
           <Link href="/patterns">Patterns</Link>
           <Link href="/resources">Resources</Link>
           <Link href="/examples">Examples</Link>
-          <Link href="/cookbooks">Cookbooks</Link>
           <Link href="/tools">Tools</Link>
-          <Link className="button secondary" href="/pricing" style={{ minHeight: 38, padding: "0 14px" }}>
-            Pricing
-          </Link>
+          <Link href="/about">About</Link>
         </nav>
       </div>
     </header>
