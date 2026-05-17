@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
-import { getPmoStageBySlug, pmoLifecycleStages } from "@/lib/pmo-toolkit";
+import { getPmoDeepDiveBySlug, getPmoStageBySlug, pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
 export const metadata = {
   title: "PMO Blueprint | BuilderVault",
@@ -25,6 +25,7 @@ export function generateStaticParams() {
 export default async function PmoStagePage({ params }: PmoStagePageProps) {
   const { slug } = await params;
   const stage = getPmoStageBySlug(slug);
+  const deepDive = getPmoDeepDiveBySlug(slug);
 
   if (!stage) {
     notFound();
@@ -89,6 +90,20 @@ export default async function PmoStagePage({ params }: PmoStagePageProps) {
             <DetailSection title="Governance notes">
               <BulletList items={stage.governanceNotes} />
             </DetailSection>
+
+            {deepDive ? (
+              <DetailSection title="Next layer down: implementation details">
+                <div style={{ display: "grid", gap: 18 }}>
+                  <DeepDiveBlock title="Recommended fields" items={deepDive.schemaFields} />
+                  <DeepDiveBlock title="Screens to build" items={deepDive.screens} />
+                  <DeepDiveBlock title="Status model" items={deepDive.statusModel} />
+                  <DeepDiveBlock title="Permissions" items={deepDive.permissionModel} />
+                  <DeepDiveBlock title="Workflow logic" items={deepDive.workflowDetails} />
+                  <DeepDiveBlock title="Power BI measures and calculations" items={deepDive.powerBiMeasures} />
+                  <DeepDiveBlock title="MVP build sequence" items={deepDive.mvpBuildSteps} />
+                </div>
+              </DetailSection>
+            ) : null}
           </main>
 
           <aside style={{ alignSelf: "start", display: "grid", gap: 18 }}>
@@ -108,6 +123,17 @@ export default async function PmoStagePage({ params }: PmoStagePageProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+function DeepDiveBlock({ items, title }: { items: string[]; title: string }) {
+  return (
+    <article className="surface" style={{ borderRadius: 10, display: "grid", gap: 10, padding: 18 }}>
+      <h3 style={{ fontSize: "1.05rem", margin: 0 }}>{title}</h3>
+      <ul style={{ color: "#415049", display: "grid", gap: 10, lineHeight: 1.6, margin: 0, paddingLeft: 18 }}>
+        {items.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </article>
   );
 }
 
