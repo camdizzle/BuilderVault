@@ -492,3 +492,19 @@ button {
     justify-content: flex-start;
   }
 }
+
+
+.tool-panel {
+  background: #f7fbf9;
+  border: 1px solid #cfe3da;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.tool-panel .field span {
+  color: #25342e;
+  font-size: 0.85rem;
+  font-weight: 800;
+}

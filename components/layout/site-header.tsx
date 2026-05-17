@@ -50,6 +50,7 @@ export function SiteHeader() {
         <nav aria-label="Main navigation" className="compact-nav-group">
           <Link href="/patterns">Patterns</Link>
           <Link href="/resources">Resources</Link>
+          <Link href="/examples">Examples</Link>
           <Link href="/cookbooks">Cookbooks</Link>
           <Link href="/tools">Tools</Link>
           <Link className="button secondary" href="/pricing" style={{ minHeight: 38, padding: "0 14px" }}>

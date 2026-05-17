@@ -4,6 +4,7 @@ import { getAllPatterns } from "@/lib/patterns/patterns";
 import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl } from "@/lib/site";
 import { allResources, resourceGroups } from "@/lib/resources";
+import { exampleGuides } from "@/lib/example-guides";
 
 const defaultLastModified = new Date("2026-05-14");
 
@@ -36,6 +37,7 @@ const staticRoutes: Array<{
   { route: "/alm", changeFrequency: "weekly", priority: 0.84 },
   { route: "/collections", changeFrequency: "weekly", priority: 0.8 },
   { route: "/resources", changeFrequency: "weekly", priority: 0.82 },
+  { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
   { route: "/about", changeFrequency: "monthly", priority: 0.45 },
   { route: "/contact", changeFrequency: "monthly", priority: 0.4 },
@@ -57,6 +59,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: defaultLastModified,
       changeFrequency,
       priority
+    })),
+    ...exampleGuides.map((guide) => ({
+      url: absoluteUrl("/examples/" + guide.slug),
+      lastModified: defaultLastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.78
     })),
     ...allResources.map((resource) => ({
       url: absoluteUrl(resource.path),

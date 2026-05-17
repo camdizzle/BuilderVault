@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import type { ResourceItem } from "@/lib/resources";
 
@@ -16,7 +17,7 @@ const parentLabelByKind = {
   tool: "Free tools"
 };
 
-export function ResourceDetailPage({ resource }: { resource: ResourceItem }) {
+export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
   return (
     <article style={{ padding: "54px 0" }}>
       <div className="container" style={{ display: "grid", gap: 30 }}>
@@ -49,6 +50,8 @@ export function ResourceDetailPage({ resource }: { resource: ResourceItem }) {
                 {resource.summaryBullets.map((item) => <li key={item}>{item}</li>)}
               </ul>
             </section>
+            {children}
+
             <section style={{ display: "grid", gap: 18 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Examples</h2>
               {resource.examples.map((example) => (

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ResourceDetailPage } from "@/components/resources/resource-detail-page";
+import { ToolWidget } from "@/components/resources/tool-widget";
 import { tools, getResourceBySlug } from "@/lib/resources";
 
 export function generateStaticParams() {
@@ -36,5 +37,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     notFound();
   }
 
-  return <ResourceDetailPage resource={resource} />;
+  return (
+    <ResourceDetailPage resource={resource}>
+      <ToolWidget slug={resource.slug} />
+    </ResourceDetailPage>
+  );
 }
