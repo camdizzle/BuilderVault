@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { pmoLifecycleStages, pmoToolkitSummary } from "@/lib/pmo-toolkit";
+import { pmoLifecycleStages, pmoMasterRoadmapDownload, pmoTemplateDownloads, pmoToolkitSummary } from "@/lib/pmo-toolkit";
 
 export const metadata = {
   title: "Build Your Own PMO System | BuilderVault",
@@ -38,6 +38,55 @@ export default function PmoToolkitPage() {
             <p className="lead" style={{ margin: 0 }}>
               The practical path is to build a connected set of small tools: intake, charter approval, stage gates, change control, risks and issues, communications, and Power BI reporting. Each stage below includes the business problem, data model, portals, automations, and reporting pages to build.
             </p>
+            <Link className="button" href="/pmo/roadmap" style={{ justifySelf: "start" }}>
+              Open 30/60/90 roadmap
+            </Link>
+          </div>
+        </section>
+        <section style={{ display: "grid", gap: 18 }}>
+          <div>
+            <div className="eyebrow">Architecture maps</div>
+            <h2 className="section-title">How the build hangs together.</h2>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+            <ArchitectureCard title="PMO data model" steps={["Intake", "Charter", "Project", "Gate", "RAID", "Status", "Power BI"]} />
+            <ArchitectureCard title="Automation flow" steps={["Submit", "Validate", "Route", "Approve", "Notify", "Log", "Report"]} />
+            <ArchitectureCard title="Reporting model" steps={["Operational records", "Curated views", "Measures", "Executive pages", "Digest"]} />
+          </div>
+        </section>
+
+        <section style={{ display: "grid", gap: 18 }}>
+          <div>
+            <div className="eyebrow">Starter templates</div>
+            <h2 className="section-title">Downloadable build starters.</h2>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            <a className="card" download href={pmoMasterRoadmapDownload.href} style={{ display: "grid", gap: 10, padding: 20 }}>
+              <span className="badge free" style={{ justifySelf: "start" }}>Roadmap</span>
+              <strong>{pmoMasterRoadmapDownload.label}</strong>
+              <span style={{ color: "#415049", lineHeight: 1.55 }}>{pmoMasterRoadmapDownload.description}</span>
+            </a>
+            {pmoTemplateDownloads.map((download) => (
+              <a className="card" href={download.href} key={download.href} style={{ display: "grid", gap: 10, padding: 20 }}>
+                <strong>{download.label}</strong>
+                <span style={{ color: "#415049", lineHeight: 1.55 }}>{download.description}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section style={{ display: "grid", gap: 18 }}>
+          <div>
+            <div className="eyebrow">Supporting playbooks</div>
+            <h2 className="section-title">Planning assets for the hidden PMO offer.</h2>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <SupportCard href="/pmo/compare" title="Module comparison" text="Compare build triggers, complexity, dependencies, first release scope, and success signals." />
+            <SupportCard href="/pmo/starter-files" title="Starter file index" text="Find every roadmap, implementation guide, CSV starter, and markdown template in one place." />
+            <SupportCard href="/pmo/glossary" title="PMO glossary" text="Define the terms that become tables, screens, workflows, reports, and operating cadence." />
+            <SupportCard href="/pmo/demo" title="Demo narrative" text="Walk through how demand becomes a governed project with gates, RAID, reporting, and decisions." />
+            <SupportCard href="/pmo/offer" title="Offer outline" text="Private positioning notes for a future paid PMO build-your-own system offer." />
+            <SupportCard href="/pmo/mockups" title="Portal mockups" text="Static visual references for intake, charter, gate review, RAID, and executive dashboard screens." />
           </div>
         </section>
 
@@ -52,7 +101,10 @@ export default function PmoToolkitPage() {
                 <div className="eyebrow">PMO blueprint</div>
                 <h3 style={{ fontSize: "1.25rem", lineHeight: 1.2, margin: 0 }}>{stage.title}</h3>
                 <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>{stage.summary}</p>
-                <strong style={{ color: "var(--accent-strong)" }}>Open blueprint</strong>
+                <span className="badge-row">
+                  <strong style={{ color: "var(--accent-strong)" }}>Open blueprint</strong>
+                  <span className="badge">Package included</span>
+                </span>
               </Link>
             ))}
           </div>
@@ -77,3 +129,30 @@ export default function PmoToolkitPage() {
     </section>
   );
 }
+
+function ArchitectureCard({ steps, title }: { steps: string[]; title: string }) {
+  return (
+    <article className="card" style={{ display: "grid", gap: 14, padding: 20 }}>
+      <h3 style={{ fontSize: "1.15rem", margin: 0 }}>{title}</h3>
+      <div style={{ display: "grid", gap: 10 }}>
+        {steps.map((step, index) => (
+          <div key={step} style={{ alignItems: "center", display: "grid", gap: 10, gridTemplateColumns: "32px minmax(0, 1fr)" }}>
+            <span className="badge free" style={{ justifySelf: "start" }}>{index + 1}</span>
+            <span style={{ color: "#415049", lineHeight: 1.55 }}>{step}</span>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+
+function SupportCard({ href, text, title }: { href: string; text: string; title: string }) {
+  return (
+    <Link className="card" href={href} style={{ display: "grid", gap: 10, padding: 20 }}>
+      <strong>{title}</strong>
+      <span style={{ color: "#415049", lineHeight: 1.55 }}>{text}</span>
+    </Link>
+  );
+}
+

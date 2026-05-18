@@ -1,0 +1,2 @@
+﻿Title,Request Type,Business Unit,Sponsor,Requested By,Submitted Date,Current Status,Desired Start Date,Requested Due Date,Strategic Alignment,Problem Statement,Expected Benefit,Estimated Cost,Estimated Effort,Complexity,Risk Level,Priority Score,Triage Owner,Decision,Decision Date,Decision Reason,Next Stage
+Example automation request,Automation,Operations,sponsor@contoso.com,requester@contoso.com,2026-05-01,Submitted,2026-06-01,2026-09-30,High,Manual handoff process causes delays,50000,10000,Medium,Low,,pmo.triage@contoso.com,,,,

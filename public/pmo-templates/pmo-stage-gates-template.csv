@@ -1,0 +1,3 @@
+﻿Project,Stage,Criterion,Required Evidence Type,Owner Role,Required,Review Status,Approver,Decision,Decision Date,Exception Reason,Evidence URL
+Example Intake Automation,Planning,Approved charter,Document link,Project Manager,Yes,Draft,sponsor@contoso.com,,,,
+Example Intake Automation,Build,Test plan approved,Document link,Project Manager,Yes,Draft,pmo@contoso.com,,,,

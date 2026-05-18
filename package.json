@@ -14,7 +14,8 @@
     "content:slug": "node scripts/slugify.mjs",
     "qa:routes": "node scripts/smoke-routes.mjs",
     "qa:sitemap": "node scripts/validate-sitemap-source.mjs",
-    "qa": "npm run validate:content && npm run content:audit && npm run qa:routes && npm run qa:sitemap"
+    "qa": "npm run validate:content && npm run content:audit && npm run qa:routes && npm run qa:sitemap",
+    "content:pmo-guides": "node scripts/generate-pmo-guides.mjs"
   },
   "dependencies": {
     "next": "16.0.7",

@@ -1,0 +1,3 @@
+﻿Item Type,Project,Title,Category,Description,Severity,Probability,Impact Score,Owner,Due Date,Status,Escalation Needed,Decision Needed,Resolution Or Mitigation,Closed Date
+Risk,Example Intake Automation,Low adoption,Adoption,Users may keep emailing requests,High,3,4,owner@contoso.com,2026-06-15,Open,Yes,No,Create launch communications and office hours,
+Change,Example Intake Automation,Add approval matrix,Scope,Department-specific approval rules requested,Medium,,3,pm@contoso.com,2026-06-20,Submitted,No,Yes,Review impact with sponsor,

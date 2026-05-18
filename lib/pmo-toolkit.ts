@@ -25,6 +25,7 @@ export type PmoDeepDive = {
   statusModel: string[];
   permissionModel: string[];
   workflowDetails: string[];
+  workflowMap: string[];
   powerBiMeasures: string[];
   mvpBuildSteps: string[];
 };
@@ -184,6 +185,7 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
     statusModel: ["Draft", "Submitted", "Clarification Requested", "Ready for Triage", "Approved for Charter", "Deferred", "Rejected"],
     permissionModel: ["Requesters create and view their own submissions.", "Department sponsors view requests tied to their business unit.", "PMO triage members edit scores, owners, status, and decision fields.", "Executives view all intake reporting without edit rights."],
     workflowDetails: ["On submit, validate required fields, stamp submitted date, and notify the triage team.", "When clarification is requested, email the requester and create a follow-up task.", "When scoring is complete, calculate weighted score and recommend approve, defer, or reject.", "When approved for charter, create a draft charter linked to the intake request."],
+    workflowMap: ["Requester drafts demand","Submit intake request","PMO validates completeness","Clarification loop if needed","Weighted triage scoring","Approve, defer, or reject","Create charter record when approved"],
     powerBiMeasures: ["Intake Count = COUNTROWS('Intake Requests')", "Average Triage Days = AVERAGEX('Intake Requests', DATEDIFF('Intake Requests'[Submitted Date], 'Intake Requests'[Decision Date], DAY))", "Aging Requests = COUNTROWS(FILTER('Intake Requests', ISBLANK('Intake Requests'[Decision Date]) && 'Intake Requests'[Submitted Date] < TODAY() - 7))", "Approval Rate = DIVIDE([Approved Requests], [Decided Requests])"],
     mvpBuildSteps: ["Start with SharePoint for small PMOs or Dataverse when security and relationships matter.", "Build the intake form with only fields needed for triage.", "Add a PMO-only scoring and decision screen.", "Automate submission, clarification, and decision notifications.", "Create a Power BI demand funnel and aging page."]
   },
@@ -193,6 +195,7 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
     statusModel: ["Draft", "PMO Review", "Sponsor Review", "Revision Requested", "Approved", "Cancelled"],
     permissionModel: ["Charter authors edit drafts and revisions.", "Sponsors approve only charters assigned to them.", "PMO reviewers edit quality fields, status, and approval routing.", "Executives view approved and pending charters across the portfolio."],
     workflowDetails: ["When intake moves to charter, create the charter shell and copy sponsor, department, request type, and business need.", "On PMO review, check scope, objectives, success measures, and sponsor.", "On PMO approval, start sponsor approval and lock core fields.", "On sponsor approval, create the project record and initial gate checklist."],
+    workflowMap: ["Draft charter from approved intake","PMO completeness review","Revision loop if incomplete","Sponsor approval request","Sponsor approves or requests revision","Create project record","Open initial lifecycle stage"],
     powerBiMeasures: ["Charters Awaiting Sponsor = COUNTROWS(FILTER('Project Charters', 'Project Charters'[Charter Status] = \"Sponsor Review\"))", "Average Approval Days = AVERAGEX('Project Charters', DATEDIFF('Project Charters'[Submitted Date], 'Project Charters'[Approval Date], DAY))", "Approved Estimated Value = SUM('Project Charters'[Estimated Benefit])", "Revision Rate = DIVIDE([Revision Requested Count], [Submitted Charter Count])"],
     mvpBuildSteps: ["Create a charter table linked to intake requests.", "Build draft/edit screens for scope, value, risks, and stakeholders.", "Add PMO completeness review before sponsor approval.", "Add sponsor approval with comments and revision handling.", "Generate a simple charter summary view."]
   },
@@ -202,6 +205,7 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
     statusModel: ["Stage In Progress", "Gate Prep", "Gate Submitted", "Gate Approved", "Gate Approved with Exception", "Gate Rejected", "Stage Changed"],
     permissionModel: ["Project managers update evidence and submit gate reviews.", "Gate approvers decide assigned gate reviews but do not edit submitted evidence.", "PMO admins maintain gate criteria and exception rules.", "Executives view stage health and exception trends."],
     workflowDetails: ["When a project enters a stage, create gate checklist rows from the criteria template.", "When required evidence is complete, enable submit-for-gate-review.", "On gate submission, route approval based on project size, risk, or stage.", "On approval, update current stage, lock prior evidence, and notify the project team."],
+    workflowMap: ["Project enters lifecycle stage","Generate stage criteria checklist","Project team attaches evidence","Submit gate review","Approver decides gate","Record exception if needed","Move project to next stage"],
     powerBiMeasures: ["Projects by Stage = COUNTROWS('Projects') grouped by Current Stage", "Average Stage Age = AVERAGEX('Projects', DATEDIFF('Projects'[Stage Changed Date], TODAY(), DAY))", "Gate Exception Rate = DIVIDE([Gate Approved With Exception], [Gate Decisions])", "Overdue Gate Count = COUNTROWS(FILTER('Gate Reviews', 'Gate Reviews'[Due Date] < TODAY() && 'Gate Reviews'[Review Status] <> \"Approved\"))"],
     mvpBuildSteps: ["Define five to seven lifecycle stages and no more than ten criteria per stage.", "Create template criteria and generated project checklist rows.", "Build the project lifecycle dashboard and gate checklist screen.", "Add gate approval and stage-change automation.", "Publish stage aging, gate status, and exception reporting."]
   },
@@ -211,6 +215,7 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
     statusModel: ["Draft", "Submitted", "Under Review", "Action Required", "Approved or Accepted", "Rejected or Closed", "Escalated"],
     permissionModel: ["Project managers create and update controls for their projects.", "Risk and issue owners update mitigation, resolution, and due dates assigned to them.", "Change approvers approve or reject assigned changes.", "Executives view escalated items and decision requests."],
     workflowDetails: ["When a change is submitted, calculate impact level and route approval by threshold.", "When a high-exposure risk is created, notify the PMO lead and sponsor.", "Send overdue mitigation reminders before and after due dates.", "When a change is approved, remind the project manager to update baselines."],
+    workflowMap: ["Team submits change, risk, issue, or decision","Classify severity and impact","Assign owner and due date","Route approval or escalation if needed","Track mitigation or decision action","Confirm closure evidence","Report open exposure and aging"],
     powerBiMeasures: ["Open Risk Exposure = SUMX(FILTER('Risks', 'Risks'[Status] <> \"Closed\"), 'Risks'[Probability] * 'Risks'[Impact Score])", "Overdue Actions = COUNTROWS(FILTER('Actions', 'Actions'[Due Date] < TODAY() && 'Actions'[Status] <> \"Closed\"))", "Average Issue Age = AVERAGEX(FILTER('Issues', 'Issues'[Status] <> \"Closed\"), DATEDIFF('Issues'[Created Date], TODAY(), DAY))", "Approved Change Impact = SUM('Change Requests'[Budget Impact])"],
     mvpBuildSteps: ["Create Change Requests, Risks, Issues, Actions, and Decisions tables linked to Projects.", "Build owner queues first so the tool changes behavior.", "Add threshold-based escalation for high-severity items.", "Add change approval with impact assessment and baseline reminder.", "Create Power BI RAID and change-impact pages."]
   },
@@ -220,6 +225,7 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
     statusModel: ["Not Started", "Draft", "Submitted", "Needs Revision", "Published", "Missed"],
     permissionModel: ["Project managers create and edit their status updates.", "PMO reviewers request revisions and publish updates.", "Sponsors view status, decisions needed, and benefits for their projects.", "Executives view portfolio reporting and decision requests."],
     workflowDetails: ["Create status update shells at the start of each reporting period.", "Send reminders before due dates and missed-update escalations after deadlines.", "When an update is published, refresh Power BI and notify stakeholders.", "If decisions are needed, create decision request records linked to the status update."],
+    workflowMap: ["Create reporting period shell","Project manager submits update","PMO reviews and requests revisions if needed","Publish portfolio status","Refresh Power BI dataset","Send stakeholder digest","Snapshot month-end measures"],
     powerBiMeasures: ["Current Red Projects = COUNTROWS(FILTER('Status Updates', 'Status Updates'[Overall Health] = \"Red\" && 'Status Updates'[Is Current] = TRUE()))", "Milestone Variance Days = DATEDIFF('Milestones'[Baseline Date], 'Milestones'[Forecast Date], DAY)", "Missing Status Count = COUNTROWS(FILTER('Status Updates', 'Status Updates'[Status] = \"Missed\"))", "Benefits Realization % = DIVIDE(SUM('Benefits Tracking'[Current Value]), SUM('Benefits Tracking'[Target]))"],
     mvpBuildSteps: ["Define standard health ratings and weekly status questions.", "Build status update capture and PMO review screens.", "Create milestone and benefits tracking tables linked to projects.", "Build executive Power BI pages for health, milestones, decisions, and benefits.", "Automate reminders, escalations, dataset refresh, and stakeholder digest emails."]
   }
@@ -228,3 +234,1209 @@ export const pmoDeepDives: Record<string, PmoDeepDive> = {
 export function getPmoDeepDiveBySlug(slug: string) {
   return pmoDeepDives[slug];
 }
+
+export type PmoColumnSpec = {
+  name: string;
+  type: string;
+  required: boolean;
+  notes: string;
+};
+
+export type PmoTableSpec = {
+  name: string;
+  platform: "SharePoint" | "Dataverse" | "Either";
+  purpose: string;
+  columns: PmoColumnSpec[];
+  relationships: string[];
+  indexes: string[];
+};
+
+export type PmoDownload = {
+  href: string;
+  label: string;
+  description: string;
+};
+
+export const pmoMasterRoadmapDownload: PmoDownload = {
+  href: "/pmo-guides/pmo-30-60-90-master-roadmap.md",
+  label: "PMO 30/60/90 master roadmap",
+  description: "Downloadable rollout guide connecting intake, charters, gates, RAID, change control, reporting, cadence, owners, and exit criteria."
+};
+
+export const pmoTemplateDownloads: PmoDownload[] = [
+  { href: "/pmo-templates/pmo-intake-requests-template.csv", label: "Intake requests CSV", description: "Starter columns for demand intake, scoring, ownership, and triage decisions." },
+  { href: "/pmo-templates/pmo-project-charters-template.csv", label: "Project charters CSV", description: "Starter charter fields for scope, sponsors, success measures, approvals, and assumptions." },
+  { href: "/pmo-templates/pmo-stage-gates-template.csv", label: "Stage gates CSV", description: "Starter criteria and review fields for stage movement and gate decisions." },
+  { href: "/pmo-templates/pmo-raid-change-control-template.csv", label: "RAID and change control CSV", description: "Starter fields for risks, issues, actions, decisions, and change requests." },
+  { href: "/pmo-templates/pmo-status-reporting-template.csv", label: "Status reporting CSV", description: "Starter fields for weekly project health, milestones, benefits, and decision requests." },
+  { href: "/pmo-templates/pmo-build-roadmap.md", label: "PMO build roadmap", description: "A plain-language build order for rolling out the PMO system one tool at a time." }
+];
+
+export const pmoImplementationGuideDownloads: Record<string, PmoDownload> = {
+  "intake-and-triage": { href: "/pmo-guides/intake-and-triage-implementation-guide.md", label: "Intake and triage build guide", description: "Downloadable implementation guide with data model, screen blueprint, formulas, flows, and rollout checklist." },
+  "charter-and-approval": { href: "/pmo-guides/charter-and-approval-implementation-guide.md", label: "Charter and approval build guide", description: "Downloadable implementation guide for charter drafting, sponsor approval, revision loops, and reporting." },
+  "stage-gates": { href: "/pmo-guides/stage-gates-implementation-guide.md", label: "Stage gates build guide", description: "Downloadable implementation guide for lifecycle stages, gate evidence, approvals, and exception tracking." },
+  "change-risk-issue-control": { href: "/pmo-guides/change-risk-issue-control-implementation-guide.md", label: "Change, risk, and issue build guide", description: "Downloadable implementation guide for RAID, change approvals, escalations, and decision control." },
+  "communications-and-reporting": { href: "/pmo-guides/communications-and-reporting-implementation-guide.md", label: "Communications and reporting build guide", description: "Downloadable implementation guide for status capture, stakeholder communications, and Power BI reporting." }
+};
+
+export function getPmoImplementationGuideBySlug(slug: string) {
+  return pmoImplementationGuideDownloads[slug];
+}
+
+export const pmoTableSpecs: Record<string, PmoTableSpec[]> = {
+  "intake-and-triage": [
+    {
+      name: "Intake Requests",
+      platform: "Either",
+      purpose: "Primary demand record submitted by business users and triaged by the PMO.",
+      columns: [
+        { name: "Title", type: "Single line text", required: true, notes: "Short request name used in queues and reports." },
+        { name: "Request Type", type: "Choice", required: true, notes: "Project, enhancement, automation, report, process improvement, support." },
+        { name: "Business Unit", type: "Choice or lookup", required: true, notes: "Use a lookup when departments need owners, sponsors, or reporting attributes." },
+        { name: "Sponsor", type: "Person or lookup to Contact/User", required: true, notes: "The accountable business sponsor." },
+        { name: "Problem Statement", type: "Multiple lines text", required: true, notes: "Capture the business pain in plain language." },
+        { name: "Expected Benefit", type: "Currency or number", required: false, notes: "Use text early if benefits are qualitative." },
+        { name: "Complexity", type: "Choice", required: true, notes: "Low, Medium, High. Feed scoring and routing." },
+        { name: "Priority Score", type: "Number", required: false, notes: "Calculated from weighted criteria; avoid manual entry when possible." },
+        { name: "Current Status", type: "Choice", required: true, notes: "Draft, Submitted, Clarification Requested, Ready for Triage, Approved for Charter, Deferred, Rejected." },
+        { name: "Decision Reason", type: "Multiple lines text", required: false, notes: "Required when rejecting or deferring." }
+      ],
+      relationships: ["One Intake Request can create one Project Charter.", "Many Triage Decisions can relate to one Intake Request.", "Many Communication Log rows can relate to one Intake Request."],
+      indexes: ["Current Status", "Business Unit", "Sponsor", "Submitted Date", "Triage Owner", "Decision Date"]
+    },
+    {
+      name: "Scoring Criteria",
+      platform: "Either",
+      purpose: "Configurable scoring rubric so the PMO can change weights without editing the app.",
+      columns: [
+        { name: "Criterion Name", type: "Single line text", required: true, notes: "Strategic alignment, benefit, urgency, risk, complexity." },
+        { name: "Weight", type: "Number", required: true, notes: "Use whole numbers that total 100 across active criteria." },
+        { name: "Score Guidance", type: "Multiple lines text", required: true, notes: "Explains what low, medium, and high scores mean." },
+        { name: "Active", type: "Yes/No", required: true, notes: "Deactivate instead of deleting to preserve history." }
+      ],
+      relationships: ["Scoring Criteria is referenced by triage scoring controls."],
+      indexes: ["Active", "Sort Order"]
+    }
+  ],
+  "charter-and-approval": [
+    {
+      name: "Project Charters",
+      platform: "Either",
+      purpose: "Formal definition of approved work before planning begins.",
+      columns: [
+        { name: "Project Name", type: "Single line text", required: true, notes: "Use consistent naming because it becomes the reporting label." },
+        { name: "Linked Intake Request", type: "Lookup", required: false, notes: "Connects the charter to original demand." },
+        { name: "Sponsor", type: "Person or lookup", required: true, notes: "Approver and accountable business owner." },
+        { name: "Project Manager", type: "Person", required: true, notes: "Delivery owner for planning and execution." },
+        { name: "Objectives", type: "Multiple lines text", required: true, notes: "Business outcomes, not just deliverables." },
+        { name: "In Scope", type: "Multiple lines text", required: true, notes: "What the project will deliver." },
+        { name: "Out of Scope", type: "Multiple lines text", required: true, notes: "Prevents expectation drift." },
+        { name: "Estimated Budget", type: "Currency", required: false, notes: "Use range if exact estimate is not available." },
+        { name: "Charter Status", type: "Choice", required: true, notes: "Draft, PMO Review, Sponsor Review, Revision Requested, Approved, Cancelled." },
+        { name: "Approval Date", type: "Date", required: false, notes: "Stamped by workflow." }
+      ],
+      relationships: ["One Project Charter creates one Project.", "Many Stakeholders can relate to one Charter.", "Many Approval History rows can relate to one Charter."],
+      indexes: ["Charter Status", "Sponsor", "Project Manager", "Approval Date"]
+    },
+    {
+      name: "Success Measures",
+      platform: "Either",
+      purpose: "Defines how the PMO will know whether the project created value.",
+      columns: [
+        { name: "Metric", type: "Single line text", required: true, notes: "Cycle time, cost reduction, adoption, compliance, satisfaction." },
+        { name: "Baseline", type: "Number or text", required: false, notes: "Current-state value before project." },
+        { name: "Target", type: "Number or text", required: true, notes: "Desired future-state value." },
+        { name: "Measurement Method", type: "Multiple lines text", required: true, notes: "Where the number comes from and how often it is reviewed." }
+      ],
+      relationships: ["Many Success Measures relate to one Project Charter."],
+      indexes: ["Charter", "Review Date"]
+    }
+  ],
+  "stage-gates": [
+    {
+      name: "Projects",
+      platform: "Either",
+      purpose: "Portfolio record that moves through lifecycle stages and connects to controls, status, and reporting.",
+      columns: [
+        { name: "Project Name", type: "Single line text", required: true, notes: "Primary reporting label." },
+        { name: "Sponsor", type: "Person or lookup", required: true, notes: "Executive owner." },
+        { name: "Project Manager", type: "Person", required: true, notes: "Delivery owner." },
+        { name: "Current Stage", type: "Choice or lookup", required: true, notes: "Initiation, Planning, Build, Test, Launch, Closeout, Benefits Review." },
+        { name: "Overall Health", type: "Choice", required: true, notes: "Green, Yellow, Red, Not Rated." },
+        { name: "Baseline Launch Date", type: "Date", required: false, notes: "Original approved launch date." },
+        { name: "Forecast Launch Date", type: "Date", required: false, notes: "Current expected launch date." }
+      ],
+      relationships: ["One Project has many Gate Reviews, Risks, Issues, Changes, Status Updates, and Milestones."],
+      indexes: ["Current Stage", "Sponsor", "Project Manager", "Overall Health", "Forecast Launch Date"]
+    },
+    {
+      name: "Gate Reviews",
+      platform: "Either",
+      purpose: "Approval record for moving a project from one stage to the next.",
+      columns: [
+        { name: "Project", type: "Lookup", required: true, notes: "Parent project." },
+        { name: "Stage", type: "Choice or lookup", required: true, notes: "Stage being reviewed." },
+        { name: "Review Status", type: "Choice", required: true, notes: "Draft, Submitted, Approved, Approved with Exception, Rejected." },
+        { name: "Approver", type: "Person", required: true, notes: "Decision maker for the gate." },
+        { name: "Exception Reason", type: "Multiple lines text", required: false, notes: "Required when approved with exception." }
+      ],
+      relationships: ["One Gate Review has many Evidence Links and Gate Decisions."],
+      indexes: ["Project", "Stage", "Review Status", "Approver", "Decision Date"]
+    }
+  ],
+  "change-risk-issue-control": [
+    {
+      name: "Change Requests",
+      platform: "Either",
+      purpose: "Controls scope, budget, schedule, and risk changes after charter approval.",
+      columns: [
+        { name: "Project", type: "Lookup", required: true, notes: "Project affected by the change." },
+        { name: "Change Type", type: "Choice", required: true, notes: "Scope, schedule, budget, resource, quality, compliance." },
+        { name: "Reason", type: "Multiple lines text", required: true, notes: "Why the change is needed." },
+        { name: "Scope Impact", type: "Choice", required: true, notes: "None, Low, Medium, High." },
+        { name: "Schedule Impact Days", type: "Number", required: false, notes: "Positive or negative variance." },
+        { name: "Budget Impact", type: "Currency", required: false, notes: "Estimated cost increase or decrease." },
+        { name: "Status", type: "Choice", required: true, notes: "Draft, Submitted, Under Review, Approved, Rejected, Closed." }
+      ],
+      relationships: ["Many Change Requests relate to one Project.", "Change approvals create Approval History records."],
+      indexes: ["Project", "Status", "Change Type", "Approver", "Decision Date"]
+    },
+    {
+      name: "Risks and Issues",
+      platform: "Either",
+      purpose: "Operational RAID control for project uncertainty and active blockers.",
+      columns: [
+        { name: "Item Type", type: "Choice", required: true, notes: "Risk or Issue." },
+        { name: "Project", type: "Lookup", required: true, notes: "Parent project." },
+        { name: "Severity", type: "Choice", required: true, notes: "Low, Medium, High, Critical." },
+        { name: "Probability", type: "Number", required: false, notes: "Use only for risks." },
+        { name: "Impact Score", type: "Number", required: true, notes: "1-5 scoring for heat maps." },
+        { name: "Owner", type: "Person", required: true, notes: "Accountable for mitigation or resolution." },
+        { name: "Due Date", type: "Date", required: true, notes: "Drives reminders and overdue reporting." },
+        { name: "Status", type: "Choice", required: true, notes: "Open, Monitoring, Escalated, Closed." }
+      ],
+      relationships: ["Many Risks and Issues relate to one Project.", "Actions and Decisions can link to a RAID item."],
+      indexes: ["Project", "Item Type", "Severity", "Owner", "Due Date", "Status"]
+    }
+  ],
+  "communications-and-reporting": [
+    {
+      name: "Status Updates",
+      platform: "Either",
+      purpose: "Weekly or monthly narrative and health record for each project.",
+      columns: [
+        { name: "Project", type: "Lookup", required: true, notes: "Parent project." },
+        { name: "Reporting Period", type: "Date or text", required: true, notes: "Week ending or month label." },
+        { name: "Overall Health", type: "Choice", required: true, notes: "Green, Yellow, Red." },
+        { name: "Scope Health", type: "Choice", required: true, notes: "Green, Yellow, Red." },
+        { name: "Schedule Health", type: "Choice", required: true, notes: "Green, Yellow, Red." },
+        { name: "Budget Health", type: "Choice", required: true, notes: "Green, Yellow, Red." },
+        { name: "Key Accomplishments", type: "Multiple lines text", required: true, notes: "What changed since last period." },
+        { name: "Next Steps", type: "Multiple lines text", required: true, notes: "What happens next." },
+        { name: "Decisions Needed", type: "Multiple lines text", required: false, notes: "Feeds decision request queue." },
+        { name: "Status", type: "Choice", required: true, notes: "Draft, Submitted, Needs Revision, Published, Missed." }
+      ],
+      relationships: ["Many Status Updates relate to one Project.", "Decision Requests can be generated from status updates."],
+      indexes: ["Project", "Reporting Period", "Overall Health", "Status", "Submitted Date"]
+    },
+    {
+      name: "Milestones",
+      platform: "Either",
+      purpose: "Tracks baseline, forecast, actual dates, and variance for portfolio reporting.",
+      columns: [
+        { name: "Project", type: "Lookup", required: true, notes: "Parent project." },
+        { name: "Milestone Name", type: "Single line text", required: true, notes: "Planning complete, build complete, UAT complete, launch." },
+        { name: "Baseline Date", type: "Date", required: true, notes: "Original approved date." },
+        { name: "Forecast Date", type: "Date", required: true, notes: "Current expected date." },
+        { name: "Actual Date", type: "Date", required: false, notes: "Set when complete." },
+        { name: "Status", type: "Choice", required: true, notes: "Not Started, On Track, At Risk, Late, Complete." }
+      ],
+      relationships: ["Many Milestones relate to one Project."],
+      indexes: ["Project", "Forecast Date", "Status"]
+    }
+  ]
+};
+
+export function getPmoTableSpecsBySlug(slug: string) {
+  return pmoTableSpecs[slug] ?? [];
+}
+
+export type PmoScreenBlueprint = {
+  name: string;
+  persona: string;
+  purpose: string;
+  layout: string[];
+  controls: string[];
+  formulas: string[];
+  dataSources: string[];
+};
+
+export type PmoSolutionComponentMap = {
+  solutionName: string;
+  publisherPrefix: string;
+  tables: string[];
+  choices: string[];
+  apps: string[];
+  flows: string[];
+  securityRoles: string[];
+  environmentVariables: string[];
+  dashboards: string[];
+};
+
+export const pmoScreenBlueprints: Record<string, PmoScreenBlueprint[]> = {
+  "intake-and-triage": [
+    {
+      name: "Request Intake Submit Screen",
+      persona: "Business requester",
+      purpose: "Capture a clean demand request without exposing PMO-only scoring fields.",
+      layout: ["Header with request type and save state", "Left column for business need and sponsor", "Right column for timing, benefit, complexity, and attachments", "Footer command bar with Save Draft and Submit"],
+      controls: ["frmIntakeRequest bound to Intake Requests", "cmbRequestType", "cmbBusinessUnit", "cmbSponsor", "txtProblemStatement", "txtExpectedBenefit", "dpDesiredStart", "attBusinessCase", "btnSaveDraft", "btnSubmit"],
+      formulas: ["btnSubmit.DisplayMode checks required fields and varWorking", "OnSuccess sets status to Submitted and navigates to confirmation", "Use IfError around SubmitForm or Patch to show clear failure messages"],
+      dataSources: ["Intake Requests", "Business Units", "Sponsors or Users", "Attachments"]
+    },
+    {
+      name: "PMO Triage Queue Screen",
+      persona: "PMO analyst",
+      purpose: "Work the intake backlog by owner, status, age, score, and business unit.",
+      layout: ["Filter rail for status, owner, business unit, aging", "Gallery of intake cards", "Selected request summary panel", "Action buttons for assign, clarify, score, approve, defer, reject"],
+      controls: ["galTriageQueue", "cmbStatusFilter", "cmbOwnerFilter", "txtSearch", "frmSelectedRequest", "btnRequestClarification", "btnMoveToScoring", "btnDecision"],
+      formulas: ["Gallery Items uses delegable status and StartsWith filters", "Age badge uses DateDiff(SubmittedDate, Today())", "Decision buttons require decision reason for defer/reject"],
+      dataSources: ["Intake Requests", "Triage Decisions", "Communication Log"]
+    },
+    {
+      name: "Triage Scoring Screen",
+      persona: "PMO analyst or review board",
+      purpose: "Score requests consistently and produce a recommendation.",
+      layout: ["Request context summary", "Repeating scoring criteria gallery", "Weighted score panel", "Recommendation and decision notes", "Submit decision command bar"],
+      controls: ["galScoringCriteria", "sldCriterionScore", "lblWeightedTotal", "cmbDecision", "txtDecisionReason", "btnSaveScore", "btnCreateCharter"],
+      formulas: ["Weighted score = Sum(criteria score * weight)", "Recommendation maps thresholds to approve/defer/reject", "Create charter button patches Project Charters and links intake request"],
+      dataSources: ["Scoring Criteria", "Intake Requests", "Triage Decisions", "Project Charters"]
+    }
+  ],
+  "charter-and-approval": [
+    {
+      name: "Charter Draft Screen",
+      persona: "Project manager or requester",
+      purpose: "Build the charter from an approved intake request with scope, objectives, risks, and value.",
+      layout: ["Charter progress tabs", "Business case section", "Scope and out-of-scope section", "Stakeholders subgrid", "Success measures subgrid"],
+      controls: ["frmProjectCharter", "txtObjectives", "txtInScope", "txtOutOfScope", "galStakeholders", "galSuccessMeasures", "btnSubmitForPmoReview"],
+      formulas: ["Submit disabled until objectives, scope, sponsor, and success measures exist", "Patch stakeholder child rows before status changes", "Notify author when PMO review starts"],
+      dataSources: ["Project Charters", "Stakeholders", "Success Measures", "Approval History"]
+    },
+    {
+      name: "PMO Charter Review Screen",
+      persona: "PMO reviewer",
+      purpose: "Validate charter quality before sponsor approval.",
+      layout: ["Read-only charter summary", "Completeness checklist", "Reviewer comments", "Request revision or send to sponsor actions"],
+      controls: ["frmCharterReadOnly", "galCompletenessChecklist", "txtReviewComments", "btnRequestRevision", "btnSendSponsorApproval"],
+      formulas: ["Checklist must be complete before sponsor approval", "Revision action sets status and sends comments", "Sponsor approval action starts approval flow"],
+      dataSources: ["Project Charters", "Approval History", "Communication Log"]
+    },
+    {
+      name: "Sponsor Approval Screen",
+      persona: "Business sponsor",
+      purpose: "Approve, reject, or request revisions with minimal friction.",
+      layout: ["Charter one-page summary", "Risk and investment highlights", "Approval decision panel", "Comments and attachments"],
+      controls: ["cntCharterSummary", "galSuccessMeasureSummary", "cmbSponsorDecision", "txtSponsorComments", "btnSubmitDecision"],
+      formulas: ["Approval creates Project record and initial lifecycle stage", "Revision reopens charter for author", "Reject requires rationale"],
+      dataSources: ["Project Charters", "Projects", "Approval History", "Lifecycle Stages"]
+    }
+  ],
+  "stage-gates": [
+    {
+      name: "Project Lifecycle Dashboard Screen",
+      persona: "Project manager and PMO lead",
+      purpose: "Show stage, gate readiness, missing evidence, and stage aging for a project.",
+      layout: ["Project header with health and stage", "Horizontal lifecycle tracker", "Gate readiness cards", "Open exceptions and actions", "Submit gate review button"],
+      controls: ["cmpLifecycleTracker", "galGateCriteria", "galMissingEvidence", "lblStageAge", "btnSubmitGate"],
+      formulas: ["Gate submit enabled when all required criteria have evidence", "Stage age uses DateDiff(StageChangedDate, Today())", "Exception badge appears when gate has approved exception"],
+      dataSources: ["Projects", "Gate Criteria", "Gate Reviews", "Evidence Links"]
+    },
+    {
+      name: "Gate Evidence Screen",
+      persona: "Project manager",
+      purpose: "Attach links, documents, and notes against each gate criterion.",
+      layout: ["Criteria list", "Evidence details panel", "Upload or link controls", "Save evidence command bar"],
+      controls: ["galCriteria", "txtEvidenceUrl", "txtEvidenceNotes", "attEvidence", "btnSaveEvidence", "btnMarkCriterionReady"],
+      formulas: ["Evidence URL or attachment required for required criteria", "Patch evidence rows by selected criterion", "Refresh readiness summary after save"],
+      dataSources: ["Gate Criteria", "Evidence Links", "Gate Reviews"]
+    },
+    {
+      name: "Gate Approval Screen",
+      persona: "Gate approver",
+      purpose: "Decide whether a project can move to the next lifecycle stage.",
+      layout: ["Project and stage summary", "Evidence checklist read-only view", "Decision section", "Exception reason panel", "Approval history"],
+      controls: ["galEvidenceReview", "cmbGateDecision", "txtGateComments", "txtExceptionReason", "btnSubmitGateDecision"],
+      formulas: ["Exception reason required for Approved with Exception", "Approved decision updates Project.CurrentStage", "Rejected decision keeps stage and creates remediation action"],
+      dataSources: ["Projects", "Gate Reviews", "Evidence Links", "Actions"]
+    }
+  ],
+  "change-risk-issue-control": [
+    {
+      name: "RAID Register Screen",
+      persona: "Project manager and PMO analyst",
+      purpose: "Manage risks, issues, actions, and decisions from one operating queue.",
+      layout: ["Filter tabs for Risk, Issue, Action, Decision", "Severity and overdue filters", "Register gallery", "Selected item edit panel"],
+      controls: ["tabRaidType", "galRaidItems", "cmbSeverity", "tglEscalatedOnly", "frmRaidItem", "btnEscalate", "btnCloseItem"],
+      formulas: ["Heat score = Probability * Impact Score", "Close requires closure notes", "Escalate creates decision request when decision is needed"],
+      dataSources: ["Risks and Issues", "Actions", "Decisions", "Escalations"]
+    },
+    {
+      name: "Change Request Screen",
+      persona: "Project manager or sponsor",
+      purpose: "Capture impact and route change approval before baseline changes.",
+      layout: ["Change summary", "Impact assessment cards", "Recommendation", "Approver routing", "Decision history"],
+      controls: ["frmChangeRequest", "cmbChangeType", "numScheduleImpact", "curBudgetImpact", "cmbScopeImpact", "txtRecommendation", "btnSubmitChange"],
+      formulas: ["Impact level derives from budget, schedule, scope, and risk impacts", "Approval route changes by impact threshold", "Approved change prompts baseline update task"],
+      dataSources: ["Change Requests", "Projects", "Approval History", "Actions"]
+    },
+    {
+      name: "Owner Work Queue Screen",
+      persona: "Risk, issue, and action owners",
+      purpose: "Let owners update mitigation, due dates, and closure evidence without seeing the full PMO admin app.",
+      layout: ["My open items", "Due soon and overdue grouping", "Update panel", "Closure evidence panel"],
+      controls: ["galMyActions", "frmOwnerUpdate", "txtMitigationUpdate", "dpNewDueDate", "attClosureEvidence", "btnSubmitUpdate"],
+      formulas: ["Items filter by current user email", "Due date extension requires reason", "Closure sets Closed Date and notifies PM"],
+      dataSources: ["Risks and Issues", "Actions", "Communication Log"]
+    }
+  ],
+  "communications-and-reporting": [
+    {
+      name: "Weekly Status Entry Screen",
+      persona: "Project manager",
+      purpose: "Capture consistent weekly status updates for reporting.",
+      layout: ["Project header", "Health rating row", "Narrative fields", "Decisions and help needed", "Submit to PMO review"],
+      controls: ["frmStatusUpdate", "cmbOverallHealth", "cmbScopeHealth", "cmbScheduleHealth", "cmbBudgetHealth", "txtAccomplishments", "txtNextSteps", "txtDecisionsNeeded", "btnSubmitStatus"],
+      formulas: ["Health ratings required before submit", "Red health requires help-needed notes", "Submitted status locks update from project manager edits"],
+      dataSources: ["Status Updates", "Projects", "Decision Requests"]
+    },
+    {
+      name: "PMO Status Review Screen",
+      persona: "PMO reviewer",
+      purpose: "Review, publish, or request revisions before executive reporting.",
+      layout: ["Submitted updates queue", "Selected update preview", "Quality checklist", "Publish or request revision actions"],
+      controls: ["galSubmittedUpdates", "cntStatusPreview", "chkNarrativeQuality", "txtRevisionComments", "btnPublish", "btnRequestRevision"],
+      formulas: ["Publish stamps Published Date and current reporting flag", "Revision sends comments back to PM", "Decision-needed text can generate Decision Request row"],
+      dataSources: ["Status Updates", "Decision Requests", "Communication Log"]
+    },
+    {
+      name: "Portfolio Reporting Workspace Screen",
+      persona: "Executive or PMO lead",
+      purpose: "Surface Power BI pages, decision queues, and report refresh status from one workspace.",
+      layout: ["Embedded report links", "Red/yellow project queue", "Decisions needed", "Refresh and snapshot status"],
+      controls: ["lnkPortfolioReport", "galRedProjects", "galDecisionRequests", "lblLastRefresh", "btnSendDigest"],
+      formulas: ["Red projects gallery filters current status update", "Digest button triggers communications flow", "Decision queue filters open sponsor decisions"],
+      dataSources: ["Status Updates", "Projects", "Decision Requests", "Report Snapshots"]
+    }
+  ]
+};
+
+export const pmoSolutionMaps: Record<string, PmoSolutionComponentMap> = {
+  "intake-and-triage": {
+    solutionName: "BV PMO Intake",
+    publisherPrefix: "bvpmointake",
+    tables: ["bv_intakerequest", "bv_scoringcriterion", "bv_triagedecision", "bv_communicationlog"],
+    choices: ["bv_requesttype", "bv_intakestatus", "bv_complexity", "bv_triagedecisiontype"],
+    apps: ["PMO Intake Portal", "PMO Triage Workbench"],
+    flows: ["Intake - Confirm Submission", "Intake - Request Clarification", "Intake - Create Charter", "Intake - Weekly Aging Digest"],
+    securityRoles: ["PMO Intake Requester", "PMO Triage Analyst", "PMO Sponsor Viewer", "PMO Executive Viewer"],
+    environmentVariables: ["PMO Intake Site URL", "PMO Triage Team Email", "PMO Digest Channel URL", "Default Charter Owner"],
+    dashboards: ["Demand Funnel", "Triage Aging", "Department Demand", "Decision Mix"]
+  },
+  "charter-and-approval": {
+    solutionName: "BV PMO Charter",
+    publisherPrefix: "bvpmocrt",
+    tables: ["bv_projectcharter", "bv_stakeholder", "bv_successmeasure", "bv_approvalhistory", "bv_project"],
+    choices: ["bv_charterstatus", "bv_stakeholderrole", "bv_approvaldecision", "bv_measuretype"],
+    apps: ["Charter Draft App", "Sponsor Approval Portal", "PMO Charter Review"],
+    flows: ["Charter - Submit PMO Review", "Charter - Sponsor Approval", "Charter - Request Revision", "Charter - Create Project"],
+    securityRoles: ["Charter Author", "Charter PMO Reviewer", "Charter Sponsor Approver", "Portfolio Viewer"],
+    environmentVariables: ["Charter Approval Timeout Days", "Sponsor Approval Email Template", "Project Site Base URL", "PMO Charter Support Email"],
+    dashboards: ["Charter Approval Backlog", "Sponsor Queue", "Approved Value Pipeline", "Revision Rate"]
+  },
+  "stage-gates": {
+    solutionName: "BV PMO Stage Gates",
+    publisherPrefix: "bvpmogate",
+    tables: ["bv_project", "bv_lifecyclestage", "bv_gatecriterion", "bv_gatereview", "bv_evidencelink", "bv_gateexception"],
+    choices: ["bv_lifecyclestagechoice", "bv_gatereviewstatus", "bv_gatedecision", "bv_evidencetype"],
+    apps: ["Project Lifecycle Dashboard", "Gate Evidence App", "Gate Approval Portal"],
+    flows: ["Gate - Generate Criteria", "Gate - Submit Review", "Gate - Approval Decision", "Gate - Stage Change Notification"],
+    securityRoles: ["Gate Project Manager", "Gate Approver", "Gate PMO Admin", "Gate Executive Viewer"],
+    environmentVariables: ["Gate Review Team Email", "Gate Exception Owner", "Lifecycle Stage Config URL", "Power BI Refresh Flow URL"],
+    dashboards: ["Lifecycle Pipeline", "Stage Aging", "Gate Exceptions", "Approval Bottlenecks"]
+  },
+  "change-risk-issue-control": {
+    solutionName: "BV PMO Controls",
+    publisherPrefix: "bvpmocntl",
+    tables: ["bv_changerequest", "bv_raiditem", "bv_action", "bv_decision", "bv_escalation", "bv_impactassessment"],
+    choices: ["bv_changetype", "bv_controlstatus", "bv_severity", "bv_raidtype", "bv_decisionstatus"],
+    apps: ["RAID Register", "Change Request Portal", "Owner Work Queue"],
+    flows: ["Control - Route Change Approval", "Control - Escalate Critical Risk", "Control - Overdue Owner Reminder", "Control - Close Item Notification"],
+    securityRoles: ["Control Project Manager", "Control Item Owner", "Change Approver", "Executive Escalation Viewer"],
+    environmentVariables: ["Critical Risk Channel URL", "Change Board Email", "Overdue Reminder Days", "Baseline Update Owner"],
+    dashboards: ["Risk Heat Map", "Issue Aging", "Change Impact", "Open Decisions"]
+  },
+  "communications-and-reporting": {
+    solutionName: "BV PMO Reporting",
+    publisherPrefix: "bvpmorpt",
+    tables: ["bv_statusupdate", "bv_milestone", "bv_communication", "bv_reportsnapshot", "bv_decisionrequest", "bv_benefittracking"],
+    choices: ["bv_healthrating", "bv_statusupdatestate", "bv_milestonestatus", "bv_audience", "bv_decisionpriority"],
+    apps: ["Weekly Status Entry", "PMO Status Review", "Portfolio Reporting Workspace"],
+    flows: ["Reporting - Create Weekly Status Shells", "Reporting - Missed Update Escalation", "Reporting - Publish Digest", "Reporting - Snapshot Month End"],
+    securityRoles: ["Status Project Manager", "Status PMO Reviewer", "Sponsor Report Viewer", "Executive Report Viewer"],
+    environmentVariables: ["Status Due Day", "Executive Digest Recipients", "Power BI Workspace URL", "Report Snapshot Library URL"],
+    dashboards: ["Executive Portfolio Overview", "Delivery Health Scorecard", "Milestone Variance", "Benefits Realization"]
+  }
+};
+
+export function getPmoScreenBlueprintsBySlug(slug: string) {
+  return pmoScreenBlueprints[slug] ?? [];
+}
+
+export function getPmoSolutionMapBySlug(slug: string) {
+  return pmoSolutionMaps[slug];
+}
+
+export type PmoFormulaSnippet = {
+  title: string;
+  location: string;
+  code: string;
+  notes: string[];
+};
+
+export type PmoFlowSnippet = {
+  name: string;
+  trigger: string;
+  steps: string[];
+  expressions: string[];
+};
+
+export const pmoFormulaSnippets: Record<string, PmoFormulaSnippet[]> = {
+  "intake-and-triage": [
+    {
+      title: "Submit intake request with validation",
+      location: "btnSubmit.OnSelect",
+      code: `If(
+    IsBlank(Trim(txtProblemStatement.Text)) || IsBlank(cmbRequestType.Selected) || IsBlank(cmbSponsor.Selected),
+    Notify("Complete request type, sponsor, and problem statement before submitting.", NotificationType.Warning),
+    IfError(
+        Patch(
+            'Intake Requests',
+            Coalesce(varCurrentRequest, Defaults('Intake Requests')),
+            {
+                Title: txtTitle.Text,
+                'Request Type': cmbRequestType.Selected,
+                Sponsor: cmbSponsor.Selected,
+                'Problem Statement': txtProblemStatement.Text,
+                'Current Status': { Value: "Submitted" },
+                'Submitted Date': Now()
+            }
+        ),
+        Notify("The request could not be submitted.", NotificationType.Error),
+        Notify("Request submitted for PMO triage.", NotificationType.Success)
+    )
+);`,
+      notes: ["Use Coalesce so the same button can submit a draft or new request.", "Keep status transition in the same Patch as Submitted Date.", "Replace SharePoint choice syntax with Dataverse choices if using Dataverse."]
+    },
+    {
+      title: "Weighted triage score",
+      location: "lblWeightedScore.Text",
+      code: `With(
+    {
+        weightedScore: Sum(
+            galScoringCriteria.AllItems,
+            Value(txtScore.Text) * ThisRecord.Weight
+        )
+    },
+    Text(weightedScore, "0")
+)`,
+      notes: ["Store the final score on the intake request when the decision is saved.", "Keep scoring criteria in a config table so weights are not hard-coded forever."]
+    }
+  ],
+  "charter-and-approval": [
+    {
+      title: "Submit charter for PMO review",
+      location: "btnSubmitForPmoReview.OnSelect",
+      code: `If(
+    CountRows(galSuccessMeasures.AllItems) = 0 || IsBlank(Trim(txtObjectives.Text)) || IsBlank(Trim(txtInScope.Text)),
+    Notify("Add objectives, scope, and at least one success measure before PMO review.", NotificationType.Warning),
+    IfError(
+        Patch(
+            'Project Charters',
+            varCurrentCharter,
+            {
+                Objectives: txtObjectives.Text,
+                'In Scope': txtInScope.Text,
+                'Out of Scope': txtOutOfScope.Text,
+                'Charter Status': { Value: "PMO Review" }
+            }
+        ),
+        Notify("Charter could not be submitted.", NotificationType.Error),
+        Notify("Charter sent to PMO review.", NotificationType.Success)
+    )
+);`,
+      notes: ["Require success measures before approval so value tracking is not an afterthought.", "Lock major charter fields after sponsor approval."]
+    },
+    {
+      title: "Create project after sponsor approval",
+      location: "Sponsor approval success action",
+      code: `Set(
+    varProject,
+    Patch(
+        Projects,
+        Defaults(Projects),
+        {
+            'Project Name': varCurrentCharter.'Project Name',
+            Sponsor: varCurrentCharter.Sponsor,
+            'Project Manager': varCurrentCharter.'Project Manager',
+            'Current Stage': { Value: "Initiation" },
+            'Overall Health': { Value: "Not Rated" }
+        }
+    )
+);`,
+      notes: ["Create the Project record once, from the approved charter.", "Use the created project ID to generate initial stage gate checklist rows."]
+    }
+  ],
+  "stage-gates": [
+    {
+      title: "Enable submit gate review only when evidence is ready",
+      location: "btnSubmitGate.DisplayMode",
+      code: `If(
+    CountRows(
+        Filter(
+            galGateCriteria.AllItems,
+            Required = true && IsBlank('Evidence URL')
+        )
+    ) = 0,
+    DisplayMode.Edit,
+    DisplayMode.Disabled
+)`,
+      notes: ["Use a generated checklist row per project and stage.", "If attachments are used instead of URLs, check attachment count instead."]
+    },
+    {
+      title: "Approve gate and move project stage",
+      location: "btnSubmitGateDecision.OnSelect",
+      code: `IfError(
+    Patch(
+        'Gate Reviews',
+        varGateReview,
+        {
+            Decision: cmbGateDecision.Selected,
+            'Decision Date': Now(),
+            Comments: txtGateComments.Text
+        }
+    );
+    If(
+        cmbGateDecision.Selected.Value in ["Approved", "Approved with Exception"],
+        Patch(Projects, varCurrentProject, { 'Current Stage': cmbNextStage.Selected, 'Stage Changed Date': Today() })
+    ),
+    Notify("Gate decision could not be saved.", NotificationType.Error),
+    Notify("Gate decision saved.", NotificationType.Success)
+);`,
+      notes: ["Gate approval and project stage update should be treated as one business transaction.", "Create an action item when the decision is approved with exception."]
+    }
+  ],
+  "change-risk-issue-control": [
+    {
+      title: "Calculate RAID heat score",
+      location: "lblHeatScore.Text",
+      code: `With(
+    {
+        heatScore: Coalesce(Value(cmbProbability.Selected.Value), 1) * Coalesce(Value(cmbImpact.Selected.Value), 1)
+    },
+    Text(heatScore, "0")
+)`,
+      notes: ["Use probability only for risks; issues can default probability to 1.", "Use the score to drive escalation and Power BI heat maps."]
+    },
+    {
+      title: "Close RAID item with evidence",
+      location: "btnCloseItem.OnSelect",
+      code: `If(
+    IsBlank(Trim(txtClosureNotes.Text)),
+    Notify("Add closure notes before closing this item.", NotificationType.Warning),
+    IfError(
+        Patch(
+            'Risks and Issues',
+            varSelectedRaidItem,
+            {
+                Status: { Value: "Closed" },
+                'Closed Date': Today(),
+                'Closure Notes': txtClosureNotes.Text
+            }
+        ),
+        Notify("Item could not be closed.", NotificationType.Error),
+        Notify("Item closed.", NotificationType.Success)
+    )
+);`,
+      notes: ["Closure evidence is what makes RAID history useful later.", "Notify the project manager when an owner closes an escalated item."]
+    }
+  ],
+  "communications-and-reporting": [
+    {
+      title: "Require help-needed notes for red health",
+      location: "btnSubmitStatus.DisplayMode",
+      code: `If(
+    cmbOverallHealth.Selected.Value = "Red" && IsBlank(Trim(txtHelpNeeded.Text)),
+    DisplayMode.Disabled,
+    DisplayMode.Edit
+)`,
+      notes: ["Red status without help-needed notes creates executive noise.", "Show a small field-level message explaining why submit is disabled."]
+    },
+    {
+      title: "Submit weekly status update",
+      location: "btnSubmitStatus.OnSelect",
+      code: `IfError(
+    Patch(
+        'Status Updates',
+        varCurrentStatusUpdate,
+        {
+            'Overall Health': cmbOverallHealth.Selected,
+            'Scope Health': cmbScopeHealth.Selected,
+            'Schedule Health': cmbScheduleHealth.Selected,
+            'Budget Health': cmbBudgetHealth.Selected,
+            'Key Accomplishments': txtAccomplishments.Text,
+            'Next Steps': txtNextSteps.Text,
+            'Decisions Needed': txtDecisionsNeeded.Text,
+            Status: { Value: "Submitted" },
+            'Submitted Date': Now()
+        }
+    ),
+    Notify("Status update could not be submitted.", NotificationType.Error),
+    Notify("Status update submitted to PMO review.", NotificationType.Success)
+);`,
+      notes: ["Create the status shell with a scheduled flow before the reporting period starts.", "Publishing should happen after PMO review, not directly from the PM screen."]
+    }
+  ]
+};
+
+export const pmoFlowSnippets: Record<string, PmoFlowSnippet[]> = {
+  "intake-and-triage": [
+    {
+      name: "Intake - Confirm Submission",
+      trigger: "When an intake request is created or status changes to Submitted.",
+      steps: ["Check Current Status equals Submitted.", "Send confirmation email to requester.", "Post adaptive card or Teams message to triage channel.", "Create initial triage decision row assigned to PMO queue.", "Write Communication Log row."],
+      expressions: ["@equals(triggerOutputs()?['body/CurrentStatus/Value'], 'Submitted')", "coalesce(triggerOutputs()?['body/Sponsor/Email'], 'unassigned')"]
+    },
+    {
+      name: "Intake - Create Charter",
+      trigger: "When triage decision changes to Approved for Charter.",
+      steps: ["Get intake request.", "Create Project Charter record.", "Copy sponsor, business unit, request title, problem statement, and expected benefit.", "Update intake Next Stage to Charter.", "Notify requester and charter owner."],
+      expressions: ["@equals(triggerOutputs()?['body/Decision/Value'], 'Approved for Charter')", "formatDateTime(utcNow(), 'yyyy-MM-dd')"]
+    }
+  ],
+  "charter-and-approval": [
+    {
+      name: "Charter - Sponsor Approval",
+      trigger: "When Charter Status changes to Sponsor Review.",
+      steps: ["Get charter and stakeholder details.", "Start and wait for approval assigned to Sponsor.", "If approved, update Charter Status to Approved.", "Create Project record and first lifecycle stage.", "If rejected or revision requested, update status and send comments to author."],
+      expressions: ["@equals(triggerOutputs()?['body/CharterStatus/Value'], 'Sponsor Review')", "outputs('Start_and_wait_for_an_approval')?['body/outcome']"]
+    }
+  ],
+  "stage-gates": [
+    {
+      name: "Gate - Generate Criteria",
+      trigger: "When Project Current Stage changes.",
+      steps: ["List active Gate Criteria for the new stage.", "Create project-specific checklist rows.", "Assign evidence owners.", "Notify project manager that stage checklist is ready."],
+      expressions: ["triggerOutputs()?['body/CurrentStage/Value']", "items('Apply_to_each_criterion')?['Required']"]
+    },
+    {
+      name: "Gate - Approval Decision",
+      trigger: "When Gate Review status changes to Submitted.",
+      steps: ["Collect evidence links.", "Start approval for gate approver.", "Update Gate Review decision and decision date.", "If approved, update Project Current Stage.", "If approved with exception, create exception action."],
+      expressions: ["@equals(triggerOutputs()?['body/ReviewStatus/Value'], 'Submitted')", "@or(equals(variables('Decision'), 'Approved'), equals(variables('Decision'), 'Approved with Exception'))"]
+    }
+  ],
+  "change-risk-issue-control": [
+    {
+      name: "Control - Escalate Critical Risk",
+      trigger: "When a risk or issue is created or severity changes.",
+      steps: ["Check severity and heat score.", "If critical or escalated, post Teams alert to sponsor and PMO lead.", "Create escalation record.", "Create owner action with due date.", "Write communication log."],
+      expressions: ["@or(equals(triggerOutputs()?['body/Severity/Value'], 'Critical'), greaterOrEquals(triggerOutputs()?['body/HeatScore'], 12))", "addDays(utcNow(), 3)"]
+    },
+    {
+      name: "Control - Route Change Approval",
+      trigger: "When Change Request status changes to Submitted.",
+      steps: ["Calculate impact level from schedule, budget, scope, and risk.", "Route low impact to PMO lead and high impact to sponsor/change board.", "Update decision fields.", "Create baseline update action after approval."],
+      expressions: ["@equals(triggerOutputs()?['body/Status/Value'], 'Submitted')", "if(greater(triggerOutputs()?['body/BudgetImpact'], 25000), 'Sponsor', 'PMO Lead')"]
+    }
+  ],
+  "communications-and-reporting": [
+    {
+      name: "Reporting - Create Weekly Status Shells",
+      trigger: "Scheduled weekly before status updates are due.",
+      steps: ["List active projects.", "Create draft Status Update for each project and reporting period if missing.", "Email project managers with direct links.", "Post PMO summary of missing drafts."],
+      expressions: ["formatDateTime(utcNow(), 'yyyy-\\WW')", "@equals(items('Apply_to_each_project')?['Status'], 'Active')"]
+    },
+    {
+      name: "Reporting - Publish Digest",
+      trigger: "When PMO publishes status updates or on weekly schedule.",
+      steps: ["List current published status updates.", "Group red and yellow projects.", "List decisions needed.", "Refresh Power BI dataset.", "Send executive digest email or Teams post."],
+      expressions: ["@equals(item()?['IsCurrent'], true)", "join(variables('DecisionLinks'), '<br/>')"]
+    }
+  ]
+};
+
+export function getPmoFormulaSnippetsBySlug(slug: string) {
+  return pmoFormulaSnippets[slug] ?? [];
+}
+
+export function getPmoFlowSnippetsBySlug(slug: string) {
+  return pmoFlowSnippets[slug] ?? [];
+}
+
+
+export type PmoRoadmapPhase = {
+  phase: string;
+  timebox: string;
+  goal: string;
+  modules: string[];
+  deliverables: string[];
+  activities: string[];
+  exitCriteria: string[];
+  adoptionRisks: string[];
+};
+
+export type PmoOperatingModelItem = {
+  area: string;
+  owner: string;
+  cadence: string;
+  responsibilities: string[];
+};
+
+export const pmoRoadmapPhases: PmoRoadmapPhase[] = [
+  {
+    phase: "Phase 1",
+    timebox: "Days 1-30",
+    goal: "Create one visible source of truth for demand and approved work before building heavier governance.",
+    modules: ["intake-and-triage", "charter-and-approval"],
+    deliverables: [
+      "Intake request table or list with required fields and triage status model.",
+      "Requester intake form with save draft and submit behavior.",
+      "PMO triage queue with scoring, decision reason, owner, and aging views.",
+      "Project charter record linked to approved intake.",
+      "Sponsor approval workflow with revision loop and approval history."
+    ],
+    activities: [
+      "Run a working session to define request types, sponsor roles, intake questions, and required triage decisions.",
+      "Build the intake data model first, then add requester and PMO views.",
+      "Create two to three sample requests from real historical demand so stakeholders can react to something concrete.",
+      "Add confirmation, clarification, and decision notifications before expanding reporting.",
+      "Move approved requests into charter records so intake does not become another static spreadsheet."
+    ],
+    exitCriteria: [
+      "Every new request can be submitted through one intake experience.",
+      "The PMO can see unassigned, aging, and high-priority demand in a queue.",
+      "Approved intake creates or links to a charter record.",
+      "Sponsors can approve, reject, or request revision with comments.",
+      "Basic intake and charter metrics are visible in Power BI or a simple dashboard."
+    ],
+    adoptionRisks: [
+      "Too many intake fields will push users back to email.",
+      "Unclear sponsor ownership will stall approvals.",
+      "If decisions are not communicated automatically, users will assume the portal is a black hole."
+    ]
+  },
+  {
+    phase: "Phase 2",
+    timebox: "Days 31-60",
+    goal: "Add lifecycle control so approved work moves through standard gates with evidence, exceptions, and decisions.",
+    modules: ["stage-gates", "change-risk-issue-control"],
+    deliverables: [
+      "Project table or list with current lifecycle stage, health, sponsor, PM, and baseline dates.",
+      "Gate criteria template with generated project-specific checklist rows.",
+      "Gate review screen with evidence links, approver, decision, and exception reason.",
+      "Change request portal with scope, schedule, budget, risk, and benefit impact fields.",
+      "Risk, issue, action, decision, and escalation records connected to projects."
+    ],
+    activities: [
+      "Define a practical stage model with no more than seven stages and objective exit criteria.",
+      "Create gate criteria that can be answered with evidence, not vague confidence statements.",
+      "Add a stage-change approval flow that writes history instead of overwriting prior decisions.",
+      "Build RAID owner queues so risks and issues become daily work, not meeting-only artifacts.",
+      "Create escalation thresholds for critical risks, overdue actions, and high-impact changes."
+    ],
+    exitCriteria: [
+      "Projects cannot advance stages without a gate review record.",
+      "Gate exceptions are captured with approver, reason, and follow-up action.",
+      "Every open risk, issue, action, and change has an owner and due date.",
+      "Critical risks and overdue actions trigger stakeholder notifications.",
+      "Lifecycle, gate, RAID, and change-control reporting can be reviewed weekly."
+    ],
+    adoptionRisks: [
+      "Gate criteria that feel ceremonial will be ignored.",
+      "If RAID items do not create owner work queues, they become another reporting chore.",
+      "Change approval thresholds must match the organization or every change will feel escalated."
+    ]
+  },
+  {
+    phase: "Phase 3",
+    timebox: "Days 61-90",
+    goal: "Turn operational PMO records into executive reporting, stakeholder communications, and a repeatable governance cadence.",
+    modules: ["communications-and-reporting"],
+    deliverables: [
+      "Weekly status update form with health, milestones, decisions needed, and help needed.",
+      "Executive portfolio dashboard with demand, stage, health, RAID, changes, and decisions.",
+      "Stakeholder digest workflow for red/yellow projects and open sponsor decisions.",
+      "Monthly benefits review view or report page.",
+      "PMO operating cadence for triage, gate review, RAID review, and executive reporting."
+    ],
+    activities: [
+      "Standardize health definitions before building report pages.",
+      "Create draft status shells automatically so project managers update rather than start from scratch.",
+      "Separate executive dashboards from PMO working queues.",
+      "Build a weekly digest around decisions needed and exceptions, not a wall of project text.",
+      "Review usage data and remove fields, reports, or workflows that are not driving decisions."
+    ],
+    exitCriteria: [
+      "Project managers can submit current status updates on a predictable cadence.",
+      "Executives can see portfolio health, exceptions, and decisions needed without opening raw lists.",
+      "Sponsors receive timely communications when their input is required.",
+      "Benefits measures are tracked after launch or closeout.",
+      "The PMO has documented operating rhythms and ownership for each part of the system."
+    ],
+    adoptionRisks: [
+      "Dashboard pages that mirror raw lists will not change executive behavior.",
+      "Red/yellow/green status must be defined or reporting will become political.",
+      "Communications should be brief and decision-oriented or stakeholders will tune them out."
+    ]
+  }
+];
+
+export const pmoOperatingModel: PmoOperatingModelItem[] = [
+  {
+    area: "Demand triage",
+    owner: "PMO intake lead",
+    cadence: "Twice weekly",
+    responsibilities: ["Review new requests", "Assign triage owners", "Request clarification", "Move approved demand to charter"]
+  },
+  {
+    area: "Sponsor approval",
+    owner: "Business sponsor group",
+    cadence: "Weekly",
+    responsibilities: ["Approve or reject charters", "Resolve revision requests", "Confirm value and scope boundaries", "Name accountable owners"]
+  },
+  {
+    area: "Gate governance",
+    owner: "PMO governance lead",
+    cadence: "Weekly or by stage movement",
+    responsibilities: ["Review gate evidence", "Approve exceptions", "Record stage changes", "Escalate blocked transitions"]
+  },
+  {
+    area: "RAID and change control",
+    owner: "Delivery governance lead",
+    cadence: "Weekly",
+    responsibilities: ["Review overdue actions", "Escalate critical risks", "Route change approvals", "Confirm closure evidence"]
+  },
+  {
+    area: "Executive reporting",
+    owner: "PMO reporting lead",
+    cadence: "Weekly status and monthly portfolio review",
+    responsibilities: ["Publish portfolio dashboard", "Send stakeholder digest", "Track decisions needed", "Maintain benefits review views"]
+  }
+];
+
+
+export type PmoModuleComparison = {
+  slug: string;
+  complexity: "Low" | "Medium" | "High";
+  buildWhen: string;
+  dependencies: string[];
+  firstReleaseScope: string[];
+  dataSources: string[];
+  appScreens: string[];
+  automations: string[];
+  reports: string[];
+  workingSignals: string[];
+};
+
+export type PmoGlossaryTerm = {
+  term: string;
+  definition: string;
+  buildImplication: string;
+};
+
+export type PmoDemoStep = {
+  title: string;
+  actor: string;
+  action: string;
+  systemBehavior: string[];
+  proofPoint: string;
+};
+
+export type PmoOfferSection = {
+  title: string;
+  summary: string;
+  bullets: string[];
+};
+
+export const pmoModuleComparisons: PmoModuleComparison[] = [
+  {
+    slug: "intake-and-triage",
+    complexity: "Low",
+    buildWhen: "Build first when requests arrive through email, Teams, spreadsheets, and informal conversations.",
+    dependencies: ["Request category list", "Sponsor or department owner list", "Basic status choices"],
+    firstReleaseScope: ["Submit request form", "PMO triage queue", "Scoring and decision fields", "Confirmation and decision notifications"],
+    dataSources: ["Intake Requests", "Scoring Criteria", "Triage Decisions", "Communication Log"],
+    appScreens: ["Request intake submit screen", "Requester status screen", "PMO triage queue", "Triage scoring screen"],
+    automations: ["Submission confirmation", "Clarification request", "Decision notification", "Approved intake to charter shell"],
+    reports: ["Demand funnel", "Aging intake", "Requests by business unit", "Approved, deferred, rejected mix"],
+    workingSignals: ["Users stop emailing new requests", "PMO can see untriaged demand", "Sponsors receive clear decisions", "Approved work moves into charter without retyping"]
+  },
+  {
+    slug: "charter-and-approval",
+    complexity: "Medium",
+    buildWhen: "Build after intake when approved ideas need scope, value, sponsor alignment, and delivery ownership.",
+    dependencies: ["Approved intake records", "Sponsor role model", "Approval comments history", "Project manager or delivery owner list"],
+    firstReleaseScope: ["Charter draft form", "PMO completeness review", "Sponsor approval screen", "Printable charter summary"],
+    dataSources: ["Project Charters", "Stakeholders", "Success Measures", "Approval History"],
+    appScreens: ["Charter drafting screen", "PMO quality review screen", "Sponsor approval screen", "Charter summary screen"],
+    automations: ["Create charter from intake", "Sponsor approval", "Revision request", "Approved charter to project record"],
+    reports: ["Charters awaiting approval", "Approval cycle time", "Approved value pipeline", "Revision rate"],
+    workingSignals: ["Sponsors approve with comments", "Scope exclusions are captured", "Approved charters create project records", "Revision loops are visible"]
+  },
+  {
+    slug: "stage-gates",
+    complexity: "High",
+    buildWhen: "Build when projects are moving forward without consistent evidence, entry criteria, exit criteria, or approval history.",
+    dependencies: ["Project records", "Lifecycle stage model", "Gate criteria library", "Gate approver roles"],
+    firstReleaseScope: ["Project lifecycle dashboard", "Gate checklist", "Evidence links", "Gate approval decision"],
+    dataSources: ["Projects", "Lifecycle Stages", "Gate Criteria", "Gate Reviews", "Evidence Links", "Gate Decisions"],
+    appScreens: ["Project lifecycle dashboard", "Gate checklist screen", "Gate approval screen", "Stage audit timeline"],
+    automations: ["Generate criteria for stage", "Gate readiness reminder", "Gate approval", "Stage transition notification"],
+    reports: ["Projects by stage", "Stage aging", "Gate exception rate", "Overdue gates"],
+    workingSignals: ["Projects do not advance without gate decisions", "Exceptions have owners", "Evidence is linked", "Stage history is auditable"]
+  },
+  {
+    slug: "change-risk-issue-control",
+    complexity: "High",
+    buildWhen: "Build when risks, issues, decisions, and changes live in meeting notes and cannot be trusted as an operational source of truth.",
+    dependencies: ["Project records", "Owner role model", "Severity and impact definitions", "Escalation thresholds"],
+    firstReleaseScope: ["Change request form", "Risk and issue registers", "Owner work queue", "Escalation and overdue reminders"],
+    dataSources: ["Change Requests", "Risks", "Issues", "Actions", "Decisions", "Escalations", "Impact Assessments"],
+    appScreens: ["Change request form", "Risk register", "Issue register", "Weekly RAID review dashboard"],
+    automations: ["Critical risk escalation", "Overdue mitigation reminder", "Change approval routing", "Closure confirmation"],
+    reports: ["RAID dashboard", "Change impact dashboard", "Risk heat map", "Issue aging"],
+    workingSignals: ["Every open item has owner and due date", "Critical exposure is escalated", "Approved changes trigger baseline updates", "Closure requires evidence"]
+  },
+  {
+    slug: "communications-and-reporting",
+    complexity: "Medium",
+    buildWhen: "Build after core operational records exist and leaders need exception reporting, decision requests, and repeatable stakeholder updates.",
+    dependencies: ["Project records", "Status definitions", "Milestone records", "Power BI workspace", "Audience list"],
+    firstReleaseScope: ["Weekly status form", "PMO review queue", "Executive dashboard", "Stakeholder digest"],
+    dataSources: ["Status Updates", "Milestones", "Communications", "Report Snapshots", "Decision Requests", "Benefits Tracking"],
+    appScreens: ["Weekly status update form", "Executive summary screen", "Milestone update screen", "Benefits review screen"],
+    automations: ["Create weekly status shells", "Missed update escalation", "Power BI refresh", "Executive digest"],
+    reports: ["Portfolio health", "Missing status", "Milestone variance", "Benefits realization"],
+    workingSignals: ["Executives see decisions needed", "Status updates are current", "Dashboards show exceptions, not raw list dumps", "Sponsors receive concise digests"]
+  }
+];
+
+export const pmoGlossaryTerms: PmoGlossaryTerm[] = [
+  { term: "Demand intake", definition: "The controlled path for capturing new project, automation, reporting, enhancement, or process-improvement requests.", buildImplication: "Create one request record with status, sponsor, category, problem statement, benefit, and decision history." },
+  { term: "Triage", definition: "The PMO review process that validates completeness, scores demand, and decides whether to approve, defer, reject, or request clarification.", buildImplication: "Use a queue with aging, owner, score, decision reason, and automatic notifications." },
+  { term: "Project charter", definition: "The lightweight agreement that defines scope, objectives, value, sponsor, assumptions, dependencies, and ownership before delivery begins.", buildImplication: "Link the charter to approved intake and require sponsor approval before a project record is opened." },
+  { term: "Stage gate", definition: "A formal lifecycle checkpoint that verifies required evidence before a project moves to the next stage.", buildImplication: "Use gate criteria, evidence links, approver decisions, exception reasons, and stage history records." },
+  { term: "Gate evidence", definition: "The artifact, link, approval, plan, or test result used to prove a stage exit criterion has been met.", buildImplication: "Store evidence as rows or links tied to a gate review instead of free-text status notes." },
+  { term: "RAID", definition: "A combined governance view of risks, actions, issues, and decisions that need ownership and follow-up.", buildImplication: "Require owner, due date, severity, status, escalation flag, and closure evidence for active items." },
+  { term: "Change request", definition: "A controlled request to change scope, schedule, budget, risk, or expected benefits after baseline approval.", buildImplication: "Capture impact assessment, decision, approver, baseline update action, and communication history." },
+  { term: "Decision log", definition: "The record of decisions needed, options considered, final decision, decision maker, rationale, and date.", buildImplication: "Keep decisions linked to project, intake, gate, change, or status records so reporting has context." },
+  { term: "Benefits review", definition: "The post-launch or periodic check that determines whether the approved work created the expected business value.", buildImplication: "Track benefit metric, baseline, target, current value, measurement date, and accountable owner." },
+  { term: "Executive digest", definition: "A concise stakeholder update focused on portfolio health, exceptions, decisions needed, and upcoming governance events.", buildImplication: "Generate from current PMO records and avoid sending raw list exports." }
+];
+
+export const pmoDemoSteps: PmoDemoStep[] = [
+  {
+    title: "A department submits a new automation request",
+    actor: "Business requester",
+    action: "Completes the intake form with problem statement, sponsor, expected benefit, complexity, timing, and attachments.",
+    systemBehavior: ["Creates an Intake Request record", "Sets status to Submitted", "Sends confirmation to requester", "Posts new demand to the PMO triage queue"],
+    proofPoint: "The PMO can see the request without searching email or Teams threads."
+  },
+  {
+    title: "The PMO triages and approves the request for charter",
+    actor: "PMO intake lead",
+    action: "Reviews completeness, assigns score, captures decision reason, and marks the request approved for charter.",
+    systemBehavior: ["Creates a triage decision row", "Copies key fields into a Project Charter shell", "Notifies the requester and sponsor", "Updates the intake funnel"],
+    proofPoint: "Demand is converted into a governed work candidate without duplicate entry."
+  },
+  {
+    title: "The sponsor approves the charter",
+    actor: "Business sponsor",
+    action: "Reviews scope, value, assumptions, risks, and success measures, then approves with comments.",
+    systemBehavior: ["Writes approval history", "Creates the project record", "Opens the first lifecycle stage", "Notifies the project manager"],
+    proofPoint: "The project begins with sponsor alignment and a traceable approval."
+  },
+  {
+    title: "The project submits a gate review",
+    actor: "Project manager",
+    action: "Completes stage criteria, links required evidence, and submits the gate for approval.",
+    systemBehavior: ["Routes the gate decision", "Records approver comments", "Moves stage when approved", "Creates exception action if approved with exception"],
+    proofPoint: "Lifecycle movement is based on evidence rather than informal status updates."
+  },
+  {
+    title: "A risk becomes critical and is escalated",
+    actor: "Risk owner",
+    action: "Updates probability, impact, mitigation plan, and escalation flag on a project risk.",
+    systemBehavior: ["Calculates exposure", "Posts alert to sponsor and PMO lead", "Creates escalation record", "Adds owner action with due date"],
+    proofPoint: "High exposure is visible before it becomes a surprise executive escalation."
+  },
+  {
+    title: "Executives receive portfolio reporting",
+    actor: "PMO reporting lead",
+    action: "Publishes current status updates and sends the weekly digest.",
+    systemBehavior: ["Refreshes Power BI", "Groups red and yellow projects", "Lists decisions needed", "Sends stakeholder digest"],
+    proofPoint: "Leadership sees exceptions and decisions needed without opening operational lists."
+  }
+];
+
+export const pmoOfferSections: PmoOfferSection[] = [
+  {
+    title: "Positioning",
+    summary: "A practical PMO build package for teams that need governance and visibility but cannot justify a seven-figure enterprise PMO platform.",
+    bullets: ["Built on Microsoft 365 and Power Platform", "Starts with usable portals and workflows", "Designed around PMO lifecycle behavior", "Can mature into a formal managed offering later"]
+  },
+  {
+    title: "Core offer",
+    summary: "Help a PMO design and build a modular operating system for demand, approvals, delivery control, and reporting.",
+    bullets: ["30/60/90 implementation roadmap", "Module-by-module solution blueprint", "Power Apps screen plans", "Dataverse or SharePoint data model", "Power Automate workflow recipes", "Power BI reporting map"]
+  },
+  {
+    title: "Possible delivery tiers",
+    summary: "Keep this hidden until pricing and delivery capacity are clear, but shape the future offer around progressively deeper implementation help.",
+    bullets: ["Blueprint package: workshops, architecture, and build plan", "MVP build package: intake, charter, and reporting foundation", "Lifecycle control package: gates, RAID, change, and executive dashboards", "Managed improvement package: monthly enhancements, reporting refinements, and governance tuning"]
+  },
+  {
+    title: "Proof assets to build next",
+    summary: "Before selling the offer publicly, create examples that prove the system is concrete and buildable.",
+    bullets: ["Demo narrative page", "Module comparison matrix", "Downloadable roadmap", "Screenshots or mockups of key portals", "Sample Power BI dashboard outline", "Starter CSV and Markdown files"]
+  },
+  {
+    title: "What to avoid",
+    summary: "The offer should not sound like a generic PMO consulting pitch or a replacement for every enterprise platform.",
+    bullets: ["Do not promise one universal PMO app", "Do not lead with dashboards before data quality", "Do not bury clients in governance jargon", "Do not price or publish until scope boundaries are clear"]
+  }
+];
+
+export type PmoPortalMockup = {
+  slug: string;
+  title: string;
+  moduleSlug: string;
+  persona: string;
+  purpose: string;
+  layout: string[];
+  metrics: { label: string; value: string }[];
+  fields: string[];
+  queueItems: { title: string; meta: string; status: string }[];
+  actions: string[];
+  buildNotes: string[];
+};
+
+export const pmoPortalMockups: PmoPortalMockup[] = [
+  {
+    slug: "intake-portal",
+    title: "Intake portal mockup",
+    moduleSlug: "intake-and-triage",
+    persona: "Business requester and PMO triage lead",
+    purpose: "Show how a simple intake form and triage queue can replace scattered email demand.",
+    layout: ["Left-side request form", "Right-side submission checklist", "PMO triage queue below", "Decision summary panel"],
+    metrics: [
+      { label: "New requests", value: "18" },
+      { label: "Aging over 7 days", value: "5" },
+      { label: "Approved this month", value: "11" }
+    ],
+    fields: ["Request type", "Business unit", "Sponsor", "Problem statement", "Expected benefit", "Complexity", "Desired start", "Attachments"],
+    queueItems: [
+      { title: "Automate invoice exception review", meta: "Finance / High benefit", status: "Ready for triage" },
+      { title: "Replace manual onboarding checklist", meta: "HR / Medium complexity", status: "Clarification needed" },
+      { title: "Power BI executive sales view", meta: "Sales / Sponsor review", status: "Submitted" }
+    ],
+    actions: ["Save draft", "Submit request", "Request clarification", "Approve for charter"],
+    buildNotes: ["Keep requester fields short and plain-language.", "Hide score and decision fields from submitters.", "Use the triage queue as the PMO daily work surface."]
+  },
+  {
+    slug: "charter-approval",
+    title: "Charter approval mockup",
+    moduleSlug: "charter-and-approval",
+    persona: "Sponsor, PMO reviewer, and project manager",
+    purpose: "Turn approved demand into a scoped charter with sponsor signoff and revision history.",
+    layout: ["Charter summary header", "Scope and value form", "Stakeholder and success measure sections", "Sponsor decision panel"],
+    metrics: [
+      { label: "Awaiting sponsor", value: "7" },
+      { label: "Avg approval days", value: "4.8" },
+      { label: "Revision rate", value: "22%" }
+    ],
+    fields: ["Project name", "Sponsor", "Project manager", "Objectives", "In scope", "Out of scope", "Success measures", "Assumptions", "Key risks"],
+    queueItems: [
+      { title: "Customer service case automation", meta: "Sponsor: Operations VP", status: "Sponsor review" },
+      { title: "Vendor renewal tracker", meta: "Sponsor: Procurement", status: "PMO review" },
+      { title: "Warehouse safety inspection app", meta: "Sponsor: Facilities", status: "Revision requested" }
+    ],
+    actions: ["Send to sponsor", "Request revision", "Approve charter", "Create project"],
+    buildNotes: ["Make scope exclusions mandatory for risky projects.", "Keep approval comments visible to the author.", "Create the project record only after sponsor approval."]
+  },
+  {
+    slug: "gate-review",
+    title: "Gate review mockup",
+    moduleSlug: "stage-gates",
+    persona: "Project manager, gate approver, and PMO governance lead",
+    purpose: "Show stage readiness, required evidence, exceptions, and approval decisions in one view.",
+    layout: ["Project stage header", "Gate criteria checklist", "Evidence links table", "Approval and exception panel"],
+    metrics: [
+      { label: "Projects in build", value: "14" },
+      { label: "Overdue gates", value: "3" },
+      { label: "Exception rate", value: "16%" }
+    ],
+    fields: ["Current stage", "Gate criterion", "Evidence URL", "Owner", "Due date", "Approver", "Decision", "Exception reason"],
+    queueItems: [
+      { title: "Planning exit review", meta: "6 of 7 criteria complete", status: "Gate prep" },
+      { title: "Testing entry review", meta: "Evidence missing: test plan", status: "Blocked" },
+      { title: "Launch readiness", meta: "Approver: PMO governance", status: "Submitted" }
+    ],
+    actions: ["Attach evidence", "Submit gate", "Approve with exception", "Move stage"],
+    buildNotes: ["Generate checklist rows from a criteria template.", "Write stage history instead of overwriting old decisions.", "Require exception owners and due dates."]
+  },
+  {
+    slug: "raid-control",
+    title: "RAID and change control mockup",
+    moduleSlug: "change-risk-issue-control",
+    persona: "Project manager, risk owner, PMO lead, and sponsor",
+    purpose: "Bring risks, issues, actions, decisions, and change requests into an operational control center.",
+    layout: ["RAID summary tiles", "Owner work queue", "Risk heat panel", "Change approval list"],
+    metrics: [
+      { label: "Critical risks", value: "4" },
+      { label: "Overdue actions", value: "9" },
+      { label: "Pending changes", value: "6" }
+    ],
+    fields: ["Project", "Item type", "Severity", "Probability", "Impact", "Owner", "Due date", "Mitigation", "Decision needed"],
+    queueItems: [
+      { title: "Integration vendor delay", meta: "Owner: Maya / Exposure 15", status: "Escalated" },
+      { title: "Scope change: add mobile approvals", meta: "Budget impact: $18k", status: "Under review" },
+      { title: "Training material approval", meta: "Due yesterday", status: "Overdue" }
+    ],
+    actions: ["Escalate", "Assign owner", "Route change", "Close with evidence"],
+    buildNotes: ["Treat risks and issues differently in the data model.", "Make owner and due date required on every active item.", "Use heat score and severity to drive alerts."]
+  },
+  {
+    slug: "executive-dashboard",
+    title: "Executive dashboard mockup",
+    moduleSlug: "communications-and-reporting",
+    persona: "Executive sponsor, PMO director, and portfolio steering group",
+    purpose: "Convert PMO records into portfolio health, exceptions, decisions needed, and benefits visibility.",
+    layout: ["Portfolio health ribbon", "Stage and demand charts", "Exception list", "Decision requests and benefits review"],
+    metrics: [
+      { label: "Red projects", value: "5" },
+      { label: "Decisions needed", value: "8" },
+      { label: "Benefits tracked", value: "71%" }
+    ],
+    fields: ["Overall health", "Stage", "Milestone variance", "Decision needed", "Sponsor", "Benefit metric", "Target", "Current value"],
+    queueItems: [
+      { title: "ERP reporting rollout", meta: "Decision: launch date tradeoff", status: "Red" },
+      { title: "Field inspection app", meta: "Gate exception due Friday", status: "Yellow" },
+      { title: "Invoice automation", meta: "Benefit review in 30 days", status: "Green" }
+    ],
+    actions: ["Open decision", "Send digest", "Refresh Power BI", "Snapshot month end"],
+    buildNotes: ["Separate executive pages from PMO working queues.", "Use health definitions before publishing dashboards.", "Lead with exceptions and decisions, not raw activity counts."]
+  }
+];
