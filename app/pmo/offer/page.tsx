@@ -1,24 +1,24 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { pmoOfferSections } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Offer Outline | BuilderVault",
-  robots: { index: false, follow: false }
+  title: "PMO Services | BuilderVault",
+  description: "A practical Power Platform PMO toolkit for teams that want to build demand intake, approvals, stage gates, RAID, reporting, and governance workflows."
 };
 
 export default function PmoOfferPage() {
   return (
     <section style={{ padding: "54px 0" }}>
       <div className="container" style={{ display: "grid", gap: 30 }}>
-        <PmoBreadcrumb current="Offer outline" />
+        <PmoBreadcrumb current="PMO services" />
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO offer draft</div>
-          <h1 className="page-title">PMO offer outline</h1>
-          <p className="lead">A private positioning page for the future PMO service offering. This keeps the business idea shaped without exposing it in the public site navigation.</p>
+          <div className="eyebrow">PMO services</div>
+          <h1 className="page-title">Build your own PMO system</h1>
+          <p className="lead">A practical toolkit for PMO teams that want intake, approvals, stage gates, RAID, reporting, and governance workflows using Microsoft 365 and Power Platform.</p>
         </header>
         <section className="surface" style={{ borderRadius: 12, padding: 24 }}>
-          <h2 className="section-title">Offer thesis</h2>
+          <h2 className="section-title">A practical alternative to heavyweight PMO platforms.</h2>
           <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>For PMO teams priced out of enterprise PMO systems, BuilderVault can become the practical Power Platform playbook for building demand intake, charter approvals, stage gates, change control, RAID, communications, and reporting with tools they already own.</p>
         </section>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>

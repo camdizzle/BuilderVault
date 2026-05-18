@@ -1,10 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { pmoDemoSteps } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Demo Narrative | BuilderVault",
-  robots: { index: false, follow: false }
+  title: "PMO Demo Narrative | BuilderVault"
 };
 
 export default function PmoDemoPage() {
@@ -13,7 +12,7 @@ export default function PmoDemoPage() {
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <PmoBreadcrumb current="Demo narrative" />
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO walkthrough</div>
+          <div className="eyebrow">PMO walkthrough</div>
           <h1 className="page-title">PMO demo narrative</h1>
           <p className="lead">A practical storyline showing how a business request becomes a governed project, then flows through gates, controls, reporting, and executive decisions.</p>
         </header>

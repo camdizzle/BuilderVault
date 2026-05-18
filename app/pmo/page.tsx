@@ -1,13 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { pmoLifecycleStages, pmoMasterRoadmapDownload, pmoTemplateDownloads, pmoToolkitSummary } from "@/lib/pmo-toolkit";
 
 export const metadata = {
   title: "Build Your Own PMO System | BuilderVault",
-  description: "A hidden BuilderVault blueprint for building practical PMO portals, workflows, approvals, gates, controls, and Power BI reporting with Microsoft 365 and Power Platform.",
-  robots: {
-    index: false,
-    follow: false
-  }
+  description: "A BuilderVault blueprint for building practical PMO portals, workflows, approvals, gates, controls, and Power BI reporting with Microsoft 365 and Power Platform."
 };
 
 export default function PmoToolkitPage() {
@@ -15,7 +11,7 @@ export default function PmoToolkitPage() {
     <section style={{ padding: "54px 0" }}>
       <div className="container" style={{ display: "grid", gap: 34 }}>
         <div style={{ maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO toolkit concept</div>
+          <div className="eyebrow">PMO toolkit concept</div>
           <h1 className="page-title">{pmoToolkitSummary.title}</h1>
           <p className="lead">{pmoToolkitSummary.audience}</p>
           <p style={{ color: "#415049", fontSize: "1.08rem", lineHeight: 1.7, margin: 0 }}>
@@ -78,14 +74,26 @@ export default function PmoToolkitPage() {
         <section style={{ display: "grid", gap: 18 }}>
           <div>
             <div className="eyebrow">Supporting playbooks</div>
-            <h2 className="section-title">Planning assets for the hidden PMO offer.</h2>
+            <h2 className="section-title">Planning assets for the PMO offer.</h2>
           </div>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
             <SupportCard href="/pmo/compare" title="Module comparison" text="Compare build triggers, complexity, dependencies, first release scope, and success signals." />
             <SupportCard href="/pmo/starter-files" title="Starter file index" text="Find every roadmap, implementation guide, CSV starter, and markdown template in one place." />
+            <SupportCard href="/pmo/bundle" title="Implementation bundle" text="Group the roadmap, module guides, mockup briefs, and starter files by 30/60/90 rollout phase." />
+            <SupportCard href="/pmo/architecture" title="Solution architecture" text="Map the PMO system across apps, data, automations, reporting, Teams, security, and releases." />
+            <SupportCard href="/pmo/data-dictionary" title="Data dictionary" text="Review PMO tables, fields, relationships, indexes, statuses, measures, and solution components." />
+            <SupportCard href="/pmo/uat" title="UAT scripts" text="Run role-based test scenarios across intake, charters, gates, RAID, changes, and reporting." />
+            <SupportCard href="/pmo/release" title="Release checklist" text="Confirm readiness, validation, reporting, and launch communications before release." />
+            <SupportCard href="/pmo/runbook" title="Support runbook" text="Operate the PMO system with daily checks, common fixes, and escalation guidance." />
+            <SupportCard href="/pmo/cadence" title="Governance cadence" text="Plan triage, delivery control, executive digest, and portfolio review rhythms." />
+            <SupportCard href="/pmo/communications" title="Communication templates" text="Reuse stakeholder messages for intake, approvals, gate exceptions, and digests." />
+            <SupportCard href="/pmo/kpis" title="KPI catalog" text="Define dashboard measures for demand, lifecycle, RAID, reporting, and benefits." />
+            <SupportCard href="/pmo/adoption" title="Adoption plan" text="Pilot, onboard, and measure behavior change for PMO users." />
+            <SupportCard href="/pmo/backlog" title="Enhancement backlog" text="Manage future improvements as a PMO product backlog." />
+            <SupportCard href="/pmo/escalations" title="Escalation playbook" text="Define escalation triggers and decision record requirements." />
             <SupportCard href="/pmo/glossary" title="PMO glossary" text="Define the terms that become tables, screens, workflows, reports, and operating cadence." />
             <SupportCard href="/pmo/demo" title="Demo narrative" text="Walk through how demand becomes a governed project with gates, RAID, reporting, and decisions." />
-            <SupportCard href="/pmo/offer" title="Offer outline" text="Private positioning notes for a future paid PMO build-your-own system offer." />
+            <SupportCard href="/pmo/offer" title="PMO services" text="See who the PMO toolkit is for, what it helps build, and how the implementation path works." />
             <SupportCard href="/pmo/mockups" title="Portal mockups" text="Static visual references for intake, charter, gate review, RAID, and executive dashboard screens." />
           </div>
         </section>
@@ -155,4 +163,3 @@ function SupportCard({ href, text, title }: { href: string; text: string; title:
     </Link>
   );
 }
-

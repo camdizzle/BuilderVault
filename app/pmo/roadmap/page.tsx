@@ -1,15 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
 import { getPmoStageBySlug, pmoMasterRoadmapDownload, pmoOperatingModel, pmoRoadmapPhases } from "@/lib/pmo-toolkit";
 
 export const metadata = {
   title: "PMO 30/60/90 Roadmap | BuilderVault",
-  description: "A hidden BuilderVault roadmap for rolling out a practical PMO system with Power Platform over 30, 60, and 90 days.",
-  robots: {
-    index: false,
-    follow: false
-  }
+  description: "A BuilderVault roadmap for rolling out a practical PMO system with Power Platform over 30, 60, and 90 days."
 };
 
 export default function PmoRoadmapPage() {
@@ -23,7 +19,7 @@ export default function PmoRoadmapPage() {
         </nav>
 
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO implementation roadmap</div>
+          <div className="eyebrow">PMO implementation roadmap</div>
           <h1 className="page-title">30/60/90-day PMO build roadmap</h1>
           <p className="lead">
             A practical rollout plan for PMO teams that want portfolio visibility, approvals, gate control, RAID discipline, and reporting without buying a large enterprise PMO platform first.
@@ -131,4 +127,3 @@ function RoadmapPanel({ items, title }: { items: string[]; title: string }) {
     </div>
   );
 }
-

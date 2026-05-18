@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import vm from "node:vm";
@@ -176,7 +176,7 @@ function buildGuide(stage) {
     heading(2, "Deployment Checklist"),
     bullets(deploymentChecklist),
     "---",
-    "Generated from the BuilderVault hidden PMO toolkit content."
+    "Generated from the BuilderVault PMO toolkit content."
   );
 
   return sections.filter(Boolean).join("\n\n") + "\n";
@@ -239,8 +239,151 @@ function buildMasterRoadmapGuide() {
       "The PMO has named owners for triage, sponsor approval, gate governance, RAID/change control, and executive reporting."
     ]),
     "---",
-    "Generated from the BuilderVault hidden PMO toolkit content."
+    "Generated from the BuilderVault PMO toolkit content."
   );
+
+  return sections.filter(Boolean).join("\n\n") + "\n";
+}
+function buildDataDictionaryGuide() {
+  const sections = [
+    heading(1, "PMO Data Dictionary"),
+    "A consolidated technical reference for PMO tables, fields, relationships, indexes, status models, Power BI measures, and Dataverse solution components.",
+    heading(2, "Module Data Dictionary")
+  ];
+
+  for (const stage of toolkit.pmoLifecycleStages) {
+    const deepDive = toolkit.getPmoDeepDiveBySlug(stage.slug);
+    const tables = toolkit.getPmoTableSpecsBySlug(stage.slug);
+    const solution = toolkit.getPmoSolutionMapBySlug(stage.slug);
+
+    sections.push(heading(2, stage.title), stage.summary);
+
+    if (deepDive) {
+      sections.push(
+        heading(3, "Status Model"),
+        bullets(deepDive.statusModel),
+        heading(3, "Power BI Measures"),
+        bullets(deepDive.powerBiMeasures)
+      );
+    }
+
+    if (solution) {
+      sections.push(
+        heading(3, "Dataverse Components"),
+        heading(4, "Tables"),
+        bullets(solution.tables),
+        heading(4, "Choices"),
+        bullets(solution.choices)
+      );
+    }
+
+    for (const spec of tables) {
+      sections.push(
+        heading(3, spec.name),
+        `Platform: ${spec.platform}`,
+        spec.purpose,
+        table(
+          ["Field", "Type", "Required", "Notes"],
+          spec.columns.map((column) => [column.name, column.type, column.required ? "Yes" : "No", column.notes])
+        ),
+        heading(4, "Relationships"),
+        bullets(spec.relationships),
+        heading(4, "Recommended Indexes"),
+        bullets(spec.indexes)
+      );
+    }
+  }
+
+  sections.push("---", "Generated from the BuilderVault PMO toolkit content.");
+  return sections.filter(Boolean).join("\n\n") + "\n";
+}
+function buildArchitectureBrief() {
+  const sections = [
+    heading(1, "PMO Solution Architecture Brief"),
+    "A technical planning artifact for building the BuilderVault PMO toolkit with Microsoft 365 and Power Platform.",
+    heading(2, "Reference Architecture Layers")
+  ];
+
+  for (const layer of toolkit.pmoArchitectureLayers) {
+    sections.push(
+      heading(3, layer.layer),
+      layer.purpose,
+      heading(4, "Components"),
+      bullets(layer.components),
+      heading(4, "Design Notes"),
+      bullets(layer.designNotes)
+    );
+  }
+
+  sections.push(
+    heading(2, toolkit.pmoArchitectureDecisionGuide.decision),
+    heading(3, "Use SharePoint When"),
+    bullets(toolkit.pmoArchitectureDecisionGuide.useSharePointWhen),
+    heading(3, "Use Dataverse When"),
+    bullets(toolkit.pmoArchitectureDecisionGuide.useDataverseWhen),
+    heading(2, "Security Roles")
+  );
+
+  for (const role of toolkit.pmoArchitectureSecurityRoles) {
+    sections.push(
+      heading(3, role.role),
+      role.access,
+      bullets(role.notes)
+    );
+  }
+
+  sections.push(heading(2, "Environment Path"));
+  for (const step of toolkit.pmoArchitectureEnvironmentPath) {
+    sections.push(
+      heading(3, step.stage),
+      step.purpose,
+      bullets(step.requiredPractices)
+    );
+  }
+
+  sections.push(
+    heading(2, "Recommended Technical Release Sequence"),
+    bullets(toolkit.pmoArchitectureReleasePath.map((step, index) => `${index + 1}. ${step}`)),
+    "---",
+    "Generated from the BuilderVault PMO toolkit content."
+  );
+
+  return sections.filter(Boolean).join("\n\n") + "\n";
+}
+function buildMockupBrief(mockup) {
+  const stage = toolkit.getPmoStageBySlug(mockup.moduleSlug);
+  const sections = [
+    heading(1, `${mockup.title} Build Brief`),
+    `Module: ${stage ? stage.title : mockup.moduleSlug}`,
+    `Persona: ${mockup.persona}`,
+    heading(2, "Purpose"),
+    mockup.purpose,
+    heading(2, "Layout Pattern"),
+    bullets(mockup.layout),
+    heading(2, "Metrics To Show"),
+    bullets(mockup.metrics.map((metric) => `${metric.label}: ${metric.value}`)),
+    heading(2, "Core Fields"),
+    bullets(mockup.fields),
+    heading(2, "Queue Examples"),
+    table(
+      ["Item", "Meta", "Status"],
+      mockup.queueItems.map((item) => [item.title, item.meta, item.status])
+    ),
+    heading(2, "Primary Actions"),
+    bullets(mockup.actions),
+    heading(2, "Build Notes"),
+    bullets(mockup.buildNotes),
+    heading(2, "Recommended Build Order"),
+    bullets([
+      "Create the backing table or list and choices first.",
+      "Build the read-only queue view before the edit form.",
+      "Add command buttons only after status transitions are clear.",
+      "Wire automations for notifications, approvals, and history writes.",
+      "Add reporting measures after records have consistent owner, status, and date fields."
+    ]),
+    "---",
+    "Generated from the BuilderVault PMO toolkit content."
+  ];
 
   return sections.filter(Boolean).join("\n\n") + "\n";
 }
@@ -256,3 +399,16 @@ const roadmapPath = path.join(outputDir, "pmo-30-60-90-master-roadmap.md");
 fs.writeFileSync(roadmapPath, buildMasterRoadmapGuide(), "utf8");
 console.log(`Wrote ${path.relative(root, roadmapPath)}`);
 
+const architecturePath = path.join(outputDir, "pmo-solution-architecture-brief.md");
+fs.writeFileSync(architecturePath, buildArchitectureBrief(), "utf8");
+console.log(`Wrote ${path.relative(root, architecturePath)}`);
+
+const dataDictionaryPath = path.join(outputDir, "pmo-data-dictionary.md");
+fs.writeFileSync(dataDictionaryPath, buildDataDictionaryGuide(), "utf8");
+console.log(`Wrote ${path.relative(root, dataDictionaryPath)}`);
+
+for (const mockup of toolkit.pmoPortalMockups) {
+  const filePath = path.join(outputDir, `${mockup.slug}-mockup-brief.md`);
+  fs.writeFileSync(filePath, buildMockupBrief(mockup), "utf8");
+  console.log(`Wrote ${path.relative(root, filePath)}`);
+}

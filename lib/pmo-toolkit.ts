@@ -1,4 +1,4 @@
-﻿export type PmoToolBlueprint = {
+export type PmoToolBlueprint = {
   name: string;
   purpose: string;
   powerPlatformBuild: string[];
@@ -1293,29 +1293,29 @@ export const pmoDemoSteps: PmoDemoStep[] = [
 
 export const pmoOfferSections: PmoOfferSection[] = [
   {
-    title: "Positioning",
-    summary: "A practical PMO build package for teams that need governance and visibility but cannot justify a seven-figure enterprise PMO platform.",
-    bullets: ["Built on Microsoft 365 and Power Platform", "Starts with usable portals and workflows", "Designed around PMO lifecycle behavior", "Can mature into a formal managed offering later"]
+    title: "Who this is for",
+    summary: "PMO teams that need intake, governance, delivery control, and reporting but want to build on Microsoft 365 and Power Platform before buying a large enterprise PMO platform.",
+    bullets: ["Small or growing PMO teams", "Operations teams managing project demand", "Power Platform centers of excellence", "IT teams replacing spreadsheet-based governance"]
   },
   {
-    title: "Core offer",
-    summary: "Help a PMO design and build a modular operating system for demand, approvals, delivery control, and reporting.",
-    bullets: ["30/60/90 implementation roadmap", "Module-by-module solution blueprint", "Power Apps screen plans", "Dataverse or SharePoint data model", "Power Automate workflow recipes", "Power BI reporting map"]
+    title: "What the toolkit helps you build",
+    summary: "A modular PMO operating system made from practical portals, workflows, dashboards, templates, and governance routines.",
+    bullets: ["Demand intake and triage", "Charter and sponsor approval", "Stage gates and lifecycle control", "RAID and change request management", "Executive reporting and communication digests"]
   },
   {
-    title: "Possible delivery tiers",
-    summary: "Keep this hidden until pricing and delivery capacity are clear, but shape the future offer around progressively deeper implementation help.",
-    bullets: ["Blueprint package: workshops, architecture, and build plan", "MVP build package: intake, charter, and reporting foundation", "Lifecycle control package: gates, RAID, change, and executive dashboards", "Managed improvement package: monthly enhancements, reporting refinements, and governance tuning"]
+    title: "Implementation path",
+    summary: "Start with the smallest useful PMO workflow, then expand into a connected lifecycle as the data and operating cadence mature.",
+    bullets: ["Days 1-30: intake and charter foundation", "Days 31-60: stage gates, RAID, and change control", "Days 61-90: communications, reporting, and operating cadence", "Ongoing: backlog improvements and governance tuning"]
   },
   {
-    title: "Proof assets to build next",
-    summary: "Before selling the offer publicly, create examples that prove the system is concrete and buildable.",
-    bullets: ["Demo narrative page", "Module comparison matrix", "Downloadable roadmap", "Screenshots or mockups of key portals", "Sample Power BI dashboard outline", "Starter CSV and Markdown files"]
+    title: "What is included",
+    summary: "BuilderVault provides the reference material needed to plan and build the system with your existing Microsoft tools.",
+    bullets: ["Solution architecture", "Data dictionary", "Power Apps screen blueprints", "Power Automate recipes", "Power BI KPI catalog", "Downloadable build guides and starter files"]
   },
   {
-    title: "What to avoid",
-    summary: "The offer should not sound like a generic PMO consulting pitch or a replacement for every enterprise platform.",
-    bullets: ["Do not promise one universal PMO app", "Do not lead with dashboards before data quality", "Do not bury clients in governance jargon", "Do not price or publish until scope boundaries are clear"]
+    title: "Design principles",
+    summary: "The toolkit is intentionally lightweight, modular, and grounded in PMO behavior rather than software feature sprawl.",
+    bullets: ["Build focused tools instead of one giant app", "Use evidence and decision history instead of status theater", "Separate executive reporting from operational queues", "Keep ownership, due dates, and escalation paths visible"]
   }
 ];
 
@@ -1331,11 +1331,13 @@ export type PmoPortalMockup = {
   queueItems: { title: string; meta: string; status: string }[];
   actions: string[];
   buildNotes: string[];
+  briefHref: string;
 };
 
 export const pmoPortalMockups: PmoPortalMockup[] = [
   {
     slug: "intake-portal",
+    briefHref: "/pmo-guides/intake-portal-mockup-brief.md",
     title: "Intake portal mockup",
     moduleSlug: "intake-and-triage",
     persona: "Business requester and PMO triage lead",
@@ -1357,6 +1359,7 @@ export const pmoPortalMockups: PmoPortalMockup[] = [
   },
   {
     slug: "charter-approval",
+    briefHref: "/pmo-guides/charter-approval-mockup-brief.md",
     title: "Charter approval mockup",
     moduleSlug: "charter-and-approval",
     persona: "Sponsor, PMO reviewer, and project manager",
@@ -1378,6 +1381,7 @@ export const pmoPortalMockups: PmoPortalMockup[] = [
   },
   {
     slug: "gate-review",
+    briefHref: "/pmo-guides/gate-review-mockup-brief.md",
     title: "Gate review mockup",
     moduleSlug: "stage-gates",
     persona: "Project manager, gate approver, and PMO governance lead",
@@ -1399,6 +1403,7 @@ export const pmoPortalMockups: PmoPortalMockup[] = [
   },
   {
     slug: "raid-control",
+    briefHref: "/pmo-guides/raid-control-mockup-brief.md",
     title: "RAID and change control mockup",
     moduleSlug: "change-risk-issue-control",
     persona: "Project manager, risk owner, PMO lead, and sponsor",
@@ -1420,6 +1425,7 @@ export const pmoPortalMockups: PmoPortalMockup[] = [
   },
   {
     slug: "executive-dashboard",
+    briefHref: "/pmo-guides/executive-dashboard-mockup-brief.md",
     title: "Executive dashboard mockup",
     moduleSlug: "communications-and-reporting",
     persona: "Executive sponsor, PMO director, and portfolio steering group",
@@ -1439,4 +1445,207 @@ export const pmoPortalMockups: PmoPortalMockup[] = [
     actions: ["Open decision", "Send digest", "Refresh Power BI", "Snapshot month end"],
     buildNotes: ["Separate executive pages from PMO working queues.", "Use health definitions before publishing dashboards.", "Lead with exceptions and decisions, not raw activity counts."]
   }
+];
+
+
+
+export type PmoArchitectureLayer = {
+  layer: string;
+  purpose: string;
+  components: string[];
+  designNotes: string[];
+};
+
+export type PmoArchitectureDecision = {
+  decision: string;
+  useSharePointWhen: string[];
+  useDataverseWhen: string[];
+};
+
+export type PmoSecurityRole = {
+  role: string;
+  access: string;
+  notes: string[];
+};
+
+export type PmoEnvironmentStep = {
+  stage: string;
+  purpose: string;
+  requiredPractices: string[];
+};
+
+export const pmoArchitectureLayers: PmoArchitectureLayer[] = [
+  {
+    layer: "Experience layer",
+    purpose: "Focused portals and apps for each PMO workflow instead of one giant all-purpose application.",
+    components: ["Power Apps requester and PMO workbench screens", "Power Pages intake portal when external or broad business access is needed", "Model-driven admin views for Dataverse-heavy builds", "Power BI app for executive and PMO reporting"],
+    designNotes: ["Separate requester experiences from PMO-only work queues.", "Use role-based navigation so sponsors, PMs, and executives see only relevant actions.", "Keep forms short at intake and add detail as work moves through the lifecycle."]
+  },
+  {
+    layer: "Operational data layer",
+    purpose: "The source of truth for demand, charters, projects, gates, RAID, changes, decisions, status updates, and benefits.",
+    components: ["SharePoint lists for lightweight MVPs", "Dataverse tables for relational security and lifecycle maturity", "Choice sets for status, health, severity, and decision outcomes", "Audit/history tables for approvals, stage movement, decisions, and communications"],
+    designNotes: ["Design around lifecycle records, not screens.", "Use lookup relationships for projects, sponsors, gates, risks, issues, and decisions.", "Do not overwrite history fields when a separate history row is needed."]
+  },
+  {
+    layer: "Automation layer",
+    purpose: "Power Automate flows that route approvals, reminders, escalations, notifications, history writes, and report refreshes.",
+    components: ["Submission confirmations", "Sponsor approvals", "Gate approval routing", "Critical risk and overdue action escalations", "Weekly status shells and executive digest", "Power BI refresh triggers"],
+    designNotes: ["Use connection references and environment variables from the beginning.", "Keep business-critical decision writes explicit and auditable.", "Create communication log rows when flows notify stakeholders."]
+  },
+  {
+    layer: "Reporting layer",
+    purpose: "Power BI semantic model and dashboards for portfolio health, lifecycle movement, exceptions, decisions, and benefits.",
+    components: ["Demand funnel", "Lifecycle and stage aging", "Gate exception dashboard", "RAID and change impact dashboards", "Executive portfolio health", "Benefits review pages"],
+    designNotes: ["Separate operational queues from executive pages.", "Define health, severity, and status before building visuals.", "Build reports from curated views or modeled tables instead of raw list exports when the system matures."]
+  },
+  {
+    layer: "Collaboration layer",
+    purpose: "Teams, email, and stakeholder digest patterns that keep PMO decisions visible without making users live inside lists.",
+    components: ["Teams triage channel posts", "Sponsor approval notifications", "Overdue owner reminders", "Executive digest messages", "Decision-needed alerts"],
+    designNotes: ["Send fewer, more decision-oriented notifications.", "Link messages back to the relevant app, record, or report.", "Use Teams for visibility, not as the system of record."]
+  }
+];
+
+export const pmoArchitectureDecisionGuide: PmoArchitectureDecision = {
+  decision: "SharePoint versus Dataverse",
+  useSharePointWhen: [
+    "The PMO is small and needs a fast MVP.",
+    "Security can be handled at site, list, or simple item ownership level.",
+    "Relationships are light and mostly lookup-style.",
+    "The first goal is demand visibility and basic reporting."
+  ],
+  useDataverseWhen: [
+    "Role-based security, teams, business units, or row-level access matter.",
+    "The PMO needs stronger relationships across projects, gates, risks, issues, changes, and decisions.",
+    "Model-driven admin experiences would reduce maintenance effort.",
+    "The solution is likely to become a managed internal platform or client offering."
+  ]
+};
+
+export const pmoArchitectureSecurityRoles: PmoSecurityRole[] = [
+  { role: "Requester", access: "Create and view own intake requests and clarification responses.", notes: ["No access to PMO scoring fields.", "Can see submitted status and decision outcome."] },
+  { role: "PMO analyst", access: "Edit triage, scoring, decision notes, queues, and operational PMO records.", notes: ["Can assign owners and request clarification.", "Can move approved demand to charter."] },
+  { role: "Sponsor", access: "Review and approve assigned charters, decisions, gate exceptions, and escalations.", notes: ["Should see items tied to their department or sponsorship.", "Approval comments must be retained."] },
+  { role: "Project manager", access: "Manage project status, gate evidence, RAID items, change requests, milestones, and weekly updates for assigned projects.", notes: ["Cannot approve their own gate decisions unless governance allows it.", "Owns evidence quality and update cadence."] },
+  { role: "Executive viewer", access: "Read portfolio dashboards, exceptions, decisions needed, and benefits reporting.", notes: ["Prefer read-only reporting access.", "Avoid exposing operational edit forms."] },
+  { role: "PMO admin", access: "Maintain choices, criteria templates, environment variables, app settings, and security assignments.", notes: ["Limited group with documented release process.", "Owns data model and support playbook."] }
+];
+
+export const pmoArchitectureEnvironmentPath: PmoEnvironmentStep[] = [
+  {
+    stage: "Development",
+    purpose: "Build and test data model, apps, flows, and reports with sample records.",
+    requiredPractices: ["Use a solution from day one for Dataverse builds.", "Create environment variables and connection references early.", "Keep sample data realistic enough for stakeholder review."]
+  },
+  {
+    stage: "Test or UAT",
+    purpose: "Validate role access, approval paths, edge cases, notifications, reporting, and migration steps.",
+    requiredPractices: ["Test as non-admin users.", "Run approve, reject, revise, escalate, overdue, and exception scenarios.", "Confirm Power BI refresh and audience permissions."]
+  },
+  {
+    stage: "Production",
+    purpose: "Operate the PMO system with controlled releases, support ownership, and governance cadence.",
+    requiredPractices: ["Deploy managed solutions when using Dataverse.", "Document rollback steps and support contacts.", "Track enhancement backlog and release notes."]
+  }
+];
+
+export const pmoArchitectureReleasePath = [
+  "Create publisher, solution shell, environment variables, and connection references.",
+  "Build core tables or lists, choices, relationships, and sample rows.",
+  "Create app screens and role-based navigation.",
+  "Add flows for status changes, approvals, notifications, escalations, and logs.",
+  "Build Power BI model and reports after operational records stabilize.",
+  "Test role access, lifecycle scenarios, flow failures, and reporting refresh.",
+  "Release by phase and monitor adoption before adding complexity."
+];
+
+export type PmoNamedList = {
+  title: string;
+  summary: string;
+  items: string[];
+};
+
+export type PmoTemplateText = {
+  title: string;
+  audience: string;
+  purpose: string;
+  template: string[];
+};
+
+export type PmoKpi = {
+  name: string;
+  category: string;
+  definition: string;
+  formula: string;
+  signal: string;
+};
+
+export const pmoUatScenarios: PmoNamedList[] = [
+  { title: "Intake submission", summary: "Validate requester submission, required fields, confirmation, and triage queue visibility.", items: ["Submit a complete request as a requester.", "Try submitting without sponsor and problem statement.", "Confirm status changes to Submitted.", "Confirm PMO triage queue shows the new request.", "Confirm requester receives confirmation."] },
+  { title: "Clarification loop", summary: "Validate that incomplete demand can be returned without losing history.", items: ["PMO requests clarification with comments.", "Requester receives clarification message.", "Requester updates missing details.", "PMO sees updated request as ready for triage.", "Communication log retains the loop."] },
+  { title: "Charter approval", summary: "Validate sponsor approval, revision, rejection, and approved project creation.", items: ["Create charter from approved intake.", "Route to sponsor approval.", "Request revision with comments.", "Approve revised charter.", "Confirm project record and approval history are created."] },
+  { title: "Gate review", summary: "Validate gate checklist, evidence, exception, and stage movement.", items: ["Generate criteria for a project stage.", "Attach evidence for required criteria.", "Submit gate review.", "Approve with exception and assign follow-up.", "Confirm stage history is written."] },
+  { title: "RAID and change control", summary: "Validate owner queues, escalation thresholds, change routing, and closure evidence.", items: ["Create high-severity risk.", "Confirm Teams or email escalation.", "Submit change request with budget impact.", "Route approval by impact threshold.", "Close issue only after closure notes are entered."] },
+  { title: "Reporting and digest", summary: "Validate status shells, missed updates, dashboard refresh, and stakeholder digest.", items: ["Generate weekly status update shells.", "Submit red status with help-needed notes.", "Mark one status update missed.", "Refresh Power BI dataset or reporting view.", "Send executive digest with decisions needed."] }
+];
+
+export const pmoReleaseChecklist: PmoNamedList[] = [
+  { title: "Pre-release readiness", summary: "Confirm the build is ready before deployment.", items: ["All required fields and choices exist in target environment.", "Connection references are assigned.", "Environment variables point to production resources.", "Security roles are assigned to pilot users.", "Rollback notes and support owner are documented."] },
+  { title: "Functional validation", summary: "Run core business scenarios before release.", items: ["Submit, clarify, approve, reject, and defer intake.", "Approve and revise charter.", "Approve gate and approve gate with exception.", "Escalate critical risk and route change approval.", "Submit weekly status and publish digest."] },
+  { title: "Reporting validation", summary: "Ensure reports reflect operational records correctly.", items: ["Dataset refresh succeeds.", "Current period filters work.", "Health and status definitions match PMO rules.", "Executives see read-only reports.", "Sensitive operational fields are not overexposed."] },
+  { title: "Launch communications", summary: "Prepare users and sponsors for release.", items: ["Send what-is-changing note.", "Publish support contact and office hours.", "Share quick-start guide links.", "Confirm PMO triage cadence.", "Announce first governance review date."] }
+];
+
+export const pmoSupportRunbook: PmoNamedList[] = [
+  { title: "Daily support", summary: "Keep the system healthy during normal operation.", items: ["Review failed flows each morning.", "Check unassigned intake requests.", "Review overdue approvals and escalations.", "Confirm status shells were created for the period.", "Monitor user questions and recurring friction."] },
+  { title: "Common fixes", summary: "Known fixes for predictable operational issues.", items: ["Reassign approval when sponsor is out.", "Refresh connection reference after credential changes.", "Reopen clarification request when requester updates wrong field.", "Correct status record marked current incorrectly.", "Repair missing project lookup on RAID or status records."] },
+  { title: "Escalation path", summary: "When support should move from PMO admin to technical owner.", items: ["Flow fails repeatedly after retry.", "Security role exposes incorrect records.", "Power BI refresh fails after schema change.", "Production data requires bulk correction.", "Approval or gate history is missing."] }
+];
+
+export const pmoGovernanceCadence: PmoNamedList[] = [
+  { title: "Twice-weekly demand triage", summary: "Keep new demand from aging silently.", items: ["Review submitted and clarification-ready intake.", "Assign triage owners.", "Score high-priority demand.", "Approve, defer, reject, or request clarification.", "Move approved requests to charter."] },
+  { title: "Weekly delivery control", summary: "Review gates, RAID, changes, and decisions.", items: ["Review gate submissions and exceptions.", "Review critical risks and overdue actions.", "Route pending change requests.", "Confirm decision owners and due dates.", "Capture escalations for sponsor review."] },
+  { title: "Weekly executive digest", summary: "Communicate exceptions and decisions needed.", items: ["Publish current status updates.", "Group red and yellow projects.", "List sponsor decisions needed.", "Highlight major changes and gate exceptions.", "Send digest with links to reports."] },
+  { title: "Monthly portfolio review", summary: "Use PMO data for prioritization and governance improvement.", items: ["Review demand trend and approval mix.", "Review stage aging and gate exception rate.", "Review benefits measures after launch.", "Review PMO system adoption metrics.", "Approve backlog improvements."] }
+];
+
+export const pmoCommunicationTemplates: PmoTemplateText[] = [
+  { title: "Intake confirmation", audience: "Requester", purpose: "Confirm the request entered the PMO queue.", template: ["Subject: Your request has been received", "Thanks for submitting [Request Title].", "The PMO will review it during the next triage cycle.", "Current status: Submitted", "You will be notified if clarification is needed or when a decision is made."] },
+  { title: "Clarification request", audience: "Requester", purpose: "Ask for missing details without losing the request.", template: ["Subject: More detail needed for [Request Title]", "The PMO needs clarification before this can be triaged.", "Requested details: [Clarification Notes]", "Please update the request by [Due Date]."] },
+  { title: "Sponsor approval request", audience: "Sponsor", purpose: "Route charter approval with enough context for a decision.", template: ["Subject: Charter approval needed for [Project Name]", "Please review scope, value, success measures, assumptions, and risks.", "Decision options: Approve, Request Revision, Reject", "Requested decision date: [Date]."] },
+  { title: "Gate exception alert", audience: "Sponsor or PMO governance lead", purpose: "Make lifecycle exceptions visible and owned.", template: ["Subject: Gate exception recorded for [Project Name]", "Stage: [Stage]", "Exception reason: [Reason]", "Owner: [Owner]", "Follow-up due: [Due Date]."] },
+  { title: "Executive weekly digest", audience: "Executives and sponsors", purpose: "Summarize portfolio exceptions and decisions needed.", template: ["Subject: PMO weekly portfolio digest", "Red projects: [Count]", "Decisions needed: [List]", "Gate exceptions: [List]", "Critical risks: [List]", "Open dashboard: [Link]."] }
+];
+
+export const pmoKpiCatalog: PmoKpi[] = [
+  { name: "Intake volume", category: "Demand", definition: "Number of new requests submitted in a period.", formula: "COUNTROWS('Intake Requests')", signal: "Demand trend and PMO workload." },
+  { name: "Average triage days", category: "Demand", definition: "Average days from submitted date to decision date.", formula: "AVERAGEX('Intake Requests', DATEDIFF([Submitted Date], [Decision Date], DAY))", signal: "Whether demand is moving or aging." },
+  { name: "Approval rate", category: "Demand", definition: "Percent of decided requests approved for charter.", formula: "DIVIDE([Approved Requests], [Decided Requests])", signal: "Quality and fit of incoming demand." },
+  { name: "Charter approval cycle time", category: "Charter", definition: "Days from charter submitted to sponsor decision.", formula: "AVERAGEX('Project Charters', DATEDIFF([Submitted Date], [Approval Date], DAY))", signal: "Sponsor responsiveness and charter quality." },
+  { name: "Stage aging", category: "Lifecycle", definition: "Days a project has remained in the current stage.", formula: "DATEDIFF('Projects'[Stage Changed Date], TODAY(), DAY)", signal: "Lifecycle bottlenecks." },
+  { name: "Gate exception rate", category: "Lifecycle", definition: "Percent of gate approvals with exception.", formula: "DIVIDE([Gate Approved With Exception], [Gate Decisions])", signal: "Governance quality and readiness gaps." },
+  { name: "Open risk exposure", category: "RAID", definition: "Sum of probability times impact for open risks.", formula: "SUMX(FILTER('Risks', [Status] <> \"Closed\"), [Probability] * [Impact Score])", signal: "Portfolio exposure." },
+  { name: "Overdue actions", category: "RAID", definition: "Open actions past due date.", formula: "COUNTROWS(FILTER('Actions', [Due Date] < TODAY() && [Status] <> \"Closed\"))", signal: "Execution discipline." },
+  { name: "Missing status count", category: "Reporting", definition: "Required status updates not submitted for current period.", formula: "COUNTROWS(FILTER('Status Updates', [Status] = \"Missed\"))", signal: "Reporting compliance." },
+  { name: "Benefits realization percent", category: "Benefits", definition: "Current measured benefit divided by target benefit.", formula: "DIVIDE(SUM('Benefits Tracking'[Current Value]), SUM('Benefits Tracking'[Target]))", signal: "Whether delivered work created expected value." }
+];
+
+export const pmoAdoptionPlan: PmoNamedList[] = [
+  { title: "Pilot group", summary: "Start with a small group that feels the PMO pain daily.", items: ["Select two or three departments.", "Use real incoming demand.", "Hold weekly feedback office hours.", "Remove confusing fields quickly.", "Track adoption friction in backlog."] },
+  { title: "Role-based onboarding", summary: "Train people only on the tasks they perform.", items: ["Requesters learn submit and respond to clarification.", "PMO analysts learn triage and decision logging.", "Sponsors learn approval and decision views.", "Project managers learn gates, RAID, and status.", "Executives learn dashboard and digest usage."] },
+  { title: "Adoption signals", summary: "Measure whether behavior is changing.", items: ["Percent of new demand submitted through intake.", "Average triage days trending down.", "Fewer requests handled only in email.", "Status update compliance improves.", "Sponsors use approval links rather than side conversations."] }
+];
+
+export const pmoBacklogModel: PmoNamedList[] = [
+  { title: "Backlog fields", summary: "Track enhancements as PMO product work.", items: ["Title", "Module", "Persona", "Problem", "Expected value", "Priority", "Effort", "Risk", "Requested by", "Target release", "Decision"] },
+  { title: "Prioritization rules", summary: "Favor improvements that reduce operational friction.", items: ["Fix broken governance paths before cosmetic work.", "Prioritize work that removes duplicate entry.", "Prioritize executive decision visibility.", "Defer features that require immature data.", "Bundle small report refinements into monthly releases."] },
+  { title: "Release buckets", summary: "Keep improvements grouped by predictable release type.", items: ["Bug fix", "Field or choice update", "Workflow improvement", "Report enhancement", "New module", "Security or governance change"] }
+];
+
+export const pmoEscalationPlaybook: PmoNamedList[] = [
+  { title: "Escalate demand", summary: "When intake needs leadership attention.", items: ["Strategic request with unclear sponsor.", "High-value request blocked by missing information.", "Duplicate demand across departments.", "Rejected or deferred request disputed by sponsor."] },
+  { title: "Escalate delivery", summary: "When active work needs sponsor or governance attention.", items: ["Critical risk exposure exceeds threshold.", "Gate exception follow-up is overdue.", "Issue blocks launch or compliance commitment.", "Change request impacts approved baseline."] },
+  { title: "Escalate reporting", summary: "When status and executive visibility are unreliable.", items: ["Repeated missed status updates.", "Health rating conflicts with RAID data.", "Decision needed has no owner.", "Benefit tracking is missing after launch."] },
+  { title: "Decision record requirements", summary: "Every escalation should leave a record.", items: ["Decision needed", "Options considered", "Recommendation", "Decision maker", "Decision", "Decision date", "Rationale", "Follow-up owner"] }
 ];

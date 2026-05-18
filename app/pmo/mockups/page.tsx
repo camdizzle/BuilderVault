@@ -1,14 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { getPmoStageBySlug, pmoPortalMockups } from "@/lib/pmo-toolkit";
 
 export const metadata = {
   title: "PMO Portal Mockups | BuilderVault",
-  description: "Hidden BuilderVault visual mockups for PMO Power Apps portals, queues, gate reviews, RAID control, and executive reporting.",
-  robots: {
-    index: false,
-    follow: false
-  }
+  description: "BuilderVault visual mockups for PMO Power Apps portals, queues, gate reviews, RAID control, and executive reporting."
 };
 
 export default function PmoMockupsPage() {
@@ -22,7 +18,7 @@ export default function PmoMockupsPage() {
         </nav>
 
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO visual blueprints</div>
+          <div className="eyebrow">PMO visual blueprints</div>
           <h1 className="page-title">PMO portal mockups</h1>
           <p className="lead">
             Static visual references for the Power Apps and Power BI experiences in the PMO toolkit. These are not live apps yet; they show the screen structure, data density, and decisions each module should support.
@@ -35,6 +31,7 @@ export default function PmoMockupsPage() {
               <span className="badge free" style={{ justifySelf: "start" }}>{mockup.persona}</span>
               <strong>{mockup.title}</strong>
               <span style={{ color: "#415049", lineHeight: 1.55 }}>{mockup.purpose}</span>
+              <span style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Open visual</span>
             </a>
           ))}
         </section>
@@ -47,6 +44,7 @@ export default function PmoMockupsPage() {
                 <div className="badge-row">
                   <span className="badge free">{stage?.title}</span>
                   <Link href={`/pmo/packages/${mockup.moduleSlug}`} style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Open package</Link>
+                  <a download href={mockup.briefHref} style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Download brief</a>
                 </div>
                 <div style={{ display: "grid", gap: 10, maxWidth: 900 }}>
                   <h2 style={{ fontSize: "1.55rem", lineHeight: 1.2, margin: 0 }}>{mockup.title}</h2>

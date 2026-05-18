@@ -1,9 +1,8 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { pmoMasterRoadmapDownload, pmoTemplateDownloads, pmoImplementationGuideDownloads, pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Starter File Index | BuilderVault",
-  robots: { index: false, follow: false }
+  title: "PMO Starter File Index | BuilderVault"
 };
 
 export default function PmoStarterFilesPage() {
@@ -13,9 +12,10 @@ export default function PmoStarterFilesPage() {
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <PmoBreadcrumb current="Starter files" />
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO file index</div>
+          <div className="eyebrow">PMO file index</div>
           <h1 className="page-title">PMO starter file index</h1>
           <p className="lead">A single place to find the PMO roadmap, module implementation guides, and CSV starters for building the toolkit.</p>
+          <Link className="button" href="/pmo/bundle" style={{ justifySelf: "start" }}>Open implementation bundle</Link>
         </header>
         <DownloadSection title="Roadmap" downloads={[pmoMasterRoadmapDownload]} />
         <DownloadSection title="Module implementation guides" downloads={moduleGuides} />

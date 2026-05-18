@@ -1,9 +1,8 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { pmoGlossaryTerms } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Implementation Glossary | BuilderVault",
-  robots: { index: false, follow: false }
+  title: "PMO Implementation Glossary | BuilderVault"
 };
 
 export default function PmoGlossaryPage() {
@@ -12,7 +11,7 @@ export default function PmoGlossaryPage() {
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <PmoBreadcrumb current="Glossary" />
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO glossary</div>
+          <div className="eyebrow">PMO glossary</div>
           <h1 className="page-title">PMO implementation glossary</h1>
           <p className="lead">Plain-language definitions for the PMO operating terms that become tables, screens, workflows, and reports in the BuilderVault PMO toolkit.</p>
         </header>

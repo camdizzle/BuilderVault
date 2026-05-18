@@ -5,9 +5,34 @@ import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl } from "@/lib/site";
 import { allResources, resourceGroups } from "@/lib/resources";
 import { exampleGuides } from "@/lib/example-guides";
+import { pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
 const defaultLastModified = new Date("2026-05-14");
 
+const pmoRoutes = [
+  "/pmo",
+  "/pmo/roadmap",
+  "/pmo/architecture",
+  "/pmo/data-dictionary",
+  "/pmo/bundle",
+  "/pmo/compare",
+  "/pmo/mockups",
+  "/pmo/starter-files",
+  "/pmo/glossary",
+  "/pmo/uat",
+  "/pmo/release",
+  "/pmo/runbook",
+  "/pmo/cadence",
+  "/pmo/communications",
+  "/pmo/kpis",
+  "/pmo/adoption",
+  "/pmo/backlog",
+  "/pmo/demo",
+  "/pmo/offer",
+  "/pmo/escalations",
+  ...pmoLifecycleStages.map((stage) => `/pmo/${stage.slug}`),
+  ...pmoLifecycleStages.map((stage) => `/pmo/packages/${stage.slug}`)
+];
 const seoHubRoutes = [
   "/alm/governance",
   "/alm/solutions",
@@ -38,6 +63,7 @@ const staticRoutes: Array<{
   { route: "/collections", changeFrequency: "weekly", priority: 0.8 },
   { route: "/resources", changeFrequency: "weekly", priority: 0.82 },
   { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
+  ...pmoRoutes.map((route) => ({ route, changeFrequency: "weekly" as const, priority: route === "/pmo" ? 0.86 : 0.64 })),
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
   { route: "/about", changeFrequency: "monthly", priority: 0.45 },
   { route: "/contact", changeFrequency: "monthly", priority: 0.4 },

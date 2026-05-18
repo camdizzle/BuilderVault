@@ -198,4 +198,4 @@ Cadence: Weekly status and monthly portfolio review
 
 ---
 
-Generated from the BuilderVault hidden PMO toolkit content.
+Generated from the BuilderVault PMO toolkit content.

@@ -1,10 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { getPmoStageBySlug, pmoModuleComparisons } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Module Comparison Matrix | BuilderVault",
-  robots: { index: false, follow: false }
+  title: "PMO Module Comparison Matrix | BuilderVault"
 };
 
 const headings = ["Module", "Build when", "Complexity", "First release", "Working signals"];
@@ -15,7 +14,7 @@ export default function PmoComparePage() {
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <PmoBreadcrumb current="Module comparison" />
         <header style={{ display: "grid", gap: 14, maxWidth: 980 }}>
-          <div className="eyebrow">Hidden PMO decision matrix</div>
+          <div className="eyebrow">PMO decision matrix</div>
           <h1 className="page-title">PMO module comparison matrix</h1>
           <p className="lead">Compare each PMO build module by business trigger, complexity, dependencies, first release scope, and signals that the module is working.</p>
         </header>

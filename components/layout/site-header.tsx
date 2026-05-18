@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export function SiteHeader() {
   return (
@@ -52,6 +52,7 @@ export function SiteHeader() {
           <Link href="/resources">Resources</Link>
           <Link href="/examples">Examples</Link>
           <Link href="/tools">Tools</Link>
+          <Link href="/pmo">PMO</Link>
           <Link href="/about">About</Link>
         </nav>
       </div>

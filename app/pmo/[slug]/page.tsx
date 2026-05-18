@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
@@ -6,11 +6,7 @@ import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { getPmoDeepDiveBySlug, getPmoFlowSnippetsBySlug, getPmoFormulaSnippetsBySlug, getPmoScreenBlueprintsBySlug, getPmoSolutionMapBySlug, getPmoStageBySlug, getPmoTableSpecsBySlug, pmoLifecycleStages, pmoTemplateDownloads } from "@/lib/pmo-toolkit";
 
 export const metadata = {
-  title: "PMO Blueprint | BuilderVault",
-  robots: {
-    index: false,
-    follow: false
-  }
+  title: "PMO Blueprint | BuilderVault"
 };
 
 type PmoStagePageProps = {
@@ -333,4 +329,3 @@ function MiniList({ items, title }: { items: string[]; title: string }) {
     </div>
   );
 }
-
