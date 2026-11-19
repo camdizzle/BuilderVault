@@ -285,7 +285,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
             <DownloadPromo />
             <ServicesCta
               placement="pattern"
-              text="If this pattern doesn't fit your app, I can review your version and suggest a fix."
+              text="If this pattern doesn't fit your app, send a request describing your version."
               title="Pattern not quite working?"
             />
           </aside>

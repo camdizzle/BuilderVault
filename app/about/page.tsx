@@ -41,8 +41,7 @@ export default function AboutPage() {
       <h2>How patterns are written</h2>
       <p>
         Patterns are written around real build scenarios, and each pattern page shows when it was last updated.
-        Found something wrong? <Link href="/contact">Tell me</Link> and
-        I&apos;ll fix it.
+        Found something wrong? Report it on the <Link href="/contact">contact page</Link>.
       </p>
       <h2>Who it is for</h2>
       <ul>

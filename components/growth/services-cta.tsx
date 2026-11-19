@@ -10,7 +10,7 @@ export function ServicesCta({ placement, text, title }: { placement: string; tex
       <h2 style={{ fontSize: "1.15rem", margin: 0 }}>{title}</h2>
       <p style={{ color: "var(--muted)", lineHeight: 1.6, margin: 0 }}>{text}</p>
       <Link className="button secondary" href="/services" onClick={() => trackEvent("Services CTA Clicked", { placement })}>
-        See how I can help
+        Ask about help
       </Link>
     </div>
   );
