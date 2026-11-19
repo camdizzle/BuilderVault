@@ -68,6 +68,7 @@ const staticRoutes: Array<{
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
   { route: "/about", changeFrequency: "monthly", priority: 0.45 },
   { route: "/contact", changeFrequency: "monthly", priority: 0.4 },
+  { route: "/services", changeFrequency: "monthly", priority: 0.6 },
   { route: "/pricing", changeFrequency: "monthly", priority: 0.35 },
   { route: "/privacy", changeFrequency: "yearly", priority: 0.2 },
   { route: "/terms", changeFrequency: "yearly", priority: 0.2 },

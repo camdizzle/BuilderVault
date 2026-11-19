@@ -4,6 +4,7 @@ import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
 import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
+import { ServicesCta } from "@/components/growth/services-cta";
 import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { PatternBadges } from "@/components/patterns/pattern-badges";
 import { PatternCard } from "@/components/patterns/pattern-card";
@@ -281,6 +282,11 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
               </div>
             ) : null}
             <DownloadPromo />
+            <ServicesCta
+              placement="pattern"
+              text="If this pattern doesn't fit your app, I can review your version and suggest a fix."
+              title="Pattern not quite working?"
+            />
           </aside>
         </div>
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
+import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import type { ResourceItem } from "@/lib/resources";
 import { absoluteUrl } from "@/lib/site";
@@ -128,6 +129,13 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
               <Link className="button secondary" href={parentPathByKind[resource.kind]}>View more</Link>
             </div>
             <DownloadPromo />
+            {isTool ? (
+              <ServicesCta
+                placement={"tool:" + resource.slug}
+                text="Send me the formula, app, or flow and get written review notes with suggested fixes."
+                title="Want a second pair of eyes?"
+              />
+            ) : null}
           </aside>
         </div>
       </div>
