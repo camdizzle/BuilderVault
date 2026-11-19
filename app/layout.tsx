@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { AnalyticsScripts } from "@/components/analytics/analytics-scripts";
+import { analyticsConfig } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -24,7 +26,10 @@ export const metadata: Metadata = {
     type: "website",
     url: siteUrl,
     images: ["/og-image.svg"]
-  }
+  },
+  ...(analyticsConfig.googleSiteVerification
+    ? { verification: { google: analyticsConfig.googleSiteVerification } }
+    : {})
 };
 
 export default function RootLayout({
@@ -38,6 +43,7 @@ export default function RootLayout({
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />
+        <AnalyticsScripts />
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import { SimplePage } from "@/components/layout/simple-page";
+import { analyticsConfig } from "@/lib/analytics";
 
 export const metadata = {
   title: "Privacy Policy | BuilderVault",
@@ -14,7 +15,7 @@ export default function PrivacyPage() {
       title="Privacy policy."
     >
       <p>
-        <strong>Last updated:</strong> May 14, 2026
+        <strong>Last updated:</strong> November 19, 2026
       </p>
       <p>
         This policy is provided as practical boilerplate for the current public
@@ -34,6 +35,25 @@ export default function PrivacyPage() {
         timestamps. These logs are used to operate, secure, troubleshoot, and
         improve the website.
       </p>
+      <h2>Analytics</h2>
+      {analyticsConfig.plausibleDomain ? (
+        <p>
+          We use Plausible Analytics to count page views and a few anonymous events,
+          such as copying formatted code. Plausible does not use cookies and does not
+          collect personal information.
+        </p>
+      ) : null}
+      {analyticsConfig.gaMeasurementId ? (
+        <p>
+          We use Google Analytics to understand which pages and tools are useful.
+          Google Analytics sets cookies and collects information such as pages
+          visited, approximate location, and device type. You can opt out with
+          Google&apos;s browser add-on or by blocking cookies.
+        </p>
+      ) : null}
+      {!analyticsConfig.plausibleDomain && !analyticsConfig.gaMeasurementId ? (
+        <p>BuilderVault does not currently run third-party analytics scripts.</p>
+      ) : null}
       <h2>Local storage and preferences</h2>
       <p>
         Some BuilderVault features, such as saved or favorited patterns, may store

@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 type CopyCodeBlockProps = {
   code: string;
   label?: string;
+  /** Optional analytics event name sent when the code is copied. */
+  copyEvent?: string;
 };
 
-export function CopyCodeBlock({ code, label = "Formula / code" }: CopyCodeBlockProps) {
+export function CopyCodeBlock({ code, copyEvent = "Code Copied", label = "Formula / code" }: CopyCodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   async function copyCode() {
     await navigator.clipboard.writeText(code);
+    trackEvent(copyEvent, { label, path: window.location.pathname });
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }

@@ -101,7 +101,7 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
           </ul>
         </div>
       ) : null}
-      <CopyCodeBlock code={formatted || "Paste a formula to format it."} label={mode === "format" ? "Formatted Power Fx" : "Minified Power Fx"} />
+      <CopyCodeBlock code={formatted || "Paste a formula to format it."} copyEvent="Formatter Copied" label={mode === "format" ? "Formatted Power Fx" : "Minified Power Fx"} />
       <DelegationPanel hints={delegationHints} hasFormula={Boolean(formula.trim())} />
       <CopyCodeBlock code={reviewNotes} label="Review notes" />
       <FormulaExplainerPanel explanation={explanation} />
