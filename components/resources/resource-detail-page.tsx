@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { DownloadPromo } from "@/components/growth/download-promo";
+import { NewsletterSignup } from "@/components/growth/newsletter-signup";
+import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import type { ResourceItem } from "@/lib/resources";
+import { absoluteUrl } from "@/lib/site";
 
 const parentPathByKind = {
   cookbook: "/cookbooks",
@@ -18,8 +22,26 @@ const parentLabelByKind = {
 };
 
 export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
+  const isTool = resource.kind === "tool";
+  const structuredData = isTool
+    ? {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: resource.title,
+        description: resource.description,
+        url: absoluteUrl(resource.path),
+        applicationCategory: "DeveloperApplication",
+        operatingSystem: "Any (runs in the browser)",
+        isAccessibleForFree: true,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
+      }
+    : null;
+
   return (
     <article style={{ padding: "54px 0" }}>
+      {structuredData ? (
+        <script dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} type="application/ld+json" />
+      ) : null}
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <nav aria-label="Breadcrumb" className="badge-row">
           <Link href="/resources" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Resources</Link>
@@ -38,19 +60,21 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
           </div>
         </header>
 
-        <div className="grid" style={{ gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)" }}>
+        <div className="grid content-with-aside">
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
+            {isTool ? children : null}
+            {isTool ? <NewsletterSignup placement={"tool:" + resource.slug} title="Get new tools and Power Fx tips by email" /> : null}
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Who this helps</h2>
               <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>{resource.audience}</p>
             </section>
             <section style={{ display: "grid", gap: 12 }}>
-              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>What to standardize</h2>
+              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>{isTool ? "What it does" : "What to standardize"}</h2>
               <ul style={{ color: "#415049", lineHeight: 1.75, margin: 0, paddingLeft: 20 }}>
                 {resource.summaryBullets.map((item) => <li key={item}>{item}</li>)}
               </ul>
             </section>
-            {children}
+            {isTool ? null : children}
 
             <section style={{ display: "grid", gap: 18 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Examples</h2>
@@ -75,6 +99,18 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
                 </div>
               ))}
             </section>
+
+            {resource.faqs && resource.faqs.length > 0 ? (
+              <section style={{ display: "grid", gap: 14 }}>
+                <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Questions</h2>
+                {resource.faqs.map((faq) => (
+                  <div key={faq.question}>
+                    <h3 style={{ fontSize: "1.1rem", margin: "0 0 6px" }}>{faq.question}</h3>
+                    <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>{faq.answer}</p>
+                  </div>
+                ))}
+              </section>
+            ) : null}
           </div>
           <aside style={{ display: "grid", gap: 18, alignSelf: "start" }}>
             <div className="card" style={{ padding: 20 }}>
@@ -92,6 +128,14 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
               </p>
               <Link className="button secondary" href={parentPathByKind[resource.kind]}>View more</Link>
             </div>
+            <DownloadPromo />
+            {isTool ? (
+              <ServicesCta
+                placement={"tool:" + resource.slug}
+                text="Send me the formula, app, or flow and get written review notes with suggested fixes."
+                title="Want a second pair of eyes?"
+              />
+            ) : null}
           </aside>
         </div>
       </div>

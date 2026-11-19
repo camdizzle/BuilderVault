@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
+import { DownloadPromo } from "@/components/growth/download-promo";
+import { NewsletterSignup } from "@/components/growth/newsletter-signup";
+import { ServicesCta } from "@/components/growth/services-cta";
 import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { PatternBadges } from "@/components/patterns/pattern-badges";
 import { PatternCard } from "@/components/patterns/pattern-card";
@@ -13,7 +16,7 @@ import {
   getRelatedPatterns
 } from "@/lib/patterns/patterns";
 import { getPatternSeo } from "@/lib/patterns/seo";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, authorStructuredData, formatDisplayDate, publisherOrganization, siteAuthor } from "@/lib/site";
 
 type PatternDetailPageProps = {
   params: Promise<{
@@ -112,10 +115,8 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         keywords: seo.secondaryKeywords.join(", "),
         mainEntityOfPage: absoluteUrl(`/patterns/${pattern.slug}`),
         proficiencyLevel: pattern.difficulty,
-        publisher: {
-          "@type": "Organization",
-          name: "BuilderVault"
-        }
+        publisher: publisherOrganization,
+        ...(authorStructuredData() ? { author: authorStructuredData() } : {})
       },
       {
         "@type": "FAQPage",
@@ -162,21 +163,18 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
           <p className="lead" style={{ maxWidth: 860 }}>
             {seo.seoDescription}
           </p>
-          <div className="badge-row" aria-label="Search intent and keywords">
-            <span className="badge">{seo.primaryKeyword}</span>
-            <span className="badge">{seo.seoPriority} intent</span>
-            <span className="badge">{pattern.difficulty}</span>
-          </div>
+          <p style={{ color: "var(--muted)", margin: 0 }}>
+            {siteAuthor.name ? (
+              <>
+                By <Link href="/about">{siteAuthor.name}</Link> ·{" "}
+              </>
+            ) : null}
+            Updated <time dateTime={pattern.updatedAt}>{formatDisplayDate(pattern.updatedAt)}</time> · {pattern.difficulty}
+          </p>
           <FavoriteButton patternSlug={pattern.slug} />
         </header>
 
-        <div
-          style={{
-            display: "grid",
-            gap: 28,
-            gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)"
-          }}
-        >
+        <div className="content-with-aside" style={{ gap: 28 }}>
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
             <DetailSection title="What this pattern solves">
               <div style={{ display: "grid", gap: 14 }}>
@@ -284,8 +282,16 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
                 </div>
               </div>
             ) : null}
+            <DownloadPromo />
+            <ServicesCta
+              placement="pattern"
+              text="If this pattern doesn't fit your app, I can review your version and suggest a fix."
+              title="Pattern not quite working?"
+            />
           </aside>
         </div>
+
+        <NewsletterSignup placement="pattern" />
 
         {relatedPatterns.length > 0 ? (
           <section style={{ display: "grid", gap: 18 }}>

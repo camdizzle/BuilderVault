@@ -15,7 +15,7 @@ const generatedSources = [
 
 const forbidden = [
   /TODO/i,
-  /TBD/i,
+  /\bTBD\b/i,
   /placeholder/i,
   /add .* here/i,
   /implementation here/i,

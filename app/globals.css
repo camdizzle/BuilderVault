@@ -183,6 +183,20 @@ button {
   white-space: nowrap;
 }
 
+.chip-button select {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  margin-left: 6px;
+}
+
+.chip-button:disabled,
+.chip-button select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .chip-button.active {
   background: var(--accent-soft);
   border-color: #82cdb7;
@@ -566,4 +580,55 @@ button {
   .footer-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* Main column plus sidebar. Stacks on narrow screens so the sidebar can't cover the content. */
+.content-with-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.28fr);
+}
+
+@media (max-width: 920px) {
+  .content-with-aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.adaptive-card-preview {
+  align-self: start;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.adaptive-card-input {
+  border: 1px solid #bec8c1;
+  border-radius: 4px;
+  color: var(--muted);
+  min-height: 56px;
+  padding: 8px;
+}
+
+.adaptive-card-button {
+  border: 1px solid #5b5fc7;
+  border-radius: 4px;
+  color: #5b5fc7;
+  font-weight: 700;
+  padding: 6px 14px;
 }

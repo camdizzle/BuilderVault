@@ -20,6 +20,7 @@ export type ResourceItem = {
   summaryBullets: string[];
   examples: ResourceExample[];
   relatedPatterns: string[];
+  faqs?: Array<{ question: string; answer: string }>;
 };
 
 function item(input: Omit<ResourceItem, "path">): ResourceItem {
@@ -221,31 +222,102 @@ export const cheatSheets: ResourceItem[] = [
 ];
 
 export const tools: ResourceItem[] = [
-  item({ slug: "power-fx-formatter", kind: "tool", title: "Power Fx Formatter", eyebrow: "Free tool concept", description: "An interactive client-side helper for making long Power Fx formulas easier to read before code review or handoff.", keywords: ["Power Fx formatter", "Power Apps formula formatter", "Power Fx review"], audience: "Makers cleaning up formulas before handoff.", summaryBullets: ["Normalize indentation around If, Patch, With, and ForAll.", "Highlight common readability issues.", "Keep formulas local in the browser.", "Link formatting issues to standards pages."], examples: [{ title: "Formatter checklist", problem: "Know what the tool should flag once interactive behavior is added.", code: `Checks:
-- Long formulas without With blocks
-- Nested If statements over three levels
-- Patch without IfError
-- Control references to other screens
-- Unclear variable names`, expectedResult: "The formatted output is easier to review, copy, and hand off to another Power Apps maker.", commonMistakes: ["Trying to auto-fix business logic", "Sending formulas to a server unnecessarily"] }], relatedPatterns: ["document-a-canvas-app-code-review-checklist", "standardize-a-maker-handoff-checklist"] }),
-  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool concept", description: "An interactive helper for predicting and documenting SharePoint internal column names before formulas and flows depend on them.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
+  item({
+    slug: "power-fx-formatter",
+    kind: "tool",
+    title: "Power Fx Formatter",
+    eyebrow: "Free tool",
+    description: "Format, minify, and review Power Apps formulas in your browser. Breaks long Power Fx into readable lines, flags unbalanced brackets, and points out likely delegation problems.",
+    keywords: ["Power Fx formatter", "Power Apps formula formatter", "Power Fx beautifier", "Power Fx minify", "Power Apps delegation check"],
+    audience: "Power Apps makers cleaning up formulas before code review, documentation, or handoff, and anyone pasting a formula into a forum post or support ticket.",
+    summaryBullets: [
+      "Short calls stay on one line, and long calls break with one argument per line.",
+      "Operators such as <>, >=, && and || stay intact, along with comments, quoted names, and text values.",
+      "Supports comma locales and semicolon locales (; for arguments, ;; for chaining).",
+      "Flags unbalanced brackets and quotes, and common delegation risks inside Filter, LookUp, and Search.",
+      "Nothing is uploaded. The formula never leaves your browser."
+    ],
+    examples: [
+      {
+        title: "Before and after",
+        problem: "A save button formula written on one line is hard to review. The formatter keeps short calls inline and breaks the long ones.",
+        code: `IfError(
+    Set(
+        varSavedRequest,
+        Patch(
+            Requests,
+            Defaults(Requests),
+            {
+                Title: txtTitle.Text,
+                RequestStatus: {Value: "Submitted"},
+                DueDate: dpDueDate.SelectedDate
+            }
+        )
+    );
+    Notify("Request saved.", NotificationType.Success),
+    Notify("The request could not be saved.", NotificationType.Error)
+)`,
+        expectedResult: "Each argument sits on its own line, so a reviewer can see what Patch writes and what the error branch does.",
+        commonMistakes: ["Formatting a formula that has an unbalanced bracket. Fix the syntax warning first.", "Expecting the formatter to change logic. It only changes whitespace."]
+      },
+      {
+        title: "Delegation hint",
+        problem: "Lower() applied to a column inside Filter can't be delegated, so on a large SharePoint list only the first rows are checked.",
+        code: `// Flagged: Lower() runs on every row, so the filter isn't delegated
+Filter(Requests, Lower(Owner.Email) = Lower(User().Email))
+
+// Better: compare against a value worked out once
+With(
+    {me: Lower(User().Email)},
+    Filter(Requests, Owner.Email = me)
+)`,
+        expectedResult: "The data source filters the rows on the server instead of only checking the first 500 to 2,000.",
+        commonMistakes: ["Assuming no blue underline means no delegation issue on every data source.", "Raising the data row limit instead of fixing the predicate."]
+      }
+    ],
+    relatedPatterns: ["power-apps-error-handling-iferror-patch", "avoid-delegation-warnings-sharepoint-filters"],
+    faqs: [
+      {
+        question: "Does Power Apps Studio have a built-in formatter?",
+        answer: "Yes. The formula bar has a Format text command, and Remove formatting turns a formula back into one line. This tool does the same job outside Studio, for formulas in documentation, code reviews, forum posts, or exported source, and adds syntax and delegation checks."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored."
+      },
+      {
+        question: "Can formatting change what my formula does?",
+        answer: "No. The formatter only changes spaces and line breaks. It does not reorder, remove, or rewrite any part of the formula. Minify can turn // comments into /* */ comments so the result fits on one line."
+      },
+      {
+        question: "My region uses semicolons. Is that supported?",
+        answer: "Yes. Turn on semicolon separators to read ; as the argument separator and ;; as the chaining operator, with a comma as the decimal separator."
+      },
+      {
+        question: "How accurate is the delegation check?",
+        answer: "It is a heuristic. It looks for functions and operators that commonly break delegation, such as Lower, Len, or the in operator inside Filter, and Search against SharePoint. Delegation depends on the data source and column type, so always confirm with the warnings in Studio."
+      }
+    ]
+  }),
+  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
 Avoid first creating: Request Status
 Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "document-a-sharepoint-column-internal-name-map"] }),
-  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool concept", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
+  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
 Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest"] }),
-  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool concept", description: "A naming worksheet for Dataverse tables, columns, choices, relationships, and solution prefixes.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
+  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
 Table display name: Service Request
 Schema name: bv_ServiceRequest
 Primary column: bv_RequestName
 Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stays consistent across apps, flows, and solutions.", commonMistakes: ["Changing schema names late", "Using generic table names", "Ignoring relationship names"] }], relatedPatterns: ["design-a-dataverse-table-relationship-model", "standardize-a-solution-publisher-prefix"] }),
-  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Preview Snippets", eyebrow: "Free tool concept", description: "A snippet library for Teams Adaptive Card layouts used by approval, notification, and request review flows.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
+  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
 ] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["send-an-adaptive-card-approval-to-teams", "build-a-user-mention-notification-pattern"] }),
-  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool concept", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
+  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
 Set(gblColorSurface, RGBA(255, 255, 255, 1));
 Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["standardize-a-canvas-app-theme", "build-a-reusable-command-bar-component"] }),
-  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool concept", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
+  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
 - Connection references rebound

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { authorStructuredData, publisherOrganization } from "@/lib/site";
 import { notFound } from "next/navigation";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { exampleGuides, getExampleGuideBySlug } from "@/lib/example-guides";
@@ -44,7 +45,8 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
     description: guide.description,
     keywords: guide.keywords.join(", "),
     mainEntityOfPage: "/examples/" + guide.slug,
-    publisher: { "@type": "Organization", name: "BuilderVault" }
+    publisher: publisherOrganization,
+    ...(authorStructuredData() ? { author: authorStructuredData() } : {})
   };
 
   return (
@@ -62,7 +64,7 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
             {guide.keywords.map((keyword) => <span className="badge" key={keyword}>{keyword}</span>)}
           </div>
         </header>
-        <div className="grid" style={{ gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)" }}>
+        <div className="grid content-with-aside">
           <div className="card" style={{ display: "grid", gap: 24, padding: 24 }}>
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>When to use this</h2>

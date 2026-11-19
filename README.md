@@ -70,6 +70,23 @@ npm run content:export
 npm run content:slug -- "Patch a SharePoint Date Field"
 ```
 
+## Configuration
+
+All optional features are controlled by build-time environment variables. See `.env.example`.
+Each one is off until its variable is set, and `NEXT_PUBLIC_*` values need a rebuild to take effect.
+
+| Variable | What it turns on |
+| --- | --- |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Plausible analytics (cookie-free) |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 (uses cookies) |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Search Console verification meta tag |
+| `NEXT_PUBLIC_NEWSLETTER_FORM_ACTION` | Newsletter signup boxes (posts to your email provider's embed form) |
+| `NEXT_PUBLIC_NEWSLETTER_EMAIL_FIELD` | Email field name your provider expects (default `email`) |
+
+Custom events sent when analytics is on: `Formatter Copied`, `Code Copied`, `Pack Downloaded`, `Newsletter Signup`.
+
+Downloadable packs live in `public/packs/` and are listed in `lib/downloads.ts`.
+
 ## Production build
 
 ```bash

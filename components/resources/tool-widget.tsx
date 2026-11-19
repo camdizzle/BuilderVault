@@ -4,6 +4,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import {
+  findDelegationHints,
+  formatPowerFxFormula,
+  minifyPowerFxFormula,
+  type DelegationHint,
+  type PowerFxLocale
+} from "@/lib/tools/power-fx-format";
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
@@ -11,6 +18,8 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
+  if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
+  if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
   return null;
 }
 
@@ -18,14 +27,23 @@ function PowerFxFormatter() {
   const sampleFormula = `IfError(
 Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,RequestStatus:{Value:"Submitted"},DueDate:dpDueDate.SelectedDate}));Notify("Request saved.",NotificationType.Success),Notify("The request could not be saved.",NotificationType.Error))`;
   const [formula, setFormula] = useState(sampleFormula);
-  const formatted = useMemo(() => formatPowerFx(formula), [formula]);
-  const checks = useMemo(() => analyzePowerFx(formula, formatted), [formula, formatted]);
-  const reviewNotes = useMemo(() => buildPowerFxReviewNotes(checks), [checks]);
+  const [mode, setMode] = useState<"format" | "minify">("format");
+  const [indent, setIndent] = useState(4);
+  const [width, setWidth] = useState(80);
+  const [locale, setLocale] = useState<PowerFxLocale>("en");
+  const result = useMemo(
+    () => (mode === "format" ? formatPowerFxFormula(formula, { indent, width, locale }) : minifyPowerFxFormula(formula, { locale })),
+    [formula, mode, indent, width, locale]
+  );
+  const formatted = result.output;
+  const delegationHints = useMemo(() => findDelegationHints(formula, locale), [formula, locale]);
+  const checks = useMemo(() => analyzePowerFx(formula, formatted, result.maxDepth, delegationHints.length), [formula, formatted, result.maxDepth, delegationHints.length]);
+  const reviewNotes = useMemo(() => buildPowerFxReviewNotes(checks, delegationHints), [checks, delegationHints]);
   const detectedPatterns = useMemo(() => detectPowerFxPatterns(formula), [formula]);
   const explanation = useMemo(() => explainPowerFx(formula), [formula]);
 
   return (
-    <ToolShell title="Power Fx formatter" description="Paste a Power Apps formula, then format it into readable lines and review common maintainability warnings before handoff.">
+    <ToolShell title="Power Fx formatter" description="Paste a Power Apps formula to format it into readable lines, check for unbalanced brackets and delegation risks, and review common maintainability warnings before handoff. Everything runs in your browser.">
       <label className="field">
         <span>Power Fx formula</span>
         <textarea
@@ -35,6 +53,28 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
           value={formula}
         />
       </label>
+      <div className="badge-row" role="group" aria-label="Formatter options">
+        <Toggle label="Format" checked={mode === "format"} onChange={() => setMode("format")} />
+        <Toggle label="Minify to one line" checked={mode === "minify"} onChange={() => setMode("minify")} />
+        <label className="chip-button">
+          Indent{" "}
+          <select aria-label="Indent" disabled={mode === "minify"} onChange={(event) => setIndent(Number(event.target.value))} value={indent}>
+            <option value={2}>2 spaces</option>
+            <option value={4}>4 spaces</option>
+            <option value={0}>Tab</option>
+          </select>
+        </label>
+        <label className="chip-button">
+          Width{" "}
+          <select aria-label="Line width" disabled={mode === "minify"} onChange={(event) => setWidth(Number(event.target.value))} value={width}>
+            <option value={60}>60</option>
+            <option value={80}>80</option>
+            <option value={100}>100</option>
+            <option value={120}>120</option>
+          </select>
+        </label>
+        <Toggle label="Semicolon separators (; and ;;)" checked={locale === "eu"} onChange={(value) => setLocale(value ? "eu" : "en")} />
+      </div>
       <div className="badge-row">
         <button className="chip-button" onClick={() => setFormula(sampleFormula)} type="button">
           Load sample
@@ -42,11 +82,29 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
         <button className="chip-button" onClick={() => setFormula("")} type="button">
           Clear
         </button>
+        <button className="chip-button" disabled={!formatted} onClick={() => setFormula(formatted)} type="button">
+          Replace input with result
+        </button>
         <span className="badge">{checks.lineCount} lines</span>
         <span className="badge">depth {checks.maxDepth}</span>
         <span className={`badge ${checks.severityClass}`}>{checks.severity}</span>
       </div>
-      <CopyCodeBlock code={formatted || "Paste a formula to format it."} label="Formatted Power Fx" />
+      {result.issues.length > 0 ? (
+        <div className="stat-tile" role="alert">
+          <div className="eyebrow">Syntax check</div>
+          <strong>The formula looks unbalanced</strong>
+          <ul style={{ color: "#415049", lineHeight: 1.55, marginBottom: 0 }}>
+            {result.issues.slice(0, 5).map((issue) => (
+              <li key={issue.message + issue.position}>
+                {issue.message}
+                {issue.position >= 0 ? ` (character ${issue.position + 1})` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <CopyCodeBlock code={formatted || "Paste a formula to format it."} copyEvent="Formatter Copied" label={mode === "format" ? "Formatted Power Fx" : "Minified Power Fx"} />
+      <DelegationPanel hints={delegationHints} hasFormula={Boolean(formula.trim())} />
       <CopyCodeBlock code={reviewNotes} label="Review notes" />
       <FormulaExplainerPanel explanation={explanation} />
       <PatternDetectorPanel patterns={detectedPatterns} />
@@ -60,6 +118,33 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
         ))}
       </div>
     </ToolShell>
+  );
+}
+
+function DelegationPanel({ hasFormula, hints }: { hasFormula: boolean; hints: DelegationHint[] }) {
+  return (
+    <section className="pattern-detector-panel">
+      <div>
+        <div className="eyebrow">Delegation check</div>
+        <h3 style={{ fontSize: "1.2rem", margin: "6px 0" }}>
+          {!hasFormula ? "Paste a formula to check delegation" : hints.length > 0 ? `${hints.length} possible delegation ${hints.length === 1 ? "issue" : "issues"}` : "No common delegation risks found"}
+        </h3>
+        <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>
+          These are hints, not a guarantee. Delegation depends on the data source and column type, so confirm against the warnings in Power Apps Studio.{" "}
+          <Link href="/power-apps/delegation">Read the delegation guide</Link>.
+        </p>
+      </div>
+      {hints.length > 0 ? (
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          {hints.map((hint) => (
+            <div className="pattern-detection-card" key={hint.title}>
+              <strong>{hint.title}</strong>
+              <p>{hint.detail}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -121,22 +206,239 @@ function PatternDetectorPanel({ patterns }: { patterns: DetectedPowerFxPattern[]
 
 function SharePointInternalNameHelper() {
   const [displayName, setDisplayName] = useState("Request Status");
-  const internalName = useMemo(() => toSharePointInternalName(displayName), [displayName]);
+  const encodedName = useMemo(() => toSharePointEncodedInternalName(displayName), [displayName]);
+  const cleanName = useMemo(() => toSharePointInternalName(displayName), [displayName]);
+  const needsEncoding = encodedName !== displayName.trim();
   const schemaNote = `Display name: ${displayName || "Column Name"}
-Recommended internal name: ${internalName || "ColumnName"}
-Build note: Create the column with the final no-space name first, then rename the display label later only if needed.`;
+Internal name if created as typed: ${encodedName || "ColumnName"}${encodedName.length > 32 ? " (SharePoint truncates internal names to 32 characters)" : ""}
+Recommended: create the column as ${cleanName || "ColumnName"}, then rename the display name to "${displayName.trim() || "Column Name"}".
+Power Automate / REST: use ${needsEncoding ? encodedName.slice(0, 32) : cleanName || "ColumnName"} if the column was created with the display name above.`;
 
   return (
-    <ToolShell title="Internal name preview" description="Type a planned SharePoint column display name and document the internal name risk before apps and flows depend on it.">
+    <ToolShell title="Internal name preview" description="Type a planned SharePoint column display name to see the internal name SharePoint will create, and the cleaner name to create it with instead.">
       <label className="field">
         <span>Column display name</span>
         <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Request Status" />
       </label>
-      <div className="stat-tile">
-        <div className="eyebrow">Likely internal name</div>
-        <strong style={{ fontSize: "1.5rem" }}>{internalName || "ColumnName"}</strong>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        <div className="stat-tile">
+          <div className="eyebrow">If created as typed</div>
+          <strong style={{ fontSize: "1.2rem", overflowWrap: "anywhere" }}>{encodedName.slice(0, 32) || "ColumnName"}</strong>
+          <p style={{ color: "#415049", lineHeight: 1.55, marginBottom: 0 }}>
+            {needsEncoding ? "Spaces and symbols are encoded as _xHHHH_, which is what flows and REST calls must use." : "No encoding needed. This name is safe to use as typed."}
+          </p>
+        </div>
+        <div className="stat-tile">
+          <div className="eyebrow">Create it as</div>
+          <strong style={{ fontSize: "1.2rem", overflowWrap: "anywhere" }}>{cleanName || "ColumnName"}</strong>
+          <p style={{ color: "#415049", lineHeight: 1.55, marginBottom: 0 }}>Then rename the display name. The internal name never changes after creation.</p>
+        </div>
       </div>
       <CopyCodeBlock code={schemaNote} />
+    </ToolShell>
+  );
+}
+
+function DataverseNamingHelper() {
+  const [prefix, setPrefix] = useState("bv");
+  const [displayName, setDisplayName] = useState("Service Request");
+  const [pluralName, setPluralName] = useState("");
+  const [columns, setColumns] = useState("Request Name\nDue Date\nPriority\nAssigned To");
+  const cleanPrefix = prefix.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
+  const plural = pluralName.trim() || pluralize(displayName.trim());
+  const tableSchema = cleanPrefix + "_" + toPascalIdentifier(displayName);
+  const prefixIssue = !/^[a-z][a-z0-9]{1,7}$/.test(cleanPrefix)
+    ? "Publisher prefixes must be 2 to 8 letters or numbers, start with a letter, and can't start with mscrm."
+    : cleanPrefix.startsWith("mscrm")
+      ? "Prefixes starting with mscrm are reserved."
+      : "";
+  const columnRows = columns
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((column) => {
+      const schema = cleanPrefix + "_" + toPascalIdentifier(column);
+      return { display: column, schema, logical: schema.toLowerCase() };
+    });
+  const worksheet = [
+    `Publisher prefix: ${cleanPrefix}`,
+    `Table display name: ${displayName.trim()}`,
+    `Plural display name: ${plural}`,
+    `Table schema name: ${tableSchema}`,
+    `Table logical name: ${tableSchema.toLowerCase()}`,
+    `Entity set name (Web API): ${(cleanPrefix + "_" + toPascalIdentifier(plural)).toLowerCase()}  (check after creation; Dataverse may pluralize differently)`,
+    "",
+    "Columns:",
+    ...columnRows.map((row) => `- ${row.display}: schema ${row.schema}, logical ${row.logical}`),
+    "",
+    "Relationship example:",
+    `- ${cleanPrefix}_Account_${toPascalIdentifier(plural)} (one Account to many ${plural})`
+  ].join("\n");
+
+  return (
+    <ToolShell title="Dataverse naming worksheet" description="Enter your publisher prefix, table name, and planned columns to get consistent schema and logical names before you build. Schema names can't be changed after creation.">
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+        <label className="field">
+          <span>Publisher prefix</span>
+          <input value={prefix} onChange={(event) => setPrefix(event.target.value)} placeholder="bv" />
+        </label>
+        <label className="field">
+          <span>Table display name (singular)</span>
+          <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Service Request" />
+        </label>
+        <label className="field">
+          <span>Plural display name (optional)</span>
+          <input value={pluralName} onChange={(event) => setPluralName(event.target.value)} placeholder={plural} />
+        </label>
+      </div>
+      <label className="field">
+        <span>Columns, one per line</span>
+        <textarea className="tool-textarea" onChange={(event) => setColumns(event.target.value)} spellCheck={false} value={columns} />
+      </label>
+      {prefixIssue ? (
+        <div className="stat-tile" role="alert">
+          <div className="eyebrow">Prefix</div>
+          <strong>{prefixIssue}</strong>
+        </div>
+      ) : null}
+      <div className="stat-tile">
+        <div className="eyebrow">Table schema name</div>
+        <strong style={{ fontSize: "1.3rem", overflowWrap: "anywhere" }}>{tableSchema}</strong>
+      </div>
+      <CopyCodeBlock code={worksheet} label="Naming worksheet" />
+    </ToolShell>
+  );
+}
+
+type CardFact = { title: string; value: string };
+
+const adaptiveCardTemplates = {
+  approval: {
+    label: "Approval request",
+    title: "Approval needed: @{triggerBody()?['Title']}",
+    body: "@{triggerBody()?['Author']?['DisplayName']} submitted a request that needs your decision.",
+    facts: "Request|@{triggerBody()?['Title']}\nRequested by|@{triggerBody()?['Author']?['DisplayName']}\nDue|@{formatDateTime(triggerBody()?['DueDate'], 'MMM d, yyyy')}",
+    actions: "Approve\nReject",
+    withComment: true
+  },
+  notification: {
+    label: "Notification",
+    title: "Request updated",
+    body: "The status of @{triggerBody()?['Title']} changed to @{triggerBody()?['Status']?['Value']}.",
+    facts: "Status|@{triggerBody()?['Status']?['Value']}\nUpdated by|@{triggerBody()?['Editor']?['DisplayName']}",
+    actions: "",
+    withComment: false
+  },
+  review: {
+    label: "Review with comments",
+    title: "Please review: @{triggerBody()?['Title']}",
+    body: "Add a comment and choose an outcome.",
+    facts: "Request|@{triggerBody()?['Title']}\nOwner|@{triggerBody()?['Author']?['Email']}",
+    actions: "Submit review",
+    withComment: true
+  }
+} as const;
+
+type CardTemplateKey = keyof typeof adaptiveCardTemplates;
+
+function AdaptiveCardBuilder() {
+  const [templateKey, setTemplateKey] = useState<CardTemplateKey>("approval");
+  const template = adaptiveCardTemplates[templateKey];
+  const [title, setTitle] = useState<string>(template.title);
+  const [body, setBody] = useState<string>(template.body);
+  const [factsText, setFactsText] = useState<string>(template.facts);
+  const [actionsText, setActionsText] = useState<string>(template.actions);
+  const [withComment, setWithComment] = useState<boolean>(template.withComment);
+  const [viewUrl, setViewUrl] = useState("");
+
+  function applyTemplate(key: CardTemplateKey) {
+    const next = adaptiveCardTemplates[key];
+    setTemplateKey(key);
+    setTitle(next.title);
+    setBody(next.body);
+    setFactsText(next.facts);
+    setActionsText(next.actions);
+    setWithComment(next.withComment);
+  }
+
+  const facts: CardFact[] = factsText
+    .split("\n")
+    .map((line) => line.split("|"))
+    .filter((parts) => parts[0]?.trim())
+    .map(([factTitle, ...rest]) => ({ title: factTitle.trim(), value: rest.join("|").trim() }));
+  const actions = actionsText.split("\n").map((line) => line.trim()).filter(Boolean);
+
+  const card = {
+    type: "AdaptiveCard",
+    $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+    version: "1.4",
+    body: [
+      { type: "TextBlock", text: title, weight: "Bolder", size: "Medium", wrap: true },
+      ...(body ? [{ type: "TextBlock", text: body, wrap: true }] : []),
+      ...(facts.length > 0 ? [{ type: "FactSet", facts }] : []),
+      ...(withComment ? [{ type: "Input.Text", id: "comment", placeholder: "Add a comment", isMultiline: true }] : [])
+    ],
+    actions: [
+      ...actions.map((action) => ({ type: "Action.Submit", title: action, data: { decision: action } })),
+      ...(viewUrl.trim() ? [{ type: "Action.OpenUrl", title: "View item", url: viewUrl.trim() }] : [])
+    ]
+  };
+  const json = JSON.stringify(card, null, 2);
+
+  return (
+    <ToolShell title="Adaptive Card builder" description="Pick a starting layout, edit the text, facts, and buttons, then copy the JSON into the Post adaptive card in a chat or channel action in Power Automate. The preview is a simplified sketch, not the exact Teams rendering.">
+      <div className="badge-row">
+        {(Object.keys(adaptiveCardTemplates) as CardTemplateKey[]).map((key) => (
+          <Toggle checked={templateKey === key} key={key} label={adaptiveCardTemplates[key].label} onChange={() => applyTemplate(key)} />
+        ))}
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 12 }}>
+          <label className="field">
+            <span>Title</span>
+            <input value={title} onChange={(event) => setTitle(event.target.value)} />
+          </label>
+          <label className="field">
+            <span>Body text</span>
+            <input value={body} onChange={(event) => setBody(event.target.value)} />
+          </label>
+          <label className="field">
+            <span>Facts, one per line as Label|Value</span>
+            <textarea className="tool-textarea" onChange={(event) => setFactsText(event.target.value)} spellCheck={false} value={factsText} />
+          </label>
+          <label className="field">
+            <span>Buttons, one per line (leave empty for none)</span>
+            <textarea className="tool-textarea" onChange={(event) => setActionsText(event.target.value)} spellCheck={false} style={{ minHeight: 80 }} value={actionsText} />
+          </label>
+          <label className="field">
+            <span>View item link (optional)</span>
+            <input value={viewUrl} onChange={(event) => setViewUrl(event.target.value)} placeholder="@{triggerBody()?['{Link}']}" />
+          </label>
+          <Toggle checked={withComment} label="Include a comment box" onChange={setWithComment} />
+        </div>
+        <div className="adaptive-card-preview" aria-label="Card preview">
+          <strong style={{ fontSize: "1.05rem" }}>{title}</strong>
+          {body ? <p style={{ margin: 0 }}>{body}</p> : null}
+          {facts.length > 0 ? (
+            <dl style={{ display: "grid", gap: 4, gridTemplateColumns: "auto 1fr", margin: 0 }}>
+              {facts.map((fact) => (
+                <div key={fact.title} style={{ display: "contents" }}>
+                  <dt style={{ fontWeight: 700 }}>{fact.title}</dt>
+                  <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {withComment ? <div className="adaptive-card-input">Add a comment</div> : null}
+          {actions.length > 0 || viewUrl.trim() ? (
+            <div className="badge-row">
+              {actions.map((action) => <span className="adaptive-card-button" key={action}>{action}</span>)}
+              {viewUrl.trim() ? <span className="adaptive-card-button">View item</span> : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <CopyCodeBlock code={json} copyEvent="Adaptive Card Copied" label="Adaptive Card JSON (version 1.4)" />
     </ToolShell>
   );
 }
@@ -578,81 +880,9 @@ function detectPowerFxPatterns(value: string): DetectedPowerFxPattern[] {
     }));
 }
 
-function formatPowerFx(value: string) {
-  const input = value.trim();
-  if (!input) return "";
-
-  const lines: string[] = [];
-  let current = "";
-  let depth = 0;
-  let inString = false;
-
-  function pushLine(nextDepth = depth) {
-    const trimmed = current.trim();
-    if (trimmed) {
-      lines.push("    ".repeat(Math.max(nextDepth, 0)) + trimmed);
-    }
-    current = "";
-  }
-
-  for (let index = 0; index < input.length; index += 1) {
-    const char = input[index];
-    const previous = input[index - 1];
-
-    if (char === '"' && previous !== "\\") {
-      inString = !inString;
-      current += char;
-      continue;
-    }
-
-    if (inString) {
-      current += char;
-      continue;
-    }
-
-    if (/\s/.test(char)) {
-      if (current && !current.endsWith(" ")) current += " ";
-      continue;
-    }
-
-    if (char === "(" || char === "{" || char === "[") {
-      current = trimTrailingSpaces(current) + char;
-      pushLine(depth);
-      depth += 1;
-      continue;
-    }
-
-    if (char === ")" || char === "}" || char === "]") {
-      pushLine(depth);
-      depth = Math.max(depth - 1, 0);
-      current = char;
-      continue;
-    }
-
-    if (char === "," || char === ";") {
-      current = trimTrailingSpaces(current) + char;
-      pushLine(depth);
-      continue;
-    }
-
-    if (["=", ">", "<", "+", "-", "*", "/", "&"].includes(char)) {
-      current = trimTrailingSpaces(current) + " " + char + " ";
-      continue;
-    }
-
-    current += char;
-  }
-
-  pushLine(depth);
-  return lines
-    .map((line) => line.replace(/\s+([,;)}\]])/g, "$1").replace(/\s{2,}/g, " ").trimEnd())
-    .join("\n");
-}
-
-function analyzePowerFx(original: string, formatted: string) {
+function analyzePowerFx(original: string, formatted: string, maxDepth: number, delegationHintCount = 0) {
   const lower = original.toLowerCase();
   const lineCount = formatted ? formatted.split("\n").length : 0;
-  const maxDepth = Math.max(0, ...formatted.split("\n").map((line) => Math.floor(line.search(/\S|$/) / 4)));
   const items: Array<{ level: string; title: string; detail: string }> = [];
 
   if (!original.trim()) {
@@ -680,36 +910,56 @@ function analyzePowerFx(original: string, formatted: string) {
     items.push({ level: "Cleanup", title: "Long formatted lines", detail: "Some lines are still long after formatting. Consider breaking logic into With blocks or helper variables." });
   }
 
-  if (maxDepth >= 5) {
+  if (maxDepth >= 6) {
     items.push({ level: "Cleanup", title: "Deep nesting", detail: "The formula nests several levels deep. Use With blocks or split logic across named formulas where possible." });
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && delegationHintCount === 0) {
     items.push({ level: "Looks good", title: "No obvious warnings", detail: "Formatting completed and the simple review checks did not find common handoff issues." });
   }
 
-  const reviewCount = items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length;
-  const severity = reviewCount >= 3 || maxDepth >= 5 ? "Needs refactor" : reviewCount > 0 ? "Review" : "Clean";
+  const reviewCount = items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length + delegationHintCount;
+  const severity = reviewCount >= 3 || maxDepth >= 6 ? "Needs refactor" : reviewCount > 0 ? "Review" : "Clean";
   const severityClass = severity === "Clean" ? "free" : severity === "Review" ? "difficulty" : "premium";
 
   return { items, lineCount, maxDepth, severity, severityClass };
 }
 
 
-function buildPowerFxReviewNotes(checks: ReturnType<typeof analyzePowerFx>) {
+function buildPowerFxReviewNotes(checks: ReturnType<typeof analyzePowerFx>, delegationHints: DelegationHint[]) {
   return [
     "Power Fx review notes",
     "Severity: " + checks.severity,
     "Lines: " + checks.lineCount,
     "Nesting depth: " + checks.maxDepth,
     "",
-    ...checks.items.map((item) => "- [" + item.level + "] " + item.title + ": " + item.detail)
+    ...checks.items.map((item) => "- [" + item.level + "] " + item.title + ": " + item.detail),
+    ...delegationHints.map((hint) => "- [Delegation] " + hint.title + ": " + hint.detail)
   ].join("\n");
 }
 
-function trimTrailingSpaces(value: string) {
-  return value.replace(/\s+$/g, "");
+function toSharePointEncodedInternalName(value: string) {
+  return Array.from(value.trim())
+    .map((char) => (/[A-Za-z0-9_]/.test(char) ? char : "_x" + char.codePointAt(0)!.toString(16).padStart(4, "0") + "_"))
+    .join("");
 }
+
+function toPascalIdentifier(value: string) {
+  return value
+    .replace(/[^A-Za-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
+function pluralize(value: string) {
+  if (!value) return "";
+  if (/[^aeiou]y$/i.test(value)) return value.slice(0, -1) + "ies";
+  if (/(s|x|z|ch|sh)$/i.test(value)) return value + "es";
+  return value + "s";
+}
+
 function toSharePointInternalName(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";

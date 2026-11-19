@@ -1,5 +1,6 @@
 ﻿import Link from "next/link";
 import { SimplePage } from "@/components/layout/simple-page";
+import { siteAuthor } from "@/lib/site";
 
 export const metadata = {
   title: "About BuilderVault | Power Platform Patterns and Tools",
@@ -18,6 +19,30 @@ export default function AboutPage() {
       </p>
       <p>
         The site is intentionally practical. Pattern pages connect to examples, cookbooks, standards, and tools so a Power Platform builder can move from a search question to a usable implementation path quickly.
+      </p>
+      {siteAuthor.name ? (
+        <>
+          <h2>Who writes BuilderVault</h2>
+          <p>
+            BuilderVault is written and maintained by {siteAuthor.name}. {siteAuthor.bio}
+          </p>
+          {siteAuthor.profiles.length > 0 ? (
+            <p>
+              {siteAuthor.profiles.map((profile, index) => (
+                <span key={profile}>
+                  {index > 0 ? " · " : ""}
+                  <a href={profile} rel="me noopener">{new URL(profile).hostname.replace(/^www\./, "")}</a>
+                </span>
+              ))}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+      <h2>How patterns are written</h2>
+      <p>
+        Patterns are written around real build scenarios, and each pattern page shows when it was last updated.
+        Found something wrong? <Link href="/contact">Tell me</Link> and
+        I&apos;ll fix it.
       </p>
       <h2>Who it is for</h2>
       <ul>
