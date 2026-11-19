@@ -59,7 +59,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
           </div>
         </header>
 
-        <div className="grid" style={{ gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)" }}>
+        <div className="grid content-with-aside">
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
             {isTool ? children : null}
             {isTool ? <NewsletterSignup placement={"tool:" + resource.slug} title="Get new tools and Power Fx tips by email" /> : null}

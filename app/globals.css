@@ -593,3 +593,15 @@ button {
   white-space: nowrap;
   width: 1px;
 }
+
+/* Main column plus sidebar. Stacks on narrow screens so the sidebar can't cover the content. */
+.content-with-aside {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(260px, 0.28fr);
+}
+
+@media (max-width: 920px) {
+  .content-with-aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

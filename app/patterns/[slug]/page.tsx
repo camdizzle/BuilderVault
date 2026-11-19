@@ -172,13 +172,7 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
           <FavoriteButton patternSlug={pattern.slug} />
         </header>
 
-        <div
-          style={{
-            display: "grid",
-            gap: 28,
-            gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)"
-          }}
-        >
+        <div className="content-with-aside" style={{ gap: 28 }}>
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
             <DetailSection title="What this pattern solves">
               <div style={{ display: "grid", gap: 14 }}>
