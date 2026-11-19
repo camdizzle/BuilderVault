@@ -16,7 +16,7 @@ import {
   getRelatedPatterns
 } from "@/lib/patterns/patterns";
 import { getPatternSeo } from "@/lib/patterns/seo";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, authorStructuredData, formatDisplayDate, publisherOrganization, siteAuthor } from "@/lib/site";
 
 type PatternDetailPageProps = {
   params: Promise<{
@@ -115,10 +115,8 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         keywords: seo.secondaryKeywords.join(", "),
         mainEntityOfPage: absoluteUrl(`/patterns/${pattern.slug}`),
         proficiencyLevel: pattern.difficulty,
-        publisher: {
-          "@type": "Organization",
-          name: "BuilderVault"
-        }
+        publisher: publisherOrganization,
+        ...(authorStructuredData() ? { author: authorStructuredData() } : {})
       },
       {
         "@type": "FAQPage",
@@ -165,11 +163,14 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
           <p className="lead" style={{ maxWidth: 860 }}>
             {seo.seoDescription}
           </p>
-          <div className="badge-row" aria-label="Search intent and keywords">
-            <span className="badge">{seo.primaryKeyword}</span>
-            <span className="badge">{seo.seoPriority} intent</span>
-            <span className="badge">{pattern.difficulty}</span>
-          </div>
+          <p style={{ color: "var(--muted)", margin: 0 }}>
+            {siteAuthor.name ? (
+              <>
+                By <Link href="/about">{siteAuthor.name}</Link> ·{" "}
+              </>
+            ) : null}
+            Updated <time dateTime={pattern.updatedAt}>{formatDisplayDate(pattern.updatedAt)}</time> · {pattern.difficulty}
+          </p>
           <FavoriteButton patternSlug={pattern.slug} />
         </header>
 

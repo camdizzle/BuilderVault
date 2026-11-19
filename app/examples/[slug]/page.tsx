@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { authorStructuredData, publisherOrganization } from "@/lib/site";
 import { notFound } from "next/navigation";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { exampleGuides, getExampleGuideBySlug } from "@/lib/example-guides";
@@ -44,7 +45,8 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
     description: guide.description,
     keywords: guide.keywords.join(", "),
     mainEntityOfPage: "/examples/" + guide.slug,
-    publisher: { "@type": "Organization", name: "BuilderVault" }
+    publisher: publisherOrganization,
+    ...(authorStructuredData() ? { author: authorStructuredData() } : {})
   };
 
   return (
