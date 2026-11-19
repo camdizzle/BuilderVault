@@ -39,6 +39,7 @@ export default function HomePage() {
               <div className="eyebrow">Choose your path</div>
               <h2 style={{ fontSize: "1.5rem", lineHeight: 1.15, margin: "10px 0 0" }}>What do you need right now?</h2>
             </div>
+            <PathLink href="/tools/power-fx-formatter" label="I need to clean up a formula" text="Format, minify, and check a Power Fx formula for syntax and delegation problems in your browser." />
             <PathLink href="/patterns" label="I need a pattern" text="Search implementation guidance, formulas, flows, schemas, and troubleshooting notes." />
             <PathLink href="/cookbooks" label="I need a recipe" text="Use task-based examples for Patch, collections, expressions, and SharePoint schemas." />
             <PathLink href="/standards" label="I need team standards" text="Standardize naming, ALM, error handling, logging, and support handoff." />

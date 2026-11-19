@@ -4,6 +4,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import {
+  findDelegationHints,
+  formatPowerFxFormula,
+  minifyPowerFxFormula,
+  type DelegationHint,
+  type PowerFxLocale
+} from "@/lib/tools/power-fx-format";
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
@@ -18,14 +25,23 @@ function PowerFxFormatter() {
   const sampleFormula = `IfError(
 Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,RequestStatus:{Value:"Submitted"},DueDate:dpDueDate.SelectedDate}));Notify("Request saved.",NotificationType.Success),Notify("The request could not be saved.",NotificationType.Error))`;
   const [formula, setFormula] = useState(sampleFormula);
-  const formatted = useMemo(() => formatPowerFx(formula), [formula]);
-  const checks = useMemo(() => analyzePowerFx(formula, formatted), [formula, formatted]);
-  const reviewNotes = useMemo(() => buildPowerFxReviewNotes(checks), [checks]);
+  const [mode, setMode] = useState<"format" | "minify">("format");
+  const [indent, setIndent] = useState(4);
+  const [width, setWidth] = useState(80);
+  const [locale, setLocale] = useState<PowerFxLocale>("en");
+  const result = useMemo(
+    () => (mode === "format" ? formatPowerFxFormula(formula, { indent, width, locale }) : minifyPowerFxFormula(formula, { locale })),
+    [formula, mode, indent, width, locale]
+  );
+  const formatted = result.output;
+  const delegationHints = useMemo(() => findDelegationHints(formula, locale), [formula, locale]);
+  const checks = useMemo(() => analyzePowerFx(formula, formatted, result.maxDepth, delegationHints.length), [formula, formatted, result.maxDepth, delegationHints.length]);
+  const reviewNotes = useMemo(() => buildPowerFxReviewNotes(checks, delegationHints), [checks, delegationHints]);
   const detectedPatterns = useMemo(() => detectPowerFxPatterns(formula), [formula]);
   const explanation = useMemo(() => explainPowerFx(formula), [formula]);
 
   return (
-    <ToolShell title="Power Fx formatter" description="Paste a Power Apps formula, then format it into readable lines and review common maintainability warnings before handoff.">
+    <ToolShell title="Power Fx formatter" description="Paste a Power Apps formula to format it into readable lines, check for unbalanced brackets and delegation risks, and review common maintainability warnings before handoff. Everything runs in your browser.">
       <label className="field">
         <span>Power Fx formula</span>
         <textarea
@@ -35,6 +51,28 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
           value={formula}
         />
       </label>
+      <div className="badge-row" role="group" aria-label="Formatter options">
+        <Toggle label="Format" checked={mode === "format"} onChange={() => setMode("format")} />
+        <Toggle label="Minify to one line" checked={mode === "minify"} onChange={() => setMode("minify")} />
+        <label className="chip-button">
+          Indent{" "}
+          <select aria-label="Indent" disabled={mode === "minify"} onChange={(event) => setIndent(Number(event.target.value))} value={indent}>
+            <option value={2}>2 spaces</option>
+            <option value={4}>4 spaces</option>
+            <option value={0}>Tab</option>
+          </select>
+        </label>
+        <label className="chip-button">
+          Width{" "}
+          <select aria-label="Line width" disabled={mode === "minify"} onChange={(event) => setWidth(Number(event.target.value))} value={width}>
+            <option value={60}>60</option>
+            <option value={80}>80</option>
+            <option value={100}>100</option>
+            <option value={120}>120</option>
+          </select>
+        </label>
+        <Toggle label="Semicolon separators (; and ;;)" checked={locale === "eu"} onChange={(value) => setLocale(value ? "eu" : "en")} />
+      </div>
       <div className="badge-row">
         <button className="chip-button" onClick={() => setFormula(sampleFormula)} type="button">
           Load sample
@@ -42,11 +80,29 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
         <button className="chip-button" onClick={() => setFormula("")} type="button">
           Clear
         </button>
+        <button className="chip-button" disabled={!formatted} onClick={() => setFormula(formatted)} type="button">
+          Replace input with result
+        </button>
         <span className="badge">{checks.lineCount} lines</span>
         <span className="badge">depth {checks.maxDepth}</span>
         <span className={`badge ${checks.severityClass}`}>{checks.severity}</span>
       </div>
-      <CopyCodeBlock code={formatted || "Paste a formula to format it."} label="Formatted Power Fx" />
+      {result.issues.length > 0 ? (
+        <div className="stat-tile" role="alert">
+          <div className="eyebrow">Syntax check</div>
+          <strong>The formula looks unbalanced</strong>
+          <ul style={{ color: "#415049", lineHeight: 1.55, marginBottom: 0 }}>
+            {result.issues.slice(0, 5).map((issue) => (
+              <li key={issue.message + issue.position}>
+                {issue.message}
+                {issue.position >= 0 ? ` (character ${issue.position + 1})` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <CopyCodeBlock code={formatted || "Paste a formula to format it."} label={mode === "format" ? "Formatted Power Fx" : "Minified Power Fx"} />
+      <DelegationPanel hints={delegationHints} hasFormula={Boolean(formula.trim())} />
       <CopyCodeBlock code={reviewNotes} label="Review notes" />
       <FormulaExplainerPanel explanation={explanation} />
       <PatternDetectorPanel patterns={detectedPatterns} />
@@ -60,6 +116,33 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
         ))}
       </div>
     </ToolShell>
+  );
+}
+
+function DelegationPanel({ hasFormula, hints }: { hasFormula: boolean; hints: DelegationHint[] }) {
+  return (
+    <section className="pattern-detector-panel">
+      <div>
+        <div className="eyebrow">Delegation check</div>
+        <h3 style={{ fontSize: "1.2rem", margin: "6px 0" }}>
+          {!hasFormula ? "Paste a formula to check delegation" : hints.length > 0 ? `${hints.length} possible delegation ${hints.length === 1 ? "issue" : "issues"}` : "No common delegation risks found"}
+        </h3>
+        <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>
+          These are hints, not a guarantee. Delegation depends on the data source and column type, so confirm against the warnings in Power Apps Studio.{" "}
+          <Link href="/power-apps/delegation">Read the delegation guide</Link>.
+        </p>
+      </div>
+      {hints.length > 0 ? (
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          {hints.map((hint) => (
+            <div className="pattern-detection-card" key={hint.title}>
+              <strong>{hint.title}</strong>
+              <p>{hint.detail}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -578,81 +661,9 @@ function detectPowerFxPatterns(value: string): DetectedPowerFxPattern[] {
     }));
 }
 
-function formatPowerFx(value: string) {
-  const input = value.trim();
-  if (!input) return "";
-
-  const lines: string[] = [];
-  let current = "";
-  let depth = 0;
-  let inString = false;
-
-  function pushLine(nextDepth = depth) {
-    const trimmed = current.trim();
-    if (trimmed) {
-      lines.push("    ".repeat(Math.max(nextDepth, 0)) + trimmed);
-    }
-    current = "";
-  }
-
-  for (let index = 0; index < input.length; index += 1) {
-    const char = input[index];
-    const previous = input[index - 1];
-
-    if (char === '"' && previous !== "\\") {
-      inString = !inString;
-      current += char;
-      continue;
-    }
-
-    if (inString) {
-      current += char;
-      continue;
-    }
-
-    if (/\s/.test(char)) {
-      if (current && !current.endsWith(" ")) current += " ";
-      continue;
-    }
-
-    if (char === "(" || char === "{" || char === "[") {
-      current = trimTrailingSpaces(current) + char;
-      pushLine(depth);
-      depth += 1;
-      continue;
-    }
-
-    if (char === ")" || char === "}" || char === "]") {
-      pushLine(depth);
-      depth = Math.max(depth - 1, 0);
-      current = char;
-      continue;
-    }
-
-    if (char === "," || char === ";") {
-      current = trimTrailingSpaces(current) + char;
-      pushLine(depth);
-      continue;
-    }
-
-    if (["=", ">", "<", "+", "-", "*", "/", "&"].includes(char)) {
-      current = trimTrailingSpaces(current) + " " + char + " ";
-      continue;
-    }
-
-    current += char;
-  }
-
-  pushLine(depth);
-  return lines
-    .map((line) => line.replace(/\s+([,;)}\]])/g, "$1").replace(/\s{2,}/g, " ").trimEnd())
-    .join("\n");
-}
-
-function analyzePowerFx(original: string, formatted: string) {
+function analyzePowerFx(original: string, formatted: string, maxDepth: number, delegationHintCount = 0) {
   const lower = original.toLowerCase();
   const lineCount = formatted ? formatted.split("\n").length : 0;
-  const maxDepth = Math.max(0, ...formatted.split("\n").map((line) => Math.floor(line.search(/\S|$/) / 4)));
   const items: Array<{ level: string; title: string; detail: string }> = [];
 
   if (!original.trim()) {
@@ -680,36 +691,34 @@ function analyzePowerFx(original: string, formatted: string) {
     items.push({ level: "Cleanup", title: "Long formatted lines", detail: "Some lines are still long after formatting. Consider breaking logic into With blocks or helper variables." });
   }
 
-  if (maxDepth >= 5) {
+  if (maxDepth >= 6) {
     items.push({ level: "Cleanup", title: "Deep nesting", detail: "The formula nests several levels deep. Use With blocks or split logic across named formulas where possible." });
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && delegationHintCount === 0) {
     items.push({ level: "Looks good", title: "No obvious warnings", detail: "Formatting completed and the simple review checks did not find common handoff issues." });
   }
 
-  const reviewCount = items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length;
-  const severity = reviewCount >= 3 || maxDepth >= 5 ? "Needs refactor" : reviewCount > 0 ? "Review" : "Clean";
+  const reviewCount = items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length + delegationHintCount;
+  const severity = reviewCount >= 3 || maxDepth >= 6 ? "Needs refactor" : reviewCount > 0 ? "Review" : "Clean";
   const severityClass = severity === "Clean" ? "free" : severity === "Review" ? "difficulty" : "premium";
 
   return { items, lineCount, maxDepth, severity, severityClass };
 }
 
 
-function buildPowerFxReviewNotes(checks: ReturnType<typeof analyzePowerFx>) {
+function buildPowerFxReviewNotes(checks: ReturnType<typeof analyzePowerFx>, delegationHints: DelegationHint[]) {
   return [
     "Power Fx review notes",
     "Severity: " + checks.severity,
     "Lines: " + checks.lineCount,
     "Nesting depth: " + checks.maxDepth,
     "",
-    ...checks.items.map((item) => "- [" + item.level + "] " + item.title + ": " + item.detail)
+    ...checks.items.map((item) => "- [" + item.level + "] " + item.title + ": " + item.detail),
+    ...delegationHints.map((hint) => "- [Delegation] " + hint.title + ": " + hint.detail)
   ].join("\n");
 }
 
-function trimTrailingSpaces(value: string) {
-  return value.replace(/\s+$/g, "");
-}
 function toSharePointInternalName(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";

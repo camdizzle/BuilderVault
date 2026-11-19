@@ -183,6 +183,20 @@ button {
   white-space: nowrap;
 }
 
+.chip-button select {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  margin-left: 6px;
+}
+
+.chip-button:disabled,
+.chip-button select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .chip-button.active {
   background: var(--accent-soft);
   border-color: #82cdb7;

@@ -14,7 +14,8 @@
     "content:slug": "node scripts/slugify.mjs",
     "qa:routes": "node scripts/smoke-routes.mjs",
     "qa:sitemap": "node scripts/validate-sitemap-source.mjs",
-    "qa": "npm run validate:content && npm run content:audit && npm run qa:routes && npm run qa:sitemap",
+    "test:formatter": "node --experimental-strip-types --no-warnings scripts/test-power-fx-formatter.mjs",
+    "qa": "npm run test:formatter && npm run validate:content && npm run content:audit && npm run qa:routes && npm run qa:sitemap",
     "content:pmo-guides": "node scripts/generate-pmo-guides.mjs"
   },
   "dependencies": {

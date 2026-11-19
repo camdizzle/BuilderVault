@@ -20,6 +20,7 @@ export type ResourceItem = {
   summaryBullets: string[];
   examples: ResourceExample[];
   relatedPatterns: string[];
+  faqs?: Array<{ question: string; answer: string }>;
 };
 
 function item(input: Omit<ResourceItem, "path">): ResourceItem {
@@ -221,12 +222,83 @@ export const cheatSheets: ResourceItem[] = [
 ];
 
 export const tools: ResourceItem[] = [
-  item({ slug: "power-fx-formatter", kind: "tool", title: "Power Fx Formatter", eyebrow: "Free tool concept", description: "An interactive client-side helper for making long Power Fx formulas easier to read before code review or handoff.", keywords: ["Power Fx formatter", "Power Apps formula formatter", "Power Fx review"], audience: "Makers cleaning up formulas before handoff.", summaryBullets: ["Normalize indentation around If, Patch, With, and ForAll.", "Highlight common readability issues.", "Keep formulas local in the browser.", "Link formatting issues to standards pages."], examples: [{ title: "Formatter checklist", problem: "Know what the tool should flag once interactive behavior is added.", code: `Checks:
-- Long formulas without With blocks
-- Nested If statements over three levels
-- Patch without IfError
-- Control references to other screens
-- Unclear variable names`, expectedResult: "The formatted output is easier to review, copy, and hand off to another Power Apps maker.", commonMistakes: ["Trying to auto-fix business logic", "Sending formulas to a server unnecessarily"] }], relatedPatterns: ["document-a-canvas-app-code-review-checklist", "standardize-a-maker-handoff-checklist"] }),
+  item({
+    slug: "power-fx-formatter",
+    kind: "tool",
+    title: "Power Fx Formatter",
+    eyebrow: "Free tool",
+    description: "Format, minify, and review Power Apps formulas in your browser. Breaks long Power Fx into readable lines, flags unbalanced brackets, and points out likely delegation problems.",
+    keywords: ["Power Fx formatter", "Power Apps formula formatter", "Power Fx beautifier", "Power Fx minify", "Power Apps delegation check"],
+    audience: "Power Apps makers cleaning up formulas before code review, documentation, or handoff, and anyone pasting a formula into a forum post or support ticket.",
+    summaryBullets: [
+      "Short calls stay on one line, and long calls break with one argument per line.",
+      "Operators such as <>, >=, && and || stay intact, along with comments, quoted names, and text values.",
+      "Supports comma locales and semicolon locales (; for arguments, ;; for chaining).",
+      "Flags unbalanced brackets and quotes, and common delegation risks inside Filter, LookUp, and Search.",
+      "Nothing is uploaded. The formula never leaves your browser."
+    ],
+    examples: [
+      {
+        title: "Before and after",
+        problem: "A save button formula written on one line is hard to review. The formatter keeps short calls inline and breaks the long ones.",
+        code: `IfError(
+    Set(
+        varSavedRequest,
+        Patch(
+            Requests,
+            Defaults(Requests),
+            {
+                Title: txtTitle.Text,
+                RequestStatus: {Value: "Submitted"},
+                DueDate: dpDueDate.SelectedDate
+            }
+        )
+    );
+    Notify("Request saved.", NotificationType.Success),
+    Notify("The request could not be saved.", NotificationType.Error)
+)`,
+        expectedResult: "Each argument sits on its own line, so a reviewer can see what Patch writes and what the error branch does.",
+        commonMistakes: ["Formatting a formula that has an unbalanced bracket. Fix the syntax warning first.", "Expecting the formatter to change logic. It only changes whitespace."]
+      },
+      {
+        title: "Delegation hint",
+        problem: "Lower() applied to a column inside Filter can't be delegated, so on a large SharePoint list only the first rows are checked.",
+        code: `// Flagged: Lower() runs on every row, so the filter isn't delegated
+Filter(Requests, Lower(Owner.Email) = Lower(User().Email))
+
+// Better: compare against a value worked out once
+With(
+    {me: Lower(User().Email)},
+    Filter(Requests, Owner.Email = me)
+)`,
+        expectedResult: "The data source filters the rows on the server instead of only checking the first 500 to 2,000.",
+        commonMistakes: ["Assuming no blue underline means no delegation issue on every data source.", "Raising the data row limit instead of fixing the predicate."]
+      }
+    ],
+    relatedPatterns: ["power-apps-error-handling-iferror-patch", "avoid-delegation-warnings-sharepoint-filters"],
+    faqs: [
+      {
+        question: "Does Power Apps Studio have a built-in formatter?",
+        answer: "Yes. The formula bar has a Format text command, and Remove formatting turns a formula back into one line. This tool does the same job outside Studio, for formulas in documentation, code reviews, forum posts, or exported source, and adds syntax and delegation checks."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored."
+      },
+      {
+        question: "Can formatting change what my formula does?",
+        answer: "No. The formatter only changes spaces and line breaks. It does not reorder, remove, or rewrite any part of the formula. Minify can turn // comments into /* */ comments so the result fits on one line."
+      },
+      {
+        question: "My region uses semicolons. Is that supported?",
+        answer: "Yes. Turn on semicolon separators to read ; as the argument separator and ;; as the chaining operator, with a comma as the decimal separator."
+      },
+      {
+        question: "How accurate is the delegation check?",
+        answer: "It is a heuristic. It looks for functions and operators that commonly break delegation, such as Lower, Len, or the in operator inside Filter, and Search against SharePoint. Delegation depends on the data source and column type, so always confirm with the warnings in Studio."
+      }
+    ]
+  }),
   item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool concept", description: "An interactive helper for predicting and documenting SharePoint internal column names before formulas and flows depend on them.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
 Avoid first creating: Request Status
 Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "document-a-sharepoint-column-internal-name-map"] }),
