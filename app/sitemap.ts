@@ -63,6 +63,7 @@ const staticRoutes: Array<{
   { route: "/collections", changeFrequency: "weekly", priority: 0.8 },
   { route: "/resources", changeFrequency: "weekly", priority: 0.82 },
   { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
+  { route: "/downloads", changeFrequency: "monthly", priority: 0.7 },
   ...pmoRoutes.map((route) => ({ route, changeFrequency: "weekly" as const, priority: route === "/pmo" ? 0.86 : 0.64 })),
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
   { route: "/about", changeFrequency: "monthly", priority: 0.45 },

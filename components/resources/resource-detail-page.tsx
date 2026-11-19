@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { DownloadPromo } from "@/components/growth/download-promo";
+import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import type { ResourceItem } from "@/lib/resources";
 import { absoluteUrl } from "@/lib/site";
@@ -60,6 +62,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
         <div className="grid" style={{ gridTemplateColumns: "minmax(0, 0.72fr) minmax(260px, 0.28fr)" }}>
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
             {isTool ? children : null}
+            {isTool ? <NewsletterSignup placement={"tool:" + resource.slug} title="Get new tools and Power Fx tips by email" /> : null}
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Who this helps</h2>
               <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>{resource.audience}</p>
@@ -124,6 +127,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
               </p>
               <Link className="button secondary" href={parentPathByKind[resource.kind]}>View more</Link>
             </div>
+            <DownloadPromo />
           </aside>
         </div>
       </div>

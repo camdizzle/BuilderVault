@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BulletList } from "@/components/patterns/bullet-list";
 import { DetailSection } from "@/components/patterns/detail-section";
+import { DownloadPromo } from "@/components/growth/download-promo";
+import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { PatternBadges } from "@/components/patterns/pattern-badges";
 import { PatternCard } from "@/components/patterns/pattern-card";
@@ -284,8 +286,11 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
                 </div>
               </div>
             ) : null}
+            <DownloadPromo />
           </aside>
         </div>
+
+        <NewsletterSignup placement="pattern" />
 
         {relatedPatterns.length > 0 ? (
           <section style={{ display: "grid", gap: 18 }}>

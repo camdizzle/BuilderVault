@@ -24,7 +24,7 @@ export function SiteFooter() {
           </p>
           <p style={{ fontSize: "0.9rem", marginBottom: 0 }}>© {year} BuilderVault.</p>
         </div>
-        <FooterGroup title="Learn" links={[["/patterns", "Patterns"], ["/resources", "Resources"], ["/examples", "Examples"], ["/cookbooks", "Cookbooks"], ["/pmo", "PMO Toolkit"]]} />
+        <FooterGroup title="Learn" links={[["/patterns", "Patterns"], ["/resources", "Resources"], ["/examples", "Examples"], ["/cookbooks", "Cookbooks"], ["/downloads", "Free downloads"], ["/pmo", "PMO Toolkit"]]} />
         <FooterGroup title="Tools" links={[["/tools/power-fx-formatter", "Power Fx Formatter"], ["/tools/sharepoint-internal-name-helper", "Internal Name Helper"], ["/tools/power-automate-expression-builder", "Expression Builder"], ["/tools/solution-layering-checklist-generator", "ALM Checklist"]]} />
         <FooterGroup title="Company" links={[["/about", "About"], ["/contact", "Contact"], ["/pricing", "Free access"]]} />
         <FooterGroup title="Legal" links={[["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]} />

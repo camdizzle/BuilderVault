@@ -80,8 +80,12 @@ Each one is off until its variable is set, and `NEXT_PUBLIC_*` values need a reb
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Plausible analytics (cookie-free) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 (uses cookies) |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Search Console verification meta tag |
+| `NEXT_PUBLIC_NEWSLETTER_FORM_ACTION` | Newsletter signup boxes (posts to your email provider's embed form) |
+| `NEXT_PUBLIC_NEWSLETTER_EMAIL_FIELD` | Email field name your provider expects (default `email`) |
 
-Custom events sent when analytics is on: `Formatter Copied`, `Code Copied`.
+Custom events sent when analytics is on: `Formatter Copied`, `Code Copied`, `Pack Downloaded`, `Newsletter Signup`.
+
+Downloadable packs live in `public/packs/` and are listed in `lib/downloads.ts`.
 
 ## Production build
 

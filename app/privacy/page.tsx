@@ -1,5 +1,6 @@
 import { SimplePage } from "@/components/layout/simple-page";
 import { analyticsConfig } from "@/lib/analytics";
+import { newsletterEnabled } from "@/lib/downloads";
 
 export const metadata = {
   title: "Privacy Policy | BuilderVault",
@@ -53,6 +54,16 @@ export default function PrivacyPage() {
       ) : null}
       {!analyticsConfig.plausibleDomain && !analyticsConfig.gaMeasurementId ? (
         <p>BuilderVault does not currently run third-party analytics scripts.</p>
+      ) : null}
+      {newsletterEnabled ? (
+        <>
+          <h2>Newsletter</h2>
+          <p>
+            If you subscribe to the newsletter, your email address is sent to our email
+            provider and used only to send BuilderVault updates. Every email includes an
+            unsubscribe link, and you can ask us to delete your address at any time.
+          </p>
+        </>
       ) : null}
       <h2>Local storage and preferences</h2>
       <p>
