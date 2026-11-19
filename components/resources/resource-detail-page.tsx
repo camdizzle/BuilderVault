@@ -132,7 +132,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
             {isTool ? (
               <ServicesCta
                 placement={"tool:" + resource.slug}
-                text="Send me the formula, app, or flow and get written review notes with suggested fixes."
+                text="Send a request about the formula, app, or flow you are working on."
                 title="Want a second pair of eyes?"
               />
             ) : null}

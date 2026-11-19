@@ -5,7 +5,7 @@ import { serviceOffers } from "@/lib/services";
 
 export const metadata = {
   title: "Power Apps and Power Automate Help",
-  description: "Get hands-on help with Power Apps formulas, Power Automate flows, SharePoint and Dataverse data models, and Power Platform ALM from the builder behind BuilderVault.",
+  description: "Ask about help with Power Apps formulas, Power Automate flows, SharePoint and Dataverse data models, and Power Platform ALM.",
   alternates: { canonical: "/services" }
 };
 
@@ -13,7 +13,7 @@ export default function ServicesPage() {
   return (
     <SimplePage
       eyebrow="Get help"
-      lead="BuilderVault's patterns and tools are free. When you'd rather have someone look at your app or flow directly, here's how I can help."
+      lead="BuilderVault's patterns and tools are free. If you'd like someone to look at your app or flow directly, send a request describing what you need."
       title="Stuck on an app or flow?"
     >
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
@@ -31,12 +31,11 @@ export default function ServicesPage() {
           </article>
         ))}
       </div>
-      <h2>How it works</h2>
-      <ol>
-        <li>Email a short description of what you&apos;re building and what&apos;s going wrong.</li>
-        <li>I reply with whether I can help, a rough scope, and a quote before any work starts.</li>
-        <li>Share formulas, screenshots, or a solution export. Don&apos;t send production data or credentials.</li>
-      </ol>
+      <h2>Sending a request</h2>
+      <ul>
+        <li>Describe what you&apos;re building and what&apos;s going wrong or what you need.</li>
+        <li>Formulas, screenshots, and error messages help. Don&apos;t send production data, passwords, or other credentials.</li>
+      </ul>
       <ServicesRequestLink label="Email a request" />
       <p>
         Prefer to keep going on your own? Try the <Link href="/tools/power-fx-formatter">Power Fx Formatter</Link> or browse the{" "}
