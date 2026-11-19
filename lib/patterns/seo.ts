@@ -40,7 +40,7 @@ const categoryTopicMap: Record<string, { label: string; path: string }> = {
   Dataverse: { label: "Dataverse", path: "/dataverse" },
   "Power Apps": { label: "Power Apps", path: "/power-apps" },
   "Power Automate": { label: "Power Automate", path: "/power-automate" },
-  "Power Pages": { label: "Power Pages", path: "/power-pages" },
+  "Power Pages": { label: "Power Pages", path: "/patterns" },
   "Power Platform Admin": { label: "Power Platform admin", path: "/alm" },
   SharePoint: { label: "SharePoint", path: "/sharepoint" },
   "Teams & Adaptive Cards": { label: "Teams and Adaptive Cards", path: "/power-automate" }
