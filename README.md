@@ -87,6 +87,8 @@ Custom events sent when analytics is on: `Formatter Copied`, `Code Copied`, `Pac
 
 Downloadable packs live in `public/packs/` and are listed in `lib/downloads.ts`.
 
+Step-by-step setup for analytics, the newsletter, Search Console and automatic Plesk deploys is in [docs/setup.md](docs/setup.md).
+
 ## Production build
 
 ```bash
