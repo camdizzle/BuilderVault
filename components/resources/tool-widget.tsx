@@ -20,6 +20,7 @@ import {
   type PowerFxLocale
 } from "@/lib/tools/power-fx-format";
 import { PowerFxTableGenerator } from "@/components/tools/power-fx-table-generator";
+import { NamingLinter } from "@/components/tools/naming-linter";
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
@@ -38,6 +39,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
   if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
   if (slug === "csv-to-power-fx-table") return <PowerFxTableGenerator />;
+  if (slug === "power-apps-naming-linter") return <NamingLinter />;
   return null;
 }
 
