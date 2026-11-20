@@ -192,6 +192,28 @@ for (const collectionSlug of collectionPatternSlugs) {
   }
 }
 
+const rewrites = JSON.parse(readFileSync(new URL("../data/pattern-rewrites.json", import.meta.url), "utf8"));
+const rewriteTextFields = ["shortDescription", "fullDescription", "problemStatement", "formulaOrCode"];
+const rewriteListFields = ["whenToUse", "whenNotToUse", "stepByStepInstructions", "commonMistakes", "troubleshooting"];
+
+for (const [rewriteSlug, rewrite] of Object.entries(rewrites)) {
+  if (!slugs.has(rewriteSlug)) {
+    errors.push("Rewrite targets a missing pattern: " + rewriteSlug);
+  }
+
+  for (const field of rewriteTextFields) {
+    if (typeof rewrite[field] !== "string" || rewrite[field].trim().length < 40) {
+      errors.push(rewriteSlug + " rewrite has a missing or short " + field);
+    }
+  }
+
+  for (const field of rewriteListFields) {
+    if (!Array.isArray(rewrite[field]) || rewrite[field].length < 2) {
+      errors.push(rewriteSlug + " rewrite has a missing or short " + field);
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error("Pattern validation failed with " + errors.length + " issue(s):");
   for (const error of errors) {

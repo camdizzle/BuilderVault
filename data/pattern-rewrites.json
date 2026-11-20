@@ -1,0 +1,599 @@
+{
+  "create-adaptive-approval-emails": {
+    "shortDescription": "Send an approval email whose wording, approver and details change with the request.",
+    "fullDescription": "One approval flow can serve many request types if the email content is built from the item. This pattern builds the title, details and approver from the request's own values and uses the Approvals action so the decision comes back to the flow.",
+    "problemStatement": "Teams clone the same approval flow for every request type, then have to fix each copy whenever the wording or the approver changes.",
+    "whenToUse": [
+      "Several request types share one approval process",
+      "The approver or the wording depends on amount, category or department",
+      "Approvers respond from Outlook or Teams"
+    ],
+    "whenNotToUse": [
+      "A single fixed approval with one approver",
+      "Approvals that need custom input fields, where an adaptive card in Teams fits better"
+    ],
+    "formulaOrCode": "Trigger: When an item is created (Requests)\n\nCompose_Approver\n  if(\n    greater(triggerBody()?['Amount'], 5000),\n    triggerBody()?['Director']?['Email'],\n    triggerBody()?['Manager']?['Email']\n  )\n\nCompose_Details  (Markdown, supported by Approvals)\n  concat(\n    '**Requester:** ', triggerBody()?['Author']?['DisplayName'], '\\n\\n',\n    '**Type:** ', triggerBody()?['RequestType']?['Value'], '\\n\\n',\n    '**Amount:** ', formatNumber(coalesce(triggerBody()?['Amount'], 0), 'N2'), '\\n\\n',\n    if(empty(triggerBody()?['Justification']), '',\n       concat('**Justification:** ', triggerBody()?['Justification']))\n  )\n\nStart and wait for an approval\n  Approval type : Approve/Reject - First to respond\n  Title         : @{triggerBody()?['RequestType']?['Value']} request: @{triggerBody()?['Title']}\n  Assigned to   : @{outputs('Compose_Approver')}\n  Details       : @{outputs('Compose_Details')}\n  Item link     : @{triggerBody()?['{Link}']}\n  Item link description : Open the request\n\nCondition\n  outputs('Start_and_wait_for_an_approval')?['body/outcome']  is equal to  Approve",
+    "stepByStepInstructions": [
+      "Add columns to the list for anything the email must show, such as request type, amount and justification.",
+      "Build the approver address in a Compose so the rule is in one place.",
+      "Build the details text in a second Compose using Markdown for bold labels and blank lines.",
+      "Pass both outputs to Start and wait for an approval, and add the item link.",
+      "Branch on the outcome and write the decision and comments back to the item."
+    ],
+    "commonMistakes": [
+      "Pasting HTML into Details. Approvals renders Markdown, not HTML.",
+      "Leaving the approver empty when the manager field is blank, which fails the action.",
+      "Putting the routing rule in several conditions instead of one expression."
+    ],
+    "troubleshooting": [
+      "If line breaks are ignored, use two line breaks between lines. A single one is treated as a space in Markdown.",
+      "If the action fails with an invalid user, the approver expression returned null. Add a fallback with coalesce.",
+      "If approvers do not see the email, check that the Approvals notifications are not blocked and that they can also respond in the Teams Approvals app."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-a-digest-email-grouped-by-owner": {
+    "shortDescription": "Send each owner one email listing all of their open items, instead of one email per item.",
+    "fullDescription": "A scheduled flow reads the open items once, works out the distinct owners, and sends each owner a single HTML table of their items. It uses Select, union and Filter array so the only loop is one pass per owner.",
+    "problemStatement": "Reminder flows that email once per item bury people in messages, and owners with twenty items start ignoring all of them.",
+    "whenToUse": [
+      "Daily or weekly reminders of open, overdue or unassigned work",
+      "Lists where one person owns many items",
+      "Replacing a per-item reminder flow"
+    ],
+    "whenNotToUse": [
+      "Urgent single-item alerts that must arrive immediately",
+      "Lists with no owner column"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (weekdays 08:00)\n\nGet items\n  Filter Query : Status eq 'Open'\n  Top Count    : 5000\n\nSelect_Owners   (Map in text mode)\n  From : @{body('Get_items')?['value']}\n  Map  : @toLower(item()?['AssignedTo']?['Email'])\n\nCompose_DistinctOwners\n  union(body('Select_Owners'), body('Select_Owners'))\n\nApply to each: outputs('Compose_DistinctOwners')\n\n  Filter_array_Mine\n    From      : @{body('Get_items')?['value']}\n    Condition : @equals(toLower(item()?['AssignedTo']?['Email']), items('Apply_to_each'))\n\n  Select_Rows\n    From : @{body('Filter_array_Mine')}\n    Map  : Title    -> item()?['Title']\n           Due      -> if(empty(item()?['DueDate']), '', formatDateTime(item()?['DueDate'], 'dd MMM yyyy'))\n           Priority -> item()?['Priority']?['Value']\n\n  Create HTML table\n    From : @{body('Select_Rows')}\n\n  Send an email (V2)\n    To      : @{items('Apply_to_each')}\n    Subject : You have @{length(body('Filter_array_Mine'))} open requests\n    Body    : <p>These requests are assigned to you:</p>@{body('Create_HTML_table')}",
+    "stepByStepInstructions": [
+      "Add a Recurrence trigger and a Get items action filtered to the items that need attention.",
+      "Build a flat list of owner email addresses with Select in text mode.",
+      "Remove duplicates with union.",
+      "Loop over the distinct owners and use Filter array to pick each owner's items.",
+      "Shape the rows with Select, turn them into a table with Create HTML table, and send one email per owner."
+    ],
+    "commonMistakes": [
+      "Looping over items instead of owners, which sends one email per item.",
+      "Forgetting items with no owner, which produce one blank address and a failed send.",
+      "Comparing email addresses without toLower, so the same person appears twice."
+    ],
+    "troubleshooting": [
+      "If the send fails on an empty address, add a Filter array before union that removes empty values.",
+      "If the table has no borders in Outlook, add inline styles with replace() on the table output or wrap it in a styled div.",
+      "If the flow is slow, turn on concurrency for the loop. It uses no variables, so it is safe to run in parallel."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-flow-run-logging-list": {
+    "shortDescription": "Record every important flow run in a SharePoint list so support can see what ran, for which item, and what failed.",
+    "fullDescription": "Run history disappears after 28 days and is only visible to flow owners. A small logging list gives support staff a searchable record with a direct link to the run. This pattern defines the list and the actions that write to it.",
+    "problemStatement": "When a user reports that nothing happened to their request, nobody outside the flow's owners can tell whether the flow ran, and old runs have already been purged.",
+    "whenToUse": [
+      "Business-critical flows that other people support",
+      "Flows whose failures need follow-up",
+      "Audits that ask what was processed and when"
+    ],
+    "whenNotToUse": [
+      "High-volume flows, where a row per run would flood the list. Log failures only.",
+      "Personal flows with no support need"
+    ],
+    "formulaOrCode": "List: Flow Run Log\n  Title          Single line   flow name\n  SourceItemId   Number        (indexed)\n  SourceList     Single line\n  Outcome        Choice        Succeeded | Failed | Skipped   (indexed)\n  ErrorMessage   Multiple lines (plain)\n  RunUrl         Hyperlink\n  StartedOn      Date and time\n  DurationSec    Number\n\nCompose_RunUrl (place near the top of the flow)\n  concat(\n    'https://make.powerautomate.com/environments/',\n    workflow()?['tags']?['environmentName'],\n    '/flows/', workflow()?['name'],\n    '/runs/', workflow()?['run']?['name']\n  )\n\nScope \"Try\"  ... the flow's real work ...\n\nScope \"Log success\" (run after Try: is successful)\n  Create item in Flow Run Log\n    Title        : @{workflow()?['tags']?['flowDisplayName']}\n    SourceItemId : @{triggerBody()?['ID']}\n    Outcome      : Succeeded\n    RunUrl       : @{outputs('Compose_RunUrl')}\n    StartedOn    : @{trigger()?['startTime']}\n    DurationSec  : @{div(sub(ticks(utcNow()), ticks(trigger()?['startTime'])), 10000000)}\n\nScope \"Log failure\" (run after Try: has failed, has timed out)\n  Filter array\n    From      : @{result('Try')}\n    Condition : @equals(item()?['status'], 'Failed')\n  Create item in Flow Run Log\n    Outcome      : Failed\n    ErrorMessage : @{coalesce(first(body('Filter_array'))?['error']?['message'], 'See run history')}\n  Terminate: Failed",
+    "stepByStepInstructions": [
+      "Create the logging list with the columns above and index SourceItemId and Outcome.",
+      "Add the Compose that builds the run link at the start of each flow.",
+      "Wrap the flow's work in a Try scope.",
+      "Add a success scope and a failure scope after it, each creating a log row.",
+      "End the failure scope with Terminate set to Failed so the run still shows as failed.",
+      "Add a view for failures in the last seven days and share it with support."
+    ],
+    "commonMistakes": [
+      "Logging inside the Try scope, so a failure also skips the log.",
+      "Leaving the run as Succeeded after a caught failure.",
+      "Giving the log list the same permissions as the source list, which exposes error details to requesters."
+    ],
+    "troubleshooting": [
+      "If the run link opens the wrong environment, check the environmentName tag. Solution flows in the default environment use a different URL prefix.",
+      "If ErrorMessage is empty, the failed action was inside a nested scope. Read result() of the inner scope instead.",
+      "If result() is not offered in the expression editor, type it by hand. It takes the name of the scope with underscores for spaces."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "use-child-flows-for-shared-notification-logic": {
+    "shortDescription": "Put notification logic in one child flow and call it from every flow that needs it.",
+    "fullDescription": "A child flow is a solution flow with a manual trigger that other flows call with Run a Child Flow. Moving the email and Teams logic into one child means wording, branding and channels are changed once.",
+    "problemStatement": "Ten flows each contain a copy of the same notification actions, and a change to the template means editing all ten.",
+    "whenToUse": [
+      "The same sequence of actions appears in several flows",
+      "Notifications that must look and behave the same everywhere",
+      "Flows that live in a solution"
+    ],
+    "whenNotToUse": [
+      "Flows outside solutions, which cannot call child flows",
+      "Logic used in only one flow"
+    ],
+    "formulaOrCode": "Child flow: \"BV Notify\" (inside the solution)\n  Trigger: Manually trigger a flow\n    Text   Recipient      (email)\n    Text   Subject\n    Text   Message\n    Text   Link\n    Text   Channel        Email | Teams | Both\n\n  Switch on Channel\n    Email : Send an email (V2)\n    Teams : Post message in a chat or channel (Chat with Flow bot)\n    Both  : both actions\n\n  Respond to a Power App or flow\n    Text  Status : sent\n\n  Settings on the child flow's details page\n    Run only users > each connection: \"Use this connection (name)\"\n    (never \"Provided by run-only user\")\n\nParent flow\n  Run a Child Flow\n    Child Flow : BV Notify\n    Recipient  : @{triggerBody()?['Author']?['Email']}\n    Subject    : Request @{triggerBody()?['Title']} approved\n    Message    : Your request has been approved.\n    Link       : @{triggerBody()?['{Link}']}\n    Channel    : Both\n\n  Read the result: body('Run_a_Child_Flow')?['status']",
+    "stepByStepInstructions": [
+      "Create the child flow inside a solution with the manual trigger and typed inputs.",
+      "Add the shared actions and end with Respond to a Power App or flow.",
+      "Open the child flow's details page and set every connection under Run only users to use the embedded connection.",
+      "In each parent flow, add Run a Child Flow and pass the inputs.",
+      "Remove the duplicated actions from the parents."
+    ],
+    "commonMistakes": [
+      "Leaving out the Respond action, so the parent waits and then fails.",
+      "Leaving connections as provided by the run-only user, which blocks the child from being called.",
+      "Changing the child's inputs without updating every parent."
+    ],
+    "troubleshooting": [
+      "If Run a Child Flow is missing from the action list, the parent flow is not in a solution.",
+      "If saving the parent fails with a message about embedded connections, fix the Run only users setting on the child.",
+      "If the parent times out, the child takes too long before responding. Respond first, then continue the slow work."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "build-a-scheduled-stale-item-cleanup-flow": {
+    "shortDescription": "Find items nobody has touched for a set number of days and archive or close them on a schedule.",
+    "fullDescription": "A recurrence flow queries for items that are still open but have not been modified recently, marks them as archived or closed, and tells the owner. The cut-off is calculated in the query so only stale items are read.",
+    "problemStatement": "Lists fill up with abandoned drafts and forgotten requests, which slows views and hides the work that is still active.",
+    "whenToUse": [
+      "Lists with drafts or requests that are often abandoned",
+      "Keeping an active list under the 5,000 item threshold",
+      "A clear policy such as closing after 60 days without activity"
+    ],
+    "whenNotToUse": [
+      "Records that must be kept unchanged for compliance",
+      "Lists where Modified changes for unrelated reasons, such as bulk edits"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (weekly, Monday 06:00)\n\nCompose_Cutoff\n  addDays(utcNow(), -60, 'yyyy-MM-ddTHH:mm:ssZ')\n\nGet items\n  Filter Query : Status ne 'Closed' and Status ne 'Archived' and Modified lt '@{outputs('Compose_Cutoff')}'\n  Order By     : Modified asc\n  Top Count    : 500\n\nCondition: length(body('Get_items')?['value']) is greater than 0\n\nApply to each: body('Get_items')?['value']   (Concurrency: 10)\n  Update item\n    Id           : @{items('Apply_to_each')?['ID']}\n    Status       : Archived\n    ArchivedOn   : @{utcNow()}\n    ArchiveReason: No activity for 60 days\n\nSend one summary email to the list owner\n  Subject : @{length(body('Get_items')?['value'])} stale requests archived\n  Body    : Create HTML table from a Select of Title, Author and Modified\n\nOptional warning run, one week earlier\n  Same query with -53 days, then email each owner:\n  \"This request will be archived on <date> unless it is updated.\"",
+    "stepByStepInstructions": [
+      "Agree the rule: which statuses count as open and how many days without change count as stale.",
+      "Add Archived to the status choices and add ArchivedOn and ArchiveReason columns.",
+      "Build the cut-off date in a Compose and use it in the filter query.",
+      "Update each stale item's status instead of deleting it.",
+      "Send one summary to the list owner, and consider a warning run a week before."
+    ],
+    "commonMistakes": [
+      "Deleting items outright, with no way back.",
+      "Filtering in the flow after reading the whole list.",
+      "Forgetting that the flow's own update changes Modified, which is why the status filter matters."
+    ],
+    "troubleshooting": [
+      "If the query returns nothing, check the date format. SharePoint needs an ISO date in single quotes.",
+      "If the same items come back every week, the status filter does not exclude the archived value. Check the exact choice text.",
+      "If the flow triggers other flows on the list, add a trigger condition to those flows to ignore changes where Status equals Archived."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-work-based-on-sharepoint-choice-value": {
+    "shortDescription": "Assign an item to the right team or person based on a choice column, using a routing list instead of hard-coded branches.",
+    "fullDescription": "Rather than a Switch with an address in every branch, this pattern looks up the choice value in a small routing list that holds the owner for each category. Changing who handles a category becomes a list edit, not a flow edit.",
+    "problemStatement": "Every reorganization means opening the flow and editing email addresses inside conditions, and nobody but the flow's author can do it.",
+    "whenToUse": [
+      "Requests routed by category, department or type",
+      "Routing that changes more often than the flow should",
+      "More than three or four routes"
+    ],
+    "whenNotToUse": [
+      "Two fixed routes that never change, where a Condition is simpler",
+      "Routing that depends on several fields and rules, which needs a rules list or code"
+    ],
+    "formulaOrCode": "List: Routing\n  Title        Single line   category value, exactly as in the choice column (indexed)\n  Owner        Person\n  TeamsChannel Single line   optional\n  Active       Yes/No\n\nTrigger: When an item is created (Requests)\n\nGet items (Routing)\n  Filter Query : Title eq '@{replace(triggerBody()?['Category']?['Value'], '''', '''''')}' and Active eq 1\n  Top Count    : 1\n\nCompose_Owner\n  coalesce(\n    first(body('Get_items')?['value'])?['Owner']?['Email'],\n    'servicedesk@contoso.com'\n  )\n\nUpdate item (Requests)\n  Id               : @{triggerBody()?['ID']}\n  AssignedTo Claims: @{outputs('Compose_Owner')}\n  Status           : Assigned\n\nSend an email (V2)\n  To      : @{outputs('Compose_Owner')}\n  Subject : New @{triggerBody()?['Category']?['Value']} request: @{triggerBody()?['Title']}\n\nTrigger condition (Settings) so the update does not retrigger on create-and-modify flows\n  @empty(triggerBody()?['AssignedTo'])",
+    "stepByStepInstructions": [
+      "Create the Routing list with one row per choice value.",
+      "Read the item's choice value with ?['Value'] and look it up in the Routing list.",
+      "Fall back to a default owner when no row matches.",
+      "Write the owner to the item and notify them.",
+      "Give the business owner edit access to the Routing list."
+    ],
+    "commonMistakes": [
+      "Reading the choice column without ?['Value'], which returns an object.",
+      "No default route, so an unmapped category fails the flow.",
+      "Routing values that differ from the choice text by a space or capital letter."
+    ],
+    "troubleshooting": [
+      "If the lookup returns nothing, compare the routing Title with the choice value character for character.",
+      "If a category containing an apostrophe breaks the filter, keep the replace() shown above, which doubles single quotes.",
+      "If the person column will not update, pass the email address to the Claims field of the column."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "use-switch-control-for-status-based-flow-paths": {
+    "shortDescription": "Run a different set of actions for each status value with one Switch instead of nested conditions.",
+    "fullDescription": "Switch compares one value against several cases and runs the matching branch. For status-driven flows it is flatter and easier to read than conditions inside conditions, and the default case catches values nobody planned for.",
+    "problemStatement": "A flow has conditions nested four levels deep to handle five statuses, and adding a sixth means restructuring the whole thing.",
+    "whenToUse": [
+      "One value decides between three or more paths",
+      "Status, type or category driven logic",
+      "Flows that must do something sensible for unexpected values"
+    ],
+    "whenNotToUse": [
+      "Comparisons such as greater than or contains. Switch only tests equality.",
+      "Two outcomes, where a Condition is clearer"
+    ],
+    "formulaOrCode": "Trigger: When an item is created or modified (Requests)\n  Trigger condition: @not(equals(triggerBody()?['Status']?['Value'], 'Draft'))\n\nSwitch\n  On : @{triggerBody()?['Status']?['Value']}\n\n  Case \"Submitted\"\n    Start and wait for an approval ...\n  Case \"Approved\"\n    Send an email to the requester\n    Create a Planner task for fulfilment\n  Case \"Rejected\"\n    Send an email with the approver's comments\n  Case \"On Hold\"\n    Post a message to the team channel\n  Default\n    Send an email to the flow owner:\n    \"Unhandled status '@{triggerBody()?['Status']?['Value']}' on item @{triggerBody()?['ID']}\"\n\nSwitch on a calculated value (ranges)\n  On : @{if(greater(triggerBody()?['Amount'], 10000), 'High',\n          if(greater(triggerBody()?['Amount'], 1000), 'Medium', 'Low'))}\n  Cases: High | Medium | Low",
+    "stepByStepInstructions": [
+      "Add a Switch and set On to the status text, using ?['Value'] for a choice column.",
+      "Add one case per status, typing the value exactly as stored.",
+      "Move the actions for each status into its case.",
+      "Add a Default case that reports unexpected values.",
+      "For ranges, calculate a label first and switch on the label."
+    ],
+    "commonMistakes": [
+      "Case values that differ in capitals or spacing from the stored value. Cases are case-sensitive.",
+      "Leaving Default empty, so new statuses pass silently.",
+      "Trying to use an expression as a case value. Cases must be constants."
+    ],
+    "troubleshooting": [
+      "If every run goes to Default, output the On value in a Compose and compare it with the case text.",
+      "If you need the same actions for two statuses, map both to one label in an expression and switch on that.",
+      "If the flow runs when it should not, pair the Switch with a trigger condition so it only starts for relevant statuses."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-semicolon-separated-emails-into-recipients": {
+    "shortDescription": "Turn text such as 'a@x.com; b@x.com' into a clean recipient list, or into individual addresses to loop over.",
+    "fullDescription": "Addresses arrive in a text column separated by semicolons, commas or line breaks, with stray spaces and blanks. This pattern normalizes the separators, splits the text, trims each entry, removes blanks and duplicates, and joins the result for the To field.",
+    "problemStatement": "An email action fails with an invalid recipient because the stored list has a trailing semicolon, a space after a comma or the same address twice.",
+    "whenToUse": [
+      "Recipient lists stored in a text column or a settings list",
+      "Addresses pasted by users",
+      "Sending one email per address from a combined field"
+    ],
+    "whenNotToUse": [
+      "Multi-person columns, which already provide an array",
+      "Distribution lists, which should be a group address"
+    ],
+    "formulaOrCode": "Compose_Raw\n  coalesce(triggerBody()?['NotifyEmails'], '')\n\nCompose_Normalized  (commas and line breaks become semicolons)\n  replace(\n    replace(\n      replace(outputs('Compose_Raw'), ',', ';'),\n      decodeUriComponent('%0A'), ';'),\n    decodeUriComponent('%0D'), '')\n\nSelect_Trimmed  (Map in text mode)\n  From : @{split(outputs('Compose_Normalized'), ';')}\n  Map  : @toLower(trim(item()))\n\nFilter_array_Valid\n  From      : @{body('Select_Trimmed')}\n  Condition : @and(not(empty(item())), contains(item(), '@'))\n\nCompose_Distinct\n  union(body('Filter_array_Valid'), body('Filter_array_Valid'))\n\nSend an email (V2)\n  To : @{join(outputs('Compose_Distinct'), ';')}\n\nOr one email each\n  Apply to each: outputs('Compose_Distinct')\n    To : @{items('Apply_to_each')}\n\nGuard: only send when there is at least one address\n  greater(length(outputs('Compose_Distinct')), 0)",
+    "stepByStepInstructions": [
+      "Read the text with coalesce so an empty column becomes an empty string.",
+      "Replace commas and line breaks with semicolons.",
+      "Split on the semicolon and trim each entry with Select in text mode.",
+      "Remove blanks and anything without an at sign, then remove duplicates with union.",
+      "Join the list for the To field, or loop over it."
+    ],
+    "commonMistakes": [
+      "Splitting without trimming, so addresses keep a leading space.",
+      "Not handling a trailing separator, which creates an empty entry.",
+      "Calling split on null when the column is empty."
+    ],
+    "troubleshooting": [
+      "If split fails, the input was null. Keep the coalesce in the first step.",
+      "If the send fails with an invalid recipient, output the final list in a Compose and look for hidden characters or missing domains.",
+      "If line breaks are not replaced, the text uses a different break. Replace both %0A and %0D as shown."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-an-approval-audit-trail-in-sharepoint": {
+    "shortDescription": "Write every approval decision to a separate history list with who decided, when, and what they said.",
+    "fullDescription": "The Approvals connector keeps its own history, but it is hard to report on and tied to the environment. This pattern records each response in a SharePoint list linked to the request, so the trail is visible next to the item and survives flow changes.",
+    "problemStatement": "Auditors ask who approved a request and when, and the only evidence is a status column that has since been overwritten.",
+    "whenToUse": [
+      "Approvals that are audited or disputed",
+      "Multi-stage approvals where each stage must be visible",
+      "Requests whose status changes after approval"
+    ],
+    "whenNotToUse": [
+      "Informal sign-offs with no record-keeping need",
+      "Regulated records that must live in a dedicated records system"
+    ],
+    "formulaOrCode": "List: Approval History\n  Title        Single line    request title\n  RequestId    Number         (indexed)\n  Stage        Choice         Manager | Finance | Director\n  Outcome      Choice         Approve | Reject\n  Approver     Person\n  Comments     Multiple lines (plain)\n  RequestedOn  Date and time\n  RespondedOn  Date and time\n\nStart and wait for an approval  ->  action name \"Approval\"\n\nApply to each: outputs('Approval')?['body/responses']\n  Create item (Approval History)\n    Title       : @{triggerBody()?['Title']}\n    RequestId   : @{triggerBody()?['ID']}\n    Stage       : Manager\n    Outcome     : @{items('Apply_to_each')?['approverResponse']}\n    Approver    : @{items('Apply_to_each')?['responder']?['email']}\n    Comments    : @{items('Apply_to_each')?['comments']}\n    RequestedOn : @{outputs('Approval')?['body/requestDate']}\n    RespondedOn : @{items('Apply_to_each')?['responseDate']}\n\nUpdate item (Requests)\n  Status          : @{if(equals(outputs('Approval')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')}\n  LastDecisionBy  : @{first(outputs('Approval')?['body/responses'])?['responder']?['email']}\n  LastDecisionOn  : @{outputs('Approval')?['body/completionDate']}\n\nPermissions\n  Approval History: requesters Read, flow account Contribute, nobody else can edit",
+    "stepByStepInstructions": [
+      "Create the Approval History list and index RequestId.",
+      "After the approval action, loop over its responses and create one history row per response.",
+      "Update the request with the overall outcome and the last decision details.",
+      "Restrict edit rights on the history list to the flow's account.",
+      "Add a view of history to the request's display form or app, filtered by RequestId."
+    ],
+    "commonMistakes": [
+      "Storing only the final status on the request, which loses earlier decisions.",
+      "Letting everyone edit the history list.",
+      "Recording the flow owner as the approver instead of the responder."
+    ],
+    "troubleshooting": [
+      "If comments are empty, the approver left none. Store a short note such as No comment given, so the column is not misread as missing data.",
+      "If only one row is written for an everyone-must-approve approval, loop over responses instead of reading the summary fields.",
+      "If the person column fails to save, pass the responder's email to the Claims field."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "retry-transient-sharepoint-connector-failures": {
+    "shortDescription": "Configure retry policies and a manual retry loop so brief SharePoint errors do not fail the whole flow.",
+    "fullDescription": "Throttling and gateway errors from SharePoint are usually gone a few seconds later. Each action has a retry policy that can be tuned, and for cases the policy does not cover, a Do until loop with a delay gives full control.",
+    "problemStatement": "A flow that works all week fails on Monday morning with 429 or 502 errors when many flows run at once, and someone has to resubmit runs by hand.",
+    "whenToUse": [
+      "Flows that fail intermittently with 429, 502, 503 or 504",
+      "High-volume flows against one site",
+      "Updates that may hit a save conflict"
+    ],
+    "whenNotToUse": [
+      "Errors that will never succeed on retry, such as 400 or 403",
+      "Actions that are not safe to repeat, such as Create item, unless you check for the item first"
+    ],
+    "formulaOrCode": "1. Tune the built-in retry policy\n   Action > Settings > Retry Policy\n     Type             : Exponential Interval\n     Count            : 6\n     Interval         : PT10S\n     Minimum Interval : PT10S\n     Maximum Interval : PT5M\n   The default is 4 exponential retries. Retries apply to 408, 429 and 5xx.\n\n2. Reduce the load that causes throttling\n   Apply to each > Settings > Concurrency: On, Degree of Parallelism: 5\n   Trigger > Settings > Concurrency: On, limit 5\n\n3. Manual retry for errors the policy does not retry (for example 409 conflict)\n   Initialize variable  varDone   Boolean  false\n   Initialize variable  varTries  Integer  0\n\n   Do until  variables('varDone') is equal to true     (Limit: Count 5, Timeout PT15M)\n     Scope \"Attempt\"\n       Get item                (re-read to get the current version)\n       Update item\n     Set variable varDone = true          (run after Attempt: is successful)\n     Increment variable varTries          (run after Attempt: has failed, has timed out)\n     Delay  @{mul(variables('varTries'), 20)} seconds   (same run-after)\n\n   Condition after the loop: variables('varDone') is false -> Terminate Failed",
+    "stepByStepInstructions": [
+      "Open run history and note which action fails and with which status code.",
+      "For 429 and 5xx errors, raise the retry count and interval on that action.",
+      "Lower loop and trigger concurrency so the flow sends fewer requests at once.",
+      "For conflicts, wrap the read and update in a Do until loop with a growing delay.",
+      "Fail the run clearly if the loop ends without success."
+    ],
+    "commonMistakes": [
+      "Retrying Create item without checking whether the first attempt actually succeeded, which creates duplicates.",
+      "Setting concurrency to 50 and then adding retries to cope with the throttling it causes.",
+      "Retrying permission and validation errors, which never succeed."
+    ],
+    "troubleshooting": [
+      "If the run shows many retries and then fails, the outage lasted longer than the policy. Increase the maximum interval.",
+      "If you see 429 with a Retry-After header, the connector already waits for it. Reduce the request rate rather than adding more retries.",
+      "If duplicates appear, add a unique key column and query for it before creating."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "use-terminate-action-for-controlled-flow-failures": {
+    "shortDescription": "End a run on purpose with the right status and a clear message when the data is not fit to process.",
+    "fullDescription": "Terminate stops a flow immediately and marks the run as Succeeded, Failed or Cancelled. Used after validation or inside an error handler, it makes run history tell the truth and gives support a readable reason.",
+    "problemStatement": "A flow catches its own errors and finishes as Succeeded, so failed requests go unnoticed, or it fails deep inside with a cryptic connector message when the real cause was missing input.",
+    "whenToUse": [
+      "Input validation at the start of a flow",
+      "The end of a catch scope, so a handled error still shows as failed",
+      "Stopping early when there is nothing to do"
+    ],
+    "whenNotToUse": [
+      "Inside Apply to each when only that iteration should stop. Terminate ends the whole run.",
+      "When later clean-up actions must still run"
+    ],
+    "formulaOrCode": "1. Validate early and stop with a reason\n   Condition: empty(triggerBody()?['Manager']?['Email'])\n     Yes:\n       Update item   Status = Needs attention\n                     FlowMessage = Manager is missing\n       Terminate\n         Status  : Failed\n         Code    : MissingManager\n         Message : Request @{triggerBody()?['ID']} has no manager, so approval could not start.\n\n2. Nothing to do: stop quietly\n   Condition: equals(length(body('Get_items')?['value']), 0)\n     Yes:\n       Terminate\n         Status : Cancelled        (keeps failure reports clean)\n\n3. After a catch scope: report, then fail\n   Scope \"Try\"   ...\n   Scope \"Catch\" (run after Try: has failed, has timed out)\n     Filter array\n       From      : @{result('Try')}\n       Condition : @equals(item()?['status'], 'Failed')\n     Send an email to support with\n       @{first(body('Filter_array'))?['name']}: @{first(body('Filter_array'))?['error']?['message']}\n     Terminate\n       Status  : Failed\n       Code    : @{coalesce(first(body('Filter_array'))?['code'], 'Unhandled')}\n       Message : @{coalesce(first(body('Filter_array'))?['error']?['message'], 'See run history')}",
+    "stepByStepInstructions": [
+      "List the inputs the flow cannot work without.",
+      "Add conditions at the top that check them, and Terminate as Failed with a specific code and message.",
+      "Use Cancelled for runs that have nothing to process.",
+      "End every catch scope with Terminate set to Failed.",
+      "Filter run history by Failed to confirm that only real problems appear."
+    ],
+    "commonMistakes": [
+      "Catching errors and leaving the run as Succeeded.",
+      "Using Failed for normal no-work runs, which hides real failures in noise.",
+      "Writing a generic message that does not name the item or the missing value."
+    ],
+    "troubleshooting": [
+      "If Terminate inside a loop ends the run too early, set a flag variable in the loop and terminate after it.",
+      "If the run shows Succeeded despite Terminate, another branch ran in parallel and finished first. Check the run-after settings.",
+      "If failure alerts are too noisy, change expected stops from Failed to Cancelled."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "build-a-file-naming-standard-flow": {
+    "shortDescription": "Rename uploaded files to a standard pattern built from their metadata.",
+    "fullDescription": "When a file is added to a library, this flow builds a name from its properties, strips characters SharePoint does not allow, and renames the file with a REST call. A trigger condition stops the flow from running again on its own rename.",
+    "problemStatement": "Libraries fill with files called Scan001.pdf and Final v2 (3).docx, and people cannot tell what a file is without opening it.",
+    "whenToUse": [
+      "Libraries where files are uploaded with arbitrary names",
+      "A naming rule that can be built from metadata",
+      "Files that other systems find by name"
+    ],
+    "whenNotToUse": [
+      "Files with links already shared by name-based URL, which a rename can break",
+      "Libraries where users choose meaningful names themselves"
+    ],
+    "formulaOrCode": "Trigger: When a file is created (properties only)\n  Trigger condition (Settings):\n    @not(startsWith(triggerBody()?['{FilenameWithExtension}'], 'REQ-'))\n\nCompose_Extension\n  last(split(triggerBody()?['{FilenameWithExtension}'], '.'))\n\nCompose_CleanTitle   (remove characters SharePoint rejects, collapse spaces)\n  replace(replace(replace(replace(replace(replace(replace(replace(replace(\n    trim(coalesce(triggerBody()?['DocumentTitle'], triggerBody()?['{Name}'])),\n    '\"', ''), '*', ''), ':', ''), '<', ''), '>', ''), '?', ''), '/', '-'), '\\\\', '-'), '|', '-')\n\nCompose_NewName\n  concat(\n    'REQ-', triggerBody()?['RequestId'], '_',\n    triggerBody()?['DocType']?['Value'], '_',\n    replace(outputs('Compose_CleanTitle'), ' ', '-'), '_',\n    formatDateTime(utcNow(), 'yyyyMMdd'),\n    '.', outputs('Compose_Extension')\n  )\n\nSend an HTTP request to SharePoint\n  Method  : POST\n  Uri     : _api/web/lists/getbytitle('Documents')/items(@{triggerBody()?['ID']})/validateUpdateListItem\n  Headers : Accept: application/json;odata=nometadata\n            Content-Type: application/json;odata=nometadata\n  Body    :\n  {\n    \"formValues\": [\n      { \"FieldName\": \"FileLeafRef\", \"FieldValue\": \"@{outputs('Compose_NewName')}\" }\n    ]\n  }",
+    "stepByStepInstructions": [
+      "Agree the naming rule and which metadata columns it uses.",
+      "Add a trigger condition that skips files already matching the standard.",
+      "Build the extension, a cleaned title and the new name in Compose actions.",
+      "Rename by setting FileLeafRef with Send an HTTP request to SharePoint.",
+      "Make the metadata columns required, so the name can always be built."
+    ],
+    "commonMistakes": [
+      "No trigger condition, so the rename retriggers the flow.",
+      "Dropping the file extension from the new name.",
+      "Leaving characters such as slash, colon or question mark in the name."
+    ],
+    "troubleshooting": [
+      "If the request returns 200 but the name is unchanged, read the response body. It reports the field error, such as an invalid character or a duplicate name.",
+      "If two files would get the same name, add the item ID or a time to the pattern.",
+      "If required metadata is empty at creation, wait for it with a trigger on modified and a condition that the columns are filled."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "notify-when-a-project-health-turns-red": {
+    "shortDescription": "Alert the right people once when a status changes to red, not on every later edit.",
+    "fullDescription": "The modified trigger fires for any change. This pattern stores the previously notified value on the item and uses a trigger condition so the flow starts only when health is red and has not yet been announced, then resets when it leaves red.",
+    "problemStatement": "A red-status alert flow sends the same warning every time someone edits a red project, so people mute it and miss the next real change.",
+    "whenToUse": [
+      "Alerts on a status changing to a specific value",
+      "Escalations that should happen once per occurrence",
+      "Lists edited frequently"
+    ],
+    "whenNotToUse": [
+      "Alerts that should repeat as reminders, which belong in a scheduled flow",
+      "Lists with versioning where you prefer to compare versions"
+    ],
+    "formulaOrCode": "Columns on Projects\n  Health          Choice   Green | Amber | Red\n  HealthNotified  Choice   Green | Amber | Red   (hidden from forms)\n\nFlow 1: alert when it turns red\n  Trigger: When an item is created or modified\n  Trigger condition:\n    @and(\n      equals(triggerBody()?['Health']?['Value'], 'Red'),\n      not(equals(triggerBody()?['HealthNotified']?['Value'], 'Red'))\n    )\n\n  Post message in a chat or channel (Teams)\n    @{triggerBody()?['Title']} is now RED.\n    Owner: @{triggerBody()?['ProjectManager']?['DisplayName']}\n    Reason: @{coalesce(triggerBody()?['HealthComment'], 'No comment given')}\n    @{triggerBody()?['{Link}']}\n\n  Send an email (V2) to the sponsor\n    Importance: High\n\n  Update item\n    HealthNotified : Red\n\nFlow 2: reset when it leaves red\n  Trigger condition:\n    @and(\n      not(equals(triggerBody()?['Health']?['Value'], 'Red')),\n      equals(triggerBody()?['HealthNotified']?['Value'], 'Red')\n    )\n  Update item\n    HealthNotified : @{triggerBody()?['Health']?['Value']}",
+    "stepByStepInstructions": [
+      "Add a HealthNotified column to hold the last value that was announced.",
+      "Add the trigger condition so the flow runs only when health is red and has not been announced.",
+      "Send the Teams message and email with the item link and the reason.",
+      "Set HealthNotified to Red as the last step.",
+      "Add the small second flow that resets the marker when health improves."
+    ],
+    "commonMistakes": [
+      "Alerting on every modification of a red item.",
+      "Updating the item without a trigger condition, causing a loop.",
+      "Showing the marker column on forms, where users change it."
+    ],
+    "troubleshooting": [
+      "If the flow never triggers, test the trigger condition expression in a Compose in a test flow. A typing error makes it silently false.",
+      "If alerts repeat, the final update failed. Check that the flow account can edit the item.",
+      "If you need the previous value in the message, store it in a second column before the update or read the item's version history."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-monthly-portfolio-summary-emails": {
+    "shortDescription": "Send a monthly email with counts by status, the top items needing attention and a link to the full view.",
+    "fullDescription": "A recurrence flow reads the active items once, counts them by status with Filter array, builds a short table of the items that most need attention, and sends a single formatted email to leadership.",
+    "problemStatement": "Someone spends the first morning of every month copying numbers from a list into an email by hand.",
+    "whenToUse": [
+      "Regular summaries for managers or sponsors",
+      "Lists with a status or health column",
+      "Reports that only need counts and a short list"
+    ],
+    "whenNotToUse": [
+      "Analysis with trends and charts, which belongs in Power BI",
+      "Lists too large to read in one Get items call"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (monthly, day 1, 07:00)\n\nGet items (Projects)\n  Filter Query : Status ne 'Closed'\n  Top Count    : 5000\n\nFilter_array_Red     @equals(item()?['Health']?['Value'], 'Red')\nFilter_array_Amber   @equals(item()?['Health']?['Value'], 'Amber')\nFilter_array_Green   @equals(item()?['Health']?['Value'], 'Green')\n\nSelect_RedRows\n  From : @{take(body('Filter_array_Red'), 10)}\n  Map  : Project -> item()?['Title']\n         Owner   -> item()?['ProjectManager']?['DisplayName']\n         Due     -> if(empty(item()?['TargetDate']), '', formatDateTime(item()?['TargetDate'], 'dd MMM yyyy'))\n         Reason  -> coalesce(item()?['HealthComment'], '')\n\nCreate HTML table   From: @{body('Select_RedRows')}\n\nCompose_Table (basic styling for Outlook)\n  replace(\n    replace(body('Create_HTML_table'), '<table>', '<table style=\"border-collapse:collapse;font-family:Segoe UI,Arial;font-size:13px\">'),\n    '<td>', '<td style=\"border:1px solid #ccc;padding:6px\">')\n\nSend an email (V2)\n  Subject : Portfolio summary for @{formatDateTime(addDays(utcNow(), -1), 'MMMM yyyy')}\n  Body    :\n    <p><b>@{length(body('Get_items')?['value'])}</b> active projects:\n       <b style=\"color:#b00020\">@{length(body('Filter_array_Red'))} red</b>,\n       @{length(body('Filter_array_Amber'))} amber,\n       @{length(body('Filter_array_Green'))} green.</p>\n    <p>Red projects:</p>\n    @{outputs('Compose_Table')}\n    <p><a href=\"https://contoso.sharepoint.com/sites/pmo/Lists/Projects/Red.aspx\">Open the full list</a></p>",
+    "stepByStepInstructions": [
+      "Add a monthly Recurrence trigger and a Get items action for active items.",
+      "Add one Filter array per status and use length() for the counts.",
+      "Shape the top rows with Select and build a table with Create HTML table.",
+      "Add inline styles with replace so the table reads well in Outlook.",
+      "Send one email with the counts, the table and a link to a list view."
+    ],
+    "commonMistakes": [
+      "Counting with a loop and variables instead of Filter array and length.",
+      "Sending the whole list as a table, which nobody reads.",
+      "Naming the wrong month. A run on the first reports on the previous month."
+    ],
+    "troubleshooting": [
+      "If the counts do not add up, some items have an empty health value. Add a count for blanks.",
+      "If Outlook strips the styling, use inline styles on table cells as shown instead of a style block.",
+      "If Get items returns only 100 rows, set Top Count or turn on pagination."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "build-a-small-business-pto-request-workflow": {
+    "shortDescription": "Handle time-off requests with a list, a manager approval and a shared calendar entry.",
+    "fullDescription": "A complete small-team leave process: a SharePoint list for requests, a flow that works out the manager, asks for approval, writes the decision back and adds approved leave to a shared calendar.",
+    "problemStatement": "Time off is agreed by email or chat, nobody has a single view of who is away, and requests get lost.",
+    "whenToUse": [
+      "Small teams without an HR system",
+      "Organizations where manager data is kept in Microsoft 365",
+      "A simple approve or reject process"
+    ],
+    "whenNotToUse": [
+      "Leave balances and accrual rules, which need an HR system or a more complete app",
+      "Organizations where managers are not set in the directory"
+    ],
+    "formulaOrCode": "List: Time Off Requests\n  Title        Single line   (set by flow: \"<Name> - <Type>\")\n  LeaveType    Choice        Holiday | Sick | Unpaid | Other\n  StartDate    Date\n  EndDate      Date\n  Notes        Multiple lines\n  Status       Choice        Submitted | Approved | Rejected   (default Submitted)\n  Approver     Person\n  DecisionNote Multiple lines\n  Validation   EndDate >= StartDate   (list validation formula: =[EndDate]>=[StartDate])\n\nTrigger: When an item is created\n\nGet manager (V2)\n  User (UPN): @{triggerBody()?['Author']?['Email']}\n  Configure run after on the next step: is successful, has failed\n\nCompose_Approver\n  coalesce(outputs('Get_manager_(V2)')?['body/mail'], 'office@contoso.com')\n\nStart and wait for an approval (Approve/Reject - First to respond)\n  Title       : Time off: @{triggerBody()?['Author']?['DisplayName']}\n  Assigned to : @{outputs('Compose_Approver')}\n  Details     : **@{triggerBody()?['LeaveType']?['Value']}** from\n                @{formatDateTime(triggerBody()?['StartDate'], 'ddd d MMM')} to\n                @{formatDateTime(triggerBody()?['EndDate'], 'ddd d MMM yyyy')}\n\nUpdate item\n  Status       : @{if(equals(outputs('Start_and_wait_for_an_approval')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')}\n  Approver     : @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['responder']?['email']}\n  DecisionNote : @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']}\n\nCondition: outcome is Approve\n  Create event (V4) in the shared \"Team Leave\" calendar\n    Subject    : @{triggerBody()?['Author']?['DisplayName']} - @{triggerBody()?['LeaveType']?['Value']}\n    Start      : @{triggerBody()?['StartDate']}\n    End        : @{addDays(triggerBody()?['EndDate'], 1)}\n    All day    : Yes      Show as: Free\n\nSend an email (V2) to the requester with the outcome and DecisionNote",
+    "stepByStepInstructions": [
+      "Create the list with the columns and the date validation formula.",
+      "Look up the requester's manager and fall back to a shared mailbox when none is set.",
+      "Start the approval with the dates formatted for reading.",
+      "Write the outcome, approver and comments back to the item.",
+      "Create an all-day event in a shared calendar for approved requests, ending the day after the last day of leave.",
+      "Email the requester the result."
+    ],
+    "commonMistakes": [
+      "Ending the all-day event on the last day, which makes the calendar show one day short.",
+      "Failing when a person has no manager in the directory.",
+      "Letting requesters edit Status themselves. Hide it on the form and restrict it with permissions or the flow."
+    ],
+    "troubleshooting": [
+      "If Get manager fails, the user has no manager set. Keep the run-after and fallback shown above.",
+      "If the event is on the wrong day, the date-only value was converted from UTC. Pass the date as yyyy-MM-dd.",
+      "If the approval never arrives, check that the approver address is a real mailbox and not a group."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "build-an-expense-reimbursement-request-workflow": {
+    "shortDescription": "Route expense claims by amount, require a receipt, and notify finance once approved.",
+    "fullDescription": "An expense process built on a SharePoint list: the flow checks for an attached receipt, routes to the manager and then to finance above a threshold, records each decision, and notifies finance with the details needed to pay.",
+    "problemStatement": "Expense claims arrive by email with missing receipts, approval depends on who remembers to forward them, and finance re-types the details.",
+    "whenToUse": [
+      "Small organizations without an expense system",
+      "Claims that need one or two levels of approval",
+      "Receipts kept with the claim"
+    ],
+    "whenNotToUse": [
+      "Card reconciliation, mileage rates and tax rules, which need dedicated software",
+      "High volumes of claims"
+    ],
+    "formulaOrCode": "List: Expense Claims\n  Title         Single line      what the expense was for\n  ExpenseDate   Date\n  Amount        Currency\n  Category      Choice           Travel | Meals | Supplies | Other\n  CostCentre    Single line\n  Status        Choice           Submitted | Needs receipt | Manager approved |\n                                 Approved | Rejected | Paid\n  DecisionNote  Multiple lines\n  Attachments   enabled (receipt)\n\nTrigger: When an item is created\n  Trigger condition: @equals(triggerBody()?['Status']?['Value'], 'Submitted')\n\nGet attachments\nCondition: length(body('Get_attachments')) is equal to 0\n  Yes: Update item Status = Needs receipt\n       Email the requester asking them to attach the receipt and set Status back to Submitted\n       Terminate (Cancelled)\n\nGet manager (V2) for the requester\nApproval 1: manager\n  Details: **@{triggerBody()?['Category']?['Value']}**  @{formatNumber(triggerBody()?['Amount'], 'C2', 'en-GB')}\n           on @{formatDateTime(triggerBody()?['ExpenseDate'], 'd MMM yyyy')}\n  Rejected -> Update item Status = Rejected, DecisionNote = comments, email requester, Terminate\n\nUpdate item Status = Manager approved\n\nCondition: Amount is greater than 500\n  Yes: Approval 2 assigned to finance-approvers@contoso.com\n       Rejected -> Status = Rejected, email requester, Terminate\n\nUpdate item Status = Approved\n\nSend an email (V2) to finance@contoso.com\n  Subject : Expense to pay: @{triggerBody()?['Author']?['DisplayName']} @{formatNumber(triggerBody()?['Amount'], 'C2', 'en-GB')}\n  Body    : claimant, cost centre, category, date, amount, link to the item\n  Attachments: loop Get attachment content and add each file",
+    "stepByStepInstructions": [
+      "Create the list with attachments enabled and the status values above.",
+      "Check for a receipt first and stop with a clear request when it is missing.",
+      "Route to the manager, then to finance when the amount is above your threshold.",
+      "Update the status after each step so the list always shows where the claim is.",
+      "Send finance one email with everything needed to pay, including the receipt."
+    ],
+    "commonMistakes": [
+      "Hard-coding the threshold in several places. Keep it in one Compose or a settings list.",
+      "Letting the claimant approve their own claim when they are also the manager on record.",
+      "Not telling the requester why a claim was rejected."
+    ],
+    "troubleshooting": [
+      "If the flow cannot see attachments, they were added after creation. Trigger on modified with a status of Submitted instead.",
+      "If currency shows the wrong symbol, pass a locale to formatNumber.",
+      "If the manager is also the claimant, compare the two addresses and route to finance instead."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-vendor-onboarding-workflow-package": {
+    "shortDescription": "Collect vendor details, run reviews in parallel, and create the onboarding tasks once every review passes.",
+    "fullDescription": "Vendor onboarding needs several teams to check different things. This pattern uses a request list, parallel approvals for finance, security and legal, and a templated set of follow-up tasks created only when all reviews are approved.",
+    "problemStatement": "New vendors wait weeks because reviews happen one after another by email, and nobody can see which review is holding things up.",
+    "whenToUse": [
+      "Onboarding that needs sign-off from several teams",
+      "Reviews that do not depend on each other",
+      "A repeatable checklist after approval"
+    ],
+    "whenNotToUse": [
+      "One-person approvals",
+      "Processes that already run in a procurement system"
+    ],
+    "formulaOrCode": "List: Vendor Requests\n  Title (vendor name) | ContactEmail | ServiceType (Choice) | AnnualSpend (Currency)\n  HandlesPersonalData (Yes/No) | Status (Choice: Submitted, In review, Approved, Rejected)\n  FinanceReview / SecurityReview / LegalReview  (Choice: Pending, Approved, Rejected, Not required)\n\nList: Onboarding Task Templates\n  Title | OwnerEmail | DueInDays (Number) | Order (Number)\n\nTrigger: When an item is created\nUpdate item: Status = In review\n\nParallel branches\n  Branch A  Start and wait for an approval -> finance@contoso.com\n            Update item FinanceReview = outcome\n  Branch B  Condition: HandlesPersonalData is true\n              Yes: approval -> security@contoso.com, SecurityReview = outcome\n              No : SecurityReview = Not required\n  Branch C  Condition: AnnualSpend is greater than 25000\n              Yes: approval -> legal@contoso.com, LegalReview = outcome\n              No : LegalReview = Not required\n\nAfter all branches (run after: is successful for each)\n  Get item (re-read the three review columns)\n  Compose_AnyRejected\n    or(\n      equals(body('Get_item')?['FinanceReview']?['Value'], 'Rejected'),\n      equals(body('Get_item')?['SecurityReview']?['Value'], 'Rejected'),\n      equals(body('Get_item')?['LegalReview']?['Value'], 'Rejected')\n    )\n\n  Condition: Compose_AnyRejected is true\n    Yes: Status = Rejected, email the requester with which review rejected and why\n    No : Status = Approved\n         Get items (Onboarding Task Templates, Order By Order)\n         Apply to each template\n           Create a task (Planner)\n             Title    : @{triggerBody()?['Title']}: @{items('Apply_to_each')?['Title']}\n             Due date : @{addDays(utcNow(), int(items('Apply_to_each')?['DueInDays']))}\n             Assigned : @{items('Apply_to_each')?['OwnerEmail']}",
+    "stepByStepInstructions": [
+      "Create the request list with one review column per team.",
+      "Create a task template list so the checklist can change without editing the flow.",
+      "Add parallel branches, one per review, each writing its own outcome to the item.",
+      "After the branches, re-read the item and decide the overall result.",
+      "On approval, create one Planner task per template row."
+    ],
+    "commonMistakes": [
+      "Running reviews one after another when they are independent.",
+      "Having every branch update the same Status column, so the last one to finish wins.",
+      "Hard-coding the task list in the flow."
+    ],
+    "troubleshooting": [
+      "If the step after the branches runs too early, set its run-after to depend on the last action of every branch.",
+      "If a branch update fails with a conflict, each branch should update only its own column. Add a retry policy as a safeguard.",
+      "If Planner tasks are created without an owner, the template's address is not a member of the plan's group."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-power-automate-flow-documentation-template": {
+    "shortDescription": "Document each production flow on one page that support can use without opening the designer.",
+    "fullDescription": "A fixed template for flow documentation covering purpose, trigger, connections, data touched, failure handling and ownership. Kept in a list or a wiki page per flow, it turns a personal automation into something a team can support.",
+    "problemStatement": "The only person who understands a critical flow is on holiday when it fails, and nobody else knows what it does or what is safe to change.",
+    "whenToUse": [
+      "Flows the business depends on",
+      "Before handing a flow to a support team",
+      "Solution releases"
+    ],
+    "whenNotToUse": [
+      "Personal productivity flows",
+      "As a substitute for clear action names inside the flow"
+    ],
+    "formulaOrCode": "Flow documentation template\n\n1. Summary\n   Name              : BV Requests - Notify approver on submit\n   Purpose           : one sentence in business terms\n   Business owner    : name and team\n   Technical owner   : name, plus a backup\n   Environment / solution : Prod / BV Requests\n\n2. Trigger\n   Type              : SharePoint - When an item is created or modified\n   Source            : site URL, list name\n   Trigger condition : @equals(triggerBody()?['Status']?['Value'], 'Submitted')\n   Expected volume   : about 40 runs a day\n\n3. What it does (5 to 10 numbered steps, plain language)\n\n4. Connections\n   Connector | Connection reference | Account | Why it is needed\n\n5. Data\n   Reads             : lists, tables, mailboxes\n   Writes            : lists, columns, files, messages sent\n   Personal data     : yes/no, which fields\n\n6. Configuration\n   Environment variables : name, meaning, current value location\n   Hard-coded values     : any that remain, and why\n\n7. Failure handling\n   Error handling    : Try/Catch scopes, what is logged and where\n   Alerts            : who is told, how\n   Safe to resubmit? : yes/no, and what to check first\n   Known failures    : symptom -> cause -> fix\n\n8. Dependencies\n   Child flows, other flows triggered by its updates, apps that call it\n\n9. Change log\n   Date | Version | Change | Who",
+    "stepByStepInstructions": [
+      "Copy the template into a list item or page for each production flow.",
+      "Fill in the summary and trigger first. They answer most support questions.",
+      "Describe the steps in plain language, not action names.",
+      "Record whether the flow is safe to resubmit and what to check first.",
+      "Link the page from the flow's description field.",
+      "Update the change log with every release."
+    ],
+    "commonMistakes": [
+      "Pasting screenshots of the designer instead of explaining what the flow does.",
+      "Leaving out whether a failed run can be resubmitted safely.",
+      "Writing the document once and never updating it."
+    ],
+    "troubleshooting": [
+      "If documents go stale, make updating the page part of the release checklist.",
+      "If nobody can find the page, put its link in the flow's description, which shows on the flow's details page.",
+      "If the template feels too long for small flows, keep sections 1, 2, 7 and 9 as the minimum."
+    ],
+    "updatedAt": "2026-11-20"
+  }
+}
