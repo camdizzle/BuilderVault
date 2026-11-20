@@ -452,7 +452,7 @@
       "If a valid user sees no buttons, normalize email casing and confirm their security list item is active."
     ],
     "relatedPatterns": [
-      "build-pmo-gate-approval-lifecycle",
+      "sharepoint-permissions-request-list-pattern",
       "patch-request-status-choice-field"
     ],
     "createdAt": "2026-05-08",
@@ -706,7 +706,7 @@
       "If duplicate rows appear, inspect whether collection rows include the SharePoint ID."
     ],
     "relatedPatterns": [
-      "recalculate-deliverable-completion-checklist-rows",
+      "calculate-totals-gallery-collection",
       "submit-multiple-power-apps-forms"
     ],
     "createdAt": "2026-05-08",
@@ -807,7 +807,7 @@
       "If the link does not open, confirm the field stores a valid URL."
     ],
     "relatedPatterns": [
-      "build-pmo-gate-approval-lifecycle",
+      "sharepoint-json-status-pill-formatting",
       "avoid-delegation-warnings-sharepoint-filters"
     ],
     "createdAt": "2026-05-08",
@@ -1443,7 +1443,7 @@
       "If reports are hard to build, check whether lifecycle, priority, and ownership are stored as structured columns."
     ],
     "relatedPatterns": [
-      "build-pmo-gate-approval-lifecycle",
+      "power-automate-approval-with-sharepoint-status-sync",
       "sharepoint-internal-name-safe-column-design"
     ],
     "createdAt": "2026-05-10",
@@ -1551,7 +1551,7 @@
     ],
     "relatedPatterns": [
       "role-based-button-visibility-sharepoint-security-list",
-      "build-pmo-gate-approval-lifecycle"
+      "power-automate-approval-with-sharepoint-status-sync"
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
@@ -1603,7 +1603,7 @@
       "If status does not update, inspect the approval outcome value and branch condition casing."
     ],
     "relatedPatterns": [
-      "build-pmo-gate-approval-lifecycle",
+      "power-automate-start-approval-from-power-apps",
       "patch-request-status-choice-field"
     ],
     "createdAt": "2026-05-10",
@@ -2641,7 +2641,7 @@
     ],
     "relatedPatterns": [
       "patch-sharepoint-choice-field",
-      "build-pmo-gate-approval-lifecycle"
+      "sharepoint-lookup-vs-choice-design"
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
@@ -2745,7 +2745,7 @@
     ],
     "relatedPatterns": [
       "refresh-selected-request-after-patch",
-      "recalculate-deliverable-completion-checklist-rows"
+      "calculate-totals-gallery-collection"
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
@@ -3835,7 +3835,7 @@
     ],
     "relatedPatterns": [
       "sharepoint-json-status-pill-formatting",
-      "pmo-status-report-health-rollup"
+      "power-apps-empty-state-gallery"
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
@@ -4044,7 +4044,7 @@
     ],
     "relatedPatterns": [
       "power-automate-approval-with-sharepoint-status-sync",
-      "pmo-risk-escalation-thresholds"
+      "power-automate-reminder-before-due-date"
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
@@ -4096,7 +4096,7 @@
       "If the channel gets noisy, add a NotifiedOn field or trigger only on escalation changes."
     ],
     "relatedPatterns": [
-      "pmo-risk-escalation-thresholds",
+      "power-automate-approval-timeout-escalation",
       "power-automate-trigger-condition-status-changed"
     ],
     "createdAt": "2026-05-10",

@@ -52,9 +52,9 @@ export function getFeaturedPatterns(): Pattern[] {
     "patch-sharepoint-people-picker-power-apps",
     "avoid-delegation-warnings-sharepoint-filters",
     "power-automate-email-html-table",
-    "create-a-dataverse-table-naming-standard",
-    "build-a-solution-layering-checklist",
-    "configure-a-data-loss-prevention-policy-checklist"
+    "power-apps-cascading-dropdowns-sharepoint",
+    "power-automate-try-catch-scope-error-handling",
+    "sharepoint-json-status-pill-formatting"
   ];
 
   return featuredSlugs

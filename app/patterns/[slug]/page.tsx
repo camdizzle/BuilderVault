@@ -15,6 +15,7 @@ import {
   getPatternBySlug,
   getRelatedPatterns
 } from "@/lib/patterns/patterns";
+import { isPatternIndexable } from "@/lib/patterns/indexing";
 import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl, authorStructuredData, formatDisplayDate, publisherOrganization, siteAuthor } from "@/lib/site";
 
@@ -43,6 +44,7 @@ export async function generateMetadata({ params }: PatternDetailPageProps) {
   const seo = getPatternSeo(pattern);
 
   return {
+    ...(isPatternIndexable(pattern) ? {} : { robots: { index: false, follow: true } }),
     alternates: {
       canonical: `/patterns/${pattern.slug}`
     },
@@ -118,17 +120,21 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
         publisher: publisherOrganization,
         ...(authorStructuredData() ? { author: authorStructuredData() } : {})
       },
-      {
-        "@type": "FAQPage",
-        mainEntity: seo.faqs.map((faq) => ({
-          "@type": "Question",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.answer
-          },
-          name: faq.question
-        }))
-      }
+      ...(isPatternIndexable(pattern)
+        ? [
+            {
+              "@type": "FAQPage",
+              mainEntity: seo.faqs.map((faq) => ({
+                "@type": "Question",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: faq.answer
+                },
+                name: faq.question
+              }))
+            }
+          ]
+        : [])
     ]
   };
 

@@ -1,0 +1,4 @@
+{
+  "_readme": "Slugs of templated patterns that should stay indexed. Add a slug here when Search Console shows it earning impressions or clicks. All other patterns are always indexed.",
+  "keepIndexed": []
+}
