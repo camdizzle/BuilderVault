@@ -367,6 +367,69 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       }
     ]
   }),
+  item({
+    slug: "date-format-tester",
+    kind: "tool",
+    title: "Date Format and Time Zone Tester for Power Automate and Power Apps",
+    eyebrow: "Free tool",
+    description: "Test formatDateTime and convertTimeZone format strings on a sample date, pick a time zone by its exact name, and get the matching Power Fx Text() formula for Power Apps.",
+    keywords: ["Power Automate formatDateTime", "convertTimeZone time zone names", "Power Automate date format", "Power Apps Text date format", "Power Automate date format examples"],
+    audience: "Flow and app builders who need a date to look right in an email, a file name, a Teams message, or a label, and don't want to run the flow ten times to find the right format string.",
+    summaryBullets: [
+      "Shows the result of a format string on a sample date as you type.",
+      "Lists the exact time zone names convertTimeZone expects, such as Eastern Standard Time.",
+      "Handles daylight saving time in the preview for the date you enter.",
+      "Writes the Power Automate expression and the equivalent Power Fx Text() formula.",
+      "Points out where the two differ, such as MM for months in flows and mm in Power Fx."
+    ],
+    examples: [
+      {
+        title: "A readable date in the reader's time zone",
+        problem: "SharePoint and Dataverse return UTC. Convert before you format, or the email shows the wrong hour, and near midnight the wrong day.",
+        code: `convertTimeZone(triggerOutputs()?['body/Created'], 'UTC', 'Eastern Standard Time', 'MMM d, yyyy h:mm tt')`,
+        expectedResult: "Mar 9, 2026 10:05 AM for a value of 2026-03-09T14:05:07Z.",
+        commonMistakes: ["Using a name such as EST or America/New_York. convertTimeZone needs the Windows name, such as Eastern Standard Time.", "Writing mm for the month. In Power Automate, MM is the month and mm is minutes."]
+      },
+      {
+        title: "The same format in Power Apps",
+        problem: "Power Fx uses lowercase m for both months and minutes, and AM/PM where flows use tt.",
+        code: `Text(ThisItem.Created, "mmm d, yyyy h:mm AM/PM")`,
+        expectedResult: "Mar 9, 2026 10:05 AM, shown in the app user's own time zone.",
+        commonMistakes: ["Copying a Power Automate format string into Text() unchanged.", "Expecting Text() to convert to a specific time zone. Power Apps always shows the user's local time."]
+      },
+      {
+        title: "A sortable stamp for file names",
+        problem: "File names can't contain slashes or colons, and should sort in date order.",
+        code: `formatDateTime(utcNow(), 'yyyyMMdd_HHmmss')`,
+        expectedResult: "20260309_140507",
+        commonMistakes: ["Using hh, which is 12-hour time, so morning and afternoon files get the same stamp."]
+      }
+    ],
+    relatedPatterns: ["power-automate-compose-date-formatting", "delegation-safe-date-range-filter"],
+    relatedTools: ["power-fx-formatter", "power-automate-expression-builder", "odata-filter-query-builder"],
+    faqs: [
+      {
+        question: "Why is my flow's time off by a few hours?",
+        answer: "Power Automate works in UTC. Use convertTimeZone to move the value to your time zone before formatting it. The tool writes that expression when you pick a time zone."
+      },
+      {
+        question: "Does convertTimeZone handle daylight saving time?",
+        answer: "Yes. Names such as Eastern Standard Time cover both standard and daylight time, and the right offset is used for each date. Don't switch to a Daylight Time name in summer."
+      },
+      {
+        question: "What is the difference between MM and mm?",
+        answer: "In Power Automate, MM is the month and mm is minutes, HH is 24-hour time and hh is 12-hour time. Power Fx uses lowercase m for both months and minutes and works out which one you mean from the letters around it."
+      },
+      {
+        question: "Are month and day names always in English?",
+        answer: "The preview uses English names. In Power Automate you can add a locale as a third argument to formatDateTime, such as 'de-DE'. In Power Apps, Text() takes a language tag as its third argument."
+      },
+      {
+        question: "Is my data sent anywhere?",
+        answer: "No. The preview runs in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
 Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest"] }),
