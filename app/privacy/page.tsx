@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       title="Privacy policy."
     >
       <p>
-        <strong>Last updated:</strong> November 19, 2026
+        <strong>Last updated:</strong> November 20, 2026
       </p>
       <p>
         This policy is provided as practical boilerplate for the current public
@@ -44,6 +44,15 @@ export default function PrivacyPage() {
           collect personal information.
         </p>
       ) : null}
+      {analyticsConfig.gtmId ? (
+        <p>
+          We use Google Tag Manager to load Google measurement tags, including Google
+          Analytics, so we can understand which pages and tools are useful. These
+          tags may set cookies and collect information such as pages visited,
+          approximate location, and device type. You can opt out with Google&apos;s
+          Analytics opt-out browser add-on or by blocking cookies in your browser.
+        </p>
+      ) : null}
       {analyticsConfig.gaMeasurementId ? (
         <p>
           We use Google Analytics to understand which pages and tools are useful.
@@ -52,7 +61,7 @@ export default function PrivacyPage() {
           Google&apos;s browser add-on or by blocking cookies.
         </p>
       ) : null}
-      {!analyticsConfig.plausibleDomain && !analyticsConfig.gaMeasurementId ? (
+      {!analyticsConfig.plausibleDomain && !analyticsConfig.gaMeasurementId && !analyticsConfig.gtmId ? (
         <p>BuilderVault does not currently run third-party analytics scripts.</p>
       ) : null}
       {newsletterEnabled ? (

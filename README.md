@@ -77,11 +77,14 @@ Each one is off until its variable is set, and `NEXT_PUBLIC_*` values need a reb
 
 | Variable | What it turns on |
 | --- | --- |
+| `NEXT_PUBLIC_GTM_ID` | Google Tag Manager container (set in `.env.production`) |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | Plausible analytics (cookie-free) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 (uses cookies) |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Search Console verification meta tag |
 | `NEXT_PUBLIC_NEWSLETTER_FORM_ACTION` | Newsletter signup boxes (posts to your email provider's embed form) |
 | `NEXT_PUBLIC_NEWSLETTER_EMAIL_FIELD` | Email field name your provider expects (default `email`) |
+
+With Tag Manager, custom events are pushed to `dataLayer` in snake case, for example `formatter_copied`.
 
 Custom events sent when analytics is on: `Formatter Copied`, `Code Copied`, `Pack Downloaded`, `Newsletter Signup`.
 

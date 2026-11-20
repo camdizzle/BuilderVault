@@ -1,4 +1,5 @@
 // Analytics configuration. Everything is off unless these build-time env vars are set:
+//   NEXT_PUBLIC_GTM_ID                  e.g. GTM-XXXXXXX (Google Tag Manager; tags are configured inside the container)
 //   NEXT_PUBLIC_PLAUSIBLE_DOMAIN        e.g. buildervault.camwow.tv (cookie-free, no consent banner needed)
 //   NEXT_PUBLIC_PLAUSIBLE_SCRIPT_SRC    optional, defaults to Plausible cloud
 //   NEXT_PUBLIC_GA_MEASUREMENT_ID       e.g. G-XXXXXXX (uses cookies; may need a consent banner for EU visitors)
@@ -7,18 +8,25 @@
 export const analyticsConfig = {
   plausibleDomain: process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN ?? "",
   plausibleScriptSrc: process.env.NEXT_PUBLIC_PLAUSIBLE_SCRIPT_SRC ?? "https://plausible.io/js/script.js",
+  gtmId: process.env.NEXT_PUBLIC_GTM_ID ?? "",
   gaMeasurementId: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "",
   googleSiteVerification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? ""
 };
 
-export const analyticsEnabled = Boolean(analyticsConfig.plausibleDomain || analyticsConfig.gaMeasurementId);
+export const analyticsEnabled = Boolean(analyticsConfig.plausibleDomain || analyticsConfig.gaMeasurementId || analyticsConfig.gtmId);
 
 type EventProps = Record<string, string | number | boolean>;
 
 type AnalyticsWindow = Window & {
   plausible?: (event: string, options?: { props?: EventProps }) => void;
   gtag?: (command: "event", event: string, params?: EventProps) => void;
+  dataLayer?: unknown[];
 };
+
+/** "Formatter Copied" -> "formatter_copied", the naming GA4 expects for events. */
+function toDataLayerEventName(event: string) {
+  return event.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+}
 
 /** Sends a custom event to whichever analytics provider is loaded. Safe to call when none is. */
 export function trackEvent(event: string, props: EventProps = {}) {
@@ -27,6 +35,10 @@ export function trackEvent(event: string, props: EventProps = {}) {
   try {
     target.plausible?.(event, { props });
     target.gtag?.("event", event, props);
+    if (analyticsConfig.gtmId) {
+      target.dataLayer = target.dataLayer || [];
+      target.dataLayer.push({ event: toDataLayerEventName(event), ...props });
+    }
   } catch {
     // Analytics must never break the page.
   }
