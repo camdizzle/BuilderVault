@@ -11046,5 +11046,1665 @@
         "answer": "Read the Business Unit lookup from the user's row: nfMe.'Business Unit'.Name."
       }
     ]
+  },
+  {
+    "id": "pat-1570",
+    "slug": "solution-checker-quality-gate-pac-cli",
+    "title": "Run solution checker as a quality gate before every deployment",
+    "shortDescription": "Check a solution for performance, security and upgrade problems from the maker portal, the PAC CLI or a pipeline, and fail the release on critical findings.",
+    "fullDescription": "Solution checker analyses the apps, flows, plug-ins and web resources in a solution against Microsoft's rules. Running it on every export catches formula errors, deprecated APIs and accessibility problems before they reach test. In a pipeline it becomes a gate: critical or high findings stop the deployment.",
+    "category": "ALM & Governance",
+    "subCategory": "Quality",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Solution Checker",
+      "PAC CLI",
+      "Quality Gate",
+      "Pipelines"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Problems such as unhandled delegation, deprecated client APIs or missing accessibility labels are found by users in production instead of by a check at build time.",
+    "whenToUse": [
+      "Every release of a solution to test or production",
+      "Reviewing a solution received from a partner or another team",
+      "Managed Environments that enforce checker results on import"
+    ],
+    "whenNotToUse": [
+      "Treating a clean report as proof the solution works, since it does not test behavior",
+      "Unpacked source folders, as the checker needs a solution zip or an environment"
+    ],
+    "formulaOrCode": "Maker portal\n  Solutions > select the solution > Solution checker > Run\n  View results > download the report (zip with a .sarif file and an Excel summary)\n  Issues tab on the solution shows findings by component with severity and a link to guidance.\n\nPAC CLI\n  pac auth create --environment https://contoso-dev.crm.dynamics.com\n  pac solution export --name RequestHub --path ./out/RequestHub.zip\n  pac solution check --path ./out/RequestHub.zip --outputDirectory ./out/checker --geo Europe\n  Options\n    --ruleSet \"Solution Checker\" | \"AppSource Certification\"\n    --ruleLevelOverride ./rule-overrides.json        change or ignore specific rules\n    --excludedFiles \"*.min.js\"\n  Output: a results zip containing SARIF, and a summary table of Critical, High, Medium, Low, Informational counts.\n\nFail a script on findings (PowerShell)\n  $out = pac solution check --path ./out/RequestHub.zip --outputDirectory ./out/checker\n  $out\n  if ($out -match \"Critical\\s+[1-9]\" -or $out -match \"High\\s+[1-9]\") { throw \"Solution checker found critical or high issues\" }\n\nAzure DevOps (Power Platform Build Tools)\n  - task: PowerPlatformToolInstaller@2\n  - task: PowerPlatformChecker@2\n    inputs:\n      authenticationType: PowerPlatformSPN\n      PowerPlatformSPN: 'Dev-ServiceConnection'\n      FilesToAnalyze: '$(Build.ArtifactStagingDirectory)/RequestHub.zip'\n      RuleSet: '0ad12346-e108-40b8-a956-9a8f95ea18c9'\n      ErrorLevel: HighIssueCount\n      ErrorThreshold: 0\n\nGitHub Actions\n  - uses: microsoft/powerplatform-actions/check-solution@v1\n    with:\n      environment-url: ${{ vars.DEV_URL }}\n      app-id: ${{ secrets.CLIENT_ID }}\n      client-secret: ${{ secrets.CLIENT_SECRET }}\n      tenant-id: ${{ secrets.TENANT_ID }}\n      path: out/RequestHub.zip\n      error-level: HighIssueCount\n      error-threshold: 0\n\nManaged Environments\n  Admin centre > Environment > Edit Managed Environments > Solution checker enforcement: None | Warn | Block\n  Block rejects imports with critical issues.\n\nCanvas apps\n  Solution checker also runs App checker rules (formula errors, accessibility, performance) on canvas apps in\n  the solution. Fix those in Studio under the App checker panel.",
+    "stepByStepInstructions": [
+      "Run solution checker from the maker portal and read the report.",
+      "Fix critical and high findings, starting with the ones in your own components.",
+      "Add pac solution check to your export script.",
+      "Fail the script or pipeline when critical or high counts are above zero.",
+      "Record any accepted exceptions in a rule override file with a reason.",
+      "Turn on checker enforcement for production if you use Managed Environments."
+    ],
+    "commonMistakes": [
+      "Running the checker once at the start of a project and never again.",
+      "Ignoring medium findings such as accessibility until an audit.",
+      "Overriding rules without recording why.",
+      "Checking the unmanaged export but deploying a different build."
+    ],
+    "troubleshooting": [
+      "If the check fails to start, the geography is wrong or the account lacks access. Set --geo and use an environment admin or service principal.",
+      "If findings point at components you did not build, they come from included dependencies. Remove them from the solution or accept with an override.",
+      "If the pipeline passes but the import is blocked, the environment enforces a stricter level than your threshold.",
+      "If the run is slow, exclude minified third-party script files."
+    ],
+    "relatedPatterns": [
+      "export-import-managed-solution-pac-cli",
+      "power-platform-pipelines-dev-test-prod",
+      "create-a-deployment-readiness-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Run solution checker as a quality gate before every deployment",
+    "seoDescription": "Check a solution for performance, security and upgrade problems from the maker portal, the PAC CLI or a pipeline, and fail the release on critical findings.",
+    "primaryKeyword": "Power Platform solution checker pac cli",
+    "secondaryKeywords": [
+      "Solution Checker",
+      "PAC CLI",
+      "Quality Gate",
+      "Pipelines"
+    ],
+    "faqs": [
+      {
+        "question": "What does Power Platform solution checker do?",
+        "answer": "It analyses the components in a solution against a rule set and reports performance, security, reliability, accessibility and upgrade issues by severity."
+      },
+      {
+        "question": "How do I run solution checker from the command line?",
+        "answer": "Export the solution, then run pac solution check --path with the zip file. The results are written as a SARIF file with a severity summary."
+      },
+      {
+        "question": "Can solution checker block a deployment?",
+        "answer": "Yes. Set an error threshold in the pipeline task, or enable solution checker enforcement on a Managed Environment."
+      }
+    ]
+  },
+  {
+    "id": "pat-1571",
+    "slug": "unpack-solution-source-control-git",
+    "title": "Put a Power Platform solution under Git source control",
+    "shortDescription": "Export and unpack a solution into readable files, commit them to Git, and rebuild the managed solution from source for each release.",
+    "fullDescription": "A solution zip is a binary blob that cannot be reviewed or merged. Unpacking it turns every table, form, flow and app into separate text files. Committed to Git, they give a history of who changed what, pull request reviews and a way to rebuild any past version.",
+    "category": "ALM & Governance",
+    "subCategory": "Source control",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Git",
+      "Source Control",
+      "Unpack",
+      "PAC CLI"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The only copy of the solution is the development environment. Nobody can say what changed between two releases, and a bad change cannot be reverted.",
+    "whenToUse": [
+      "Any solution with more than one maker or more than one release",
+      "Teams that need review and traceability",
+      "As the base for automated build and deployment"
+    ],
+    "whenNotToUse": [
+      "One-person prototypes that will be rebuilt",
+      "Expecting to edit unpacked files by hand as a normal way of working. Make changes in the environment and export again"
+    ],
+    "formulaOrCode": "One-time set-up\n  winget install Microsoft.PowerAppsCLI          (or: dotnet tool install --global Microsoft.PowerApps.CLI.Tool)\n  git init RequestHub && cd RequestHub\n  pac auth create --name Dev --environment https://contoso-dev.crm.dynamics.com\n\nOption A: clone and sync (simplest)\n  pac solution clone --name RequestHub --outputDirectory . --packagetype Both\n  # later, after changes in Dev:\n  cd RequestHub\n  pac solution sync --packagetype Both\n  Creates a .cdsproj project with the unpacked files under src/.\n\nOption B: export and unpack\n  pac solution export --name RequestHub --path ./out/RequestHub.zip\n  pac solution export --name RequestHub --path ./out/RequestHub_managed.zip --managed\n  pac solution unpack --zipfile ./out/RequestHub.zip --folder ./src/RequestHub --packagetype Both --allowDelete\n  --packagetype Both reads the managed zip next to the unmanaged one so either can be rebuilt.\n\nCanvas apps inside the solution\n  pac solution unpack ... --processCanvasApps        unpacks each .msapp into YAML source (preview feature)\n  or per app:  pac canvas unpack --msapp ./src/RequestHub/CanvasApps/app.msapp --sources ./src/apps/RequestHub\n\nWhat you get\n  src/RequestHub/\n    Other/Solution.xml              name, version, publisher\n    Entities/cnt_ServiceRequest/    Entity.xml, FormXml/, SavedQueries/\n    Workflows/                      one JSON file per cloud flow\n    CanvasApps/                     .msapp files (and source when processed)\n    environmentvariabledefinitions/ connectionreferences in Other/Customizations.xml\n\nCommit\n  git add -A\n  git commit -m \"Add approval threshold environment variable and routing flow\"\n  git push\n  .gitignore:  out/   bin/   obj/   *.zip\n\nRebuild from source\n  pac solution pack --zipfile ./out/RequestHub_managed.zip --folder ./src/RequestHub --packagetype Managed\n  or with the .cdsproj:   dotnet build --configuration Release      (Release builds managed, Debug unmanaged)\n\nRoutine for each change\n  1. Make the change in Dev and publish.\n  2. pac solution sync (or export + unpack).\n  3. git diff: review only what you meant to change.\n  4. Commit on a branch, open a pull request.\n  5. The build packs the managed zip from the merged source and deploys it.\n\nNative alternative\n  Dataverse Git integration (Solutions > Connect to Git, with Azure DevOps repos) commits and pulls from the\n  maker portal without the CLI, for environments where it is enabled.",
+    "stepByStepInstructions": [
+      "Install the PAC CLI and create an auth profile for the development environment.",
+      "Clone the solution, or export and unpack it, into a Git repository.",
+      "Commit the unpacked files with a message that states the change.",
+      "After each change in Dev, sync, review the diff and commit.",
+      "Build the managed zip from source for deployment.",
+      "Protect the main branch with pull request review."
+    ],
+    "commonMistakes": [
+      "Committing the zip files instead of unpacked source.",
+      "Leaving out --allowDelete, so removed components linger in the folder.",
+      "Several makers exporting from one environment and overwriting each other's commits.",
+      "Hand-editing XML and never round-tripping through an environment."
+    ],
+    "troubleshooting": [
+      "If the diff is full of noise, the export includes version or timestamp changes. Commit after each logical change and keep versions set by the build.",
+      "If pack fails with a missing file, the unpack was partial. Unpack again with --allowDelete into a clean folder.",
+      "If flows show as one long JSON line, format on commit or accept it. The content still diffs.",
+      "If canvas source differs every export, review at screen level and treat the .msapp as the source of truth for now."
+    ],
+    "relatedPatterns": [
+      "export-import-managed-solution-pac-cli",
+      "solution-publisher-prefix-naming-standard",
+      "github-actions-power-platform-deploy"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Put a Power Platform solution under Git source control",
+    "seoDescription": "Export and unpack a solution into readable files, commit them to Git, and rebuild the managed solution from source for each release.",
+    "primaryKeyword": "Power Platform solution source control git",
+    "secondaryKeywords": [
+      "Git",
+      "Source Control",
+      "Unpack",
+      "PAC CLI"
+    ],
+    "faqs": [
+      {
+        "question": "How do I store a Power Platform solution in Git?",
+        "answer": "Export the solution, unpack it with pac solution unpack or use pac solution clone, and commit the resulting files."
+      },
+      {
+        "question": "Should I commit the managed or unmanaged solution?",
+        "answer": "Commit unpacked source created with --packagetype Both. The build can then pack either a managed or an unmanaged zip."
+      },
+      {
+        "question": "Can I merge changes from two makers?",
+        "answer": "Yes at file level for most components. Use separate development environments and merge through pull requests, and avoid two people editing the same canvas app at once."
+      }
+    ]
+  },
+  {
+    "id": "pat-1572",
+    "slug": "github-actions-power-platform-deploy",
+    "title": "Deploy a Power Platform solution with GitHub Actions",
+    "shortDescription": "A two-workflow GitHub set-up: export and unpack from development into a branch, then pack a managed solution and import it to test and production with approvals.",
+    "fullDescription": "The microsoft/powerplatform-actions library wraps the PAC CLI for GitHub. One workflow pulls the latest solution from development into source control. A second builds a managed zip from the repository and deploys it through environments that require approval. A service principal does the work, so no person's credentials are involved.",
+    "category": "ALM & Governance",
+    "subCategory": "Pipelines",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "GitHub Actions",
+      "CI/CD",
+      "Service Principal",
+      "Deployment"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Releases depend on one person exporting and importing by hand, with steps that vary each time and no record of what was deployed.",
+    "whenToUse": [
+      "Teams already using GitHub for code",
+      "Solutions released regularly to more than one environment",
+      "When deployments must be approved and recorded"
+    ],
+    "whenNotToUse": [
+      "Teams with no Git experience and a single small solution, where in-product pipelines are easier",
+      "Tenants that cannot create an app registration for deployment"
+    ],
+    "formulaOrCode": "# Secrets: CLIENT_ID, CLIENT_SECRET, TENANT_ID     Variables: DEV_URL, TEST_URL, PROD_URL, SOLUTION_NAME\n# The app registration must be an application user with System Administrator in each environment.\n\n# .github/workflows/export.yml : run manually after changes in Dev\nname: Export from Dev\non: workflow_dispatch\npermissions: { contents: write, pull-requests: write }\njobs:\n  export:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: microsoft/powerplatform-actions/actions-install@v1\n      - uses: microsoft/powerplatform-actions/export-solution@v1\n        with:\n          environment-url: ${{ vars.DEV_URL }}\n          app-id: ${{ secrets.CLIENT_ID }}\n          client-secret: ${{ secrets.CLIENT_SECRET }}\n          tenant-id: ${{ secrets.TENANT_ID }}\n          solution-name: ${{ vars.SOLUTION_NAME }}\n          solution-output-file: out/${{ vars.SOLUTION_NAME }}.zip\n      - uses: microsoft/powerplatform-actions/unpack-solution@v1\n        with:\n          solution-file: out/${{ vars.SOLUTION_NAME }}.zip\n          solution-folder: src/${{ vars.SOLUTION_NAME }}\n          solution-type: Unmanaged\n          overwrite-files: true\n      - uses: peter-evans/create-pull-request@v6\n        with: { branch: export/${{ github.run_number }}, title: \"Export from Dev\", commit-message: \"Export from Dev\" }\n\n# .github/workflows/release.yml : runs when main changes\nname: Release\non: { push: { branches: [main] } }\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: microsoft/powerplatform-actions/actions-install@v1\n      - uses: microsoft/powerplatform-actions/pack-solution@v1\n        with:\n          solution-folder: src/${{ vars.SOLUTION_NAME }}\n          solution-file: out/${{ vars.SOLUTION_NAME }}_managed.zip\n          solution-type: Managed\n      - uses: actions/upload-artifact@v4\n        with: { name: solution, path: out/ }\n  deploy-test:\n    needs: build\n    runs-on: ubuntu-latest\n    environment: test\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/download-artifact@v4\n        with: { name: solution, path: out/ }\n      - uses: microsoft/powerplatform-actions/actions-install@v1\n      - uses: microsoft/powerplatform-actions/import-solution@v1\n        with:\n          environment-url: ${{ vars.TEST_URL }}\n          app-id: ${{ secrets.CLIENT_ID }}\n          client-secret: ${{ secrets.CLIENT_SECRET }}\n          tenant-id: ${{ secrets.TENANT_ID }}\n          solution-file: out/${{ vars.SOLUTION_NAME }}_managed.zip\n          use-deployment-settings-file: true\n          deployment-settings-file: settings/test.json\n          run-asynchronously: true\n  deploy-prod:\n    needs: deploy-test\n    runs-on: ubuntu-latest\n    environment: production        # add required reviewers on this environment in repository settings\n    steps:\n      # same steps as deploy-test with PROD_URL and settings/prod.json\n\n# Packing an unmanaged-only unpack as Managed requires unpacking with solution-type Both. Export both zips\n# in export.yml (managed: true for the second) when you want true managed builds from source.",
+    "stepByStepInstructions": [
+      "Create an app registration and add it as an application user in each environment.",
+      "Store its ID, secret and tenant as repository secrets, and environment URLs as variables.",
+      "Add the export workflow and run it to get the solution into the repository.",
+      "Add the release workflow with build, test and production jobs.",
+      "Add required reviewers to the production environment in GitHub.",
+      "Keep a deployment settings file per target for connections and variables."
+    ],
+    "commonMistakes": [
+      "Deploying with a person's username and password.",
+      "Building a new zip per environment instead of promoting one artifact.",
+      "Storing secrets in the workflow file.",
+      "Skipping deployment settings, so flows import turned off."
+    ],
+    "troubleshooting": [
+      "If authentication fails, the application user is missing in that environment or the secret expired.",
+      "If import fails on connection references, add them to the deployment settings file with a connection ID from the target.",
+      "If pack fails for Managed, unpack with type Both from both exported zips.",
+      "If the production job never starts, it is waiting for an approval on the GitHub environment."
+    ],
+    "relatedPatterns": [
+      "unpack-solution-source-control-git",
+      "deployment-settings-file-pac-cli",
+      "service-principal-application-user-deployments"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Deploy a Power Platform solution with GitHub Actions",
+    "seoDescription": "A two-workflow GitHub set-up: export and unpack from development into a branch, then pack a managed solution and import it to test and production with approvals.",
+    "primaryKeyword": "GitHub Actions Power Platform deploy solution",
+    "secondaryKeywords": [
+      "GitHub Actions",
+      "CI/CD",
+      "Service Principal",
+      "Deployment"
+    ],
+    "faqs": [
+      {
+        "question": "Can I deploy Power Platform solutions with GitHub Actions?",
+        "answer": "Yes. Microsoft publishes powerplatform-actions for exporting, unpacking, packing, checking and importing solutions."
+      },
+      {
+        "question": "How do GitHub Actions authenticate to Power Platform?",
+        "answer": "With a service principal: an app registration added as an application user in each environment, using its client ID, secret and tenant ID."
+      },
+      {
+        "question": "How do I add an approval before production?",
+        "answer": "Create a GitHub environment named production with required reviewers and reference it in the deploy job."
+      }
+    ]
+  },
+  {
+    "id": "pat-1573",
+    "slug": "azure-devops-pipeline-power-platform-build-tools",
+    "title": "Build and release a solution with Azure DevOps and Power Platform Build Tools",
+    "shortDescription": "A YAML pipeline that exports from development, commits source, packs a managed solution, runs the checker and deploys to test and production with approvals.",
+    "fullDescription": "Power Platform Build Tools is the Azure DevOps extension for solution ALM. A multi-stage YAML pipeline can take a solution from the development environment to production with the same artifact, service connections per environment and approval checks on each stage.",
+    "category": "ALM & Governance",
+    "subCategory": "Pipelines",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Azure DevOps",
+      "Build Tools",
+      "CI/CD",
+      "YAML"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Deployments are manual and unrepeatable, and the organisation already runs every other system's releases through Azure DevOps.",
+    "whenToUse": [
+      "Organisations standardised on Azure DevOps",
+      "Solutions needing approval gates and audit of releases",
+      "Teams that want build validation on pull requests"
+    ],
+    "whenNotToUse": [
+      "Small teams with no DevOps skills, where Power Platform pipelines are simpler",
+      "Projects without a service principal for each environment"
+    ],
+    "formulaOrCode": "# Prerequisites\n#  - Install the \"Power Platform Build Tools\" extension in the Azure DevOps organisation.\n#  - Project settings > Service connections > New > Power Platform: one per environment (Dev, Test, Prod),\n#    using an app registration that is an application user with System Administrator in that environment.\n#  - Pipelines > Environments: create \"Test\" and \"Production\", add Approvals and checks on Production.\n#  - Repo permissions: allow the build service account to Contribute if the pipeline commits source.\n\ntrigger: { branches: { include: [ main ] } }\nvariables: { SolutionName: RequestHub }\npool: { vmImage: windows-latest }\n\nstages:\n- stage: Build\n  jobs:\n  - job: Pack\n    steps:\n    - task: PowerPlatformToolInstaller@2\n    - task: PowerPlatformPackSolution@2\n      inputs:\n        SolutionSourceFolder: 'src/$(SolutionName)'\n        SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_managed.zip'\n        SolutionType: Managed\n    - task: PowerPlatformChecker@2\n      inputs:\n        authenticationType: PowerPlatformSPN\n        PowerPlatformSPN: 'PP-Dev'\n        FilesToAnalyze: '$(Build.ArtifactStagingDirectory)/$(SolutionName)_managed.zip'\n        RuleSet: '0ad12346-e108-40b8-a956-9a8f95ea18c9'\n        ErrorLevel: HighIssueCount\n        ErrorThreshold: 0\n    - publish: '$(Build.ArtifactStagingDirectory)'\n      artifact: drop\n\n- stage: Test\n  dependsOn: Build\n  jobs:\n  - deployment: Import\n    environment: Test\n    strategy:\n      runOnce:\n        deploy:\n          steps:\n          - checkout: self\n          - task: PowerPlatformToolInstaller@2\n          - task: PowerPlatformImportSolution@2\n            inputs:\n              authenticationType: PowerPlatformSPN\n              PowerPlatformSPN: 'PP-Test'\n              SolutionInputFile: '$(Pipeline.Workspace)/drop/$(SolutionName)_managed.zip'\n              UseDeploymentSettingsFile: true\n              DeploymentSettingsFile: 'settings/test.json'\n              AsyncOperation: true\n              MaxAsyncWaitTime: 60\n              StageAndUpgrade: true\n\n- stage: Production\n  dependsOn: Test\n  jobs:\n  - deployment: Import\n    environment: Production\n    strategy:\n      runOnce:\n        deploy:\n          steps:\n          # same as Test with PowerPlatformSPN: 'PP-Prod' and settings/prod.json\n\n# Separate manual pipeline to bring Dev changes into the repo\n#   PowerPlatformExportSolution@2 (unmanaged) + PowerPlatformExportSolution@2 (Managed: true)\n#   PowerPlatformUnpackSolution@2  SolutionType: Both, SolutionTargetFolder: src/$(SolutionName)\n#   script: git add/commit/push to a branch, then open a pull request\n\n# Useful extra tasks\n#   PowerPlatformSetSolutionVersion@2     SolutionVersionNumber: '1.4.$(Build.BuildId).0'\n#   PowerPlatformBackupEnvironment@2      before the production import\n#   PowerPlatformPublishCustomizations@2  before export from Dev",
+    "stepByStepInstructions": [
+      "Install Power Platform Build Tools and create a service connection per environment.",
+      "Create Azure DevOps environments and add approval checks to production.",
+      "Add an export pipeline that unpacks the solution into the repository.",
+      "Add the multi-stage build and release pipeline.",
+      "Add deployment settings files for test and production.",
+      "Run the pipeline and approve the production stage when test passes."
+    ],
+    "commonMistakes": [
+      "One service connection with rights to every environment used by every stage.",
+      "Exporting directly from Dev in the release stage, so the deployed build is not what was reviewed.",
+      "No backup step before production import.",
+      "Hard-coding environment URLs in task inputs."
+    ],
+    "troubleshooting": [
+      "If the tool installer step is missing, tasks fail with pac not found. Add PowerPlatformToolInstaller first in each job.",
+      "If import times out, set AsyncOperation true and raise MaxAsyncWaitTime.",
+      "If the service connection test fails, the app registration is not an application user in that environment.",
+      "If git push is rejected, grant the project's build service Contribute and bypass policies on the export branch only."
+    ],
+    "relatedPatterns": [
+      "github-actions-power-platform-deploy",
+      "solution-checker-quality-gate-pac-cli",
+      "service-principal-application-user-deployments"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Build and release a solution with Azure DevOps and Power Platform Build Tools",
+    "seoDescription": "A YAML pipeline that exports from development, commits source, packs a managed solution, runs the checker and deploys to test and production with approvals.",
+    "primaryKeyword": "Azure DevOps Power Platform Build Tools pipeline",
+    "secondaryKeywords": [
+      "Azure DevOps",
+      "Build Tools",
+      "CI/CD",
+      "YAML"
+    ],
+    "faqs": [
+      {
+        "question": "What is Power Platform Build Tools?",
+        "answer": "An Azure DevOps extension with tasks for exporting, unpacking, packing, checking, importing and managing Power Platform solutions and environments."
+      },
+      {
+        "question": "How do I add an approval before production in Azure DevOps?",
+        "answer": "Target an Azure DevOps environment from a deployment job and add an Approvals check to that environment."
+      },
+      {
+        "question": "Should the pipeline export from Dev on every run?",
+        "answer": "No. Export into source control as a separate step, review it, and build releases from the repository."
+      }
+    ]
+  },
+  {
+    "id": "pat-1574",
+    "slug": "service-principal-application-user-deployments",
+    "title": "Set up a service principal for Power Platform deployments",
+    "shortDescription": "Create an app registration, add it as an application user in each environment and use it for pipelines and the PAC CLI, so releases do not depend on a person's account.",
+    "fullDescription": "A service principal is a non-human identity in Microsoft Entra ID. Added to a Dataverse environment as an application user with a security role, it can import solutions and run admin commands without MFA prompts, password expiry or a licence. It is the standard identity for automated deployments.",
+    "category": "ALM & Governance",
+    "subCategory": "Security",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Service Principal",
+      "Application User",
+      "Authentication",
+      "Pipelines"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Deployments run under an administrator's own account. They fail when that person is away, when MFA prompts, or when the password changes.",
+    "whenToUse": [
+      "Azure DevOps and GitHub pipelines",
+      "Scheduled admin scripts",
+      "Owning solution components after import"
+    ],
+    "whenNotToUse": [
+      "Interactive maker work, which should be done as a person for accountability",
+      "Owning flows that use connectors without service principal support, which still need a service account"
+    ],
+    "formulaOrCode": "1. Register the app (Entra admin centre > App registrations > New registration)\n   Name: pp-deploy-requesthub        Supported account types: single tenant\n   Copy: Application (client) ID and Directory (tenant) ID\n   Certificates & secrets > New client secret (or upload a certificate). Store it in a vault. Note the expiry.\n   No API permissions are required for Dataverse access as an application user.\n\n   Or with one command, which also registers it for admin APIs:\n   pac admin create-service-principal --environment <environment id> --name pp-deploy-requesthub --role \"System Administrator\"\n\n2. Add it to each environment\n   Power Platform admin centre > Environments > (env) > Settings > Users + permissions > Application users\n   > New app user > Add an app (pick the registration) > Business unit: root > Security roles: System Administrator\n   (or a custom deployment role). Repeat for Dev, Test and Production.\n   CLI:  pac admin assign-user --environment <env id> --user <application id> --role \"System Administrator\" --application-user\n\n3. Use it\n   PAC CLI\n     pac auth create --name Prod --environment https://contoso.crm.dynamics.com\n         --applicationId <client id> --clientSecret <secret> --tenant <tenant id>\n     pac solution import --path RequestHub_managed.zip --settings-file prod.json\n   Azure DevOps: Service connection > Power Platform > Server URL, Tenant ID, Application ID, Client secret\n   GitHub: secrets CLIENT_ID, CLIENT_SECRET, TENANT_ID. Prefer federated credentials (OIDC) to avoid secrets.\n\n4. Tenant-level admin commands (pac admin, environment creation, Get-Admin* cmdlets)\n   Register the app as a Power Platform management application once:\n   pac admin application register --application-id <client id>\n   or PowerShell: New-PowerAppManagementApp -ApplicationId <client id>\n\nOwnership after import\n   Components imported by the service principal are owned by it. Flows it owns can run Dataverse actions under\n   its identity. Flows using connectors such as SharePoint or Outlook still need connections created by a\n   licensed account, supplied through the deployment settings file. Share those connections with the service\n   principal: connection > Share > add the app, \"Can use\".\n\nLeast privilege\n   One app registration per environment tier (non-production, production) limits the damage from a leaked secret.\n   A custom role based on System Customizer plus solution import privileges can replace System Administrator\n   where policy requires. Test it with a full import first.\n\nSecret hygiene\n   Expiry of 6 to 12 months with a calendar reminder, or certificates, or workload identity federation.\n   Never commit secrets. Rotate when someone with access leaves.",
+    "stepByStepInstructions": [
+      "Create an app registration and a secret or certificate.",
+      "Add the app as an application user with a suitable role in each environment.",
+      "Register it as a management application if it will run tenant admin commands.",
+      "Configure the pipeline service connection or PAC auth profile with it.",
+      "Share the connections that imported flows need with the service principal.",
+      "Record secret expiry and who can rotate it."
+    ],
+    "commonMistakes": [
+      "Using one secret for every environment and every pipeline.",
+      "Forgetting to add the application user in the target environment.",
+      "Expecting the service principal to create connections for connectors that require a user sign-in.",
+      "Letting the secret expire unnoticed."
+    ],
+    "troubleshooting": [
+      "If you see 'The user is not a member of the organization', add the application user in that environment.",
+      "If import fails turning on flows, the service principal cannot use a connection. Share the connection with it.",
+      "If pac admin commands return 403, register the app as a management application.",
+      "If authentication suddenly fails, check the secret's expiry date."
+    ],
+    "relatedPatterns": [
+      "github-actions-power-platform-deploy",
+      "azure-devops-pipeline-power-platform-build-tools",
+      "govern-power-automate-service-account-ownership"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Set up a service principal for Power Platform deployments",
+    "seoDescription": "Create an app registration, add it as an application user in each environment and use it for pipelines and the PAC CLI, so releases do not depend on a person's account.",
+    "primaryKeyword": "Power Platform service principal application user",
+    "secondaryKeywords": [
+      "Service Principal",
+      "Application User",
+      "Authentication",
+      "Pipelines"
+    ],
+    "faqs": [
+      {
+        "question": "What is an application user in Dataverse?",
+        "answer": "A non-interactive user that represents an Entra app registration in an environment, with security roles like any other user."
+      },
+      {
+        "question": "Does a service principal need a Power Platform licence?",
+        "answer": "No licence is assigned to it. Its API calls draw on the tenant's non-licensed user request allowance."
+      },
+      {
+        "question": "Can a service principal own cloud flows?",
+        "answer": "Yes. Flows it owns still need valid connections for each connector, which a licensed account may have to create and share."
+      }
+    ]
+  },
+  {
+    "id": "pat-1575",
+    "slug": "solution-version-numbering-scheme",
+    "title": "Version Power Platform solutions consistently",
+    "shortDescription": "A four-part version scheme for solutions, when to raise each part, and how to set the number by hand, from the CLI or in a pipeline.",
+    "fullDescription": "Every solution has a version in the form major.minor.build.revision. Dataverse uses it to decide whether an import is an upgrade, and people use it to know what is running where. A simple rule for each part, applied by the build instead of by memory, makes 'which version is in production' a question with an answer.",
+    "category": "ALM & Governance",
+    "subCategory": "Release management",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Versioning",
+      "Release Management",
+      "Solutions",
+      "PAC CLI"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Every environment shows version 1.0.0.0, or numbers are bumped at random, so nobody can match a production problem to a release.",
+    "whenToUse": [
+      "Any solution deployed beyond development",
+      "Before the first managed import",
+      "When several solutions depend on each other"
+    ],
+    "whenNotToUse": [
+      "Encoding dates or ticket numbers in ways that break the numeric ordering Dataverse relies on",
+      "Lowering a version to re-release an older build, which import rejects for upgrades"
+    ],
+    "formulaOrCode": "Format:  major.minor.build.revision        each part 0 to 65535\n\nScheme\n  major      breaking change: components removed, data model changes users must prepare for        2.0.0.0\n  minor      new features, backwards compatible                                                    1.4.0.0\n  build      set by the pipeline for each build from main, or the sprint or release number         1.4.37.0\n  revision   hotfix on a released build (patch)                                                    1.4.37.2\n\nRules\n  The number only goes up. An import with a lower or equal version cannot run as an upgrade.\n  One version identifies one artifact. The same zip goes to Test and Production.\n  Raise the version before export, not after.\n  Record the version in release notes and show it in the app (About or footer).\n\nSet it\n  Maker portal: Solutions > select > ... > Edit (Settings) > Version\n  CLI, against the environment:\n    pac solution online-version --solution-name RequestHub --solution-version 1.4.37.0\n  CLI, on unpacked source before packing:\n    pac solution version --buildversion 37              (in the solution project folder)\n    pac solution version --strategy gittags | filetracking | solution\n  Azure DevOps:\n    - task: PowerPlatformSetSolutionVersion@2\n      inputs: { authenticationType: PowerPlatformSPN, PowerPlatformSPN: 'PP-Dev',\n                SolutionName: RequestHub, SolutionVersionNumber: '1.4.$(Build.BuildId).0' }\n  GitHub Actions: microsoft/powerplatform-actions/set-online-solution-version@v1, or edit\n    src/RequestHub/Other/Solution.xml  <Version>1.4.37.0</Version>  before pack-solution.\n\nShow the version in a canvas app\n  Add the Solutions table as a data source.\n  nfVersion = LookUp(Solutions, 'Unique Name' = \"RequestHub\").Version;\n  lblVersion.Text : \"Version \" & nfVersion\n  Users need read access to the Solutions table (Basic User includes it).\n\nFind what is deployed\n  pac solution list                       (name, version, managed flag for the current environment)\n  Admin centre or maker portal > Solutions > Version column and Installed on date.\n  Solution history (Solutions > History) lists each import with start, end, version and result.\n\nPatches\n  Clone a patch: 1.4.37.0 > 1.4.38.1 style numbering is enforced by Dataverse (build or revision must rise,\n  major.minor stay). Clone solution afterwards rolls patches up into the next minor: 1.5.0.0.\n\nDependent solutions\n  State the minimum base version in the dependent solution's release notes: \"requires Core 2.3.0.0 or later\".",
+    "stepByStepInstructions": [
+      "Agree the meaning of each of the four parts.",
+      "Set the current version on the solution in development.",
+      "Let the pipeline set the build part from its run number.",
+      "Record the version in release notes and solution history.",
+      "Show the version inside the app.",
+      "Check the installed version in each environment after deployment."
+    ],
+    "commonMistakes": [
+      "Leaving every release at 1.0.0.0.",
+      "Raising the version after export, so the zip and the notes disagree.",
+      "Different zips with the same version number.",
+      "Putting a date such as 20260309 in a part, which exceeds 65535."
+    ],
+    "troubleshooting": [
+      "If import says a higher version is already installed, raise the version in Dev and export again.",
+      "If the app's version label is blank, the user cannot read the Solutions table or the unique name is wrong.",
+      "If the pipeline's version is not in the zip, set the version before the export or pack step.",
+      "If two environments show different builds unexpectedly, compare solution history for failed or skipped imports."
+    ],
+    "relatedPatterns": [
+      "create-a-release-notes-template",
+      "export-import-managed-solution-pac-cli",
+      "create-a-managed-solution-promotion-path"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Version Power Platform solutions consistently",
+    "seoDescription": "A four-part version scheme for solutions, when to raise each part, and how to set the number by hand, from the CLI or in a pipeline.",
+    "primaryKeyword": "Power Platform solution version number",
+    "secondaryKeywords": [
+      "Versioning",
+      "Release Management",
+      "Solutions",
+      "PAC CLI"
+    ],
+    "faqs": [
+      {
+        "question": "How should I number Power Platform solution versions?",
+        "answer": "Use major.minor.build.revision. Raise major for breaking changes, minor for features, build for each release build and revision for hotfixes."
+      },
+      {
+        "question": "How do I change a solution's version from the command line?",
+        "answer": "Run pac solution online-version with the solution name and new version, or pac solution version on unpacked source."
+      },
+      {
+        "question": "Can I import an older version over a newer one?",
+        "answer": "Not as an upgrade. Dataverse expects the version to be higher than the installed one."
+      }
+    ]
+  },
+  {
+    "id": "pat-1576",
+    "slug": "solution-upgrade-update-patch-difference",
+    "title": "Choose between upgrade, update and patch when importing a solution",
+    "shortDescription": "What each import option does to components and data, when to stage an upgrade, how holding solutions remove columns safely, and when a patch makes sense.",
+    "fullDescription": "Importing a newer managed solution over an older one offers Upgrade, Stage for Upgrade and Update. They differ in one important way: whether components missing from the new version are deleted. Picking the wrong one either leaves dead components behind or deletes a column with data in it.",
+    "category": "ALM & Governance",
+    "subCategory": "Release management",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Upgrade",
+      "Update",
+      "Patch",
+      "Managed Solutions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A column was removed in development, but after import it is still in production. Or a table vanished from production along with its data because nobody expected Upgrade to delete it.",
+    "whenToUse": [
+      "Every managed import over an existing version",
+      "Releases that remove components",
+      "Urgent small fixes to a large solution"
+    ],
+    "whenNotToUse": [
+      "Unmanaged imports, where these options do not apply and nothing is ever removed",
+      "Using Update as the default just because it is faster"
+    ],
+    "formulaOrCode": "Options on import of a higher version of an installed managed solution\n\n  Upgrade (default, recommended)\n    Imports the new version and removes anything that is no longer in it, in one step.\n    Columns and tables removed from the solution are deleted, WITH their data.\n    pac solution import --path RequestHub_managed.zip --stage-and-upgrade\n    Build Tools: StageAndUpgrade: true        Pipelines in Power Platform: always upgrade\n\n  Stage for Upgrade\n    Imports the new version as a holding solution \"RequestHub_Upgrade\" alongside the old one. Nothing is deleted yet.\n    Lets you migrate data out of columns or tables that are about to go.\n    Then: Solutions > select the base solution > Apply Upgrade\n          pac solution upgrade --solution-name RequestHub\n    Until applied, both layers exist. Do not leave it staged.\n    pac solution import --path RequestHub_managed.zip --import-as-holding\n\n  Update (not recommended for routine releases)\n    Replaces components that are in the new version. Leaves everything else in place.\n    Removed components stay in the target as orphans. Fastest, but environments drift apart.\n\nWhat \"removed\" means\n  Removed from the solution in Dev AND deleted, or removed from the solution only: either way the component\n  is absent from the new managed zip, so Upgrade deletes it from the target if no other solution contains it.\n\nSafe removal of a column with data\n  Release 1: add the new column, ship code that writes both.\n  Between releases: migrate data (flow, dataflow or bulk update).\n  Release 2: remove the old column from the solution. Upgrade deletes it.\n  Or in one release with Stage for Upgrade: stage, migrate, Apply Upgrade.\n\nPatches\n  For a small urgent fix to a large solution.\n  Dev: Solutions > select > Clone a patch (version 1.4.37.0 becomes 1.4.37.1 or 1.4.38.0). Add only the changed\n  components. Export the patch as managed and import it: it layers on top of the base and is quick to import.\n  Patches cannot delete components. The base solution cannot be edited while patches exist.\n  Later: Clone solution rolls base and patches into the next version (1.5.0.0). Importing that as an upgrade\n  removes the patches in the target.\n\nOverwrite customizations\n  Import option \"Overwrite customizations\" (pac: --force-overwrite) also resets unmanaged changes on the components\n  being imported. Use when production has stray unmanaged edits. It is slower.\n\nCheck afterwards\n  Solutions > History: operation Import or Upgrade, version, result.\n  No solution named <name>_Upgrade should remain.",
+    "stepByStepInstructions": [
+      "Compare the new version with the installed one and list removed components.",
+      "Check whether any removed column or table holds data that must be kept.",
+      "Use Upgrade when nothing needs migrating.",
+      "Use Stage for Upgrade, migrate the data, then Apply Upgrade when it does.",
+      "Use a patch only for an urgent, small fix, and roll it up at the next release.",
+      "Confirm in solution history that the upgrade completed."
+    ],
+    "commonMistakes": [
+      "Using Update for every release, leaving retired components in production.",
+      "Upgrading without checking that a removed column still holds needed data.",
+      "Leaving a staged upgrade unapplied for weeks.",
+      "Accumulating patches and never cloning the solution."
+    ],
+    "troubleshooting": [
+      "If old components remain after import, the import ran as Update. Import the same version as an upgrade, or apply the pending upgrade.",
+      "If Apply Upgrade fails on a dependency, another solution or an unmanaged component still references the item being removed.",
+      "If data was lost, restore a backup to a copy environment and move the data back.",
+      "If import refuses with 'solution is already installed with a holding solution', apply or delete the staged upgrade first."
+    ],
+    "relatedPatterns": [
+      "create-a-solution-layering-checklist",
+      "create-a-rollback-decision-checklist",
+      "solution-version-numbering-scheme"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Choose between upgrade, update and patch when importing a solution",
+    "seoDescription": "What each import option does to components and data, when to stage an upgrade, how holding solutions remove columns safely, and when a patch makes sense.",
+    "primaryKeyword": "Power Platform solution upgrade vs update",
+    "secondaryKeywords": [
+      "Upgrade",
+      "Update",
+      "Patch",
+      "Managed Solutions"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between upgrading and updating a solution?",
+        "answer": "Upgrade removes components that are not in the new version. Update only adds and changes components and leaves old ones in place."
+      },
+      {
+        "question": "Does a solution upgrade delete data?",
+        "answer": "Yes, for any table or column that is no longer in the solution. Migrate the data first or stage the upgrade."
+      },
+      {
+        "question": "When should I use a solution patch?",
+        "answer": "For a small urgent fix to a large solution. Roll patches into the next full version with Clone solution."
+      }
+    ]
+  },
+  {
+    "id": "pat-1577",
+    "slug": "solution-segmentation-base-and-app-solutions",
+    "title": "Split a large Power Platform system into layered solutions",
+    "shortDescription": "When to move from one solution to several, how to arrange a shared base with app solutions on top, and how to keep dependencies pointing one way.",
+    "fullDescription": "One solution is the right default. It becomes a burden when several teams release on different schedules or several apps share the same tables. Splitting into a base solution for shared components and separate app solutions lets each part be released on its own, provided dependencies only ever point down the stack.",
+    "category": "ALM & Governance",
+    "subCategory": "Solution design",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Solution Architecture",
+      "Layering",
+      "Dependencies",
+      "Managed Solutions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Three apps share the same tables in one solution, so a small fix for one app forces a release of everything, and two teams keep overwriting each other's work.",
+    "whenToUse": [
+      "Shared tables used by several apps with different release cycles",
+      "Separate teams owning separate apps on a common data model",
+      "Components reused across projects, such as a component library"
+    ],
+    "whenNotToUse": [
+      "A single app with one team, where splitting only adds deployment order problems",
+      "Splitting by component type (all flows in one, all apps in another), which creates circular dependencies"
+    ],
+    "formulaOrCode": "Layout (import order is bottom to top)\n  3  RequestHub.App          model-driven and canvas apps, app-specific flows, site map, app roles\n  3  FieldService.App        a second app with its own release schedule\n  2  Core.Process            shared flows, business rules, shared security roles          (optional layer)\n  1  Core.Data               tables, columns, relationships, global choices, keys\n  0  Core.Components         component library, PCF controls, shared web resources        (optional)\n\nRules\n  One publisher for all your solutions, so the prefix is the same everywhere.\n  Dependencies point down only: App may use Core.Data. Core.Data must never reference an app's component.\n  A component lives in exactly one solution. Other solutions reference it, they do not include it.\n  Each solution has its own development environment, or a clear owner in a shared one.\n  Managed base solutions are imported into the app team's Dev environment. App makers build on top.\n\nBuilding an app solution on a managed base\n  In the app's Dev environment: import Core.Data managed first.\n  Create RequestHub.App (unmanaged). To add a form, view or column to a base table:\n    Add existing > Table > select the table > do NOT include all objects or metadata >\n    then add only the new or changed subcomponents (your form, your view, your new column).\n  This is segmentation: the app solution carries just its own pieces of the table.\n\nWhere things go\n  Table and its core columns             Core.Data\n  App-specific column on a core table    the app solution (created with the same publisher)\n  Global choice used by two apps         Core.Data\n  Environment variable for a shared URL  Core.Data or Core.Process       App-only setting: the app solution\n  Connection reference shared by flows   lowest solution that uses it\n  Security role                          one role per solution covering that solution's tables. Combine by\n                                         assigning several roles through a team.\n\nDeployment\n  Order: Core.Components, Core.Data, Core.Process, apps. A pipeline per solution, triggered in order.\n  Version each solution separately. App release notes state the minimum base version.\n  Deleting a base component needs every dependent solution updated first.\n\nCheck dependencies before splitting or releasing\n  Solutions > select > ... > Show dependencies\n  Component > Advanced > Show dependencies\n  pac solution check also reports missing dependency problems on import.\n\nMoving a component between solutions later\n  Managed components cannot simply be moved. Add it to the new owner solution, deploy, then remove it from the\n  old solution and deploy that as an upgrade. The component survives because the new solution holds it.\n\nWhen to stop splitting\n  If two solutions are always released together, merge them.",
+    "stepByStepInstructions": [
+      "List components by who owns them and how often they change.",
+      "Define a base solution for shared data and separate solutions per app.",
+      "Use one publisher across all solutions.",
+      "Build app solutions in environments where the base is installed as managed.",
+      "Add only the needed subcomponents of base tables to app solutions.",
+      "Deploy in dependency order and state minimum base versions in release notes."
+    ],
+    "commonMistakes": [
+      "Splitting by component type.",
+      "Including whole tables with all objects in every solution.",
+      "Different publishers per solution.",
+      "Letting a base solution depend on an app solution's component."
+    ],
+    "troubleshooting": [
+      "If import fails with missing dependencies, deploy the base solution first or to the required version.",
+      "If a change to a base table does not appear, an app solution's layer sits above it. Check solution layers.",
+      "If you find a circular dependency, move the shared component down into the base.",
+      "If two teams edit the same form, give each app its own form on the shared table."
+    ],
+    "relatedPatterns": [
+      "create-a-solution-layering-checklist",
+      "solution-publisher-prefix-naming-standard",
+      "create-a-solution-aware-data-model"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Split a large Power Platform system into layered solutions",
+    "seoDescription": "When to move from one solution to several, how to arrange a shared base with app solutions on top, and how to keep dependencies pointing one way.",
+    "primaryKeyword": "Power Platform solution segmentation",
+    "secondaryKeywords": [
+      "Solution Architecture",
+      "Layering",
+      "Dependencies",
+      "Managed Solutions"
+    ],
+    "faqs": [
+      {
+        "question": "How many solutions should a Power Platform project have?",
+        "answer": "Start with one. Add a shared base solution and per-app solutions only when teams or release schedules genuinely differ."
+      },
+      {
+        "question": "What is solution segmentation?",
+        "answer": "Adding only the changed subcomponents of a table, such as one form or column, to a solution instead of the whole table."
+      },
+      {
+        "question": "Can two solutions contain the same component?",
+        "answer": "They can, but it creates layering confusion. Give each component one owning solution and reference it from others."
+      }
+    ]
+  },
+  {
+    "id": "pat-1578",
+    "slug": "solution-missing-dependencies-fix",
+    "title": "Fix missing dependency errors when importing a solution",
+    "shortDescription": "Read the missing dependencies list, work out whether each item belongs in your solution or must be installed first, and stop the problem recurring.",
+    "fullDescription": "Import fails with 'The following solution cannot be imported: missing dependencies' when the solution refers to something that neither it nor the target environment contains. The fix is always one of three things: add the component to the solution, install the solution that provides it, or remove the reference.",
+    "category": "ALM & Governance",
+    "subCategory": "Troubleshooting",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Dependencies",
+      "Import Errors",
+      "Troubleshooting",
+      "Solutions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A solution that works in development will not import to test, and the error lists component names and GUIDs with no obvious explanation.",
+    "whenToUse": [
+      "Any import that stops on missing dependencies",
+      "Checking a solution before its first deployment",
+      "After adding components built outside the solution"
+    ],
+    "whenNotToUse": [
+      "Forcing imports by adding everything with 'Add required objects' without reading what it adds",
+      "Recreating components by hand in the target, which leaves unmanaged copies"
+    ],
+    "formulaOrCode": "Read the error\n  Import dialog > Download log file, or the missing dependencies table:\n    Required component     Type            Required by            Required solution / status\n    cnt_category           Entity          cnt_ServiceRequest     Active (unmanaged in source: not in any solution)\n    msdyn_richtexteditor   Custom control  Form: Information      MicrosoftDynamics_Controls (9.2...)\n    Approvals connector    Connector       Flow: Start approval   n/a\n\nClassify each row\n  A. Your own component, left out of the solution            > add it\n  B. Belongs to another of your solutions                    > import that solution first, at the stated version\n  C. Belongs to a Microsoft or vendor solution/app           > install or update that app in the target\n  D. A reference you do not need                             > remove the reference in Dev\n\nFix A: add your own components\n  Solution > Add existing > pick the component.\n  Solution > select a component > Advanced > Add required objects       adds what that component needs\n  Whole solution check:  Solutions > select > ... > Show dependencies\n  Typical omissions: a lookup's target table, a global choice, a view used by a sub-grid or app, a web resource\n  on a form, a child flow, a custom connector, an environment variable or connection reference used by a flow,\n  a security role referenced by an app, a component library used by a canvas app.\n\nFix B: your other solution\n  Deploy the base solution first. Compare versions:  pac solution list   in source and target.\n\nFix C: platform or vendor components\n  The \"Required solution\" column names it with a version. Common cases:\n    Dynamics 365 or first-party apps not installed in the target     > install the same app\n    Target on an older platform version than Dev                     > update apps in admin centre > Environment >\n                                                                       Resources > Dynamics 365 apps, or wait for the update\n    Preview feature enabled only in Dev                              > enable it in the target or remove its use\n    A PCF control or custom page from a managed solution             > install that solution\n  Keep Dev, Test and Production in the same region and on the same release wave to avoid version gaps.\n\nFix D: remove the reference\n  Form or view referencing a column you no longer ship: remove it from the form, publish, export again.\n  Flow using a connector blocked or absent in the target: change the flow.\n  Sitemap or app pointing at a table that is not in the solution: remove it from the app designer.\n\nPrevent it\n  Create components from inside the solution, never in the default solution.\n  Run solution checker and a trial import into a clean build or validation environment in the pipeline.\n  Keep a list of prerequisite apps and versions in the release notes.\n\nRemoving a component blocked by dependencies (the reverse problem)\n  Component > Advanced > Show dependencies > \"Dependent components\" lists what still uses it.\n  Remove those references first (forms, views, flows, apps, relationships), publish, then delete.",
+    "stepByStepInstructions": [
+      "Download the import log and list each missing component with what requires it.",
+      "Decide for each whether it is yours, another solution's, a platform component or an unneeded reference.",
+      "Add your own missing components to the solution.",
+      "Install prerequisite solutions or apps in the target at the required version.",
+      "Remove references you do not need and export again.",
+      "Add a trial import to a validation environment in your release process."
+    ],
+    "commonMistakes": [
+      "Adding all required objects blindly and shipping whole Microsoft tables.",
+      "Creating the missing table manually in the target.",
+      "Developing in an environment with extra apps installed that production lacks.",
+      "Ignoring the required version in the dependency row."
+    ],
+    "troubleshooting": [
+      "If the missing item is a Microsoft control or table, match the installed app versions between environments.",
+      "If the same error returns after adding the component, export again. The old zip does not include it.",
+      "If a flow's child flow is missing, add the child to the solution and turn it on before the parent.",
+      "If you cannot find what uses a component, search the unpacked solution files for its name."
+    ],
+    "relatedPatterns": [
+      "solution-segmentation-base-and-app-solutions",
+      "solution-checker-quality-gate-pac-cli",
+      "create-a-deployment-readiness-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Fix missing dependency errors when importing a solution",
+    "seoDescription": "Read the missing dependencies list, work out whether each item belongs in your solution or must be installed first, and stop the problem recurring.",
+    "primaryKeyword": "Power Platform missing dependencies solution import",
+    "secondaryKeywords": [
+      "Dependencies",
+      "Import Errors",
+      "Troubleshooting",
+      "Solutions"
+    ],
+    "faqs": [
+      {
+        "question": "Why does my solution import fail with missing dependencies?",
+        "answer": "The solution references a component that is not included in it and does not exist in the target environment."
+      },
+      {
+        "question": "What does Add required objects do?",
+        "answer": "It adds the components that the selected component depends on, such as the table behind a lookup or the view used by a sub-grid."
+      },
+      {
+        "question": "How do I see a solution's dependencies before export?",
+        "answer": "Open the solution, choose Show dependencies from the menu, or check individual components under Advanced."
+      }
+    ]
+  },
+  {
+    "id": "pat-1579",
+    "slug": "canvas-app-source-code-review-pac-canvas",
+    "title": "Review canvas app changes as source code",
+    "shortDescription": "Turn a canvas app's .msapp file into readable YAML, review formula changes in a pull request and search the whole app's Power Fx as text.",
+    "fullDescription": "A canvas app is stored as a binary .msapp file, which makes changes invisible. Unpacked into .pa.yaml files, each screen and control becomes text with its properties and formulas. Reviewers can then see exactly which formulas changed, and makers can search every formula in the app at once.",
+    "category": "ALM & Governance",
+    "subCategory": "Source control",
+    "platform": [
+      "Power Platform",
+      "Power Apps"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Canvas Apps",
+      "Source Code",
+      "Code Review",
+      "PAC CLI"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A canvas app changes between releases and nobody can say what was altered. Review means clicking through screens and hoping to spot it.",
+    "whenToUse": [
+      "Pull request review of canvas app changes",
+      "Searching all formulas for a column, variable or data source",
+      "Auditing an inherited app"
+    ],
+    "whenNotToUse": [
+      "Hand-editing source and repacking as a routine workflow, which is fragile",
+      "Merging two makers' changes to the same screen as text and expecting a valid app"
+    ],
+    "formulaOrCode": "Get the .msapp\n  From a solution:  pac solution unpack --zipfile RequestHub.zip --folder src/RequestHub\n                    > src/RequestHub/CanvasApps/cnt_requesthub_1a2b3_DocumentUri.msapp\n  Direct:           pac canvas download --name \"Request Hub\" --environment <url> --file-name RequestHub.msapp\n  Studio:           File > Save as > This computer\n\nView the source\n  A .msapp is a zip. Current apps already contain YAML source:\n    unzip RequestHub.msapp -d src/apps/RequestHub\n    src/apps/RequestHub/Src/App.pa.yaml            App properties: OnStart, Formulas, StartScreen\n    src/apps/RequestHub/Src/scrHome.pa.yaml        one file per screen\n    src/apps/RequestHub/Src/Components/*.pa.yaml\n    src/apps/RequestHub/References/DataSources.json\n  In a solution unpack:  pac solution unpack ... --processCanvasApps  does this for every app.\n  Older tooling (pac canvas unpack to .fx.yaml) is retired in favour of the .pa.yaml format.\n\nWhat a screen file looks like\n  Screens:\n    scrRequestForm:\n      Properties:\n        OnVisible: =UpdateContext({ locSaving: false })\n      Children:\n        - btnSave:\n            Control: Classic/Button\n            Properties:\n              Text: =\"Save\"\n              DisplayMode: =If(locSaving || IsBlank(txtTitle.Text), DisplayMode.Disabled, DisplayMode.Edit)\n              OnSelect: |-\n                =UpdateContext({ locSaving: true });\n                IfError(\n                    Patch(Requests, Defaults(Requests), { Title: txtTitle.Text }),\n                    Notify(FirstError.Message, NotificationType.Error)\n                );\n                UpdateContext({ locSaving: false })\n\nReview in a pull request\n  git diff shows changed formulas line by line. Look for:\n    Patch, Remove, SubmitForm without IfError\n    New Filter, Search, LookUp calls on large sources (delegation)\n    New global variables, changes to App.OnStart and App.Formulas\n    Hard-coded URLs, emails and GUIDs\n    New data sources and connectors in References/DataSources.json\n\nSearch the whole app\n  grep -rn \"Patch(\" src/apps/RequestHub/Src\n  grep -rn \"gblCurrentUser\" src/apps/RequestHub/Src\n  grep -rln \"'Service Requests'\" src/apps/RequestHub/Src          every screen that uses the table\n  grep -rn \"Label[0-9]\\|Button[0-9]\" src/apps/RequestHub/Src      default control names\n\nIn Studio\n  Right-click a screen or control in the tree view > View code: shows the same YAML, and Copy code / Paste code\n  moves controls between apps as text.\n\nGit integration\n  With Dataverse Git integration enabled, canvas apps in a solution are committed as .pa.yaml automatically.\n\nLimits\n  The YAML in a saved app is for reading and review. Round-tripping edited YAML back into an app is only\n  supported through Studio's paste code. Treat the .msapp from the environment as the source of truth.",
+    "stepByStepInstructions": [
+      "Export the solution and unpack it, or download the app's .msapp.",
+      "Extract the YAML source files for each screen.",
+      "Commit them to Git alongside the solution source.",
+      "Review formula changes in pull requests.",
+      "Search the source for risky patterns before release.",
+      "Make fixes in Studio and export again."
+    ],
+    "commonMistakes": [
+      "Reviewing only by opening the app and clicking around.",
+      "Hand-editing YAML and repacking for production.",
+      "Two makers editing one app in separate environments and merging text.",
+      "Committing only the .msapp, which cannot be diffed."
+    ],
+    "troubleshooting": [
+      "If no Src folder is in the .msapp, open and save the app in a current Studio version to regenerate source.",
+      "If the diff is noisy, control order or metadata changed. Focus on Properties blocks.",
+      "If a formula is hard to read on one line, format it in Studio before saving.",
+      "If unpack fails with processCanvasApps, update the PAC CLI or unzip the .msapp directly."
+    ],
+    "relatedPatterns": [
+      "unpack-solution-source-control-git",
+      "create-a-formula-review-checklist",
+      "create-a-component-naming-standard"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Review canvas app changes as source code",
+    "seoDescription": "Turn a canvas app's .msapp file into readable YAML, review formula changes in a pull request and search the whole app's Power Fx as text.",
+    "primaryKeyword": "Power Apps canvas app source control YAML",
+    "secondaryKeywords": [
+      "Canvas Apps",
+      "Source Code",
+      "Code Review",
+      "PAC CLI"
+    ],
+    "faqs": [
+      {
+        "question": "Can I see a canvas app's code as text?",
+        "answer": "Yes. The .msapp file is a zip that contains .pa.yaml source files for each screen, with every property and formula."
+      },
+      {
+        "question": "Can I edit the YAML and load it back?",
+        "answer": "Use Studio's Paste code for controls and screens. Editing files and repacking the app is not a supported production path."
+      },
+      {
+        "question": "How do I search all formulas in a canvas app?",
+        "answer": "Extract the source and search the Src folder with any text search tool, or use Studio's search pane."
+      }
+    ]
+  },
+  {
+    "id": "pat-1580",
+    "slug": "environment-variable-secrets-azure-key-vault",
+    "title": "Store secrets in Azure Key Vault and read them with environment variables",
+    "shortDescription": "Keep API keys and client secrets out of flows by referencing an Azure Key Vault secret from a Secret environment variable and reading it securely at run time.",
+    "fullDescription": "A secret typed into a flow action is visible to every co-owner and in run history. A Secret environment variable stores only a pointer to an Azure Key Vault secret. The flow fetches the value when it runs, with outputs hidden, and each environment can point at its own vault.",
+    "category": "ALM & Governance",
+    "subCategory": "Security",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Secrets",
+      "Azure Key Vault",
+      "Environment Variables",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "An API key is pasted into an HTTP action. Anyone who can open the flow or its run history can copy it, and it is exported with the solution.",
+    "whenToUse": [
+      "Flows calling APIs with keys or client secrets",
+      "Different credentials per environment",
+      "Organisations that rotate secrets centrally"
+    ],
+    "whenNotToUse": [
+      "Canvas apps reading secrets directly, which exposes them on the client",
+      "Values that are not secret, where a text environment variable is simpler"
+    ],
+    "formulaOrCode": "Azure set-up (once per vault)\n  1. Subscription > Resource providers > register Microsoft.PowerPlatform.\n  2. Key Vault > Secrets > Generate/Import:  name  ApiKey-Contoso   value  <the key>\n  3. Access for Dataverse: Key Vault > Access control (IAM) > Add role assignment\n       Role: Key Vault Secrets User        Member: the \"Dataverse\" service principal (app ID 00000007-0000-0000-c000-000000000000)\n     (access policy model: grant Get on Secrets to Dataverse)\n  4. The maker creating the variable needs Key Vault Reader/Secrets User on the vault as well, to validate it.\n  5. Vault and environment should be in the same tenant. Firewalled vaults must allow trusted Microsoft services.\n\nCreate the environment variable (in the solution)\n  New > More > Environment variable\n    Display name: Contoso API Key        Data type: Secret        Secret store: Azure Key Vault\n    Current value > New Azure Key Vault secret reference:\n      Azure Subscription ID, Resource Group Name, Azure Key Vault Name, Secret Name\n  Leave Default value empty. Remove the current value from the solution before export so each environment\n  supplies its own reference (deployment settings file: Value = /subscriptions/<id>/resourceGroups/<rg>/\n  providers/Microsoft.KeyVault/vaults/<vault>/secrets/<name>).\n\nRead it in a flow\n  Dataverse > Perform an unbound action\n    Action name: RetrieveEnvironmentVariableSecretValue\n    EnvironmentVariableName: cnt_ContosoApiKey           (schema name)\n  Settings on this action: Secure Outputs: On\n  Value: outputs('Get_secret')?['body/EnvironmentVariableSecretValue']\n  Use it in the HTTP action header, and turn on Secure Inputs for that action too:\n    x-api-key: @{outputs('Get_secret')?['body/EnvironmentVariableSecretValue']}\n  With secure inputs and outputs, run history shows \"Content not shown due to security configuration\".\n\nWho can read the secret\n  The flow runs the unbound action as its connection's user. That user needs read access to the environment\n  variable definition and value tables. The vault itself is accessed by Dataverse, not by the user.\n  Restrict who can edit the flow: an editor can remove Secure Outputs and read the value in a test run.\n\nRotation\n  Update the secret's value in Key Vault (new version). The reference uses the latest version, so flows pick it up\n  on their next run. No redeploy.\n\nAlternative: Azure Key Vault connector\n  Key Vault > Get secret, with a connection using a service principal or managed identity. Use connection\n  references per environment. Also turn on Secure Outputs.\n\nCustom connectors\n  Connection parameters marked as securestring keep API keys in the connection instead of the flow.",
+    "stepByStepInstructions": [
+      "Register the Microsoft.PowerPlatform resource provider and create the secret in Key Vault.",
+      "Grant the Dataverse service principal permission to read secrets.",
+      "Create a Secret environment variable that references the vault secret.",
+      "Read it in the flow with RetrieveEnvironmentVariableSecretValue.",
+      "Turn on secure outputs and secure inputs on the actions that handle it.",
+      "Supply each environment's own reference through the deployment settings file."
+    ],
+    "commonMistakes": [
+      "Pasting secrets into actions or text environment variables.",
+      "Leaving Secure Outputs off, so the value is visible in run history.",
+      "Exporting the solution with the development vault reference as the current value.",
+      "Giving many makers edit rights on a flow that reads production secrets."
+    ],
+    "troubleshooting": [
+      "If validation says the secret cannot be found, check the provider registration and the Dataverse principal's role on the vault.",
+      "If the unbound action returns a permission error, the connection user cannot read environment variable tables.",
+      "If the flow still uses the old key after rotation, confirm the new secret version is enabled.",
+      "If the vault has a firewall, allow trusted Microsoft services or the connection fails."
+    ],
+    "relatedPatterns": [
+      "dataverse-environment-variables-canvas-apps-flows",
+      "deployment-settings-file-pac-cli",
+      "connection-references-for-solution-flows"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Store secrets in Azure Key Vault and read them with environment variables",
+    "seoDescription": "Keep API keys and client secrets out of flows by referencing an Azure Key Vault secret from a Secret environment variable and reading it securely at run time.",
+    "primaryKeyword": "Power Platform environment variable secret Key Vault",
+    "secondaryKeywords": [
+      "Secrets",
+      "Azure Key Vault",
+      "Environment Variables",
+      "Security"
+    ],
+    "faqs": [
+      {
+        "question": "How do I store an API key securely in Power Automate?",
+        "answer": "Keep it in Azure Key Vault, reference it with a Secret environment variable and read it in the flow with secure outputs enabled."
+      },
+      {
+        "question": "Can canvas apps read secret environment variables?",
+        "answer": "They should not. Call a flow that uses the secret on the server and returns only the result."
+      },
+      {
+        "question": "What happens when the secret is rotated?",
+        "answer": "Flows read the latest version from Key Vault on their next run, so no change to the solution is needed."
+      }
+    ]
+  },
+  {
+    "id": "pat-1581",
+    "slug": "turn-on-flows-after-solution-import",
+    "title": "Make sure flows are turned on after a solution import",
+    "shortDescription": "Why flows arrive switched off, how to get them on automatically with connection references and deployment settings, and a script to activate the stragglers.",
+    "fullDescription": "After importing a solution, some flows are off. It happens when a connection reference has no connection, when a child flow is not yet on, or when the importing identity cannot activate them. Fixing the causes makes flows start by themselves. A short script handles anything left.",
+    "category": "ALM & Governance",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Cloud Flows",
+      "Import",
+      "Connection References",
+      "Deployment"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A release 'succeeds', but nothing happens when users submit requests, because the approval flow was imported turned off and nobody noticed.",
+    "whenToUse": [
+      "Every solution import that includes cloud flows",
+      "Pipelines that deploy with a service principal",
+      "First deployment to a new environment"
+    ],
+    "whenNotToUse": [
+      "Flows you ship deliberately disabled, which should be documented as such",
+      "Turning flows on by editing them in the target, which creates an unmanaged layer"
+    ],
+    "formulaOrCode": "Why a flow imports as off\n  1. A connection reference in the flow has no connection in the target.\n  2. It was off in the source when exported. State travels with the solution.\n  3. It calls a child flow that is still off.\n  4. The importing user cannot use the connections (not shared with them).\n  5. A DLP policy in the target blocks its connector combination: the flow is suspended.\n\nMake them turn on by themselves\n  - Flows must be ON in Dev at export time.\n  - Every action uses a connection reference.\n  - Provide connections at import:\n      Manual import: choose a connection for each reference in the wizard.\n      Scripted: deployment settings file\n        { \"ConnectionReferences\": [ { \"LogicalName\": \"cnt_cr_SharePoint_RequestHub\",\n            \"ConnectionId\": \"shared-sharepointonl-1a2b...\", \"ConnectorId\": \"/providers/Microsoft.PowerApps/apis/shared_sharepointonline\" } ] }\n        pac solution import --path RequestHub_managed.zip --settings-file prod.json --activate-plugins\n  - The identity importing must be able to use each connection: connection > Share > add the service principal\n    or deploying user with \"Can use\".\n  - Child flows: their connections must be embedded (Run-only users > Use this connection).\n\nCheck after import\n  Solutions > open the solution > Cloud flows: Status column. Filter for Off.\n  pac CLI has no flow list by state, so query Dataverse:\n  GET /api/data/v9.2/workflows?$select=name,statecode&$filter=category eq 5 and statecode eq 0 and\n      solutionid eq <solution guid>\n  category 5 = modern cloud flow. statecode 0 = off (Draft), 1 = on (Activated), 2 = suspended.\n\nTurn on the rest (PowerShell, as the flow owner or an admin)\n  $flows = Get-AdminFlow -EnvironmentName $envId | Where-Object { -not $_.Enabled }\n  foreach ($f in $flows) { Enable-AdminFlow -EnvironmentName $envId -FlowName $f.FlowName }\n\n  Or through Dataverse (works for solution flows, respects ownership):\n  PATCH /api/data/v9.2/workflows(<workflowid>)\n  { \"statecode\": 1 }\n  Order: child flows first, then parents. Retry parents once after children are on.\n\nIn a pipeline\n  Azure DevOps: after PowerPlatformImportSolution, a PowerShell step that queries workflows with statecode 0 for\n  the solution and PATCHes them, failing the stage if any remain off.\n  Power Platform pipelines: connections are chosen in the deployment dialog, and flows are activated for you.\n\nOwnership\n  Imported flows are owned by the importer. To have them run under a service account, import as that account,\n  or change the owner afterwards (workflow row ownerid, or flow details > Edit > Owner for solution flows).\n\nSuspended flows\n  statecode 2 with a DLP or licence message: fix the policy or licence, then turn on. A script cannot override it.",
+    "stepByStepInstructions": [
+      "Confirm every flow is on in development and uses connection references.",
+      "Create the connections in the target under the service account and share them with the importer.",
+      "Import with a deployment settings file that maps each connection reference.",
+      "List flows in the solution that are still off.",
+      "Turn on child flows first, then parents, by script.",
+      "Fail the release if any expected flow remains off."
+    ],
+    "commonMistakes": [
+      "Opening and saving each flow in production to switch it on.",
+      "Exporting with flows turned off in development.",
+      "Importing as a service principal that cannot use the connections.",
+      "Not checking flow state as part of the release."
+    ],
+    "troubleshooting": [
+      "If a flow will not turn on, open its details and read the error banner: usually a missing connection or child flow.",
+      "If it turns on then shows suspended, a DLP policy applies. Check the environment's policies.",
+      "If activation fails with a licence message, the owner needs a suitable licence or the flow needs a Process licence.",
+      "If the same flows are off after every release, their references are missing from the settings file."
+    ],
+    "relatedPatterns": [
+      "connection-references-for-solution-flows",
+      "deployment-settings-file-pac-cli",
+      "service-principal-application-user-deployments"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Make sure flows are turned on after a solution import",
+    "seoDescription": "Why flows arrive switched off, how to get them on automatically with connection references and deployment settings, and a script to activate the stragglers.",
+    "primaryKeyword": "Power Automate flows off after solution import",
+    "secondaryKeywords": [
+      "Cloud Flows",
+      "Import",
+      "Connection References",
+      "Deployment"
+    ],
+    "faqs": [
+      {
+        "question": "Why are my flows turned off after importing a solution?",
+        "answer": "Most often a connection reference had no connection during import, the flow was off when exported, or it depends on a child flow that is off."
+      },
+      {
+        "question": "How do I turn on all flows after a deployment?",
+        "answer": "Provide connections through a deployment settings file so they activate on import, and run a script that enables any flows still off."
+      },
+      {
+        "question": "Who owns flows after import?",
+        "answer": "The user or service principal that imported the solution, until ownership is changed."
+      }
+    ]
+  },
+  {
+    "id": "pat-1582",
+    "slug": "managed-properties-lock-solution-components",
+    "title": "Control what can be changed in production with managed properties",
+    "shortDescription": "Set managed properties on tables, columns, forms, views and other components so downstream environments can or cannot customise them once the solution is managed.",
+    "fullDescription": "A managed solution does not automatically lock everything. Each component carries managed properties that say whether it can be customised after import. Setting them in development decides whether an administrator in production can add a column to your table, edit your form or delete your view.",
+    "category": "ALM & Governance",
+    "subCategory": "Solution design",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Managed Properties",
+      "Managed Solutions",
+      "Customization",
+      "Governance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Someone edits a managed form directly in production. The change sits in an unmanaged layer, hides the next release's updates and cannot be explained by anyone.",
+    "whenToUse": [
+      "Solutions deployed to environments you do not fully control",
+      "Protecting components that integrations depend on",
+      "ISV-style or shared base solutions"
+    ],
+    "whenNotToUse": [
+      "Locking everything in solutions other teams are meant to extend",
+      "Using managed properties as a substitute for access control on who can customise an environment"
+    ],
+    "formulaOrCode": "Where\n  In the unmanaged solution in Dev: select a component > ... > Advanced > Managed properties\n  They take effect only after the solution is imported as managed.\n\nTables\n  Allow customizations                    master switch. Off = nothing below can be changed downstream.\n  Display name can be modified\n  Can change additional properties        audit, duplicate detection and similar settings\n  New forms can be created\n  New charts can be created\n  New views can be created\n  Can change hierarchical relationship\n  Can change tracking be enabled\n  Can enable sync to external search index\n\nColumns\n  Allow customizations\n  Display name can be modified\n  Can change requirement level\n  Can change additional properties\n\nForms, views, charts, dashboards, web resources, sitemap, option sets, processes\n  Allow customizations                    On = can be edited downstream (creating an unmanaged layer)\n  (some types also) Can be deleted\n\nSuggested settings\n  Base tables used by integrations        Allow customizations: On; New forms/views/charts: On;\n                                          Can change additional properties: Off; Display name: Off\n  Key columns (IDs, keys, status)         Allow customizations: Off\n  Your app's main form                    Allow customizations: Off      (extensions go on a separate form)\n  Reference data views                    Allow customizations: Off; Can be deleted: Off\n  Dashboards meant for local tailoring    Allow customizations: On\n  Security roles                          cannot be locked: managed roles can still be edited downstream.\n                                          Policy: copy the role instead of editing it.\n  Cloud flows                             Allow customizations On lets support edit in production (creating a\n                                          layer). Off forces fixes through Dev.\n\nDefaults\n  New components default to Allow customizations: On. Review before the first managed release, because\n  loosening later is easy but tightening later does not remove layers already created.\n\nChanging them later\n  Edit in Dev, release a new managed version. A managed property can be relaxed or tightened by the publisher's\n  own later version.\n\nSee them in the target\n  Component > Advanced > Managed properties shows the values read-only.\n\nComplementary controls\n  Limit who holds System Customizer or System Administrator in production.\n  Managed Environments + pipelines: block unmanaged customisations in production\n  (Environment settings > Features > Block unmanaged customizations).\n  Periodically check for Active layers on your components and remove them.",
+    "stepByStepInstructions": [
+      "List the components others might be tempted to change in production.",
+      "Decide for each whether downstream customisation should be allowed.",
+      "Set managed properties on those components in development.",
+      "Export as managed and import to a test environment.",
+      "Try to edit a locked component in test and confirm it is refused.",
+      "Turn on blocking of unmanaged customisations in production where available."
+    ],
+    "commonMistakes": [
+      "Assuming managed means locked.",
+      "Locking tables so tightly that legitimate extension needs a new release for every view.",
+      "Tightening properties only after production already has unmanaged layers.",
+      "Expecting managed properties to protect security roles."
+    ],
+    "troubleshooting": [
+      "If a locked component was still edited, the edit predates the lock. Remove the active layer.",
+      "If an extension team cannot add a form, enable New forms can be created in the next release.",
+      "If the option is greyed out in Dev, the component is itself managed there. Change it in its source environment.",
+      "If production edits keep appearing, restrict customiser roles and enable the block on unmanaged customisations."
+    ],
+    "relatedPatterns": [
+      "create-a-solution-layering-checklist",
+      "create-an-unmanaged-customizations-cleanup-plan",
+      "solution-segmentation-base-and-app-solutions"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Control what can be changed in production with managed properties",
+    "seoDescription": "Set managed properties on tables, columns, forms, views and other components so downstream environments can or cannot customise them once the solution is managed.",
+    "primaryKeyword": "Dataverse managed properties",
+    "secondaryKeywords": [
+      "Managed Properties",
+      "Managed Solutions",
+      "Customization",
+      "Governance"
+    ],
+    "faqs": [
+      {
+        "question": "Does a managed solution stop people editing components?",
+        "answer": "Only where managed properties say so. By default most components still allow customisation after import."
+      },
+      {
+        "question": "Where do I set managed properties?",
+        "answer": "On each component in the unmanaged solution in development, under Advanced, before exporting as managed."
+      },
+      {
+        "question": "Can I block all unmanaged changes in production?",
+        "answer": "Yes, in Managed Environments, with the Block unmanaged customizations setting."
+      }
+    ]
+  },
+  {
+    "id": "pat-1583",
+    "slug": "configuration-migration-tool-reference-data",
+    "title": "Move reference data between environments with the Configuration Migration Tool",
+    "shortDescription": "Export lookup and settings rows such as categories and routing rules from development and import them into test and production with the same IDs.",
+    "fullDescription": "Solutions carry tables, not rows. Apps that depend on reference rows such as categories, teams or settings need that data in every environment, with the same GUIDs so lookups and flows match. The Configuration Migration Tool exports a schema and data file from one environment and imports it into another, updating rows that already exist.",
+    "category": "ALM & Governance",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Reference Data",
+      "Configuration Migration",
+      "PAC CLI",
+      "Deployment"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "After deployment the app's drop-downs are empty, or categories were retyped by hand in production with different IDs so flows that reference them fail.",
+    "whenToUse": [
+      "Reference and settings tables an app needs to run",
+      "Keeping row GUIDs identical across environments",
+      "Repeatable seeding of new environments"
+    ],
+    "whenNotToUse": [
+      "Large transactional data sets, which suit dataflows or migration tools",
+      "Data containing secrets or personal data you should not carry between environments"
+    ],
+    "formulaOrCode": "Install\n  pac tool cmt             downloads and opens the Configuration Migration Tool (Windows)\n  Command-line equivalents:  pac data export / pac data import\n\n1. Create the schema (once, then keep it in source control)\n   Tool > Create schema > sign in to Dev\n   Pick the solution, then each table and the columns to move:\n     cnt_category:      cnt_name, cnt_code, cnt_sortorder, statecode, statuscode\n     cnt_routingrule:   cnt_name, cnt_category (lookup), cnt_approveremail, cnt_minamount\n   Tools > Configure import settings: choose the uniqueness condition per table if not the primary key\n     (for example cnt_code) so rows match by business key where GUIDs differ.\n   Order: parents before children. Save as schema.xml.\n\n2. Export data\n   Tool > Export data > schema.xml > data.zip\n   CLI:  pac data export --schema-file ./data/schema.xml --data-file ./data/data.zip --overwrite\n   data.zip contains data.xml, data_schema.xml and [Content_Types].xml. Unzip to review or diff in Git.\n\n3. Import\n   Tool > Import data > sign in to target > data.zip\n   CLI:  pac auth select --name Test\n         pac data import --data ./data/data.zip\n   Behaviour: rows are matched by primary key GUID (or your uniqueness condition). Matches are updated,\n   others are created with the SAME GUID as the source. Nothing is deleted.\n\nWhy same GUIDs matter\n   Flows, business rules and views that reference a specific row store its GUID. With identical IDs they work\n   unchanged in every environment. Better still, reference rows by an alternate key or code.\n\nIn a pipeline\n   Azure DevOps: PowerPlatformExportData@2 (SchemaFile, DataFile) and PowerPlatformImportData@2 (DataFile)\n   GitHub: pac data import in a run step after import-solution\n   Run after the solution import, so the tables exist.\n\nPackage Deployer (several solutions plus data in one go)\n   pac package init > add solutions and the data zip to ImportConfig.xml > pac package deploy\n\nWhat it does not move\n   Owners unless users exist with matching domain names (user map file: usermap.xml).\n   Business unit or team rows unless you include them and they make sense in the target.\n   File and image column content in older versions. Check with a test import.\n   Deleted rows. Deactivate instead, and include statecode.\n\nAlternatives\n   Excel export and import: fine for a handful of rows, loses GUIDs unless the ID column is included.\n   Dataflows: scheduled sync from a master source, matched by alternate key.",
+    "stepByStepInstructions": [
+      "List the reference tables the solution needs populated.",
+      "Create a schema with those tables and columns, parents first.",
+      "Export the data from development and commit the schema and data.",
+      "Import into test after the solution import.",
+      "Check lookups and flows that reference those rows.",
+      "Add the import to the release pipeline for production."
+    ],
+    "commonMistakes": [
+      "Retyping reference rows in each environment.",
+      "Including transactional tables or personal data in the schema.",
+      "Importing data before the solution that defines the tables.",
+      "Deleting rows in development and expecting the tool to delete them elsewhere."
+    ],
+    "troubleshooting": [
+      "If lookups fail on import, the parent table is later in the schema or missing. Reorder and re-export.",
+      "If duplicates appear, rows already existed with other GUIDs. Set a uniqueness condition on a business key.",
+      "If owner assignment fails, supply a user map or let rows default to the importing user.",
+      "If choice values are rejected, the target's solution version lacks those options. Deploy the solution first."
+    ],
+    "relatedPatterns": [
+      "dataverse-alternate-key-upsert-power-automate",
+      "deployment-settings-file-pac-cli",
+      "dataverse-dataflow-import-excel-upsert"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Move reference data between environments with the Configuration Migration Tool",
+    "seoDescription": "Export lookup and settings rows such as categories and routing rules from development and import them into test and production with the same IDs.",
+    "primaryKeyword": "Dataverse Configuration Migration Tool",
+    "secondaryKeywords": [
+      "Reference Data",
+      "Configuration Migration",
+      "PAC CLI",
+      "Deployment"
+    ],
+    "faqs": [
+      {
+        "question": "How do I move data between Dataverse environments?",
+        "answer": "For reference data, use the Configuration Migration Tool or pac data export and import with a schema file. Rows keep the same GUIDs."
+      },
+      {
+        "question": "Do solutions include table data?",
+        "answer": "No. Solutions carry definitions. Rows must be moved separately."
+      },
+      {
+        "question": "Will importing overwrite existing rows?",
+        "answer": "Rows that match by GUID or your uniqueness condition are updated. Others are created. Nothing is deleted."
+      }
+    ]
+  },
+  {
+    "id": "pat-1584",
+    "slug": "pac-cli-auth-profiles-multiple-environments",
+    "title": "Manage PAC CLI sign-ins for several environments",
+    "shortDescription": "Create named authentication profiles for development, test and production, switch between them safely and check which one a command will use.",
+    "fullDescription": "Every PAC CLI command runs against the active authentication profile. With one profile per environment, each given a clear name, switching is a single command and it is hard to import into the wrong place. Profiles can use an interactive sign-in for people or a service principal for automation.",
+    "category": "ALM & Governance",
+    "subCategory": "Tooling",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "PAC CLI",
+      "Authentication",
+      "Environments",
+      "Tooling"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A maker runs an import believing they are connected to test, but the CLI is still pointing at production from yesterday's session.",
+    "whenToUse": [
+      "Working with more than one environment from the same machine",
+      "Scripts that deploy to several environments in turn",
+      "Mixing personal sign-in and service principal access"
+    ],
+    "whenNotToUse": [
+      "Shared machines where stored profiles would give others your access",
+      "Build agents, where profiles should be created and cleared within each run"
+    ],
+    "formulaOrCode": "Install and update\n  dotnet tool install --global Microsoft.PowerApps.CLI.Tool\n  dotnet tool update  --global Microsoft.PowerApps.CLI.Tool\n  pac help\n\nCreate profiles (interactive sign-in)\n  pac auth create --name Dev  --environment https://contoso-dev.crm.dynamics.com\n  pac auth create --name Test --environment https://contoso-test.crm.dynamics.com\n  pac auth create --name Prod --environment https://contoso.crm.dynamics.com\n  A browser window opens for each. Use --deviceCode on machines without a browser.\n\nCreate a profile with a service principal\n  pac auth create --name ProdDeploy --environment https://contoso.crm.dynamics.com \\\n      --applicationId <client id> --clientSecret <secret> --tenant <tenant id>\n  Read the secret from an environment variable or secret store, not from a script file:\n      --clientSecret $env:PP_CLIENT_SECRET          (PowerShell)\n      --clientSecret \"$PP_CLIENT_SECRET\"            (bash)\n\nSee and switch\n  pac auth list\n      Index  Active  Kind       Name        Friendly Name     Url                                     User\n      [1]    *       UNIVERSAL  Dev         Contoso Dev       https://contoso-dev.crm.dynamics.com    maker@contoso.com\n      [2]            UNIVERSAL  Test        Contoso Test      https://contoso-test.crm.dynamics.com   maker@contoso.com\n      [3]            UNIVERSAL  ProdDeploy  Contoso           https://contoso.crm.dynamics.com        <application id>\n  pac auth select --name Test\n  pac auth who                      prints the active profile, user and environment. Run it before any import.\n  pac org who                       details of the connected environment\n  pac env list                      environments this identity can see\n  pac env select --environment https://contoso-test.crm.dynamics.com      re-point the active profile\n\nTarget an environment per command (safer in scripts)\n  pac solution export --environment https://contoso-dev.crm.dynamics.com --name RequestHub --path out/RequestHub.zip\n  pac solution import --environment https://contoso-test.crm.dynamics.com --path out/RequestHub_managed.zip\n  The --environment argument overrides the profile's default for that one command.\n\nA guarded deployment script (PowerShell)\n  param([Parameter(Mandatory)][ValidateSet(\"Test\",\"Prod\")] [string]$Target)\n  pac auth select --name $Target\n  $who = pac auth who | Out-String\n  Write-Host $who\n  if ($Target -eq \"Prod\") {\n      $answer = Read-Host \"Type PROD to import into production\"\n      if ($answer -ne \"PROD\") { throw \"Cancelled\" }\n  }\n  pac solution import --path \"out/RequestHub_managed.zip\" --settings-file \"settings/$Target.json\" --async --max-async-wait-time 60\n  if ($LASTEXITCODE -ne 0) { throw \"Import failed\" }\n\nClean up\n  pac auth delete --name Prod\n  pac auth clear                    removes every stored profile. Run at the end of build agent jobs.\n\nWhere profiles live\n  Stored per user on the machine in the PAC CLI profile folder, with tokens in the operating system's\n  credential store. They are not part of a repository.",
+    "stepByStepInstructions": [
+      "Install or update the PAC CLI.",
+      "Create one named profile per environment.",
+      "Use a service principal profile for production deployment.",
+      "Run pac auth who before any command that changes an environment.",
+      "Pass the environment explicitly in scripts.",
+      "Clear profiles on shared or build machines after use."
+    ],
+    "commonMistakes": [
+      "Leaving default profile names so the list is unreadable.",
+      "Assuming the active profile without checking.",
+      "Writing a client secret into a script committed to Git.",
+      "Using a personal admin sign-in for automated production deployments."
+    ],
+    "troubleshooting": [
+      "If a command hits the wrong environment, run pac auth who and select the right profile.",
+      "If sign-in loops or fails, delete the profile and create it again, or use device code.",
+      "If the service principal cannot connect, add it as an application user in that environment.",
+      "If commands are missing or behave differently, update the CLI to the current version."
+    ],
+    "relatedPatterns": [
+      "export-import-managed-solution-pac-cli",
+      "service-principal-application-user-deployments",
+      "deployment-settings-file-pac-cli"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Manage PAC CLI sign-ins for several environments",
+    "seoDescription": "Create named authentication profiles for development, test and production, switch between them safely and check which one a command will use.",
+    "primaryKeyword": "pac auth create profiles",
+    "secondaryKeywords": [
+      "PAC CLI",
+      "Authentication",
+      "Environments",
+      "Tooling"
+    ],
+    "faqs": [
+      {
+        "question": "How do I connect PAC CLI to an environment?",
+        "answer": "Run pac auth create with a name and the environment URL, then sign in. The profile is stored for later commands."
+      },
+      {
+        "question": "How do I switch environments in PAC CLI?",
+        "answer": "Use pac auth select with the profile name, or pass an environment URL on the individual command."
+      },
+      {
+        "question": "How do I check which environment PAC CLI is using?",
+        "answer": "Run pac auth who, which shows the active profile, the signed-in identity and the environment."
+      }
+    ]
+  },
+  {
+    "id": "pat-1585",
+    "slug": "developer-environments-per-maker-branching",
+    "title": "Give each maker a development environment and merge through Git",
+    "shortDescription": "Stop makers overwriting each other in a shared Dev environment by giving each a personal developer environment, a branch and a build from source.",
+    "fullDescription": "In a shared development environment, every maker's unfinished work ships with the next export. With one developer environment per maker, each person works in isolation, commits their change to a branch and merges through a pull request. An integration environment is built from the main branch, and releases come from that.",
+    "category": "ALM & Governance",
+    "subCategory": "Team development",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Developer Environments",
+      "Branching",
+      "Team Development",
+      "Git"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "Half a day",
+    "problemStatement": "Two makers work in the same Dev environment. A release exports one maker's finished feature along with the other's half-built form, and the half-built form reaches test.",
+    "whenToUse": [
+      "Teams of three or more makers on one solution",
+      "Features that take longer than one release cycle",
+      "Teams comfortable with Git and pull requests"
+    ],
+    "whenNotToUse": [
+      "A single maker or a pair who can coordinate by talking",
+      "Teams with no Git experience, where a shared Dev plus pipelines is safer"
+    ],
+    "formulaOrCode": "Environments\n  dev-<maker>      Developer type, one per maker. Free with the Power Apps Developer Plan, up to three per user.\n                   Admins can create them for makers:\n                   pac admin create --name \"Dev - Priya\" --type Developer --region unitedstates --user <object id>\n  integration      Sandbox. Built from the main branch only. Nobody edits it by hand.\n  test, prod       Managed solution imports from the build output.\n\nFlow of a change\n  1. Refresh the personal environment from main\n       git checkout main && git pull\n       pac solution pack   --folder src/RequestHub --zipfile out/RequestHub.zip --packagetype Unmanaged\n       pac solution import --path out/RequestHub.zip --environment https://dev-priya.crm.dynamics.com \\\n           --force-overwrite --publish-changes\n  2. Branch\n       git checkout -b feature/escalation-screen\n  3. Build the change in dev-priya, inside the solution.\n  4. Bring it back to source\n       pac solution export --name RequestHub --path out/RequestHub.zip --environment https://dev-priya.crm.dynamics.com\n       pac solution unpack --zipfile out/RequestHub.zip --folder src/RequestHub --packagetype Unmanaged --allowDelete\n       git add -A && git commit -m \"Add escalation screen\" && git push -u origin feature/escalation-screen\n  5. Pull request into main. Reviewers read the diff. A validation build packs the branch and runs solution checker.\n  6. On merge, the pipeline packs main, imports to integration, then produces the managed zip for test.\n\nWith Dataverse Git integration (no CLI for makers)\n  Each developer environment is connected to the same repository and folder, on its own branch.\n  Solutions > Source control: Commit pushes changes, Pull brings in others' merged work.\n  Merging between branches still happens in Azure DevOps through pull requests.\n\nWhat merges cleanly and what does not\n  Clean: separate tables, columns, views, flows, new forms, new canvas apps, security roles for other tables.\n  Conflict-prone: the same form XML, the same canvas app, the same flow, the sitemap, the same security role.\n  Rule: one owner per conflict-prone component at a time. Record it on the work item\n  (\"locks: Request main form\"). For a canvas app, split work by using components in a component library.\n\nVersion and identity\n  All environments use the same publisher and the same solution unique name.\n  Environment variables and connection references get personal values in each developer environment and are\n  excluded from source by removing current values before export.\n\nKeeping personal environments healthy\n  Re-import from main at the start of each piece of work.\n  If an environment drifts badly, delete it and create a new one. Developer environments are disposable.\n  Reference data: load with the Configuration Migration Tool data set kept in the repository.\n\nLighter alternative\n  One shared Dev, one solution per feature holding only the changed components, deployed with pipelines.\n  Less isolation, far less tooling.",
+    "stepByStepInstructions": [
+      "Create a developer environment for each maker and an integration environment.",
+      "Put the unpacked solution in a Git repository with a protected main branch.",
+      "Start each change by importing main into the personal environment and creating a branch.",
+      "Export and unpack the change, then open a pull request.",
+      "Validate each pull request by packing and running solution checker.",
+      "Build integration and release artefacts from main only."
+    ],
+    "commonMistakes": [
+      "Editing the integration environment by hand.",
+      "Two makers changing the same form or canvas app in parallel.",
+      "Never refreshing personal environments, so exports carry stale components.",
+      "Different publishers in personal environments."
+    ],
+    "troubleshooting": [
+      "If a merge conflict appears in form XML, take one side entirely and reapply the other change in the designer.",
+      "If import to the personal environment fails, reset or recreate it and import main again.",
+      "If unrelated changes appear in a pull request, the environment was not refreshed before the work started.",
+      "If makers find the cycle too heavy, move to Dataverse Git integration or the feature-solution approach."
+    ],
+    "relatedPatterns": [
+      "unpack-solution-source-control-git",
+      "power-platform-environment-strategy",
+      "canvas-app-source-code-review-pac-canvas"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Give each maker a development environment and merge through Git",
+    "seoDescription": "Stop makers overwriting each other in a shared Dev environment by giving each a personal developer environment, a branch and a build from source.",
+    "primaryKeyword": "Power Platform developer environment per maker branching",
+    "secondaryKeywords": [
+      "Developer Environments",
+      "Branching",
+      "Team Development",
+      "Git"
+    ],
+    "faqs": [
+      {
+        "question": "Should every maker have their own environment?",
+        "answer": "For teams of several makers on one solution, yes. It isolates unfinished work, provided changes are merged through source control."
+      },
+      {
+        "question": "Are developer environments free?",
+        "answer": "Each user can have up to three developer environments under the Power Apps Developer Plan, for building and testing only."
+      },
+      {
+        "question": "Can two people edit the same canvas app?",
+        "answer": "Studio supports co-authoring in one environment, but parallel edits in separate environments cannot be merged reliably. Assign one owner at a time."
+      }
+    ]
+  },
+  {
+    "id": "pat-1586",
+    "slug": "power-platform-pipelines-approval-pre-deployment",
+    "title": "Add an approval step before a Power Platform pipeline deploys to production",
+    "shortDescription": "Turn on the pre-deployment step for a pipeline stage and use a flow to request approval, then complete or reject the deployment from the result.",
+    "fullDescription": "Power Platform pipelines can pause before a stage deploys and wait for an external decision. A cloud flow in the pipelines host environment receives the request, runs an approval and calls an action to continue or stop. This gives a recorded sign-off for production without leaving the product.",
+    "category": "ALM & Governance",
+    "subCategory": "Pipelines",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Pipelines",
+      "Approvals",
+      "Deployment Gates",
+      "Governance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Any maker with access to the pipeline can push a solution to production at any time, with no second pair of eyes and no record of who agreed.",
+    "whenToUse": [
+      "Production stages that need sign-off",
+      "Change control that requires a named approver",
+      "Adding automated checks before deployment"
+    ],
+    "whenNotToUse": [
+      "Development-to-test stages, where a gate only slows feedback",
+      "Using approval as the only control when makers also hold admin rights in production"
+    ],
+    "formulaOrCode": "Turn on the gate\n  Deployment Pipeline Configuration app (in the pipelines host environment)\n    Pipelines > open the pipeline > Deployment Stages > open the Production stage\n      Pre-Deployment Step Required: Yes\n      (optional) Pre-Export Step Required: Yes       runs before the solution is exported from Dev\n      (optional) Is Delegated Deployment: Yes        deploy as a service principal or stage owner instead of the maker\n\nFlow (create it in the host environment, in a solution)\n  Trigger: Microsoft Dataverse > When an action is performed\n    Catalog: Microsoft Dataverse Common        Category: Power Platform Pipelines\n    Table name: (none)\n    Action name: OnPreDeploymentStarted\n  Useful trigger outputs (OutputParameters):\n    StageRunId, DeploymentPipelineName, DeploymentStageName, ArtifactName, ArtifactVersion, DeploymentNotes\n\n  Condition: only handle the production stage\n    triggerOutputs()?['body/OutputParameters/DeploymentStageName']   is equal to   Production\n    (If no: Terminate, Succeeded. Other stages with the step enabled need their own handling.)\n\n  Get the requester\n    Dataverse > Get a row by ID: Deployment Stage Runs, Row ID = StageRunId, Expand: createdby($select=fullname,internalemailaddress)\n\n  Approvals > Start and wait for an approval (Approve/Reject - First to respond)\n    Title:   Deploy @{ArtifactName} @{ArtifactVersion} to Production\n    Assigned to: release-approvers@contoso.com\n    Details: Requested by @{outputs('Get_stage_run')?['body/createdby/fullname']}\n             Notes: @{triggerOutputs()?['body/OutputParameters/DeploymentNotes']}\n    Item link: link to the stage run or the work item\n\n  Condition: Outcome is equal to Approve\n    Yes > Dataverse > Perform an unbound action\n            Action name: UpdatePreDeploymentStepStatus\n            StageRunId: @{triggerOutputs()?['body/OutputParameters/StageRunId']}\n            PreDeploymentStepStatus: 20                  (20 = Completed, 30 = Failed)\n    No  > same action with PreDeploymentStepStatus: 30\n            Comments from the approver can be written to the stage run's notes.\n\n  Timeout: Start and wait > Settings > Timeout P3D. Configure run after \"has timed out\" > set status 30.\n\nWhat the maker sees\n  After choosing Deploy, the stage shows \"Pending pre-deployment step\". On approval it continues without\n  further action. On rejection it shows Failed with the pre-deployment step as the reason.\n\nOther triggers in the same category\n  OnDeploymentRequested, OnPreDeploymentStarted, OnPreDeploymentCompleted, OnDeploymentStarted,\n  OnDeploymentCompleted          use the last one to post release notes to Teams or tag the Git commit.\n\nAutomated checks before approval\n  In the same flow, before the approval: confirm the version is higher than production, that solution checker\n  results have no critical issues, and that a change ticket number is present in the notes. Fail fast with status 30.\n\nPermissions\n  Approvers do not need access to the target environment. The flow's Dataverse connection needs the Deployment\n  Pipeline Administrator role in the host.",
+    "stepByStepInstructions": [
+      "Open the pipeline's production stage in the configuration app and require the pre-deployment step.",
+      "Create a flow in the host environment triggered by OnPreDeploymentStarted.",
+      "Filter to the stage you want to gate.",
+      "Start an approval with the solution name, version and notes.",
+      "Call UpdatePreDeploymentStepStatus with 20 on approval or 30 on rejection.",
+      "Handle timeouts so deployments never wait indefinitely."
+    ],
+    "commonMistakes": [
+      "Enabling the step with no flow, which leaves deployments pending.",
+      "Not filtering by stage, so one flow answers for every pipeline.",
+      "Letting the requester approve their own deployment.",
+      "No timeout path."
+    ],
+    "troubleshooting": [
+      "If deployments stay pending, check the flow ran and that the unbound action received the right StageRunId.",
+      "If the trigger never fires, the flow is in the wrong environment. It must be in the pipelines host.",
+      "If the action fails with privileges, give the connection's user the pipeline administrator role.",
+      "If approvers cannot see the request, check the Approvals connector's environment and their email addresses."
+    ],
+    "relatedPatterns": [
+      "power-platform-pipelines-dev-test-prod",
+      "create-a-deployment-readiness-review",
+      "power-automate-approval-timeout-escalation"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Add an approval step before a Power Platform pipeline deploys to production",
+    "seoDescription": "Turn on the pre-deployment step for a pipeline stage and use a flow to request approval, then complete or reject the deployment from the result.",
+    "primaryKeyword": "Power Platform pipelines approval",
+    "secondaryKeywords": [
+      "Pipelines",
+      "Approvals",
+      "Deployment Gates",
+      "Governance"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Platform pipelines require approval?",
+        "answer": "Yes. Enable the pre-deployment step on a stage and use a flow to approve or reject the deployment."
+      },
+      {
+        "question": "Where does the approval flow live?",
+        "answer": "In the pipelines host environment, triggered by the OnPreDeploymentStarted Dataverse action."
+      },
+      {
+        "question": "What is delegated deployment?",
+        "answer": "A stage setting that runs the deployment as a service principal or the stage owner, so makers do not need rights in production."
+      }
+    ]
+  },
+  {
+    "id": "pat-1587",
+    "slug": "production-hotfix-process-managed-solutions",
+    "title": "Ship an urgent production fix without releasing unfinished work",
+    "shortDescription": "A hotfix route for managed solutions: rebuild production's version in a clean environment, apply the fix, deploy it and merge it back into development.",
+    "fullDescription": "When production has a fault, the development environment usually already contains next month's half-finished features. Exporting from it would ship them. A hotfix needs a copy of exactly what is in production, a minimal change, a fast test and a guaranteed merge back so the fix is not lost at the next release.",
+    "category": "ALM & Governance",
+    "subCategory": "Release process",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Hotfix",
+      "Release Management",
+      "Managed Solutions",
+      "Patches"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow fails in production. The fix takes five minutes in Dev, but Dev also holds an unfinished form redesign, so exporting the solution would release that too.",
+    "whenToUse": [
+      "Urgent faults in production between planned releases",
+      "Teams whose development environment runs ahead of production",
+      "Managed solutions with source control or stored release zips"
+    ],
+    "whenNotToUse": [
+      "Problems that can wait for the next scheduled release",
+      "Editing production directly, which creates unmanaged layers and is lost or hidden later"
+    ],
+    "formulaOrCode": "Prerequisites that make hotfixes possible\n  Every release's managed AND unmanaged zip is kept (pipeline artefacts or a release library), or the unpacked\n  source is tagged in Git:  git tag v1.4.0.0\n  A spare sandbox, or the ability to create or reset one quickly.\n\nRoute A: from source control (preferred)\n  1. Branch from the production tag\n       git checkout -b hotfix/1.4.0.1 v1.4.0.0\n  2. Build a hotfix environment\n       pac admin reset --environment https://contoso-hotfix.crm.dynamics.com   (or create a new sandbox)\n       pac solution pack   --folder src/RequestHub --zipfile out/RequestHub.zip --packagetype Unmanaged\n       pac solution import --path out/RequestHub.zip --environment https://contoso-hotfix.crm.dynamics.com --publish-changes\n  3. Make the fix in the hotfix environment. Change only what is needed.\n  4. Set version 1.4.0.1, export, unpack, commit to the hotfix branch\n       pac solution online-version --solution-name RequestHub --solution-version 1.4.0.1\n       pac solution export --name RequestHub --path out/RequestHub.zip\n       pac solution export --name RequestHub --path out/RequestHub_managed.zip --managed\n       pac solution unpack --zipfile out/RequestHub.zip --folder src/RequestHub --allowDelete\n  5. Import managed to Test (or a copy of production), run the smoke test and the specific case.\n  6. Import managed to Production as an update.\n  7. Merge the hotfix branch into main, and apply the same change in Dev (import or repeat by hand).\n       git checkout main && git merge hotfix/1.4.0.1\n\nRoute B: no source control, release zips kept\n  Import the unmanaged zip of the production version into a clean sandbox, then continue from step 3.\n\nRoute C: a solution patch\n  In an environment holding the production version unmanaged: Solutions > select > Clone a patch.\n  Add only the fixed component, export managed, import to production. Version 1.4.1.0 style numbering.\n  The next full release must be at a higher version and include the fix. Patches lock the parent solution\n  against edits in that environment until rolled up, which is why Route A is usually simpler.\n\nRoute D: fix forward from Dev (only when Dev equals production plus the fix)\n  Acceptable just after a release when nothing else has changed. Check with a diff of unpacked source.\n\nEmergency mitigation while the fix is built\n  Turn off the failing flow, or use a feature flag (environment variable) to hide the broken feature.\n  Document any direct production change and remove its unmanaged layer after the hotfix lands.\n\nVersion numbers\n  major.minor.build.revision: planned releases raise build, hotfixes raise revision.\n  1.4.0.0 (release) > 1.4.0.1 (hotfix) > 1.5.0.0 (next release, must include the fix).\n\nAfter the hotfix\n  Confirm the fix is in main and in Dev before the next export. A regression test for the fault is added to\n  the smoke test list. Record the incident and the release in the release notes.",
+    "stepByStepInstructions": [
+      "Keep each release's source tag or zips so production's version can be rebuilt.",
+      "Create a hotfix environment from the production version.",
+      "Make the smallest change that fixes the fault and raise the revision number.",
+      "Test the managed build against the failing case and the smoke tests.",
+      "Import to production as an update.",
+      "Merge the fix back into main and development before the next release."
+    ],
+    "commonMistakes": [
+      "Exporting from Dev and shipping unfinished work.",
+      "Fixing directly in production and forgetting the unmanaged layer.",
+      "Not merging the hotfix back, so the next release reintroduces the fault.",
+      "Skipping test because the change is small."
+    ],
+    "troubleshooting": [
+      "If you cannot rebuild the production version, note that a managed solution cannot be exported as unmanaged. Restore a copy of Dev from a backup taken at release time.",
+      "If the next release fails to import, its version is lower than the hotfix. Raise it.",
+      "If the fix disappears after the next release, it was never merged into main.",
+      "If an unmanaged layer hides the hotfix in production, remove the active layer on that component."
+    ],
+    "relatedPatterns": [
+      "solution-version-numbering-scheme",
+      "solution-upgrade-update-patch-difference",
+      "create-a-rollback-decision-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Ship an urgent production fix without releasing unfinished work",
+    "seoDescription": "A hotfix route for managed solutions: rebuild production's version in a clean environment, apply the fix, deploy it and merge it back into development.",
+    "primaryKeyword": "Power Platform hotfix managed solution",
+    "secondaryKeywords": [
+      "Hotfix",
+      "Release Management",
+      "Managed Solutions",
+      "Patches"
+    ],
+    "faqs": [
+      {
+        "question": "How do I hotfix a managed solution?",
+        "answer": "Rebuild the production version in a clean environment, apply the fix, export it as managed with a higher revision and import it as an update."
+      },
+      {
+        "question": "Can I just fix it in production?",
+        "answer": "Only as a recorded emergency mitigation. Direct edits create an unmanaged layer that hides later releases until removed."
+      },
+      {
+        "question": "How do I avoid losing the hotfix?",
+        "answer": "Merge the hotfix branch into main and apply the change in development before the next export."
+      }
+    ]
+  },
+  {
+    "id": "pat-1588",
+    "slug": "canvas-app-automated-tests-test-studio",
+    "title": "Write repeatable tests for a canvas app with Test Studio",
+    "shortDescription": "Record and write test cases for a canvas app's key journeys, assert on results with Power Fx and run the suite from a link or a pipeline before each release.",
+    "fullDescription": "Test Studio stores test cases inside the canvas app. Each case is a list of Power Fx steps that set control values, select buttons and assert what should be true. Suites can be played in the browser or opened by URL from a pipeline, which makes a regression check before release a matter of minutes.",
+    "category": "ALM & Governance",
+    "subCategory": "Testing",
+    "platform": [
+      "Power Platform",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Testing",
+      "Test Studio",
+      "Canvas Apps",
+      "Regression"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Before each release someone clicks through the app by hand, skips the parts that seem unchanged, and a broken submit button reaches production.",
+    "whenToUse": [
+      "Apps with a few critical journeys such as submit, approve and search",
+      "Regression checks before each release",
+      "Apps maintained by more than one maker"
+    ],
+    "whenNotToUse": [
+      "Visual layout checking, which tests cannot judge",
+      "Flows and server logic, which need their own tests",
+      "Apps built mostly from unsupported controls or nested galleries"
+    ],
+    "formulaOrCode": "Open\n  Power Apps Studio > Advanced tools > Open tests          (the app must be saved and published once)\n\nStructure\n  Test suite: \"Request submission\"\n    Test case: \"Submit a valid request\"\n    Test case: \"Required title blocks submit\"\n  Each step is one Power Fx formula. Record adds steps as you use the app. Edit them afterwards.\n\nFunctions available in tests\n  SetProperty(Control.Property, value)        set an input\n  Select(Control)  /  Select(Gallery, row, ChildControl)\n  Assert(condition, \"message when it fails\")\n  Trace(\"message\", TraceSeverity.Information)  appears in results and Monitor\n\nTest case: Submit a valid request\n  Step 1  Select(btnNewRequest)\n  Step 2  SetProperty(txtTitle.Text, \"Test request \" & Text(Now(), \"yyyymmdd-hhmmss\"))\n  Step 3  SetProperty(drpCategory.Selected, LookUp(Categories, Title = \"Hardware\"))\n  Step 4  SetProperty(txtAmount.Text, \"250\")\n  Step 5  Assert(btnSubmit.DisplayMode = DisplayMode.Edit, \"Submit should be enabled when the form is valid\")\n  Step 6  Select(btnSubmit)\n  Step 7  Assert(lblConfirmation.Visible, \"Confirmation should show after submit\")\n  Step 8  Assert(!IsBlank(LookUp(Requests, Title = txtTitle.Text)), \"The request should exist in the data source\")\n\nTest case: Required title blocks submit\n  Step 1  Select(btnNewRequest)\n  Step 2  SetProperty(txtTitle.Text, \"\")\n  Step 3  Assert(btnSubmit.DisplayMode = DisplayMode.Disabled, \"Submit should be disabled without a title\")\n  Step 4  Assert(lblTitleError.Visible, \"Title error should be visible\")\n\nGallery row\n  Select(galRequests, 1, btnOpen)\n  Assert(lblDetailTitle.Text = First(colVisibleRequests).Title, \"Detail should show the selected request\")\n\nSet-up and results (Test > properties)\n  OnTestCaseStart:   Set(gblTestMode, true)                         let the app skip emails or use a test list\n  OnTestCaseComplete: Patch(TestResults, Defaults(TestResults), { Title: TestCaseResult.TestCaseName,\n                        Passed: TestCaseResult.Success, Message: TestCaseResult.TestFailureMessage })\n  OnTestSuiteComplete: Notify(\"Suite finished: \" & TestSuiteResult.TestsPassed & \" passed, \" &\n                        TestSuiteResult.TestsFailed & \" failed\")\n\nRun\n  Test Studio > Play: opens the published app in a new tab and runs the steps.\n  Copy play link: a URL that runs the suite. Open it in a pipeline with a browser automation step, then read the\n  outcome from the TestResults list written by OnTestCaseComplete.\n  Publish the app after changing tests. Play runs the published version.\n\nKeep test data clean\n  Create rows with a recognisable title prefix and remove them in a final step:\n  RemoveIf(Requests, StartsWith(Title, \"Test request \"))\n\nLimits\n  No support for every control (some modern controls, code components, media and some nested galleries).\n  Tests run as the signed-in user, with that user's permissions.\n\nPower Apps Test Engine\n  For pipeline-first testing: YAML test plans run with pac test run against canvas and model-driven apps, using\n  the same Power Fx assertions with browser automation underneath.",
+    "stepByStepInstructions": [
+      "Name the controls used in the app's main journeys.",
+      "Open Test Studio and create a suite for each journey.",
+      "Record the steps, then replace recorded values with deliberate test data.",
+      "Add Assert steps for each expected result.",
+      "Write results to a list in OnTestCaseComplete.",
+      "Publish and run the suite before each release."
+    ],
+    "commonMistakes": [
+      "Recording without adding assertions, so the test cannot fail.",
+      "Depending on existing data that changes.",
+      "Forgetting to publish after editing tests.",
+      "Letting test runs send real emails or approvals."
+    ],
+    "troubleshooting": [
+      "If a step fails on a control, check the control is supported and visible on the current screen.",
+      "If the test passes when the feature is broken, the Assert checks the wrong thing. Assert on the data source.",
+      "If timing causes failures, assert on a variable the app sets when the operation finishes.",
+      "If test rows pile up, add a clean-up step or a separate test list."
+    ],
+    "relatedPatterns": [
+      "create-a-user-acceptance-test-script",
+      "power-apps-error-handling-iferror-patch",
+      "create-a-deployment-readiness-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Write repeatable tests for a canvas app with Test Studio",
+    "seoDescription": "Record and write test cases for a canvas app's key journeys, assert on results with Power Fx and run the suite from a link or a pipeline before each release.",
+    "primaryKeyword": "Power Apps Test Studio",
+    "secondaryKeywords": [
+      "Testing",
+      "Test Studio",
+      "Canvas Apps",
+      "Regression"
+    ],
+    "faqs": [
+      {
+        "question": "Can I automate testing of a Power Apps canvas app?",
+        "answer": "Yes. Test Studio records and plays Power Fx test steps with assertions, and Test Engine runs YAML test plans from a pipeline."
+      },
+      {
+        "question": "Do tests run against the editor version of the app?",
+        "answer": "No. They run against the published version, so publish after changing the app or its tests."
+      },
+      {
+        "question": "Can Test Studio test flows?",
+        "answer": "Not directly. It can assert on what a flow changed in the data source once the app triggers it."
+      }
+    ]
+  },
+  {
+    "id": "pat-1589",
+    "slug": "post-deployment-smoke-test-flow",
+    "title": "Run a smoke test after every deployment",
+    "shortDescription": "A flow that checks the essentials straight after an import: solution version, flows turned on, environment variables set, connections healthy and a test row processed.",
+    "fullDescription": "A successful import only means the files went in. A smoke test confirms the system actually works: the right version is installed, flows are running, settings have values and one end-to-end case completes. Run automatically after deployment, it finds a broken release in minutes instead of when users report it.",
+    "category": "ALM & Governance",
+    "subCategory": "Testing",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Smoke Test",
+      "Deployment",
+      "Monitoring",
+      "Release Management"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "The import reports success on Friday evening. On Monday it emerges that the approval flow was off and an environment variable was empty all weekend.",
+    "whenToUse": [
+      "Every deployment to test and production",
+      "Releases done out of hours",
+      "Solutions with several flows and environment-specific settings"
+    ],
+    "whenNotToUse": [
+      "Replacing proper acceptance testing of new features",
+      "Checks that create visible noise for real users, such as real approval emails"
+    ],
+    "formulaOrCode": "Trigger\n  Manual (run by the release owner), or an HTTP request called by the pipeline's last step, or the pipelines\n  host trigger OnDeploymentCompleted.\n  Input: expectedVersion (text), for example 1.5.0.0\n\nInitialise  varResults (Array)       each check appends { \"check\": \"...\", \"ok\": true/false, \"detail\": \"...\" }\n\nCheck 1: solution version\n  Dataverse > List rows: Solutions      Filter rows: uniquename eq 'RequestHub'      Select: version,ismanaged\n  ok:  first(body('List_solutions')?['value'])?['version'] equals expectedVersion  and  ismanaged is true\n\nCheck 2: flows are on\n  Dataverse > List rows: Processes\n    Filter rows: category eq 5 and statecode ne 1 and _solutionid_value ne null\n    Fetch XML alternative: join solutioncomponent on objectid where solution uniquename = RequestHub\n  ok:  length(body('List_flows_off')?['value']) equals 0        detail: join of the names that are off\n\nCheck 3: environment variables have values\n  Dataverse > List rows: Environment Variable Definitions\n    Filter rows: startswith(schemaname,'cnt_')\n    Expand Query: environmentvariabledefinition_environmentvariablevalue($select=value)\n  For each definition: effective value = coalesce(first(values)?['value'], defaultvalue)\n  ok:  no definition with an empty effective value\n\nCheck 4: connections work (one cheap read per connector)\n  SharePoint > Get items, Top Count 1 on the app's main list\n  Dataverse > List rows, Row count 1 on the main table\n  Office 365 Users > Get my profile\n  Put each in its own Scope. A following action with run after \"has failed\" appends ok: false.\n\nCheck 5: end-to-end case\n  Dataverse > Add a new row: Service Requests\n    Title: SMOKE TEST @{utcNow()}       Category: Test       cnt_issmoketest: Yes\n  Delay 2 minutes (or Do until status changes, limit 10 checks, 30 seconds apart)\n  Get a row by ID > ok: status equals the value your automation should have set (for example Assigned)\n  Clean up: Delete the row. Automations should skip notifications when cnt_issmoketest is Yes.\n\nCheck 6: app is reachable\n  Power Apps for Admins > Get App (or List rows: Canvas Apps filtered by name) > ok: the app exists and its\n  last published time is after the deployment started.\n\nReport\n  Filter array: varResults where ok is false\n  Create HTML table from varResults\n  Teams > Post message in a channel:\n    @{if(equals(length(body('Filter_failed')),0),'PASSED','FAILED')}: RequestHub @{expectedVersion} in Production\n    followed by the table\n  If any failed: Terminate with status Failed, so a calling pipeline stage fails as well.\n\nRun it\n  Azure DevOps or GitHub: call the flow's HTTP trigger after the import step and fail the job when the\n  response reports failures. Keep the trigger URL in a secret variable.\n\nKeep it short\n  Target under five minutes and under ten checks. Add a check whenever an incident shows a gap.",
+    "stepByStepInstructions": [
+      "List what must be true for the system to work after a release.",
+      "Build a flow that runs each check and records pass or fail.",
+      "Include one end-to-end test row that automations treat as a test.",
+      "Post the results to the release channel.",
+      "Fail the flow when any check fails.",
+      "Call the flow from the pipeline or run it straight after each import."
+    ],
+    "commonMistakes": [
+      "Treating a successful import as proof the release works.",
+      "Smoke tests that send real approvals or emails to users.",
+      "No clean-up of test rows.",
+      "A test so long that nobody waits for it."
+    ],
+    "troubleshooting": [
+      "If the flows check reports false failures, exclude flows that are intentionally off by name.",
+      "If the end-to-end check times out, lengthen the wait or check that the trigger flow is on.",
+      "If the smoke test itself is off after import, it is in the same solution. Keep it in a separate solution in each environment.",
+      "If results are ignored, make the pipeline stage depend on the result."
+    ],
+    "relatedPatterns": [
+      "turn-on-flows-after-solution-import",
+      "create-a-deployment-readiness-review",
+      "create-a-rollback-decision-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Run a smoke test after every deployment",
+    "seoDescription": "A flow that checks the essentials straight after an import: solution version, flows turned on, environment variables set, connections healthy and a test row processed.",
+    "primaryKeyword": "Power Platform post deployment smoke test",
+    "secondaryKeywords": [
+      "Smoke Test",
+      "Deployment",
+      "Monitoring",
+      "Release Management"
+    ],
+    "faqs": [
+      {
+        "question": "What should a Power Platform smoke test check?",
+        "answer": "The installed solution version, that flows are on, that environment variables have values, that connections work and that one end-to-end case completes."
+      },
+      {
+        "question": "When should it run?",
+        "answer": "Immediately after every import to test and production, ideally triggered by the pipeline."
+      },
+      {
+        "question": "Should the smoke test be part of the solution?",
+        "answer": "Keep it in its own small solution so a failed deployment of the main solution cannot disable the check."
+      }
+    ]
   }
 ]
