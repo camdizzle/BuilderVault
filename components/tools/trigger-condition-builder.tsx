@@ -67,7 +67,7 @@ export function TriggerConditionBuilder() {
       description="Choose the trigger, add a rule for each column you want to check, and copy the condition into the trigger's Settings, under Trigger conditions. The flow only starts when the condition is true."
     >
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <label className="field">
+        <label className="field" style={{ minWidth: 0 }}>
           <span>Trigger</span>
           <select value={source} onChange={(event) => switchSource(event.target.value as TriggerSource)}>
             {(Object.keys(sourceLabels) as TriggerSource[]).map((key) => (
