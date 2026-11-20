@@ -16434,5 +16434,1236 @@
         "answer": "YAML files that override values such as site settings for a specific environment during upload."
       }
     ]
+  },
+  {
+    "id": "pat-1635",
+    "slug": "do-until-polling-loop-timeout-power-automate",
+    "title": "Poll for a result with Do until, with a safe timeout",
+    "shortDescription": "Wait for a job, file or status to be ready by checking on an interval, with the loop limits set deliberately and a clear path when time runs out.",
+    "fullDescription": "Some systems answer later: an export job, a document conversion, a record waiting for another process. Do until repeats actions until a condition is true, but its default limits of 60 iterations and one hour end the loop silently and let the flow carry on as if it had succeeded. A polling loop needs explicit limits and a check after it finishes.",
+    "category": "Power Automate",
+    "subCategory": "Control flow",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Do Until",
+      "Polling",
+      "Timeouts",
+      "Control Flow"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow starts an export, loops until the status is Complete, then downloads the file. When the export takes longer than usual the loop gives up quietly and the download step fails with a confusing error.",
+    "whenToUse": [
+      "Waiting for long-running API jobs",
+      "Waiting for a file or record to appear",
+      "Any check-then-wait logic"
+    ],
+    "whenNotToUse": [
+      "Events that have a trigger or webhook, which need no polling",
+      "Waits of many days, where a scheduled flow that checks a queue is more robust"
+    ],
+    "formulaOrCode": "Structure\n  Initialize variable  varStatus (String) = \"\"\n  Initialize variable  varAttempts (Integer) = 0\n\n  Do until:   @or(equals(variables('varStatus'), 'Complete'), equals(variables('varStatus'), 'Failed'))\n    Change limits:   Count 40        Timeout PT20M\n      HTTP (or Get item, Get file metadata ...): read the job status\n      Set variable varStatus = body('HTTP')?['status']\n      Increment variable varAttempts\n      Condition: varStatus is not Complete and not Failed\n        Yes: Delay 30 seconds\n\n  Condition (after the loop): varStatus equals Complete\n    Yes: continue with the download\n    No:  Terminate, Failed, message: Export did not finish. Last status '@{variables('varStatus')}' after @{variables('varAttempts')} checks.\n\nHow Do until behaves\n  The condition is evaluated AFTER each pass, so the actions always run at least once.\n  It stops when the condition is true, OR Count is reached, OR Timeout elapses. In the last two cases the\n  loop is marked Succeeded and the flow continues. Always test the outcome after the loop.\n  Defaults: Count 60, Timeout PT1H. Maximum Count 5,000. Timeout up to the flow's own run limit (30 days).\n  Timeout uses ISO 8601: PT30S, PT15M, PT2H, P1D.\n  The timeout is checked between iterations. One slow action can overrun it.\n\nChoosing limits\n  Expected duration 5 minutes, worst case 15: Delay 30 seconds, Count 40, Timeout PT20M.\n  Count x Delay should be a little more than Timeout, so Timeout is the effective limit.\n\nBack off instead of a fixed delay\n  Delay (seconds): @{min(300, mul(15, variables('varAttempts')))}\n  Checks at 15s, 30s, 45s ... capped at 5 minutes. Fewer calls for slow jobs, quick answers for fast ones.\n\nHonour Retry-After\n  If the status call returns a Retry-After header:\n  Delay: @{int(coalesce(outputs('HTTP')?['headers']?['Retry-After'], '30'))}\n\nErrors inside the loop\n  A failed action fails the loop. To keep polling through transient errors:\n    Put the status call in a Scope. Add an action after it with run after \"has failed, has timed out\"\n    that does nothing but set varLastError. The Delay follows with run after on both paths.\n  Stop early on a real failure by including Failed in the loop's condition.\n\nWait for a SharePoint file to exist\n  Do until: @equals(variables('varFound'), true)       Count 20, Timeout PT10M\n    Get files (properties only): Filter Query FileLeafRef eq 'export-@{variables('jobId')}.csv', Top Count 1\n    Set variable varFound = @{greater(length(body('Get_files')?['value']), 0)}\n    Condition varFound is false > Delay 30 seconds\n\nWait for a record to change\n  Prefer a trigger with a trigger condition on the status column, which uses no polling.\n  When the wait must sit inside one run: the same loop with Get item and the status value.\n\nAsynchronous APIs (202 Accepted with a Location header)\n  The HTTP action follows the 202 pattern by itself when \"Asynchronous Pattern\" is On in its settings:\n  it polls the Location URL until the final response. No Do until needed.\n\nCost\n  Each pass counts its actions against the daily request allowance: 4 actions x 40 passes = 160.\n  Longer delays reduce this.",
+    "stepByStepInstructions": [
+      "Initialise a status variable and an attempts counter.",
+      "Add a Do until whose condition covers both success and failure states.",
+      "Set Count and Timeout to match the worst acceptable wait.",
+      "Read the status, update the variable and delay only when not finished.",
+      "After the loop, test whether the success state was reached.",
+      "Fail the run with a clear message when it was not."
+    ],
+    "commonMistakes": [
+      "Leaving default limits and assuming the loop always finishes.",
+      "No check after the loop, so later actions run against missing data.",
+      "A fixed one-second delay that burns thousands of actions.",
+      "Looping on a condition that can never become true after a failure."
+    ],
+    "troubleshooting": [
+      "If the loop exits early, raise Timeout and Count and check which limit was hit in the run history.",
+      "If the flow continues after an unfinished job, add the condition after the loop.",
+      "If the loop never ends, include failure states in the condition.",
+      "If transient errors stop polling, wrap the status call in a scope and handle its failure."
+    ],
+    "relatedPatterns": [
+      "power-automate-try-catch-scope-error-handling",
+      "retry-transient-sharepoint-connector-failures",
+      "use-terminate-action-for-controlled-flow-failures"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Poll for a result with Do until, with a safe timeout",
+    "seoDescription": "Wait for a job, file or status to be ready by checking on an interval, with the loop limits set deliberately and a clear path when time runs out.",
+    "primaryKeyword": "Power Automate Do until loop",
+    "secondaryKeywords": [
+      "Do Until",
+      "Polling",
+      "Timeouts",
+      "Control Flow"
+    ],
+    "faqs": [
+      {
+        "question": "Why does my Do until loop stop before the condition is true?",
+        "answer": "It reached its Count or Timeout limit. The defaults are 60 iterations and one hour, and the flow continues afterwards."
+      },
+      {
+        "question": "How do I wait in a flow until something is ready?",
+        "answer": "Use Do until with a status check and a Delay inside, explicit limits, and a condition after the loop."
+      },
+      {
+        "question": "Does Do until check the condition first?",
+        "answer": "No. It runs the actions once, then evaluates the condition after each pass."
+      }
+    ]
+  },
+  {
+    "id": "pat-1636",
+    "slug": "populate-word-template-convert-pdf-power-automate",
+    "title": "Generate a PDF from a Word template in a flow",
+    "shortDescription": "Fill a Word template's content controls with record data, including a repeating table, convert the result to PDF and save it beside the record.",
+    "fullDescription": "Letters, certificates and summaries are easier to maintain as a Word document than as HTML in a flow. The Word Online connector fills plain text and repeating content controls in a template, and the OneDrive Convert file action turns the result into a PDF. Template changes are then made in Word by the business, not in the flow.",
+    "category": "Power Automate",
+    "subCategory": "Documents",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Word Templates",
+      "PDF",
+      "Document Generation",
+      "OneDrive"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "An approval letter is built from concatenated HTML in a flow. Every wording change needs a developer, and the output never quite matches the brand template.",
+    "whenToUse": [
+      "Letters, certificates, quotes and summaries from record data",
+      "Documents with a table of line items",
+      "PDF copies filed with a request"
+    ],
+    "whenNotToUse": [
+      "Standard-licence-only environments, since Word Online (Business) is a premium connector",
+      "Pixel-perfect designs with complex layouts, where a dedicated document service fits better"
+    ],
+    "formulaOrCode": "1. Prepare the template (Word desktop)\n  File > Options > Customize Ribbon > tick Developer.\n  Developer tab > Design Mode. For each value: place the cursor > Plain Text Content Control > Properties >\n    Title: RequestNumber (also set Tag). Titles become the field names in the flow. No spaces is safest.\n  Repeating rows: build a table with a header row and ONE data row. Put a plain text control in each cell\n    (Item, Qty, Price). Select the whole data row > Repeating Section Content Control > Title: Lines.\n  Images: Picture Content Control with a title (filled with base64 image content).\n  Save as .docx in a SharePoint library or OneDrive folder the flow account can read: /Templates/ApprovalLetter.docx\n\n2. Fill it\n  Word Online (Business) > Populate a Microsoft Word template\n    Location: SharePoint site (or OneDrive)      Document Library: Documents      File: /Templates/ApprovalLetter.docx\n    After selecting the file, the controls appear as fields:\n      RequestNumber: REQ-@{triggerOutputs()?['body/ID']}\n      Requester:     @{triggerOutputs()?['body/Author/DisplayName']}\n      ApprovedOn:    @{convertFromUtc(utcNow(),'Eastern Standard Time','d MMMM yyyy')}\n      Amount:        @{formatNumber(triggerOutputs()?['body/Amount'],'C2','en-US')}\n      Lines:         switch to \"input entire array\" and pass an array whose keys match the inner control titles\n\n  Build the Lines array with Select\n    From: body('Get_items_lines')?['value']\n    Map:  Item  = item()?['Title']\n          Qty   = string(item()?['Quantity'])\n          Price = formatNumber(item()?['UnitPrice'],'C2','en-US')\n  All values are text. Format numbers and dates before passing them.\n\n  Dynamic template path: when File is an expression, the fields are not shown. Pass a JSON object in the\n  \"dynamicFileSchema\" input instead, keyed by the controls' internal IDs. Simpler: one flow branch per template,\n  or keep titles identical across templates and select the file with a Switch.\n\n3. Save the Word file\n  OneDrive for Business > Create file\n    Folder Path: /Generated        File Name: REQ-@{triggerOutputs()?['body/ID']}.docx\n    File Content: body('Populate_a_Microsoft_Word_template')\n\n4. Convert to PDF\n  OneDrive for Business > Convert file\n    File: outputs('Create_file')?['body/Id']        Target type: PDF\n  (Word Online also has \"Convert Word Document to PDF\" for files already in SharePoint or OneDrive.)\n\n5. File the PDF and clean up\n  SharePoint > Create file\n    Folder Path: /Shared Documents/Requests/REQ-@{ID}        File Name: Approval letter REQ-@{ID}.pdf\n    File Content: body('Convert_file')\n  OneDrive > Delete file: the temporary .docx\n  SharePoint > Update file properties (optional): RequestId, DocumentType = Approval letter\n\n6. Send it\n  Office 365 Outlook > Send an email (V2) > Attachments\n    Name: Approval letter REQ-@{ID}.pdf        Content: body('Convert_file')\n\nLimits and behaviour\n  Supported controls: plain text, repeating section, picture, check box (in newer versions). Rich text\n  controls, drop-downs and date pickers are not filled.\n  Controls inside headers, footers and text boxes may not be detected. Keep them in the body.\n  A control left empty shows nothing in the output. Supply a dash for optional values where blank looks wrong.\n  Line breaks in a plain text control: allow carriage returns in the control's properties.\n  File size up to about 10 MB for populate, and conversion has its own size limits.\n\nWithout premium\n  Build HTML with Compose and save as .html, then OneDrive Convert file to PDF. Layout control is limited,\n  but all connectors are standard.",
+    "stepByStepInstructions": [
+      "Add titled plain text content controls to a Word template and a repeating section around the table row.",
+      "Store the template in a library the flow account can read.",
+      "Populate the template with formatted text values and an array for the repeating section.",
+      "Create the Word file in OneDrive and convert it to PDF.",
+      "Save the PDF with the record and delete the temporary file.",
+      "Attach or link the PDF in the notification."
+    ],
+    "commonMistakes": [
+      "Using rich text or legacy form fields, which are not filled.",
+      "Passing numbers and dates unformatted.",
+      "Wrapping the whole table instead of only the data row in the repeating section.",
+      "Leaving temporary Word files to pile up."
+    ],
+    "troubleshooting": [
+      "If fields do not appear in the action, the controls lack titles or the file path is dynamic.",
+      "If the table shows one row, the repeating section does not wrap the row or the array keys do not match the control titles.",
+      "If the PDF conversion fails, create the file in OneDrive first and pass its ID.",
+      "If the template seems out of date, the flow caches the schema. Re-select the file in the action."
+    ],
+    "relatedPatterns": [
+      "power-automate-email-html-table",
+      "build-a-printable-request-summary",
+      "build-a-file-naming-standard-flow"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Generate a PDF from a Word template in a flow",
+    "seoDescription": "Fill a Word template's content controls with record data, including a repeating table, convert the result to PDF and save it beside the record.",
+    "primaryKeyword": "Power Automate populate Word template PDF",
+    "secondaryKeywords": [
+      "Word Templates",
+      "PDF",
+      "Document Generation",
+      "OneDrive"
+    ],
+    "faqs": [
+      {
+        "question": "How do I fill a Word template from Power Automate?",
+        "answer": "Add titled content controls to the document and use the Word Online (Business) action Populate a Microsoft Word template."
+      },
+      {
+        "question": "How do I convert the document to PDF?",
+        "answer": "Save the populated file to OneDrive and use the Convert file action with target type PDF."
+      },
+      {
+        "question": "Can the template include a table with a variable number of rows?",
+        "answer": "Yes. Wrap the data row in a repeating section content control and pass an array."
+      }
+    ]
+  },
+  {
+    "id": "pat-1637",
+    "slug": "excel-list-rows-large-table-filter-power-automate",
+    "title": "Read large Excel tables reliably in a flow",
+    "shortDescription": "Get past the 256-row default, filter and select columns at the source, handle dates and blanks, and find one row by key without reading the whole table.",
+    "fullDescription": "List rows present in a table returns only the first 256 rows unless pagination is enabled, hands back dates as serial numbers and supports just a limited filter syntax. Knowing these limits, and the settings that address them, makes Excel a workable source for a few thousand rows.",
+    "category": "Power Automate",
+    "subCategory": "Excel",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Excel",
+      "Pagination",
+      "OData Filter",
+      "Large Files"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow imports a 3,000-row spreadsheet but only 256 rows arrive, dates look like 45978, and the run takes twenty minutes because it loops over every row to find one.",
+    "whenToUse": [
+      "Importing or reconciling spreadsheets kept in SharePoint or OneDrive",
+      "Looking up a value in a reference workbook",
+      "Scheduled processing of a maintained Excel table"
+    ],
+    "whenNotToUse": [
+      "Workbooks edited by many people while the flow writes to them",
+      "Data sets beyond tens of thousands of rows, which belong in a list or database"
+    ],
+    "formulaOrCode": "Prerequisites\n  The data is formatted as a TABLE (Insert > Table) with a name such as tblOrders.\n  The file is .xlsx in OneDrive for Business or a SharePoint library. No merged cells in the table.\n  File size up to 25 MB for the connector.\n\nAction\n  Excel Online (Business) > List rows present in a table\n    Location / Document Library / File / Table: pick from the lists\n    Filter Query:   Status eq 'Open'\n    Order By:       OrderDate desc\n    Top Count:      (empty)\n    Skip Count:     (empty)\n    Select Query:   OrderId,Customer,OrderDate,Amount,Status\n    DateTime Format: ISO 8601            (advanced parameter: dates arrive as 2026-11-20T00:00:00.000Z)\n  Settings > Pagination: On        Threshold: 5000 (up to 100,000 with premium-level limits)\n\nFilter Query rules (narrower than SharePoint)\n  One condition only, or simple and/or in newer versions. Operators: eq, ne, contains, startswith, endswith.\n    Customer eq 'Contoso'\n    contains(Customer, 'Cont')\n  No gt/lt on dates or numbers in many tenants. Filter those afterwards with Filter array:\n    @greater(float(item()?['Amount']), 1000)\n    @greaterOrEquals(item()?['OrderDate'], addDays(utcNow(), -30))\n  Column names with spaces: use the header exactly in Select Query. In Filter Query spaces may fail:\n  rename headers to single words where you can.\n\nFind one row by key\n  Excel Online (Business) > Get a row\n    Key Column: OrderId        Key Value: @{triggerBody()?['orderId']}\n  Returns the first match or fails with 404 when there is none. Configure run after \"has failed\" for not found.\n  Key values are compared as text.\n\nValues arrive as strings\n  Number:  float(item()?['Amount'])               blank cells are \"\" so guard them:\n           float(if(empty(item()?['Amount']), '0', item()?['Amount']))\n  Date without ISO format (serial number 45978):\n           addDays('1899-12-30', int(item()?['OrderDate']), 'yyyy-MM-dd')\n  Boolean: equals(toLower(item()?['Active']), 'true')\n\nShape without loops\n  Select: From body('List_rows_present_in_a_table')?['value']\n          Map: id = item()?['OrderId'], amount = float(...), date = item()?['OrderDate']\n  Filter array for conditions the connector cannot do. Then a single loop only over rows that need action.\n\nDynamic file (path chosen at run time)\n  The File field needs the file's ID, not its path:\n    SharePoint > Get file metadata using path > Id            or the trigger's file identifier\n  Table: type the table name as a custom value.\n  With a dynamic file the designer cannot show columns: reference them as item()?['ColumnName'].\n  For files that arrive without a table: Excel > Create table (Range A1:F5000, columns from headers), or run\n  an Office Script that creates the table and returns its name.\n\nAvoid locking and stale reads\n  The connector reads the saved copy. Recent edits in the desktop app may not be saved yet.\n  Writes (Add a row, Update a row) can fail with a lock when someone has the file open in desktop Excel.\n  Ask users to work in Excel for the web, or process a copy:\n    SharePoint > Copy file to a \"processing\" folder, then read the copy.\n\nThroughput\n  Excel Online connector: about 100 calls per 60 seconds per connection. Updating rows one at a time\n  is slow. For hundreds of updates use an Office Script that takes an array and writes it in one call.",
+    "stepByStepInstructions": [
+      "Format the data as a named table in a workbook stored in SharePoint or OneDrive.",
+      "Turn on pagination with a threshold above the row count.",
+      "Filter and select columns at the source where the connector allows.",
+      "Request ISO 8601 dates and convert numbers from text.",
+      "Use Get a row for single lookups by key.",
+      "Shape results with Select and Filter array before any loop."
+    ],
+    "commonMistakes": [
+      "Leaving pagination off and processing only 256 rows.",
+      "Looping over all rows to find one.",
+      "Treating numeric and date cells as typed values.",
+      "Writing to a workbook that people have open in desktop Excel."
+    ],
+    "troubleshooting": [
+      "If only 256 rows come back, enable Pagination in the action's settings.",
+      "If the filter is rejected, simplify to one condition and move the remainder to Filter array.",
+      "If dates are numbers, set DateTime Format to ISO 8601 or convert the serial number.",
+      "If the table list is empty, the range is not a table or the file is .xls or .csv."
+    ],
+    "relatedPatterns": [
+      "excel-date-serial-number-power-automate",
+      "filter-array-instead-of-apply-to-each",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Read large Excel tables reliably in a flow",
+    "seoDescription": "Get past the 256-row default, filter and select columns at the source, handle dates and blanks, and find one row by key without reading the whole table.",
+    "primaryKeyword": "Power Automate Excel list rows present in a table",
+    "secondaryKeywords": [
+      "Excel",
+      "Pagination",
+      "OData Filter",
+      "Large Files"
+    ],
+    "faqs": [
+      {
+        "question": "Why does Power Automate return only 256 rows from Excel?",
+        "answer": "That is the default page size. Turn on Pagination in the action settings and set a higher threshold."
+      },
+      {
+        "question": "Can I filter Excel rows in the List rows action?",
+        "answer": "Yes, with a limited OData filter such as a single eq or contains condition. Do other filtering with Filter array."
+      },
+      {
+        "question": "How do I get one Excel row by ID?",
+        "answer": "Use Get a row with the key column and key value."
+      }
+    ]
+  },
+  {
+    "id": "pat-1638",
+    "slug": "office-scripts-run-script-excel-power-automate",
+    "title": "Run an Office Script from a flow to process Excel in one call",
+    "shortDescription": "Pass data into a workbook script and get results back: write hundreds of rows at once, read a formatted range, refresh formulas or tidy a sheet.",
+    "fullDescription": "The Excel connector works a row at a time. An Office Script runs inside the workbook and can read or write thousands of cells in a single action. A flow passes parameters such as an array of rows, the script does the work, and returns a value the flow can use. It is the practical way to do bulk or formatting work in Excel from a flow.",
+    "category": "Power Automate",
+    "subCategory": "Excel",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Office Scripts",
+      "Excel",
+      "TypeScript",
+      "Bulk Operations"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Writing 800 rows to a report workbook with Add a row into a table takes over ten minutes and regularly hits throttling.",
+    "whenToUse": [
+      "Bulk writes and updates to a workbook",
+      "Reading data that is not in a table, or needs clean-up first",
+      "Formatting, sorting or clearing a report sheet"
+    ],
+    "whenNotToUse": [
+      "Workbooks outside OneDrive or SharePoint",
+      "Tenants where Office Scripts are disabled by the administrator"
+    ],
+    "formulaOrCode": "1. Create the script\n  Excel for the web > Automate > New Script. Scripts are saved to your OneDrive (Documents/Office Scripts)\n  or can be saved to a SharePoint library for team use.\n\nScript: write rows to a table in one operation\nfunction main(workbook: ExcelScript.Workbook, rowsJson: string, clearFirst: boolean = false): string {\n  const rows: (string | number | boolean)[][] = JSON.parse(rowsJson);\n  const sheet = workbook.getWorksheet(\"Data\");\n  let table = sheet.getTable(\"tblOrders\");\n  if (!table) { throw new Error(\"Table tblOrders not found\"); }\n  if (clearFirst && table.getRowCount() > 0) {\n    table.getDataBodyRange().delete(ExcelScript.DeleteShiftDirection.up);\n  }\n  if (rows.length > 0) { table.addRows(-1, rows); }\n  sheet.getRange(\"H1\").setValue(new Date().toISOString());\n  return JSON.stringify({ added: rows.length, total: table.getRowCount() });\n}\n\n2. Build the input in the flow\n  Select\n    From: body('Get_items')?['value']\n    Map (switch to text mode to output an array per item):\n      @createArray(item()?['OrderNumber'], item()?['Customer'], formatDateTime(item()?['OrderDate'],'yyyy-MM-dd'), item()?['Amount'], item()?['Status/Value'])\n  The order of values must match the table's columns.\n\n3. Run it\n  Excel Online (Business) > Run script\n    Location / Document Library / File: the workbook\n    Script: Write orders\n    rowsJson:   @{string(body('Select'))}\n    clearFirst: true\n  Result: outputs('Run_script')?['body/result']            parse with json() if you returned JSON\n  Script stored in SharePoint: use \"Run script from SharePoint library\" and pick the .osts file.\n\nScript: read a range that is not a table and return objects\ninterface Row { id: string; name: string; amount: number; }\nfunction main(workbook: ExcelScript.Workbook, sheetName: string): Row[] {\n  const values = workbook.getWorksheet(sheetName).getUsedRange().getValues();\n  const out: Row[] = [];\n  for (let i = 1; i < values.length; i++) {              // skip the header row\n    if (values[i][0] === \"\") continue;\n    out.push({ id: String(values[i][0]), name: String(values[i][1]), amount: Number(values[i][2]) });\n  }\n  return out;\n}\n  The flow receives an array of objects: body('Run_script')?['result'], usable in Select or Apply to each.\n\nScript: update rows by key\nfunction main(workbook: ExcelScript.Workbook, updatesJson: string): number {\n  const updates: { id: string; status: string }[] = JSON.parse(updatesJson);\n  const table = workbook.getTable(\"tblOrders\");\n  const range = table.getRangeBetweenHeaderAndTotal();\n  const values = range.getValues();\n  const idCol = table.getColumnByName(\"OrderNumber\").getIndex();\n  const statusCol = table.getColumnByName(\"Status\").getIndex();\n  const map = new Map(updates.map(u => [u.id, u.status]));\n  let changed = 0;\n  for (const row of values) {\n    const s = map.get(String(row[idCol]));\n    if (s !== undefined && row[statusCol] !== s) { row[statusCol] = s; changed++; }\n  }\n  range.setValues(values);\n  return changed;\n}\n\nRules and limits\n  Read and write whole ranges (getValues / setValues) instead of cell by cell.\n  Run script: 120 second timeout when called from a flow, request and response size about 5 MB,\n  and roughly 1,600 calls per day per user.\n  Split very large inputs into chunks of a few thousand rows.\n  No external calls from a script run by a flow (fetch is blocked). Pass data in as parameters.\n  Parameters: string, number, boolean, arrays and simple objects. Default values make them optional.\n  The script runs as the flow connection's user, who needs edit access to the workbook and the script.\n  Errors thrown in the script fail the action with the message, so throw clear errors.\n\nSharing\n  For production: save scripts to a SharePoint library, use the SharePoint variant of the action and a\n  service account connection, so the flow does not depend on one person's OneDrive.",
+    "stepByStepInstructions": [
+      "Write an Office Script whose main function takes parameters and returns a value.",
+      "Read and write ranges in bulk inside the script.",
+      "Shape the flow's data into an array with Select and pass it as a JSON string.",
+      "Call Run script with the workbook and parameters.",
+      "Use the returned result in later actions.",
+      "Store production scripts in SharePoint and run them with a service account."
+    ],
+    "commonMistakes": [
+      "Looping in the flow and calling the script once per row.",
+      "Cell-by-cell reads and writes inside the script.",
+      "Scripts kept in a personal OneDrive for a team process.",
+      "Passing arrays whose value order does not match the table's columns."
+    ],
+    "troubleshooting": [
+      "If the script is not listed, the connection's user cannot see it. Share it or move it to SharePoint.",
+      "If the run times out, send fewer rows per call or replace per-cell operations with range operations.",
+      "If parameters do not appear, they are not declared on main with supported types.",
+      "If the action is unavailable, ask the administrator to enable Office Scripts and their use in Power Automate."
+    ],
+    "relatedPatterns": [
+      "excel-list-rows-large-table-filter-power-automate",
+      "excel-date-serial-number-power-automate",
+      "chunk-array-into-batches-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Run an Office Script from a flow to process Excel in one call",
+    "seoDescription": "Pass data into a workbook script and get results back: write hundreds of rows at once, read a formatted range, refresh formulas or tidy a sheet.",
+    "primaryKeyword": "Power Automate run Office Script",
+    "secondaryKeywords": [
+      "Office Scripts",
+      "Excel",
+      "TypeScript",
+      "Bulk Operations"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate run an Excel script?",
+        "answer": "Yes. The Excel Online (Business) connector has a Run script action that executes an Office Script with parameters."
+      },
+      {
+        "question": "How do I write many rows to Excel quickly from a flow?",
+        "answer": "Pass the rows as an array to an Office Script that calls addRows or setValues once."
+      },
+      {
+        "question": "Can an Office Script return data to the flow?",
+        "answer": "Yes. Whatever main returns is available in the action's result output."
+      }
+    ]
+  },
+  {
+    "id": "pat-1639",
+    "slug": "http-oauth-client-credentials-graph-power-automate",
+    "title": "Call Microsoft Graph and other APIs with app credentials from a flow",
+    "shortDescription": "Register an app, grant application permissions and call an API from the HTTP action using its built-in Entra authentication, with the secret held outside the flow.",
+    "fullDescription": "When no connector action exists, the HTTP action can call any REST API. For Microsoft APIs it can obtain a token itself using an app registration's client ID and secret or certificate. The call then runs as the application, independent of any user, which suits background automation as long as the permissions are kept narrow.",
+    "category": "Power Automate",
+    "subCategory": "HTTP and APIs",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "HTTP",
+      "OAuth",
+      "Microsoft Graph",
+      "App Registration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow must read sign-in activity and update group settings that no connector exposes. Using a person's delegated connection breaks when they leave or their password changes.",
+    "whenToUse": [
+      "Graph or Azure endpoints with no connector action",
+      "Background jobs that should not depend on a user account",
+      "Calling your own APIs protected by Entra ID"
+    ],
+    "whenNotToUse": [
+      "Broad application permissions such as Sites.FullControl.All when a scoped permission exists",
+      "Environments where the premium HTTP connector is blocked by DLP"
+    ],
+    "formulaOrCode": "1. App registration (Microsoft Entra admin center)\n  App registrations > New registration: \"Flow - Group maintenance\", single tenant, no redirect URI.\n  API permissions > Add > Microsoft Graph > Application permissions\n    Group.Read.All, User.Read.All                      only what the flow needs\n  Grant admin consent.\n  Certificates & secrets > New client secret (12 months) > copy the VALUE once.\n  Note: Application (client) ID and Directory (tenant) ID.\n\n2. Keep the secret out of the flow\n  Environment variables in the solution:\n    cnt_GraphTenantId (text), cnt_GraphClientId (text), cnt_GraphClientSecret (Secret, Azure Key Vault)\n  Read the secret with Dataverse > Perform an unbound action > RetrieveEnvironmentVariableSecretValue,\n  Secure Outputs on.\n\n3. HTTP action with built-in authentication\n  HTTP\n    Method: GET\n    URI: https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(c:c eq 'Unified')&$select=id,displayName,createdDateTime&$top=100\n    Headers: ConsistencyLevel: eventual          (needed for some advanced queries with $count)\n    Authentication: Active Directory OAuth\n      Authority: https://login.microsoftonline.com\n      Tenant:    @{parameters('cnt_GraphTenantId')}\n      Audience:  https://graph.microsoft.com\n      Client ID: @{parameters('cnt_GraphClientId')}\n      Credential Type: Secret\n      Secret:    @{outputs('Get_secret')?['body/EnvironmentVariableSecretValue']}\n    Settings: Secure Inputs: On\n  The action requests and caches the token. No separate token call is needed.\n  Result: body('HTTP')?['value']        next page: body('HTTP')?['@odata.nextLink']\n\n  Audience per API\n    Microsoft Graph            https://graph.microsoft.com\n    SharePoint REST            https://contoso.sharepoint.com\n    Dataverse Web API          https://contoso.crm.dynamics.com\n    Azure Resource Manager     https://management.azure.com\n    Your own API               api://<api app id>          (expose an app role and assign it to the client app)\n\n4. POST example\n  Method: POST\n  URI: https://graph.microsoft.com/v1.0/users/@{variables('userId')}/sendMail\n  Headers: Content-Type: application/json\n  Body:\n  { \"message\": { \"subject\": \"Access review due\",\n                 \"body\": { \"contentType\": \"HTML\", \"content\": \"<p>Review your group by Friday.</p>\" },\n                 \"toRecipients\": [ { \"emailAddress\": { \"address\": \"owner@contoso.com\" } } ] },\n    \"saveToSentItems\": false }\n  (needs Mail.Send application permission, ideally restricted to specific mailboxes with an application access policy)\n\n5. Certificate instead of a secret\n  Credential Type: Certificate > Pfx: base64 of the .pfx from Key Vault > Password.\n  Longer lived and preferred by many security teams.\n\n6. Manual token request (non-Microsoft OAuth 2.0 APIs)\n  HTTP POST https://auth.vendor.com/oauth/token\n    Headers: Content-Type: application/x-www-form-urlencoded\n    Body: grant_type=client_credentials&client_id=@{...}&client_secret=@{encodeUriComponent(...)}&scope=api.read\n  Token: body('Get_token')?['access_token']\n  Next call header: Authorization: Bearer @{body('Get_token')?['access_token']}\n  Secure Inputs and Outputs on both actions.\n\n7. Alternatives that avoid your own app registration\n  \"Send a Microsoft Graph HTTP request\" actions on the Teams, Outlook and Groups connectors: delegated, limited\n  to certain Graph segments, no secret to manage.\n  HTTP with Microsoft Entra ID (preauthorized) connector: delegated calls as the connection user.\n  Custom connector with OAuth: reusable actions and DLP classification by host.\n\n8. Errors\n  401 invalid audience or expired secret. 403 permission not granted or consent missing.\n  429 throttled: keep the default retry policy, honour Retry-After.\n  Track the secret's expiry date and renew before it lapses: a calendar reminder or a scheduled flow that\n  reads application passwordCredentials through Graph.",
+    "stepByStepInstructions": [
+      "Register an application and grant only the application permissions required.",
+      "Store tenant ID, client ID and secret as environment variables, with the secret in Key Vault.",
+      "Add an HTTP action with Active Directory OAuth authentication and the correct audience.",
+      "Turn on secure inputs and outputs for actions that handle the secret or token.",
+      "Handle paging, throttling and permission errors.",
+      "Record the secret's expiry and renew it ahead of time."
+    ],
+    "commonMistakes": [
+      "Typing the secret into the action.",
+      "Granting far wider permissions than needed.",
+      "Using the wrong audience, so the token is rejected.",
+      "Forgetting that secrets expire."
+    ],
+    "troubleshooting": [
+      "If you get 401, check the audience matches the API's resource and the secret is current.",
+      "If you get 403, grant admin consent and confirm you added application, not delegated, permissions.",
+      "If the HTTP action is unavailable, a DLP policy blocks it. Request an exception with endpoint filtering.",
+      "If results are incomplete, follow the nextLink until it is absent."
+    ],
+    "relatedPatterns": [
+      "environment-variable-secrets-azure-key-vault",
+      "send-http-request-to-sharepoint-power-automate",
+      "dlp-connector-endpoint-filtering-action-control"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Call Microsoft Graph and other APIs with app credentials from a flow",
+    "seoDescription": "Register an app, grant application permissions and call an API from the HTTP action using its built-in Entra authentication, with the secret held outside the flow.",
+    "primaryKeyword": "Power Automate HTTP OAuth client credentials Graph",
+    "secondaryKeywords": [
+      "HTTP",
+      "OAuth",
+      "Microsoft Graph",
+      "App Registration"
+    ],
+    "faqs": [
+      {
+        "question": "How do I call Microsoft Graph from Power Automate?",
+        "answer": "Use the HTTP action with Active Directory OAuth authentication and an app registration, or a connector's Send a Microsoft Graph HTTP request action."
+      },
+      {
+        "question": "Where should I store the client secret?",
+        "answer": "In Azure Key Vault, referenced by a secret environment variable, and read it at run time with secure outputs."
+      },
+      {
+        "question": "What is the audience value?",
+        "answer": "The resource the token is for, such as https://graph.microsoft.com for Graph or your Dataverse URL for the Web API."
+      }
+    ]
+  },
+  {
+    "id": "pat-1640",
+    "slug": "paginate-api-next-link-do-until-power-automate",
+    "title": "Page through an API with a next link in a flow",
+    "shortDescription": "Collect every page from a REST API that returns results in pages, using a Do until loop on the next link, offset counters or cursor tokens.",
+    "fullDescription": "Connector actions page for you when pagination is enabled. The plain HTTP action does not: it returns one page and a pointer to the next. A loop that follows the pointer and merges each page into an array collects the full result, as long as it has a stop condition and a limit.",
+    "category": "Power Automate",
+    "subCategory": "HTTP and APIs",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Pagination",
+      "HTTP",
+      "Do Until",
+      "Microsoft Graph"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A Graph query should return 1,400 users, but the flow processes only the first 100 because the response is paged and nothing follows the next link.",
+    "whenToUse": [
+      "Microsoft Graph, Dataverse Web API and other OData APIs called with HTTP",
+      "Vendor APIs using page numbers, offsets or cursors",
+      "Exports that must be complete"
+    ],
+    "whenNotToUse": [
+      "Connector actions that already support the Pagination setting",
+      "Pulling very large data sets into flow memory, where a dataflow or export API is better"
+    ],
+    "formulaOrCode": "A. OData next link (Graph, Dataverse, SharePoint REST)\n  Initialize variable  varUrl (String) = https://graph.microsoft.com/v1.0/users?$select=id,displayName,mail&$top=999\n  Initialize variable  varAll (Array) = []\n\n  Do until:  @empty(variables('varUrl'))          Limits: Count 100, Timeout PT30M\n    HTTP  GET  @{variables('varUrl')}             (authentication as usual)\n    Compose Merge:  @union(variables('varAll'), body('HTTP')?['value'])\n    Set variable varAll = @{outputs('Merge')}\n    Set variable varUrl = @{coalesce(body('HTTP')?['@odata.nextLink'], '')}\n\n  After the loop: length(variables('varAll'))\n\n  Notes\n    A variable cannot reference itself in Set variable, hence the Compose in between.\n    union() removes exact duplicate objects. That is harmless for rows with IDs. To keep true duplicates,\n    use an Append to array variable inside an Apply to each instead (slower).\n    Dataverse: add header  Prefer: odata.maxpagesize=5000  and follow @odata.nextLink the same way.\n    SharePoint REST (verbose): next link is d.__next. With odata=nometadata it is odata.nextLink.\n    The HTTP action has a built-in Pagination setting too (Settings > Pagination > Threshold). It follows\n    @odata.nextLink automatically for OData-style responses. Try it first for Graph: one action, no loop.\n\nB. Page number\n  Initialize varPage (Integer) = 1,  varMore (Boolean) = true\n  Do until: @equals(variables('varMore'), false)        Count 200\n    HTTP GET https://api.vendor.com/orders?page=@{variables('varPage')}&per_page=100\n    Merge + Set varAll as above (body('HTTP')?['data'])\n    Set varMore = @{greater(length(body('HTTP')?['data']), 99)}        a short page means the end\n       or  @{less(variables('varPage'), body('HTTP')?['meta']?['total_pages'])}\n    Increment varPage\n\nC. Offset and limit\n  HTTP GET .../items?offset=@{variables('varOffset')}&limit=200\n  Set varMore = @{equals(length(body('HTTP')?['items']), 200)}\n  Increment varOffset by 200\n\nD. Cursor token\n  HTTP GET .../events?limit=500@{if(empty(variables('varCursor')), '', concat('&cursor=', encodeUriComponent(variables('varCursor'))))}\n  Set varCursor = @{coalesce(body('HTTP')?['next_cursor'], '')}\n  Do until: @empty(variables('varCursor'))   (the first pass always runs)\n\nE. Link header (GitHub-style)\n  Header: Link: <https://api.github.com/...&page=2>; rel=\"next\", <...>; rel=\"last\"\n  Next URL:\n    @{if(contains(coalesce(outputs('HTTP')?['headers']?['Link'], ''), 'rel=\"next\"'),\n         first(split(last(split(first(split(outputs('HTTP')?['headers']?['Link'], '>; rel=\"next\"')), '<')), '>')),\n         '')}\n\nSafety\n  Always set Count and Timeout on the loop and check after it whether the stop condition was truly met:\n    Condition: varUrl is empty (or varMore is false). Otherwise Terminate as Failed: \"Paging stopped early\".\n  429 responses: keep the default retry policy. Add a short Delay between pages for strict APIs.\n\nMemory and size\n  A flow action's output is limited to roughly 100 MB, and variables holding tens of thousands of objects\n  slow the run. Reduce early: request only needed fields ($select), and where possible process each page\n  inside the loop (for example send it to a child flow or batch write) instead of accumulating everything.\n\nProcess per page instead of accumulating\n  Do until ...\n    HTTP GET page\n    Select the fields needed\n    Run a Child Flow (or batch request) with the page's rows\n    Set varUrl to the next link",
+    "stepByStepInstructions": [
+      "Find how the API signals the next page: link, page number, offset or cursor.",
+      "Initialise variables for the pointer and the combined results.",
+      "Loop until the pointer is empty or the last page is short.",
+      "Merge each page into the results with a Compose and Set variable.",
+      "Set loop limits and verify completion after the loop.",
+      "Process per page when the full set would be very large."
+    ],
+    "commonMistakes": [
+      "Assuming the first response is the whole result.",
+      "No loop limits, risking an endless run when the pointer never clears.",
+      "Self-referencing a variable in Set variable.",
+      "Accumulating huge arrays in memory."
+    ],
+    "troubleshooting": [
+      "If the loop never ends, log the pointer each pass. Some APIs repeat the last link.",
+      "If counts are short, check whether union removed duplicates or the loop hit its Count limit.",
+      "If the next link fails authentication, send the same headers and authentication on every page request.",
+      "If the run is slow, raise the page size to the API's maximum and select fewer fields."
+    ],
+    "relatedPatterns": [
+      "do-until-polling-loop-timeout-power-automate",
+      "http-oauth-client-credentials-graph-power-automate",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Page through an API with a next link in a flow",
+    "seoDescription": "Collect every page from a REST API that returns results in pages, using a Do until loop on the next link, offset counters or cursor tokens.",
+    "primaryKeyword": "Power Automate HTTP pagination nextLink",
+    "secondaryKeywords": [
+      "Pagination",
+      "HTTP",
+      "Do Until",
+      "Microsoft Graph"
+    ],
+    "faqs": [
+      {
+        "question": "How do I handle pagination with the HTTP action in Power Automate?",
+        "answer": "Follow the next link in a Do until loop and merge each page into an array, or turn on the action's Pagination setting for OData responses."
+      },
+      {
+        "question": "Why can't I append an array to itself in Set variable?",
+        "answer": "A variable cannot reference itself. Compute the merged array in a Compose, then set the variable to that output."
+      },
+      {
+        "question": "How do I know the loop collected everything?",
+        "answer": "After the loop, check the next pointer is empty and compare the count with the API's total if it provides one."
+      }
+    ]
+  },
+  {
+    "id": "pat-1641",
+    "slug": "xml-xpath-parse-power-automate",
+    "title": "Read values from XML in a flow with xpath",
+    "shortDescription": "Extract single values, repeating nodes and attributes from XML responses and files with the xml and xpath functions, including documents that use namespaces.",
+    "fullDescription": "SOAP services, RSS feeds, bank files and many older systems return XML. Power Automate has no Parse XML action, but the xml() and xpath() expressions select nodes directly, and converting XML to JSON gives ordinary property access. Namespaces are the usual stumbling block, and have a standard workaround.",
+    "category": "Power Automate",
+    "subCategory": "Data operations",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "XML",
+      "XPath",
+      "Expressions",
+      "Data Operations"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A supplier's order feed arrives as XML. The flow needs the order number and each line item, but there is no parser action, and the first xpath attempt returns nothing because of a namespace.",
+    "whenToUse": [
+      "SOAP and legacy web service responses",
+      "XML files from SharePoint or email",
+      "RSS and Atom feeds beyond what the RSS connector exposes"
+    ],
+    "whenNotToUse": [
+      "JSON APIs, where Parse JSON is simpler",
+      "Very large XML files near the 100 MB message limit"
+    ],
+    "formulaOrCode": "Sample\n<Order id=\"SO-1042\" xmlns:c=\"http://contoso.com/common\">\n  <Customer><c:Name>Fabrikam</c:Name><Email>buyer@fabrikam.com</Email></Customer>\n  <Lines>\n    <Line sku=\"A100\"><Qty>2</Qty><Price>19.50</Price></Line>\n    <Line sku=\"B200\"><Qty>1</Qty><Price>5.00</Price></Line>\n  </Lines>\n</Order>\n\nGet the XML as an XML object\n  From a string or HTTP body:      xml(body('HTTP'))\n  From a SharePoint file:          xml(base64ToString(body('Get_file_content')?['$content']))\n  Compose \"Doc\": @{xml(...)}       reuse outputs('Doc') below\n\nSingle values (wrap with string() inside the XPath to get text directly)\n  Order id (attribute):   xpath(outputs('Doc'), 'string(/Order/@id)')                         SO-1042\n  Email:                  xpath(outputs('Doc'), 'string(/Order/Customer/Email)')\n  Line count:             xpath(outputs('Doc'), 'count(/Order/Lines/Line)')                   2\n  Total:                  xpath(outputs('Doc'), 'sum(/Order/Lines/Line/Price)')               24.5\n  First SKU:              xpath(outputs('Doc'), 'string(/Order/Lines/Line[1]/@sku)')\n  By condition:           xpath(outputs('Doc'), 'string(/Order/Lines/Line[@sku=\"B200\"]/Qty)')\n  Without string(), xpath returns an array of nodes (base64-encoded XML fragments in run history).\n\nRepeating nodes\n  Select\n    From: xpath(outputs('Doc'), '/Order/Lines/Line')\n    Map:  sku   = xpath(xml(item()), 'string(/Line/@sku)')\n          qty   = int(xpath(xml(item()), 'string(/Line/Qty)'))\n          price = float(xpath(xml(item()), 'string(/Line/Price)'))\n  Result: [ { \"sku\": \"A100\", \"qty\": 2, \"price\": 19.5 }, ... ]\n  Each item is a node. Wrap it with xml(item()) and query relative to its own root.\n\nNamespaces\n  /Order/Customer/Name returns nothing because Name is in the c namespace. Options:\n  1. local-name():\n     xpath(outputs('Doc'), 'string(/Order/Customer/*[local-name()=\"Name\"])')\n     Default namespace on the root (xmlns=\"http://...\") means EVERY element needs it:\n     xpath(outputs('Doc'), 'string(/*[local-name()=\"Order\"]/*[local-name()=\"Customer\"]/*[local-name()=\"Email\"])')\n  2. Strip namespaces first (simple, fine when names do not clash):\n     Compose Clean: replace(replace(string(body('HTTP')), ' xmlns=\"http://contoso.com/orders\"', ''), 'c:', '')\n     then xml(outputs('Clean'))\n  3. Match anywhere:  xpath(outputs('Doc'), 'string(//*[local-name()=\"Name\"])')\n\nConvert to JSON instead\n  json(xml(body('HTTP')))\n  { \"Order\": { \"@id\": \"SO-1042\", \"Customer\": { \"c:Name\": \"Fabrikam\", \"Email\": \"...\" },\n               \"Lines\": { \"Line\": [ { \"@sku\": \"A100\", \"Qty\": \"2\", \"Price\": \"19.50\" }, ... ] } } }\n  Attributes get an @ prefix, text beside attributes appears as #text, and all values are strings.\n  Catch: a single Line becomes an object, two or more become an array, so a loop written for an array\n  fails on single-line orders. Use xpath for repeating nodes, which always returns an array.\n\nSOAP call and response\n  HTTP POST https://legacy.contoso.com/Service.asmx\n    Headers: Content-Type: text/xml; charset=utf-8        SOAPAction: \"http://tempuri.org/GetOrder\"\n    Body:\n    <soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n      <soap:Body><GetOrder xmlns=\"http://tempuri.org/\"><orderId>@{variables('orderId')}</orderId></GetOrder></soap:Body>\n    </soap:Envelope>\n  Read: xpath(xml(body('HTTP')), 'string(//*[local-name()=\"GetOrderResult\"]/*[local-name()=\"Status\"])')\n\nBuild XML\n  xml(json('{ \"Order\": { \"@id\": \"SO-1\", \"Customer\": \"Fabrikam\" } }'))  >  <Order id=\"SO-1\"><Customer>Fabrikam</Customer></Order>\n  Escape text placed inside hand-written XML:\n    replace(replace(replace(value, '&', '&amp;'), '<', '&lt;'), '>', '&gt;')\n\nEncoding\n  A byte order mark or wrong encoding makes xml() fail. Strip it:\n    replace(base64ToString(...), decodeUriComponent('%EF%BB%BF'), '')",
+    "stepByStepInstructions": [
+      "Convert the response or file content to an XML object with xml().",
+      "Select single values with xpath and the string() function.",
+      "Select repeating nodes into an array and map them with Select.",
+      "Handle namespaces with local-name() or by stripping them.",
+      "Convert numbers and dates from text.",
+      "Use json(xml()) only when single-versus-array differences are not a risk."
+    ],
+    "commonMistakes": [
+      "Ignoring namespaces and getting empty results.",
+      "Forgetting string() and receiving node arrays.",
+      "Relying on json(xml()) for repeating elements that may occur once.",
+      "Building XML by concatenation without escaping."
+    ],
+    "troubleshooting": [
+      "If xpath returns nothing, check for a default namespace and switch to local-name().",
+      "If xml() fails, the content is not well-formed or has a byte order mark. Inspect the raw string.",
+      "If values look base64-encoded in history, wrap the expression in string() inside the XPath.",
+      "If a loop fails on a single item, select nodes with xpath so the result is always an array."
+    ],
+    "relatedPatterns": [
+      "parse-csv-text-into-sharepoint-actions",
+      "power-automate-parse-json-from-power-apps",
+      "select-union-remove-duplicates-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Read values from XML in a flow with xpath",
+    "seoDescription": "Extract single values, repeating nodes and attributes from XML responses and files with the xml and xpath functions, including documents that use namespaces.",
+    "primaryKeyword": "Power Automate XML xpath",
+    "secondaryKeywords": [
+      "XML",
+      "XPath",
+      "Expressions",
+      "Data Operations"
+    ],
+    "faqs": [
+      {
+        "question": "How do I parse XML in Power Automate?",
+        "answer": "Use xml() to load it and xpath() to select values, or convert it with json(xml()) and read properties."
+      },
+      {
+        "question": "Why does my xpath return an empty result?",
+        "answer": "Usually a namespace. Match elements with local-name() or remove the namespace declarations first."
+      },
+      {
+        "question": "How do I loop over repeating XML elements?",
+        "answer": "Select them with xpath, which returns an array of nodes, and read each with xpath(xml(item()), ...)."
+      }
+    ]
+  },
+  {
+    "id": "pat-1642",
+    "slug": "add-working-days-skip-weekends-holidays-power-automate",
+    "title": "Calculate due dates in working days, skipping weekends and holidays",
+    "shortDescription": "Add a number of working days to a date and count working days between two dates, using a holiday list and expressions without looping day by day.",
+    "fullDescription": "Service levels are written in working days, but addDays counts every day. A dependable calculation generates the candidate dates as an array, removes weekends and holidays with Filter array, and picks the nth remaining date. It needs no loop, runs in a few actions and reads holidays from a list the business maintains.",
+    "category": "Power Automate",
+    "subCategory": "Dates",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Dates",
+      "Working Days",
+      "Holidays",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A five-working-day deadline set on a Thursday before a public holiday comes out as the following Tuesday, when it should be the Friday after.",
+    "whenToUse": [
+      "Due dates and service level targets",
+      "Reminder schedules that ignore weekends",
+      "Reporting elapsed working days"
+    ],
+    "whenNotToUse": [
+      "Hour-level service levels with business hours, which need a fuller calendar",
+      "Regions with different working weeks unless you parameterise the weekend days"
+    ],
+    "formulaOrCode": "Inputs\n  startDate (for example the Created date), daysToAdd (for example 5)\n  Holidays list (SharePoint): Title, HolidayDate (date only), Region (optional)\n\n1. Holidays as an array of yyyy-MM-dd strings\n  Get items: Holidays, Filter Query: HolidayDate ge '@{formatDateTime(variables('startDate'),'yyyy-MM-dd')}', Top Count 100\n  Select \"Holidays\": From value   Map (text mode):  @formatDateTime(item()?['HolidayDate'],'yyyy-MM-dd')\n\n2. Candidate dates: enough calendar days to contain the working days\n  Select \"Candidates\"\n    From: @range(1, add(mul(variables('daysToAdd'), 2), 15))\n    Map (text mode): @formatDateTime(addDays(variables('startDate'), item()), 'yyyy-MM-dd')\n  (range starts at 1 so counting begins the day after the start date)\n\n3. Keep working days only\n  Filter array \"WorkingDays\"\n    From: body('Candidates')\n    Advanced mode:\n    @and(\n      not(equals(dayOfWeek(item()), 0)),\n      not(equals(dayOfWeek(item()), 6)),\n      not(contains(body('Holidays'), item()))\n    )\n  dayOfWeek: 0 = Sunday ... 6 = Saturday.\n\n4. The due date is the nth working day\n  Compose \"DueDate\":  @body('WorkingDays')[sub(variables('daysToAdd'), 1)]\n  As a date-time for SharePoint: @{outputs('DueDate')}T17:00:00Z   or just the date for date-only columns.\n\nWorking days between two dates (elapsed)\n  Select \"Span\"\n    From: @range(0, add(div(sub(ticks(variables('endDate')), ticks(variables('startDate'))), 864000000000), 1))\n    Map:  @formatDateTime(addDays(variables('startDate'), item()), 'yyyy-MM-dd')\n  Filter array with the same condition > length(body('Filter_array'))\n  This counts both the start and end dates when they are working days. Subtract 1 for \"days elapsed\".\n  range() accepts up to 100,000 items, so multi-year spans are fine.\n\nIs today a working day? (guard for scheduled reminders)\n  @and(not(contains(createArray(0,6), dayOfWeek(convertFromUtc(utcNow(),'Eastern Standard Time')))),\n       not(contains(body('Holidays'), convertFromUtc(utcNow(),'Eastern Standard Time','yyyy-MM-dd'))))\n  Use local time: late evening UTC can already be tomorrow, or still yesterday, locally.\n\nNext working day on or after a date\n  Candidates from range(0, 10), same filter, first(body('WorkingDays')).\n\nDifferent weekend (for example Friday and Saturday)\n  Replace the two dayOfWeek tests with:\n    not(contains(createArray(5,6), dayOfWeek(item())))\n  Or hold weekend day numbers in an environment variable and parse them with json().\n\nReusable child flow\n  Trigger: Manually trigger a flow, inputs StartDate (date), Days (number), Region (text)\n  Steps 1 to 4 above, holidays filtered by region.\n  Respond to a PowerApp or flow: DueDate (text)\n  Call it from any flow or from a canvas app.\n\nSame logic in Power Fx (canvas apps)\n  With({ c: AddColumns(Sequence(varDays * 2 + 15), d, DateAdd(varStart, Value, TimeUnit.Days)) },\n       Last(FirstN(Filter(c, Weekday(d, StartOfWeek.Monday) <= 5 && !(d in colHolidays.HolidayDate)), varDays)).d)\n\nCheck\n  Start Thu 24 Dec 2026, 5 working days, holiday Fri 25 Dec: Mon 28, Tue 29, Wed 30, Thu 31, then with 1 Jan\n  as a holiday the fifth day is Mon 4 Jan 2027.",
+    "stepByStepInstructions": [
+      "Keep public holidays in a list with a date column.",
+      "Load holidays as an array of date strings.",
+      "Generate candidate dates after the start date with range and Select.",
+      "Filter out weekends and holidays.",
+      "Take the nth remaining date as the due date.",
+      "Wrap the logic in a child flow so every process uses the same calendar."
+    ],
+    "commonMistakes": [
+      "Using addDays and adjusting weekends by hand.",
+      "Looping one day at a time with a counter.",
+      "Comparing date-times with dates, so holidays never match.",
+      "Working in UTC when the business day is local."
+    ],
+    "troubleshooting": [
+      "If holidays are not skipped, format both sides as yyyy-MM-dd strings before comparing.",
+      "If the index is out of range, generate more candidate dates.",
+      "If the result is a day off, check the time zone conversion of the start date.",
+      "If regions differ, filter the holiday list by region."
+    ],
+    "relatedPatterns": [
+      "convert-time-zone-format-date-power-automate",
+      "power-automate-reminder-before-due-date",
+      "use-child-flows-for-shared-notification-logic"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Calculate due dates in working days, skipping weekends and holidays",
+    "seoDescription": "Add a number of working days to a date and count working days between two dates, using a holiday list and expressions without looping day by day.",
+    "primaryKeyword": "Power Automate add business days",
+    "secondaryKeywords": [
+      "Dates",
+      "Working Days",
+      "Holidays",
+      "Expressions"
+    ],
+    "faqs": [
+      {
+        "question": "How do I add business days to a date in Power Automate?",
+        "answer": "Generate a range of following dates, filter out weekends and holidays, and take the nth date that remains."
+      },
+      {
+        "question": "How do I exclude public holidays?",
+        "answer": "Keep them in a list, load them as an array of date strings and exclude candidates contained in that array."
+      },
+      {
+        "question": "Is there a built-in working days function?",
+        "answer": "No. Flows have addDays and dayOfWeek, which you combine as shown."
+      }
+    ]
+  },
+  {
+    "id": "pat-1643",
+    "slug": "move-copy-sharepoint-files-rename-conflict-power-automate",
+    "title": "Move and copy SharePoint files in a flow without name clashes",
+    "shortDescription": "Archive or route documents between libraries, choose what happens when the name already exists, rename as part of the move and keep metadata and versions.",
+    "fullDescription": "Moving a file sounds trivial until the destination already has one with that name, the target folder does not exist, or the metadata disappears. The SharePoint Move file and Copy file actions keep versions and matching columns, and have an explicit setting for name conflicts. Renaming is a separate small step.",
+    "category": "Power Automate",
+    "subCategory": "Files",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Files",
+      "SharePoint",
+      "Move File",
+      "Naming"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow archives approved documents by reading the content and creating a new file in another library. Version history and metadata are lost, and the run fails whenever a file of the same name exists.",
+    "whenToUse": [
+      "Archiving completed documents",
+      "Routing uploads from a drop-off library",
+      "Publishing approved files to a read-only library"
+    ],
+    "whenNotToUse": [
+      "Bulk migrations of thousands of files, where migration tooling is better",
+      "Moves between tenants, which these actions do not support"
+    ],
+    "formulaOrCode": "Move one file\n  SharePoint > Move file\n    Current Site Address: https://contoso.sharepoint.com/sites/Intake\n    File to Move:        @{triggerOutputs()?['body/{Identifier}']}          (file identifier from the trigger or Get files)\n    Destination Site Address: https://contoso.sharepoint.com/sites/Archive\n    Destination Folder:  /Shared Documents/2026/Contracts\n    If another file is already there:  Move with a new name | Replace | Fail this action\n  Output: body('Move_file')?['Id'], ['ItemId'], ['Name'], ['Path']\n\n  \"Move with a new name\" appends a number (Contract1.pdf). Replace overwrites, adding a version where\n  versioning allows. Fail lets you handle the clash yourself.\n\nCopy instead\n  SharePoint > Copy file: same fields. Use for publishing while the original stays in place.\n\nWhat comes across\n  Version history (Move, within the same tenant), Created/Modified and authors, and column values where the\n  destination library has columns with the same internal name and type. Managed metadata and lookups need\n  matching term sets and lists. Columns missing at the destination are dropped silently.\n  Approval status, retention labels and unique permissions do not reliably follow.\n\nMake sure the folder exists\n  SharePoint > Create new folder\n    List or Library: Documents        Folder Path: 2026/Contracts/@{variables('customer')}\n  Creates nested folders in one call and does not fail if they already exist.\n\nRename as part of the move (two approaches)\n  A. Rename after moving\n     Send an HTTP request to SharePoint\n       Site: destination        Method: POST\n       Uri: _api/web/lists/getbytitle('Documents')/items(@{body('Move_file')?['ItemId']})/validateUpdateListItem\n       Body: { \"formValues\": [ { \"FieldName\": \"FileLeafRef\", \"FieldValue\": \"CON-@{variables('number')}.pdf\" } ] }\n     validateUpdateListItem changes the name without creating a new version or altering Modified, when\n     bNewDocumentUpdate is true:  add  , \"bNewDocumentUpdate\": true  to the body.\n  B. Rename before moving, with the same call against the source library.\n\nA unique, readable name\n  @{formatDateTime(utcNow(),'yyyyMMdd')}-@{replace(replace(triggerOutputs()?['body/{FilenameWithExtension}'],'#',''),'%','')}\n  Strip characters SharePoint rejects:  \" * : < > ? / \\ |    and avoid leading or trailing spaces and periods.\n  Keep the whole path under 400 characters.\n\nHandle the conflict yourself\n  Move file with \"Fail this action\", then a parallel branch with run after \"has failed\":\n    Condition: contains(string(outputs('Move_file')?['body']), 'already exists')\n      Yes: Move again to a \"Duplicates\" folder, or rename with a timestamp and retry\n      No:  Terminate with the error\n\nAfter the move\n  Update file properties using the new ItemId: Status = Archived, ArchivedOn = utcNow()\n  Update the source record's link column: body('Move_file')?['Path'] (server-relative) with the site URL in front.\n  Links shared as \"People with existing access\" keep working after a move within the tenant, because SharePoint\n  redirects by document ID where that feature is on. Path-based links break.\n\nMany files\n  Get files (properties only) with a filter (for example Status eq 'Approved'), Top Count 200.\n  Apply to each with concurrency 1 to 5: Move file. Moves are asynchronous copy jobs under the hood, so high\n  concurrency causes throttling and lock errors.\n  Large files (hundreds of MB) can exceed the action timeout: the move may still complete. Check before retrying.\n\nMove a whole folder\n  SharePoint > Move folder / Copy folder with the folder's identifier. Same conflict option.\n\nLocked or checked-out files\n  Fail with \"The file is locked for shared use\" or \"checked out\". Add a retry after a delay, or a Do until\n  with a few attempts, and report files still locked.",
+    "stepByStepInstructions": [
+      "Create the destination folder path if it may not exist.",
+      "Use Move file or Copy file with the file identifier, not file content.",
+      "Choose the conflict behaviour deliberately.",
+      "Rename with validateUpdateListItem when the destination name must follow a standard.",
+      "Update metadata and links using the new item ID.",
+      "Limit concurrency and handle locked files when moving many."
+    ],
+    "commonMistakes": [
+      "Recreating the file from content, which loses versions and metadata.",
+      "Leaving the conflict option on its default without deciding.",
+      "Destination library missing the columns you expect to keep.",
+      "High concurrency on bulk moves."
+    ],
+    "troubleshooting": [
+      "If metadata is lost, add columns with the same internal names to the destination library.",
+      "If the move fails with a path error, create the folder first and check for invalid characters.",
+      "If the file is locked, retry after a delay and ask users to close it.",
+      "If the action times out on a large file, check the destination before retrying to avoid duplicates."
+    ],
+    "relatedPatterns": [
+      "build-a-file-naming-standard-flow",
+      "create-a-document-routing-automation",
+      "sharepoint-document-library-metadata-pattern"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Move and copy SharePoint files in a flow without name clashes",
+    "seoDescription": "Archive or route documents between libraries, choose what happens when the name already exists, rename as part of the move and keep metadata and versions.",
+    "primaryKeyword": "Power Automate move file SharePoint rename",
+    "secondaryKeywords": [
+      "Files",
+      "SharePoint",
+      "Move File",
+      "Naming"
+    ],
+    "faqs": [
+      {
+        "question": "How do I move a SharePoint file with Power Automate?",
+        "answer": "Use the SharePoint Move file action with the file identifier, destination site and folder."
+      },
+      {
+        "question": "What happens if a file with the same name exists?",
+        "answer": "You choose: move with a new name, replace the existing file, or fail the action so you can handle it."
+      },
+      {
+        "question": "Does Move file keep version history and metadata?",
+        "answer": "Versions are kept within a tenant, and column values are kept where the destination has matching columns."
+      }
+    ]
+  },
+  {
+    "id": "pat-1644",
+    "slug": "save-email-attachments-sharepoint-shared-mailbox-flow",
+    "title": "Save email attachments from a shared mailbox to SharePoint",
+    "shortDescription": "Watch a shared mailbox, skip signature images, save each real attachment to a library with useful metadata and file the email afterwards.",
+    "fullDescription": "Invoices, forms and reports still arrive by email. A flow on a shared mailbox can save each attachment to a SharePoint library with the sender, subject and received date as metadata. The details that matter are filtering out inline images, making file names unique and marking the email as processed.",
+    "category": "Power Automate",
+    "subCategory": "Email",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Email",
+      "Attachments",
+      "Shared Mailbox",
+      "SharePoint"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Supplier invoices arrive in a shared mailbox. Someone saves each PDF by hand, half the saved files are logo images from signatures, and there is no record of which emails were handled.",
+    "whenToUse": [
+      "Invoice, order and form intake by email",
+      "Archiving reports sent by other systems",
+      "Feeding an approval or extraction process"
+    ],
+    "whenNotToUse": [
+      "Mailboxes receiving sensitive personal data without a retention and access plan",
+      "Very large attachments beyond connector limits, which need a different transfer route"
+    ],
+    "formulaOrCode": "Trigger\n  Office 365 Outlook > When a new email arrives in a shared mailbox (V2)\n    Original Mailbox Address: invoices@contoso.com\n    Folder: Inbox\n    Include Attachments: Yes\n    Only with Attachments: Yes\n    Subject Filter / From: optional\n  The connection's user needs Full Access to the shared mailbox.\n  Trigger condition to ignore automatic replies:\n    @not(contains(toLower(triggerOutputs()?['body/subject']), 'automatic reply'))\n\nLoop the attachments\n  Apply to each: triggerOutputs()?['body/attachments']         (concurrency off, or low)\n\n    Condition \"real attachment\" (advanced, all true)\n      @equals(items('Apply_to_each')?['isInline'], false)\n      @greater(items('Apply_to_each')?['size'], 10000)                         skips tiny icons\n      @or(endsWith(toLower(items('Apply_to_each')?['name']), '.pdf'),\n          endsWith(toLower(items('Apply_to_each')?['name']), '.xlsx'),\n          endsWith(toLower(items('Apply_to_each')?['name']), '.docx'))\n\n    Yes >\n      Compose FileName\n        @{formatDateTime(triggerOutputs()?['body/receivedDateTime'],'yyyyMMdd-HHmmss')}_@{replace(replace(replace(items('Apply_to_each')?['name'],'#',''),'%',''),'&','and')}\n\n      SharePoint > Create file\n        Site: https://contoso.sharepoint.com/sites/Finance\n        Folder Path: /Invoices/Inbox/@{formatDateTime(utcNow(),'yyyy-MM')}\n        File Name: @{outputs('FileName')}\n        File Content: @{base64ToBinary(items('Apply_to_each')?['contentBytes'])}\n      (Create file makes the folder path if it does not exist.)\n\n      SharePoint > Update file properties\n        Id: outputs('Create_file')?['body/ItemId']\n        Sender:        triggerOutputs()?['body/from']\n        EmailSubject:  triggerOutputs()?['body/subject']\n        ReceivedOn:    triggerOutputs()?['body/receivedDateTime']\n        MessageId:     triggerOutputs()?['body/internetMessageId']\n        Status:        New\n\nAttachments missing content\n  Large attachments can arrive without contentBytes. Fetch them:\n    Office 365 Outlook > Get Attachment (V2)\n      Message Id: triggerOutputs()?['body/id']      Attachment Id: items('Apply_to_each')?['id']\n      Original Mailbox Address: invoices@contoso.com\n    File Content: body('Get_Attachment_(V2)')?['contentBytes']   (through base64ToBinary)\n\nMark the email as handled\n  Office 365 Outlook > Move email (V2)\n    Message Id: triggerOutputs()?['body/id']      Folder: Processed      Original Mailbox Address: invoices@contoso.com\n  Or Mark as read or unread (V3) and assign a category \"Filed\" (Assigns an Outlook category).\n  Emails where nothing qualified: move to \"Needs review\" and notify the team.\n\nAvoid duplicates\n  The same email can be picked up again after a mailbox move or flow restart. Before creating files:\n    Get files (properties only): Filter Query MessageId eq '@{triggerOutputs()?['body/internetMessageId']}', Top Count 1\n    Stop if found.\n\nAcknowledge the sender (optional)\n  Send an email from a shared mailbox (V2): \"We received 2 documents: ...\" with the saved names.\n  Do not reply to no-reply addresses or to your own domain's automated senders, to avoid mail loops.\n\nZip files and embedded messages\n  .zip: save as is, or expand with OneDrive > Extract archive to folder, then copy the contents.\n  .msg/.eml attachments: saved as files. Their inner attachments are not unpacked by this flow.\n\nLimits\n  Trigger delivers messages up to about 50 MB in total. Exchange's own attachment size limits apply.\n  Shared mailbox triggers poll every few minutes. Several emails at once produce parallel runs.\n\nNext steps in the chain\n  A second flow on file creation: AI Builder invoice processing, an approval, or routing by supplier.",
+    "stepByStepInstructions": [
+      "Create a library with columns for sender, subject, received date and message ID.",
+      "Trigger on new email in the shared mailbox with attachments included.",
+      "Loop the attachments and keep only non-inline files of expected types.",
+      "Create each file with a timestamped name and set its metadata.",
+      "Move the email to a processed folder or categorise it.",
+      "Check for an existing message ID to avoid saving twice."
+    ],
+    "commonMistakes": [
+      "Saving inline signature images as documents.",
+      "File names that collide when two emails carry 'invoice.pdf'.",
+      "Leaving processed emails in the inbox with no marker.",
+      "Auto-replying to automated senders and starting a loop."
+    ],
+    "troubleshooting": [
+      "If files are empty or corrupt, wrap contentBytes in base64ToBinary or fetch with Get Attachment.",
+      "If the trigger never fires, the connection user lacks access to the shared mailbox or the folder is wrong.",
+      "If logos are saved, tighten the inline, size and extension conditions.",
+      "If Create file fails on the name, strip characters SharePoint does not allow."
+    ],
+    "relatedPatterns": [
+      "attach-sharepoint-list-attachments-email-power-automate",
+      "build-a-file-naming-standard-flow",
+      "handle-empty-attachment-arrays-gracefully"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Save email attachments from a shared mailbox to SharePoint",
+    "seoDescription": "Watch a shared mailbox, skip signature images, save each real attachment to a library with useful metadata and file the email afterwards.",
+    "primaryKeyword": "Power Automate save email attachments to SharePoint",
+    "secondaryKeywords": [
+      "Email",
+      "Attachments",
+      "Shared Mailbox",
+      "SharePoint"
+    ],
+    "faqs": [
+      {
+        "question": "How do I save email attachments to SharePoint automatically?",
+        "answer": "Use the Outlook trigger for new email with attachments, loop the attachments and call SharePoint Create file for each."
+      },
+      {
+        "question": "How do I skip signature images?",
+        "answer": "Filter on isInline equals false, a minimum size and the file extensions you expect."
+      },
+      {
+        "question": "Does this work with a shared mailbox?",
+        "answer": "Yes. Use the shared mailbox trigger and give the connection's user Full Access to the mailbox."
+      }
+    ]
+  },
+  {
+    "id": "pat-1645",
+    "slug": "microsoft-forms-file-upload-to-sharepoint-flow",
+    "title": "Move Microsoft Forms file uploads into a SharePoint library",
+    "shortDescription": "Read the upload question's JSON, fetch each file from where Forms stored it and file it in a library alongside a list item for the response.",
+    "fullDescription": "A file upload question in Microsoft Forms stores files in the form owner's OneDrive, or in the group's SharePoint site for group forms. The response contains only a JSON string describing them. A flow has to parse that string, fetch each file's content and create it where the process needs it.",
+    "category": "Power Automate",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Microsoft Forms",
+      "File Upload",
+      "SharePoint",
+      "OneDrive"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Applicants attach documents to a form. The files sit in a personal OneDrive folder that the processing team cannot see, disconnected from the response data.",
+    "whenToUse": [
+      "Intake forms with supporting documents",
+      "Moving uploads out of a personal OneDrive",
+      "Linking files to a list item per response"
+    ],
+    "whenNotToUse": [
+      "External respondents, since file upload questions work only for signed-in users in your organisation",
+      "Forms needing more than 10 files or files above the question's size limit"
+    ],
+    "formulaOrCode": "Trigger and response\n  Microsoft Forms > When a new response is submitted: Form Id\n  Microsoft Forms > Get response details: Form Id, Response Id\n  The upload question's value is a STRING containing JSON, or empty when nothing was uploaded:\n  [ { \"name\": \"passport_Priya Shah.pdf\", \"link\": \"https://contoso-my.sharepoint.com/...\", \"id\": \"01ABC...\",\n      \"type\": null, \"size\": 182340, \"referenceId\": \"01DEF...\", \"driveId\": \"b!xyz...\", \"status\": 1,\n      \"uploadSessionUrl\": null } ]\n\nCreate the record first\n  SharePoint > Create item: Applications\n    Title: @{outputs('Get_response_details')?['body/r1a2b3...']}        Applicant email: responder\n  Folder for the files: SharePoint > Create new folder: Applications Documents / APP-@{outputs('Create_item')?['body/ID']}\n\nParse the upload answer\n  Condition: not(empty(outputs('Get_response_details')?['body/<upload question id>']))\n  Parse JSON\n    Content: @{outputs('Get_response_details')?['body/<upload question id>']}\n    Schema:\n    { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": {\n        \"name\": { \"type\": \"string\" }, \"link\": { \"type\": \"string\" }, \"id\": { \"type\": \"string\" },\n        \"size\": { \"type\": \"integer\" }, \"driveId\": { \"type\": \"string\" } } } }\n  Or without the action:  json(outputs('Get_response_details')?['body/<upload question id>'])\n\nCopy each file\n  Apply to each: body('Parse_JSON')\n\n  A. Personal form (files in the owner's OneDrive: Apps/Microsoft Forms/<form name>/<question>)\n     OneDrive for Business > Get file content\n       File: @{items('Apply_to_each')?['id']}\n     SharePoint > Create file\n       Folder Path: /Applications Documents/APP-@{outputs('Create_item')?['body/ID']}\n       File Name:   @{items('Apply_to_each')?['name']}\n       File Content: @{body('Get_file_content')}\n     The flow's OneDrive connection must be the form owner's account.\n\n  B. Group form (files in the group's SharePoint site: Documents/Apps/Microsoft Forms/<form name>/<question>)\n     SharePoint > Get file content using path\n       Site Address: the group site\n       File Path: /Shared Documents/Apps/Microsoft Forms/<Form name>/<Question>/@{items('Apply_to_each')?['name']}\n     SharePoint > Create file (as above)\n     Or use Move file / Copy file with the path to keep it within SharePoint.\n\n  C. Works for both, by drive and item ID (Graph)\n     Send an HTTP request (Office 365 Groups or HTTP with Entra ID):\n       GET https://graph.microsoft.com/v1.0/drives/@{items('Apply_to_each')?['driveId']}/items/@{items('Apply_to_each')?['id']}/content\n\nClean file names\n  Forms appends the responder's name: \"passport_Priya Shah.pdf\". To standardise:\n    @{concat('APP-', outputs('Create_item')?['body/ID'], '_', replace(items('Apply_to_each')?['name'], concat('_', outputs('Get_response_details')?['body/responder']), ''))}\n  Remove characters SharePoint rejects if you build names from answers.\n\nLink the files to the record\n  Update item: DocumentsFolder = link to the folder\n    https://contoso.sharepoint.com/sites/HR/Applications%20Documents/APP-@{ID}\n  Or attach instead of filing: SharePoint > Add attachment (Id = item ID, File Name, File Content).\n\nTidy up the source\n  OneDrive > Delete file (id) after a successful copy, if the Forms copy should not linger.\n  The response in Forms still shows the link, which will then be broken. Decide which copy is the record.\n\nSeveral upload questions\n  Repeat Parse and loop per question, or build one array:\n    union(json(coalesce(answerA,'[]')), json(coalesce(answerB,'[]')))\n\nLimits of the question type\n  Up to 10 files per question, 10 MB, 100 MB or 1 GB each as configured. Signed-in users in your organisation only.\n  File types can be restricted on the question (Word, Excel, PPT, PDF, Image, Video, Audio).\n\nOwnership\n  Personal forms tie the process to one person's OneDrive. Create the form as a GROUP form\n  (Forms > My groups) so files land in the team's SharePoint site and survive staff changes.",
+    "stepByStepInstructions": [
+      "Create the form as a group form so uploads land in a team site.",
+      "Trigger on a new response and get the response details.",
+      "Check the upload answer is not empty and parse its JSON string.",
+      "Create the list item and a folder for the response.",
+      "Loop the files, get each file's content and create it in the folder.",
+      "Store the folder link on the item and decide whether to remove the Forms copy."
+    ],
+    "commonMistakes": [
+      "Treating the answer as an array without parsing the string.",
+      "No empty check when the question is optional.",
+      "Using a personal form for a team process.",
+      "Looking in OneDrive for files from a group form."
+    ],
+    "troubleshooting": [
+      "If Parse JSON fails on null, add the empty condition or wrap with coalesce(..., '[]').",
+      "If Get file content fails, check whether the form is personal or group and use the matching connector.",
+      "If the file is not found by path, read the name and folder from the link property.",
+      "If names include the responder's name, strip that suffix when building the new name."
+    ],
+    "relatedPatterns": [
+      "parse-form-response-json-into-sharepoint-rows",
+      "save-email-attachments-sharepoint-shared-mailbox-flow",
+      "move-copy-sharepoint-files-rename-conflict-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Move Microsoft Forms file uploads into a SharePoint library",
+    "seoDescription": "Read the upload question's JSON, fetch each file from where Forms stored it and file it in a library alongside a list item for the response.",
+    "primaryKeyword": "Power Automate Forms file upload SharePoint",
+    "secondaryKeywords": [
+      "Microsoft Forms",
+      "File Upload",
+      "SharePoint",
+      "OneDrive"
+    ],
+    "faqs": [
+      {
+        "question": "Where do Microsoft Forms file uploads go?",
+        "answer": "To the form owner's OneDrive for personal forms, or the group's SharePoint site for group forms, under Apps/Microsoft Forms."
+      },
+      {
+        "question": "How do I get Forms uploads in Power Automate?",
+        "answer": "Parse the upload answer's JSON string, then fetch each file by ID or path and create it in your library."
+      },
+      {
+        "question": "Can external users upload files in Forms?",
+        "answer": "No. File upload questions require respondents to be signed in to your organisation."
+      }
+    ]
+  },
+  {
+    "id": "pat-1646",
+    "slug": "sharepoint-batch-create-update-items-power-automate",
+    "title": "Create or update hundreds of SharePoint items fast with $batch",
+    "shortDescription": "Send up to 1,000 create, update or delete operations to SharePoint in one request using the REST $batch endpoint, with chunking and result checking.",
+    "fullDescription": "Create item inside Apply to each handles a few items per second and spends an action on each. The SharePoint REST $batch endpoint accepts many operations in a single request. A flow builds the batch body as text, posts it with Send an HTTP request to SharePoint, and checks the response for failures. Imports of thousands of rows drop from an hour to a minute or two.",
+    "category": "Power Automate",
+    "subCategory": "SharePoint",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Batch",
+      "SharePoint REST",
+      "Performance",
+      "Bulk Operations"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Importing 3,000 rows into a list takes 50 minutes with Apply to each, consumes thousands of actions and is regularly throttled part-way through.",
+    "whenToUse": [
+      "Bulk imports and syncs into SharePoint lists",
+      "Mass status updates or deletes",
+      "Flows near their daily action allowance"
+    ],
+    "whenNotToUse": [
+      "A few dozen items, where the standard actions are simpler to maintain",
+      "Operations that depend on each other's results within the same batch"
+    ],
+    "formulaOrCode": "Inputs\n  varRows: array of objects to create, for example from Excel, each { Title, Amount, DueDate }\n  List: Projects      Site: https://contoso.sharepoint.com/sites/PMO\n  Entity type name (needed for verbose metadata only): SP.Data.ProjectsListItem\n    GET _api/web/lists/getbytitle('Projects')?$select=ListItemEntityTypeFullName\n\n1. Chunk the rows (1,000 per batch at most. 200 to 500 is a safe size)\n  Compose BatchSize: 300\n  Apply to each chunk index:  range(0, add(div(sub(length(variables('varRows')), 1), 300), 1))        concurrency 1\n    Compose Chunk: take(skip(variables('varRows'), mul(item(), 300)), 300)\n\n2. Build one changeset entry per row with Select\n  Select \"Ops\"\n    From: outputs('Chunk')\n    Map (text mode, a single string per row):\n@{concat('--changeset_', variables('guid'), decodeUriComponent('%0D%0A'),\n'Content-Type: application/http', decodeUriComponent('%0D%0A'),\n'Content-Transfer-Encoding: binary', decodeUriComponent('%0D%0A'), decodeUriComponent('%0D%0A'),\n'POST https://contoso.sharepoint.com/sites/PMO/_api/web/lists/getbytitle(''Projects'')/items HTTP/1.1', decodeUriComponent('%0D%0A'),\n'Content-Type: application/json;odata=nometadata', decodeUriComponent('%0D%0A'), decodeUriComponent('%0D%0A'),\nstring(setProperty(setProperty(json('{}'), 'Title', item()?['Title']), 'Amount', item()?['Amount'])),\ndecodeUriComponent('%0D%0A'))}\n  setProperty builds the item's JSON body and escapes quotes and special characters for you. Add one\n  setProperty per column, using internal column names.\n  variables('guid') = guid() created once per chunk (Compose).\n\n3. Assemble the batch body (Compose \"Body\")\n--batch_@{variables('guid')}\nContent-Type: multipart/mixed; boundary=\"changeset_@{variables('guid')}\"\nContent-Transfer-Encoding: binary\n\n@{join(body('Ops'), '')}\n--changeset_@{variables('guid')}--\n--batch_@{variables('guid')}--\n  Blank lines matter: one blank line after each header block. Line endings must be CRLF.\n\n4. Send\n  SharePoint > Send an HTTP request to SharePoint\n    Site Address: https://contoso.sharepoint.com/sites/PMO\n    Method: POST\n    Uri: _api/$batch\n    Headers: Content-Type: multipart/mixed; boundary=batch_@{variables('guid')}\n             Accept: application/json;odata=nometadata\n    Body: @{outputs('Body')}\n\n5. Check the result\n  The response is multipart text with one HTTP status per operation. The request itself returns 200 even\n  when individual operations fail.\n    Compose Result: @{string(body('Send_an_HTTP_request_to_SharePoint'))}\n    Failures: sub(length(split(outputs('Result'), 'HTTP/1.1 4')), 1) + the same for 'HTTP/1.1 5'\n    Created:  sub(length(split(outputs('Result'), 'HTTP/1.1 201')), 1)\n  Condition: failures greater than 0 > log the chunk index and the response to a list or file, then continue or stop.\n\nUpdate and delete entries\n  Update:  'PATCH https://.../items(', item()?['ID'], ') HTTP/1.1'  plus headers\n           'IF-MATCH: *'   and the JSON body of changed columns. Success status: 204.\n  Delete:  'DELETE https://.../items(', item()?['ID'], ') HTTP/1.1'  with 'IF-MATCH: *' and no body. Status 200.\n           Recycle instead: POST .../items(<id>)/recycle\n\nColumn formats in the JSON body\n  Choice: \"Status\": \"Open\"        Number: 1250.5        Yes/No: true        Date: \"2026-12-01T00:00:00Z\"\n  Person: \"OwnerId\": 12 (site user ID)        Lookup: \"ProjectId\": 7\n  Multi-choice (nometadata): \"Tags\": [\"A\",\"B\"]\n\nBehaviour\n  Operations in one changeset are NOT transactional in SharePoint Online: some can succeed while others fail.\n  Order within a changeset is preserved. Triggers on the list still fire for every item created: a flow on\n  \"When an item is created\" will run once per item, so pause or guard it during imports.\n  Throttling still applies, but one batch counts far less than 300 separate calls. Keep chunk concurrency at 1\n  and add a 1 to 2 second delay between chunks for large loads.\n\nActions used\n  3,000 rows in chunks of 300: about 10 x 5 actions = 50, instead of 3,000.",
+    "stepByStepInstructions": [
+      "Shape the rows into objects that match the list's internal column names.",
+      "Split the rows into chunks of a few hundred.",
+      "Build a changeset entry per row with Select and join them.",
+      "Wrap the entries in the batch body with a unique boundary and CRLF line endings.",
+      "Post to _api/$batch with Send an HTTP request to SharePoint.",
+      "Count success and failure statuses in the response and log failures."
+    ],
+    "commonMistakes": [
+      "Treating a 200 response as proof every operation succeeded.",
+      "LF line endings or missing blank lines in the batch body.",
+      "Unescaped quotes in values breaking the JSON.",
+      "Running chunks in parallel and being throttled."
+    ],
+    "troubleshooting": [
+      "If the whole batch is rejected with 400, check the boundary names match between header and body.",
+      "If items fail with a field error, use internal column names and the right value format for each type.",
+      "If only some rows are created, read the per-operation statuses and fix those rows.",
+      "If a downstream flow floods, add a trigger condition or switch it off during the import."
+    ],
+    "relatedPatterns": [
+      "chunk-array-into-batches-power-automate",
+      "send-http-request-to-sharepoint-power-automate",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Create or update hundreds of SharePoint items fast with $batch",
+    "seoDescription": "Send up to 1,000 create, update or delete operations to SharePoint in one request using the REST $batch endpoint, with chunking and result checking.",
+    "primaryKeyword": "Power Automate SharePoint batch create items",
+    "secondaryKeywords": [
+      "Batch",
+      "SharePoint REST",
+      "Performance",
+      "Bulk Operations"
+    ],
+    "faqs": [
+      {
+        "question": "How do I create many SharePoint items quickly in Power Automate?",
+        "answer": "Build a REST $batch request containing all the create operations and send it with Send an HTTP request to SharePoint."
+      },
+      {
+        "question": "How many operations can one SharePoint batch hold?",
+        "answer": "Up to 1,000, though a few hundred per request is a safer size."
+      },
+      {
+        "question": "Is a SharePoint batch transactional?",
+        "answer": "No. Individual operations can fail while others succeed, so check each status in the response."
+      }
+    ]
+  },
+  {
+    "id": "pat-1647",
+    "slug": "secure-inputs-outputs-hide-run-history-power-automate",
+    "title": "Hide sensitive data in flow run history with secure inputs and outputs",
+    "shortDescription": "Stop passwords, tokens and personal data appearing in run history by securing the right actions, and understand how the protection flows to later actions.",
+    "fullDescription": "Run history shows the inputs and outputs of every action to anyone who can open the flow. Secure Inputs and Secure Outputs replace that content with a notice. Applied to the actions that fetch or use sensitive values, they keep secrets and personal data out of history, though they do not make a flow safe from its own editors.",
+    "category": "Power Automate",
+    "subCategory": "Security",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Secure Inputs",
+      "Secure Outputs",
+      "Run History",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A support engineer opening a failed run can read an API key in the HTTP action's headers and full salary details in a Get item output.",
+    "whenToUse": [
+      "Actions that read or send secrets and tokens",
+      "Flows processing personal, health or financial data",
+      "Any flow whose run history is visible to more than its author"
+    ],
+    "whenNotToUse": [
+      "Treating it as access control, since co-owners can turn the setting off",
+      "Securing every action, which makes troubleshooting impossible"
+    ],
+    "formulaOrCode": "Turn it on\n  Action > ... (or Settings in the new designer) > Secure Inputs: On / Secure Outputs: On > Done\n  A padlock icon appears on the action. Run history then shows:\n    \"Content not shown due to security configuration.\"\n\nWhich setting where\n  Fetch a secret (Key Vault Get secret, RetrieveEnvironmentVariableSecretValue, token request)\n      Secure Outputs: On\n  Use a secret (HTTP with an Authorization header or key in the body or URL)\n      Secure Inputs: On           and Secure Outputs if the response echoes it\n  Read personal data (Get item, List rows, Get user profile)\n      Secure Outputs: On\n  Send personal data (Send an email, Post message, Create item)\n      Secure Inputs: On\n  Trigger receiving sensitive payloads (HTTP request, Forms, Dataverse row)\n      Trigger settings > Secure Inputs and Secure Outputs: On\n\nHow protection propagates\n  When an action's outputs are secured, any LATER action that uses those outputs has its INPUTS hidden\n  automatically. Its outputs are not hidden unless you secure them too.\n    Get secret (Secure Outputs)  >  HTTP uses the secret: inputs hidden automatically\n                                  >  HTTP response visible unless Secure Outputs is set on HTTP\n  Compose, Set variable, Select and Parse JSON that touch a secured value: their inputs are hidden, their\n  outputs are NOT. A Compose that just passes the secret through exposes it in its output.\n    Fix: turn on Secure Outputs on those actions as well, or avoid intermediate copies.\n  Variables: Initialize/Set variable shows the value in its inputs. Secure Inputs on each one that holds a secret.\n  Apply to each: secure the actions inside. The loop's own item list comes from the source action's outputs.\n\nExample: API call with a key\n  1. Dataverse > Perform an unbound action: RetrieveEnvironmentVariableSecretValue       Secure Outputs: On\n  2. HTTP GET https://api.vendor.com/v1/customers/@{id}\n       Headers: x-api-key: @{outputs('Get_secret')?['body/EnvironmentVariableSecretValue']}\n       Secure Inputs: On (explicit, do not rely on propagation alone)        Secure Outputs: On if the body has personal data\n  3. Parse JSON of the response                                                       Secure Inputs: On, Secure Outputs: On\n  4. Create item with only the non-sensitive fields                                   left visible for support\n\nWhat it does not do\n  Co-owners can edit the flow, switch the settings off and run it again. Limit owners, and use a service\n  account plus solutions so production flows are managed and not edited in place.\n  Error messages from a failed secured action can still reveal fragments (for example a URL in an\n  exception). Keep secrets out of URLs where the API allows headers.\n  Data sent to another system (email, Teams, a list) is as visible as that system makes it.\n  Flow checker and exported definitions still contain anything typed directly into an action: never\n  hard-code secrets, read them at run time.\n  Child flows: secure the trigger of the child and the Run a Child Flow action in the parent. Settings do not\n  cross the boundary by themselves.\n  Dataverse-stored run history (FlowRun table) holds the same redacted view.\n\nKeep troubleshooting possible\n  Leave non-sensitive steps visible. Log a correlation ID, record IDs and status codes to a logging list\n  (never the payload). On failure, write the error code and action name, not the content.\n\nReview checklist for a flow\n  Any Authorization, key, password or token text in action inputs? Secured.\n  Any action returning personal data beyond names and IDs? Secured outputs.\n  Any Compose or variable holding those values? Secured.\n  Owners list limited? Yes.",
+    "stepByStepInstructions": [
+      "List the actions that fetch, hold or send secrets and sensitive data.",
+      "Turn on Secure Outputs where such data is read and Secure Inputs where it is used.",
+      "Secure intermediate Compose, variable and Parse JSON actions that copy the values.",
+      "Secure the trigger when the incoming payload is sensitive.",
+      "Run the flow and inspect history to confirm nothing sensitive is shown.",
+      "Limit flow owners and log only non-sensitive diagnostics."
+    ],
+    "commonMistakes": [
+      "Securing the fetch but not the Compose that copies the value.",
+      "Putting a key in the URL, where errors may reveal it.",
+      "Assuming secured actions protect against co-owners.",
+      "Securing everything and losing the ability to diagnose failures."
+    ],
+    "troubleshooting": [
+      "If a secret still shows, find the action whose output displays it and turn on Secure Outputs there.",
+      "If support cannot diagnose runs, add a logging step with IDs and status codes.",
+      "If a child flow shows the data, secure its trigger and the calling action.",
+      "If the setting is missing, look under the action's Settings tab in the new designer."
+    ],
+    "relatedPatterns": [
+      "environment-variable-secrets-azure-key-vault",
+      "http-oauth-client-credentials-graph-power-automate",
+      "create-a-flow-run-logging-list"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Hide sensitive data in flow run history with secure inputs and outputs",
+    "seoDescription": "Stop passwords, tokens and personal data appearing in run history by securing the right actions, and understand how the protection flows to later actions.",
+    "primaryKeyword": "Power Automate secure inputs outputs",
+    "secondaryKeywords": [
+      "Secure Inputs",
+      "Secure Outputs",
+      "Run History",
+      "Security"
+    ],
+    "faqs": [
+      {
+        "question": "What do Secure Inputs and Secure Outputs do in Power Automate?",
+        "answer": "They hide an action's inputs or outputs in run history, replacing them with a notice."
+      },
+      {
+        "question": "Do later actions also hide the value?",
+        "answer": "Their inputs are hidden when they use a secured output, but their own outputs are visible unless secured too."
+      },
+      {
+        "question": "Does this stop flow owners seeing the data?",
+        "answer": "No. An owner can turn the setting off. Restrict who can edit the flow."
+      }
+    ]
+  },
+  {
+    "id": "pat-1648",
+    "slug": "chunk-array-into-batches-power-automate",
+    "title": "Split an array into batches in a flow",
+    "shortDescription": "Break a large array into fixed-size groups with chunk or skip and take, then process each group with one batch request, one email or one child flow call.",
+    "fullDescription": "APIs cap how many records one request can carry, emails have recipient limits and loops over thousands of items are slow. Splitting an array into batches lets a flow send groups of 20, 100 or 1,000 at a time. The chunk function does it in one expression, and skip with take gives the same result where more control is needed.",
+    "category": "Power Automate",
+    "subCategory": "Data operations",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Arrays",
+      "Chunk",
+      "Batching",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A flow must send 4,300 rows to an API that accepts 100 per call. Looping one row at a time takes an hour, and sending everything at once is rejected.",
+    "whenToUse": [
+      "APIs and batch endpoints with a maximum per request",
+      "Sending email or Teams messages to recipients in groups",
+      "Fanning work out to child flows"
+    ],
+    "whenNotToUse": [
+      "Small arrays that fit a single request",
+      "Batches that must be all-or-nothing across the whole set"
+    ],
+    "formulaOrCode": "1. The chunk function\n  chunk(collection, length)\n  chunk(createArray(1,2,3,4,5,6,7), 3)      >  [[1,2,3],[4,5,6],[7]]\n  chunk(body('List_rows')?['value'], 100)   >  an array of arrays, each up to 100 rows\n  Also works on strings: chunk('abcdefg', 3) > [\"abc\",\"def\",\"g\"]\n\n  Apply to each: @chunk(body('List_rows')?['value'], 100)\n    items('Apply_to_each') is one batch (an array)\n    HTTP POST https://api.vendor.com/bulk\n      Body: { \"records\": @{items('Apply_to_each')} }\n    length(items('Apply_to_each'))       size of this batch (the last one may be smaller)\n\n2. skip and take (when you need the batch index)\n  Compose Size: 100\n  Compose Count: @{add(div(sub(length(variables('varRows')), 1), outputs('Size')), 1)}\n     ceiling division: 4,300 rows > 43 batches. Guard empty input: if length is 0, skip the loop.\n  Apply to each: @range(0, outputs('Count'))\n    Compose Batch: @take(skip(variables('varRows'), mul(item(), outputs('Size'))), outputs('Size'))\n    item() is the batch number (0-based): useful for logging \"batch 7 of 43\" and for resuming.\n\n3. Shape each batch before sending\n  Select inside the loop\n    From: items('Apply_to_each')\n    Map: id = item()?['cr1a2_number'], name = item()?['cr1a2_name']\n  Or shape the whole array once BEFORE chunking, which is cheaper.\n\n4. Typical batch sizes\n  SharePoint REST $batch                   up to 1,000 operations (200 to 500 practical)\n  Dataverse changeset / $batch             up to 1,000 operations\n  Microsoft Graph JSON batching            20 requests per batch\n  Outlook recipients per message           500 (tenant limit may be lower)\n  Adaptive Card rows                       10 to 15 for readability\n  Child flow input                         keep each payload well under a few MB\n\n5. Recipients in groups of 50 (Bcc)\n  Select emails: From users, Map (text mode) @item()?['mail']\n  Apply to each: @chunk(body('Select'), 50)\n    Send an email (V2): Bcc = @{join(items('Apply_to_each'), ';')}\n\n6. Graph JSON batch of 20\n  Apply to each: @chunk(variables('userIds'), 20)\n    Select \"Requests\": From items('Apply_to_each')\n       Map: id = @{item()}, method = GET, url = /users/@{item()}?$select=id,displayName,accountEnabled\n    HTTP POST https://graph.microsoft.com/v1.0/$batch\n       Body: { \"requests\": @{body('Requests')} }\n    Responses: body('HTTP')?['responses']  each with id, status, body. Order is not guaranteed: match by id.\n\n7. Concurrency and pacing\n  Apply to each > Settings > Concurrency Control: 1 for ordered or rate-limited targets. 5 to 20 to go faster\n  when the target allows and batches are independent.\n  Add Delay 1 to 2 seconds per batch for strict APIs. Honour Retry-After on 429 responses.\n  Variables are shared across parallel iterations. Use Compose inside the loop, not Set variable.\n\n8. Track failures per batch\n  Scope \"Send batch\" > on failure (run after has failed): Append to array variable varFailed\n     { \"batch\": <index>, \"error\": result('Send_batch')?[0]?['error']?['message'] }\n  After the loop: if varFailed has entries, email the summary or retry just those batches.\n\n9. Fan out to child flows\n  Apply to each chunk (concurrency 10): Run a Child Flow with rows = string(items('Apply_to_each'))\n  Each child handles one batch, so a failure affects 100 rows, not 4,300.",
+    "stepByStepInstructions": [
+      "Shape the full array to the fields the target needs.",
+      "Choose a batch size from the target's limit.",
+      "Split with chunk, or skip and take when you need the batch index.",
+      "Send each batch in one request inside Apply to each.",
+      "Set concurrency and delays to respect rate limits.",
+      "Record failed batches and retry or report them."
+    ],
+    "commonMistakes": [
+      "Looping item by item when the target accepts batches.",
+      "Using Set variable inside a concurrent loop.",
+      "Batch size above the target's maximum.",
+      "No handling for a failed batch, losing a whole group silently."
+    ],
+    "troubleshooting": [
+      "If chunk is not recognised in an older environment, use the skip and take pattern.",
+      "If the last batch fails, check for an empty array when the total is an exact multiple.",
+      "If responses are mismatched, correlate by the id in each response, not by position.",
+      "If you are throttled, lower concurrency and add a delay."
+    ],
+    "relatedPatterns": [
+      "sharepoint-batch-create-update-items-power-automate",
+      "apply-to-each-concurrency-variables-power-automate",
+      "dataverse-changeset-transaction-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Split an array into batches in a flow",
+    "seoDescription": "Break a large array into fixed-size groups with chunk or skip and take, then process each group with one batch request, one email or one child flow call.",
+    "primaryKeyword": "Power Automate chunk array batches",
+    "secondaryKeywords": [
+      "Arrays",
+      "Chunk",
+      "Batching",
+      "Expressions"
+    ],
+    "faqs": [
+      {
+        "question": "How do I split an array into batches in Power Automate?",
+        "answer": "Use chunk(array, size), which returns an array of arrays, and loop over the result."
+      },
+      {
+        "question": "How do I get the batch number?",
+        "answer": "Loop over range(0, batchCount) and build each batch with take(skip(array, index * size), size)."
+      },
+      {
+        "question": "What batch size should I use?",
+        "answer": "The target's limit or a little below: 20 for Graph batching, a few hundred for SharePoint or Dataverse batch requests."
+      }
+    ]
+  },
+  {
+    "id": "pat-1649",
+    "slug": "sharepoint-item-level-permissions-break-inheritance-flow",
+    "title": "Set item-level permissions on a SharePoint item from a flow",
+    "shortDescription": "Stop an item inheriting list permissions and grant access only to the requester, their manager and a team group, with the limits that keep lists healthy.",
+    "fullDescription": "Some lists hold items that only certain people should see: HR requests, incident reports, salary proposals. A flow can break permission inheritance on a new item and grant specific access. It works, and it is also the fastest way to make a list slow and hard to administer, so the approach comes with thresholds and alternatives.",
+    "category": "Power Automate",
+    "subCategory": "SharePoint",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Permissions",
+      "SharePoint",
+      "Break Inheritance",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Everyone with access to the HR requests list can open everyone else's requests, because the list has one set of permissions.",
+    "whenToUse": [
+      "Confidential items visible to the creator, an approver and a small team",
+      "Document libraries where each folder belongs to one customer or case",
+      "Low-volume lists, under a few thousand uniquely secured items"
+    ],
+    "whenNotToUse": [
+      "High-volume lists, where unique permissions per item degrade performance",
+      "Cases solved by the list setting 'Read items that were created by the user'",
+      "Using item permissions in place of a proper data platform for sensitive records"
+    ],
+    "formulaOrCode": "Simplest alternative first\n  List settings > Advanced settings > Item-level Permissions\n    Read access: Read items that were created by the user\n    Create and Edit access: Create items and edit items that were created by the user\n  Users with Manage Lists (owners, and a team with a custom level) still see everything.\n  No flow, no unique permissions. Covers \"requester sees own, team sees all\".\n\nFlow route (when approvers or other specific people need access)\n  Trigger: SharePoint > When an item is created       Site / List: HR Requests\n  Run with a connection that has Full Control on the list (a service account).\n\n  1. Stop inheriting\n     SharePoint > Stop sharing an item or a file\n       Site, List, Id: triggerOutputs()?['body/ID']\n     Breaks inheritance and removes everyone except site owners (people with Full Control keep access).\n\n  2. Grant access\n     SharePoint > Grant access to an item or a folder\n       Id: item ID\n       Recipients: @{triggerOutputs()?['body/Author/Email']};@{outputs('Get_manager_(V2)')?['body/mail']}\n       Roles: Can view | Can edit\n       Message: (leave empty)        Notify Recipients: No\n     Call again with a different role for other people. Groups: enter the Microsoft 365 or security group's email.\n\nREST equivalent, with full control over roles and SharePoint groups\n  Send an HTTP request to SharePoint (Method POST for each)\n    Break inheritance, copying nothing, clearing sub-scopes:\n      _api/web/lists/getbytitle('HR Requests')/items(@{ID})/breakroleinheritance(copyRoleAssignments=false,clearSubscopes=true)\n    Find a principal ID:\n      User:   GET _api/web/siteusers/getbyemail('@{email}')?$select=Id      (ensure first: POST _api/web/ensureuser  { \"logonName\": \"i:0#.f|membership|@{email}\" })\n      Group:  GET _api/web/sitegroups/getbyname('HR Team')?$select=Id\n    Find a role definition ID:\n      GET _api/web/roledefinitions?$select=Id,Name\n      Common: Full Control 1073741829, Edit 1073741830, Contribute 1073741827, Read 1073741826\n    Assign:\n      _api/web/lists/getbytitle('HR Requests')/items(@{ID})/roleassignments/addroleassignment(principalid=@{principalId},roledefid=1073741826)\n    Remove one assignment:\n      .../roleassignments/removeroleassignment(principalid=@{principalId},roledefid=1073741827)\n    Restore inheritance:\n      .../items(@{ID})/resetroleinheritance\n\nTypical assignment set\n  Requester: Read (or Contribute while status is Draft)        Manager: Contribute\n  HR Team (SharePoint group): Edit                              Site owners: Full Control (kept automatically)\n\nChange access when status changes\n  On approval: remove the requester's Contribute, add Read, so the record is locked for them.\n  Trigger condition on status change, then removeroleassignment and addroleassignment.\n\nTiming gap\n  Between creation and the flow finishing (seconds to a minute) the item still has inherited permissions.\n  Reduce exposure: the list's own permissions grant only Contribute-without-read-others through\n  item-level settings above, or submit through a flow or app that creates the item with the service account.\n\nLimits that matter\n  50,000 unique permission scopes per list or library is the hard limit. 5,000 is the recommended ceiling.\n  Performance and view loading degrade well before the hard limit.\n  Grant to GROUPS, not individuals, wherever possible: fewer principals per scope.\n  For libraries, secure a FOLDER per case and let files inherit from it: one scope instead of many.\n  Audit: Site settings > Site permissions > \"Some content on this site has different permissions\" lists exceptions.\n\nWhen volume is high or the data is sensitive\n  Use Dataverse with row ownership, teams and security roles, or separate lists or sites per audience.\n\nCheck\n  Item > Manage access (or ... > Details > Has access) shows who can see it. Test with a normal user account.",
+    "stepByStepInstructions": [
+      "Check whether the list's built-in item-level setting already meets the need.",
+      "Trigger on item creation with a service account that has Full Control.",
+      "Break inheritance on the item.",
+      "Grant read or edit access to the requester, approver and team group.",
+      "Adjust assignments when the status changes.",
+      "Monitor the number of uniquely secured items and prefer groups and folders."
+    ],
+    "commonMistakes": [
+      "Unique permissions on every item of a high-volume list.",
+      "Granting to individuals instead of groups.",
+      "Running the flow with an account that lacks Full Control.",
+      "Ignoring the gap before the flow runs."
+    ],
+    "troubleshooting": [
+      "If Grant access fails, the connection account needs Full Control and the recipient must be a valid user or group.",
+      "If people still see the item, they belong to a group with Full Control or the break did not run.",
+      "If the list is slow, count unique scopes and consolidate into folders or groups.",
+      "If the user is not found by email, call ensureuser first."
+    ],
+    "relatedPatterns": [
+      "sharepoint-permissions-request-list-pattern",
+      "govern-unique-permission-exceptions",
+      "send-http-request-to-sharepoint-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Set item-level permissions on a SharePoint item from a flow",
+    "seoDescription": "Stop an item inheriting list permissions and grant access only to the requester, their manager and a team group, with the limits that keep lists healthy.",
+    "primaryKeyword": "Power Automate SharePoint break inheritance grant access",
+    "secondaryKeywords": [
+      "Permissions",
+      "SharePoint",
+      "Break Inheritance",
+      "Security"
+    ],
+    "faqs": [
+      {
+        "question": "How do I restrict a SharePoint item to certain people with Power Automate?",
+        "answer": "Break inheritance with Stop sharing an item or a file, then use Grant access to an item or a folder for the people who need it."
+      },
+      {
+        "question": "Is there a no-code way to let users see only their own items?",
+        "answer": "Yes. In list advanced settings, set item-level permissions so users read and edit only items they created."
+      },
+      {
+        "question": "How many items can have unique permissions?",
+        "answer": "The hard limit is 50,000 unique scopes per list, with 5,000 as the recommended maximum."
+      }
+    ]
   }
 ]
