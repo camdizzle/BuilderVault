@@ -4940,7 +4940,7 @@
       "Register the development and target environments in the configuration app.",
       "Create a pipeline, link the development environment, and add one stage per target in order.",
       "Assign the pipeline roles and share the pipeline with the makers who will use it.",
-      "In the development environment, open the solution and choose Pipelines, then Deploy here on the first stage.",
+      "In the development environment, open the solution and choose Pipelines and start the deployment on the first stage.",
       "Enter connection and environment variable values when prompted, and confirm the deployment in the run history."
     ],
     "commonMistakes": [
@@ -5017,7 +5017,7 @@
       "A single maker with one or two personal apps",
       "As a reason to block makers. The aim is a clear path, not a closed door."
     ],
-    "formulaOrCode": "Environment layout\n\nDefault (rename to \"Personal Productivity\")\n  Purpose : personal apps and flows, Microsoft 365 connectors only\n  Makers  : everyone (cannot be restricted)\n  DLP     : strictest policy, premium and HTTP connectors blocked\n  Rule    : nothing business-critical lives here\n\nDeveloper environments (one per maker)\n  Purpose : learning and building with Dataverse and premium connectors\n  Makers  : the owner only\n  DLP     : standard policy\n\n<Team> Dev / <Team> Test / <Team> Prod\n  Type    : Sandbox, Sandbox, Production\n  Access  : each bound to its own Entra security group\n  Makers  : Dev = team makers, Test and Prod = service account only\n  Content : unmanaged in Dev, managed in Test and Prod\n  DLP     : policy scoped to the connectors the team needs\n\nTenant settings\n  [ ] Restrict who can create production and sandbox environments to admins\n  [ ] Allow developer environment creation for makers\n  [ ] Route new makers to a developer environment\n  [ ] Document how to request a team environment",
+    "formulaOrCode": "Environment layout\n\nDefault (rename to \"Personal Productivity\")\n  Purpose : personal apps and flows, Microsoft 365 connectors only\n  Makers  : everyone (cannot be restricted)\n  DLP     : strictest policy, premium and HTTP connectors blocked\n  Rule    : keep business-critical apps out of it\n\nDeveloper environments (one per maker)\n  Purpose : learning and building with Dataverse and premium connectors\n  Makers  : the owner only\n  DLP     : standard policy\n\n<Team> Dev / <Team> Test / <Team> Prod\n  Type    : Sandbox, Sandbox, Production\n  Access  : each bound to its own Entra security group\n  Makers  : Dev = team makers, Test and Prod = service account only\n  Content : unmanaged in Dev, managed in Test and Prod\n  DLP     : policy scoped to the connectors the team needs\n\nTenant settings\n  [ ] Restrict who can create production and sandbox environments to admins\n  [ ] Allow developer environment creation for makers\n  [ ] Route new makers to a developer environment\n  [ ] Document how to request a team environment",
     "stepByStepInstructions": [
       "List the apps and flows in the default environment and mark the ones the business depends on.",
       "Rename the default environment so its purpose is obvious, and apply the strictest DLP policy to it.",
