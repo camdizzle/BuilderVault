@@ -20,6 +20,8 @@ export type ResourceItem = {
   summaryBullets: string[];
   examples: ResourceExample[];
   relatedPatterns: string[];
+  /** Slugs of other tools to link from this page. Links are shown in both directions. */
+  relatedTools?: string[];
   faqs?: Array<{ question: string; answer: string }>;
 };
 
@@ -336,4 +338,14 @@ export const allResources = [...cookbooks, ...standards, ...cheatSheets, ...tool
 
 export function getResourceBySlug(kind: ResourceKind, slug: string) {
   return allResources.find((resource) => resource.kind === kind && resource.slug === slug);
+}
+
+/** Tools linked from a tool page: the ones it lists, plus every tool that lists it. */
+export function getRelatedTools(resource: ResourceItem) {
+  const slugs = new Set(resource.relatedTools ?? []);
+  for (const tool of tools) {
+    if (tool.relatedTools?.includes(resource.slug)) slugs.add(tool.slug);
+  }
+  slugs.delete(resource.slug);
+  return tools.filter((tool) => slugs.has(tool.slug));
 }

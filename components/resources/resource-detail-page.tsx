@@ -4,7 +4,7 @@ import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
-import type { ResourceItem } from "@/lib/resources";
+import { getRelatedTools, type ResourceItem } from "@/lib/resources";
 import { absoluteUrl } from "@/lib/site";
 
 const parentPathByKind = {
@@ -23,6 +23,7 @@ const parentLabelByKind = {
 
 export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
   const isTool = resource.kind === "tool";
+  const relatedTools = isTool ? getRelatedTools(resource) : [];
   const structuredData = isTool
     ? {
         "@context": "https://schema.org",
@@ -113,6 +114,19 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
             ) : null}
           </div>
           <aside style={{ display: "grid", gap: 18, alignSelf: "start" }}>
+            {relatedTools.length > 0 ? (
+              <div className="card" style={{ padding: 20 }}>
+                <h2 style={{ fontSize: "1.15rem", marginTop: 0 }}>Related tools</h2>
+                <div style={{ display: "grid", gap: 12 }}>
+                  {relatedTools.map((tool) => (
+                    <div key={tool.slug}>
+                      <Link href={tool.path} style={{ fontWeight: 800 }}>{tool.title}</Link>
+                      <p style={{ color: "var(--muted)", lineHeight: 1.5, margin: "4px 0 0" }}>{tool.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="card" style={{ padding: 20 }}>
               <h2 style={{ fontSize: "1.15rem", marginTop: 0 }}>Related patterns</h2>
               <div style={{ display: "grid", gap: 10 }}>
