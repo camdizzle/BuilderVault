@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { patternCollections } from "@/lib/patterns/collections";
 import { getAllPatterns } from "@/lib/patterns/patterns";
+import { isPatternIndexable } from "@/lib/patterns/indexing";
 import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl } from "@/lib/site";
 import { allResources, resourceGroups } from "@/lib/resources";
@@ -106,7 +107,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.72
     })),
-    ...getAllPatterns().map((pattern) => {
+    ...getAllPatterns().filter(isPatternIndexable).map((pattern) => {
       const seo = getPatternSeo(pattern);
 
       return {
