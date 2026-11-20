@@ -498,6 +498,73 @@ Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stay
       }
     ]
   }),
+  item({
+    slug: "onstart-to-named-formulas",
+    kind: "tool",
+    title: "App.OnStart to Named Formulas Converter",
+    eyebrow: "Free tool",
+    description: "Convert Power Apps App.OnStart code into named formulas for App.Formulas. Moves Set and ClearCollect statements that only calculate values, keeps actions in OnStart, and explains every statement it leaves behind.",
+    keywords: ["Power Apps named formulas", "App.Formulas", "App.OnStart to named formulas", "Power Apps OnStart slow", "convert Set to named formula"],
+    audience: "Makers with a long App.OnStart who want the app to open faster and the startup logic to be easier to maintain.",
+    summaryBullets: [
+      "Turns Set(name, value) into name = value; when the value is only calculated, never changed.",
+      "Can turn ClearCollect of static data into a read-only named formula.",
+      "Keeps anything that changes data or state in OnStart, such as Patch, Collect, Navigate, and flow calls.",
+      "Keeps values that must be captured once, such as Now() and Rand().",
+      "Unwraps Concurrent() and rebuilds it around the statements that stay."
+    ],
+    examples: [
+      {
+        title: "Before and after",
+        problem: "OnStart runs every statement before the first screen appears, even for values a user may never need.",
+        code: `// App.OnStart, before
+Set(varCurrentUser, LookUp(Employees, Email = Lower(User().Email)));
+Set(varIsLoading, false);
+Navigate(HomeScreen)
+
+// App.Formulas, after
+varCurrentUser = LookUp(Employees, Email = Lower(User().Email));
+
+// App.OnStart, after
+Set(varIsLoading, false);
+Navigate(HomeScreen)`,
+        expectedResult: "varCurrentUser is only looked up when a screen first uses it, and it stays up to date on its own.",
+        commonMistakes: ["Converting a variable that is Set again later in the app. Named formulas can't be reassigned.", "Leaving the old Set in OnStart as well, which causes a name conflict."]
+      },
+      {
+        title: "Use StartScreen instead of Navigate",
+        problem: "Navigate in OnStart is a common reason OnStart can't be emptied. App.StartScreen does the same job without blocking startup.",
+        code: `// App.StartScreen
+If(varIsAdmin, AdminScreen, HomeScreen)`,
+        expectedResult: "The app opens on the right screen, and varIsAdmin can be a named formula.",
+        commonMistakes: ["Calling Navigate in App.StartScreen. It takes a screen, not an action."]
+      }
+    ],
+    relatedPatterns: ["power-apps-error-handling-iferror-patch", "calculate-totals-gallery-collection"],
+    relatedTools: ["power-fx-formatter", "csv-to-power-fx-table", "power-apps-color-token-generator"],
+    faqs: [
+      {
+        question: "What is a named formula?",
+        answer: "A named formula is a name with a formula attached, written in App.Formulas as Name = Formula;. Power Apps works out the value when it is first needed and keeps it current when the data behind it changes. Unlike a variable, you can't assign it a new value with Set."
+      },
+      {
+        question: "How do I know a variable is safe to convert?",
+        answer: "It is safe when the app only reads it. Search the app for Set( followed by the variable name. If the only match is in OnStart, it can become a named formula. This tool can only see the code you paste, so it can't check the rest of the app for you."
+      },
+      {
+        question: "Why are Now() and Rand() left in OnStart?",
+        answer: "Set captures the value once. A named formula can be worked out again later, so a start time or a random number could change while the app is open."
+      },
+      {
+        question: "Can a collection be a named formula?",
+        answer: "Yes, when it is only read. The named formula returns a table you can use in galleries and dropdowns. If the app uses Collect, Patch, Remove, or Clear on it, keep it as a collection."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The conversion runs in your browser, and nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
