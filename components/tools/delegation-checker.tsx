@@ -86,10 +86,10 @@ export function DelegationChecker() {
         </div>
       ))}
 
-      <div>
+      <div style={{ minWidth: 0 }}>
         <h3 style={{ fontSize: "1.2rem", margin: "0 0 10px" }}>What {dataSourceLabels[source]} delegates</h3>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ borderCollapse: "collapse", minWidth: 420, width: "100%" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr>
                 <th scope="col" style={{ borderBottom: "1px solid var(--line)", padding: "8px 10px 8px 0", textAlign: "left" }}>Function or operator</th>
