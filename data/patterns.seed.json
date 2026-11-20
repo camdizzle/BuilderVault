@@ -15189,5 +15189,1250 @@
         "answer": "Yes. Post as Flow bot in Chat with Flow bot and set the recipient to the person's email."
       }
     ]
+  },
+  {
+    "id": "pat-1620",
+    "slug": "power-pages-basic-form-javascript-validation",
+    "title": "Add custom validation to a Power Pages form with JavaScript",
+    "shortDescription": "Register a custom page validator so a basic form shows your message in the standard validation summary and blocks submit until the rule passes.",
+    "fullDescription": "Power Pages forms validate required fields and data types on their own. Rules such as 'end date after start date' or 'phone or email required' need script. The supported way is to add a validator to the page's validator collection, which plugs into the same summary box and field highlighting as built-in checks.",
+    "category": "Power Pages",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Basic Forms",
+      "JavaScript",
+      "Validation",
+      "Page Validators"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A date range can be submitted with the end before the start. A hand-written alert on the submit button does not stop the form posting.",
+    "whenToUse": [
+      "Cross-field rules on basic and multistep forms",
+      "Format checks beyond the column's data type",
+      "Conditional required fields"
+    ],
+    "whenNotToUse": [
+      "Rules that must hold for security or data integrity, which also need server-side enforcement",
+      "Replacing simple required settings that form metadata can handle"
+    ],
+    "formulaOrCode": "Where the script goes\n  Power Pages design studio > Edit code (Visual Studio Code for the Web) > the page's .js file, or\n  Portal Management app > Basic Forms > your form > Additional Settings > Custom JavaScript.\n  Field IDs are the column logical names, for example cr1a2_startdate.\n\n1. End date must be after start date\n$(document).ready(function () {\n  if (typeof (Page_Validators) === \"undefined\") return;\n\n  var v = document.createElement(\"span\");\n  v.style.display = \"none\";\n  v.id = \"endAfterStartValidator\";\n  v.controltovalidate = \"cr1a2_enddate\";\n  v.errormessage = \"<a href='#cr1a2_enddate_label' referencecontrolid='cr1a2_enddate' onclick='javascript:scrollToAndFocus(\\\"cr1a2_enddate_label\\\",\\\"cr1a2_enddate\\\");return false;'>End date must be after the start date.</a>\";\n  v.validationGroup = \"\";\n  v.initialvalue = \"\";\n  v.evaluationfunction = function () {\n    var start = $(\"#cr1a2_startdate\").val();      // ISO value held in the hidden input\n    var end = $(\"#cr1a2_enddate\").val();\n    if (!start || !end) return true;              // let the required validators handle blanks\n    return new Date(end) > new Date(start);\n  };\n  Page_Validators.push(v);\n});\n\n2. At least one of phone or email\n  v.id = \"phoneOrEmailValidator\";\n  v.controltovalidate = \"emailaddress1\";\n  v.errormessage = \"<a href='#emailaddress1_label'>Enter an email address or a phone number.</a>\";\n  v.evaluationfunction = function () {\n    return $.trim($(\"#emailaddress1\").val()) !== \"\" || $.trim($(\"#telephone1\").val()) !== \"\";\n  };\n\n3. Conditionally required field (reason required when status is Other)\nfunction setRequired(fieldId, required, message) {\n  var label = $(\"#\" + fieldId + \"_label\");\n  var id = fieldId + \"_customRequired\";\n  if (required) {\n    label.parent().addClass(\"required\");                       // shows the asterisk\n    if ($.grep(Page_Validators, function (x) { return x.id === id; }).length === 0) {\n      var r = document.createElement(\"span\");\n      r.style.display = \"none\"; r.id = id; r.controltovalidate = fieldId;\n      r.errormessage = \"<a href='#\" + fieldId + \"_label'>\" + message + \"</a>\";\n      r.evaluationfunction = function () { return $.trim($(\"#\" + fieldId).val()) !== \"\"; };\n      Page_Validators.push(r);\n    }\n  } else {\n    label.parent().removeClass(\"required\");\n    Page_Validators = $.grep(Page_Validators, function (x) { return x.id !== id; });\n  }\n}\n$(document).ready(function () {\n  function apply() { setRequired(\"cr1a2_otherreason\", $(\"#cr1a2_category\").val() === \"100000003\", \"Give a reason for Other.\"); }\n  $(\"#cr1a2_category\").on(\"change\", apply); apply();\n});\n\n4. Format check\n  v.evaluationfunction = function () {\n    var val = $.trim($(\"#cr1a2_reference\").val());\n    return val === \"\" || /^[A-Z]{3}-\\d{4}$/.test(val);\n  };\n\n5. Last-moment check on submit (for rules that are awkward as validators)\nif (window.jQuery) { (function ($) {\n  if (typeof (webFormClientValidate) != \"undefined\") {\n    var original = webFormClientValidate;\n    webFormClientValidate = function () {\n      if (original && !original.apply(this, arguments)) return false;\n      // return false to cancel\n      return true;\n    };\n  }\n}(window.jQuery)); }\n  For basic forms the function is entityFormClientValidate. For multistep forms, webFormClientValidate.\n\nReading values by control type\n  Text, whole number:   $(\"#field\").val()\n  Choice:               $(\"#field\").val()                 the option's numeric value as text\n  Yes/No check box:     $(\"#field\").is(\":checked\")        radio style: $(\"#field_1\").is(\":checked\")\n  Lookup:               $(\"#field\").val() (GUID), $(\"#field_name\").val() (text), $(\"#field_entityname\").val()\n  Date:                 $(\"#field\").val() ISO string. The visible box is a sibling input.\n\nServer side\n  Repeat important rules where they cannot be bypassed: a Dataverse business rule scoped to Entity, a\n  real-time workflow or a plug-in. Script in the browser can be skipped by a determined user.",
+    "stepByStepInstructions": [
+      "Find the logical names of the fields involved.",
+      "Add script to the page or the form's Custom JavaScript.",
+      "Create a validator object with an evaluation function and an error message.",
+      "Push it into Page_Validators when the document is ready.",
+      "Toggle the required style and validator for conditional rules.",
+      "Enforce critical rules again in Dataverse."
+    ],
+    "commonMistakes": [
+      "Using alert and return false on the button's click, which the form ignores.",
+      "Selecting fields by display name instead of logical name.",
+      "Validating only in the browser.",
+      "Returning false for blank values, which duplicates the required message."
+    ],
+    "troubleshooting": [
+      "If the validator never runs, check Page_Validators exists on that page and the script loads without errors.",
+      "If the message is not clickable, wrap it in an anchor that targets the field label.",
+      "If a date comparison is wrong, compare the hidden ISO value, not the formatted text.",
+      "If the rule fires on a hidden field, remove its validator when you hide the field."
+    ],
+    "relatedPatterns": [
+      "create-a-basic-form-validation-plan",
+      "power-pages-web-api-create-record",
+      "create-a-public-intake-portal-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Add custom validation to a Power Pages form with JavaScript",
+    "seoDescription": "Register a custom page validator so a basic form shows your message in the standard validation summary and blocks submit until the rule passes.",
+    "primaryKeyword": "Power Pages form validation JavaScript",
+    "secondaryKeywords": [
+      "Basic Forms",
+      "JavaScript",
+      "Validation",
+      "Page Validators"
+    ],
+    "faqs": [
+      {
+        "question": "How do I add custom validation to a Power Pages form?",
+        "answer": "Create a validator object in JavaScript with an evaluation function and push it into the Page_Validators array."
+      },
+      {
+        "question": "Where do I put JavaScript for a basic form?",
+        "answer": "In the page's JavaScript file, or in the form's Custom JavaScript box under Additional Settings in the Portal Management app."
+      },
+      {
+        "question": "Is client-side validation enough?",
+        "answer": "No. Repeat important rules in Dataverse with business rules, workflows or plug-ins."
+      }
+    ]
+  },
+  {
+    "id": "pat-1621",
+    "slug": "power-pages-multistep-form-conditional-steps",
+    "title": "Build a multistep form with conditional branching",
+    "shortDescription": "Split a long application into steps, branch to different steps based on an answer, show progress and let people resume where they left off.",
+    "fullDescription": "A multistep form walks a visitor through several Dataverse forms or tabs in order, saving as it goes. Condition steps test a column value and send the visitor down one path or another. Session tracking lets a signed-in user return later and continue from the last completed step.",
+    "category": "Power Pages",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Multistep Forms",
+      "Conditional Steps",
+      "Wizards",
+      "Dataverse Forms"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "A grant application has forty fields. Business applicants need a company section that individuals should never see, and people abandon the single long page.",
+    "whenToUse": [
+      "Long applications and registrations",
+      "Paths that differ by an early answer",
+      "Forms people complete over more than one sitting"
+    ],
+    "whenNotToUse": [
+      "Short forms, where a basic form is simpler",
+      "Branching so complex that a canvas or custom page would be clearer"
+    ],
+    "formulaOrCode": "Dataverse preparation\n  Table: Application (cr1a2_application)\n  One main form per step (or one form with a tab per step):\n    \"Web - Applicant\", \"Web - Company\", \"Web - Project\", \"Web - Declaration\"\n  Column used for branching: cr1a2_applicanttype (Choice: Individual 100000000, Business 100000001)\n\nCreate the multistep form\n  Design studio > page > + Multistep form > New multistep form\n    Name: Grant application        Table: Application\n  Add step (repeat):\n    Step name, Table, Form, Tab (optional), Mode\n  Steps\n    1  Applicant      Load Form  form \"Web - Applicant\"     Mode: Insert\n    2  Business?      Condition  cr1a2_applicanttype == 100000001\n                                   Next step if true:  3 Company\n                                   Next step if false: 4 Project\n    3  Company        Load Form  form \"Web - Company\"       Mode: Edit     Source: Result from previous step\n    4  Project        Load Form  form \"Web - Project\"       Mode: Edit     Source: Result from previous step\n    5  Declaration    Load Form  form \"Web - Declaration\"   Mode: Edit     Source: Result from previous step\n    6  Thank you      Redirect   to the page /application-received  (or a final step with a success message)\n  Portal Management app > Multistep Forms > Form Steps shows the same with every option\n  (Type: Load Form | Load Tab | Condition | Redirect).\n\nCondition syntax (Condition step > Condition)\n  cr1a2_applicanttype == 100000001\n  cr1a2_amount > 5000 && cr1a2_country == \"US\"\n  cr1a2_haspartner == true\n  Operators: ==, !=, >, <, >=, <=, &&, ||, =* (contains, for text). Use logical names. Choices compare by number.\n\nSettings worth changing (multistep form record)\n  Progress indicator: Enabled        Type: Title | Numeric | Progress bar        Position: Top\n  Start New Session On Load: No      (keeps a returning user's progress)\n  Multiple Records Per User Permitted: No     (one application per user. Yes for repeatable requests)\n  Edit Expired State Code / Status Code: stop editing once the record is submitted (for example inactive)\n  Authentication required: Yes, so sessions can be tied to a contact\n\nPer step\n  Move Previous Permitted: Yes\n  Associate Current Portal User: Yes on step 1, Target column: cr1a2_applicant (lookup to Contact)\n    so the record belongs to the signed-in contact and table permissions with Contact scope apply.\n  Set Values on Save: on the Declaration step set cr1a2_submittedon to the current date, and status reason\n    to Submitted (Portal Management > step > Form Options, or a flow on update).\n  Attach File: Yes on a documents step (notes or SharePoint, see the file upload pattern).\n\nTable permissions\n  Table: Application    Access type: Contact    Relationship: the applicant lookup\n  Privileges: Create, Read, Write, Append, Append To        Web role: Authenticated Users\n  Without Create and Write the form shows a permission error.\n\nClient script per step\n  Each step has its own Custom JavaScript. Validators and show/hide rules are added the same way as on basic forms.\n\nBranching to a different table\n  A step can load a form for a related table using Source: Record associated to current portal user, or\n  Query string. Keep this for genuine child records.\n\nSave and resume\n  With Start New Session On Load = No and a signed-in user, returning to the page opens the last step\n  reached. Add a \"Save and finish later\" hint next to the Next button with a content snippet.\n\nTest\n  Walk both branches. Use Previous across the condition step. Reload mid-way and confirm resume. Check the\n  record's values after each step.",
+    "stepByStepInstructions": [
+      "Create one Dataverse form or tab per step.",
+      "Add a multistep form and its load steps in order.",
+      "Insert condition steps that test the branching column.",
+      "Set source, mode and previous-step options on each step.",
+      "Associate the record with the signed-in contact and add table permissions.",
+      "Enable the progress indicator and test every path, including resume."
+    ],
+    "commonMistakes": [
+      "Setting later steps to Insert, which creates a new record at each step.",
+      "Comparing choice columns to labels instead of numeric values.",
+      "No table permissions for create and write.",
+      "Starting a new session on every load, which loses progress."
+    ],
+    "troubleshooting": [
+      "If a second record is created mid-way, set later steps to Edit with source Result from previous step.",
+      "If the condition always goes one way, check the logical name and the numeric choice value.",
+      "If users see access denied, add table permissions with contact scope and the right web role.",
+      "If Previous shows stale data, clear the server cache or republish after changing step settings."
+    ],
+    "relatedPatterns": [
+      "build-a-multi-step-intake-wizard",
+      "power-pages-table-permissions-web-roles",
+      "power-pages-basic-form-javascript-validation"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Build a multistep form with conditional branching",
+    "seoDescription": "Split a long application into steps, branch to different steps based on an answer, show progress and let people resume where they left off.",
+    "primaryKeyword": "Power Pages multistep form conditional step",
+    "secondaryKeywords": [
+      "Multistep Forms",
+      "Conditional Steps",
+      "Wizards",
+      "Dataverse Forms"
+    ],
+    "faqs": [
+      {
+        "question": "What is a multistep form in Power Pages?",
+        "answer": "A sequence of Dataverse forms or tabs presented as steps, with saving between steps and optional branching."
+      },
+      {
+        "question": "Can a multistep form skip steps based on an answer?",
+        "answer": "Yes. Add a condition step that tests a column and sets different next steps for true and false."
+      },
+      {
+        "question": "Can users resume a multistep form later?",
+        "answer": "Yes, if they are signed in and the form does not start a new session on load."
+      }
+    ]
+  },
+  {
+    "id": "pat-1622",
+    "slug": "power-pages-list-filter-search-actions",
+    "title": "Configure a Power Pages list with search, filters and row actions",
+    "shortDescription": "Show Dataverse rows on a page with paging, search, a filter panel, a details link and create, edit and delete actions, all limited by table permissions.",
+    "fullDescription": "A list component renders a Dataverse view on a web page. Most of what a records page needs is configuration: which views, how many rows, search, metadata filters, and actions that open forms. Table permissions decide which rows each visitor sees, so the same list serves every customer with their own data.",
+    "category": "Power Pages",
+    "subCategory": "Lists",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Lists",
+      "Views",
+      "Filters",
+      "Table Permissions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Customers need to see and manage their own support cases on the site, and writing a custom page for a table with paging and filtering would take days.",
+    "whenToUse": [
+      "My records pages such as cases, applications or orders",
+      "Public directories from a Dataverse view",
+      "Simple self-service create, edit and delete"
+    ],
+    "whenNotToUse": [
+      "Highly designed layouts, where Liquid with FetchXML gives full control",
+      "Lists over very large unfiltered views, which load slowly"
+    ],
+    "formulaOrCode": "Dataverse view first\n  Table: Case (or your table) > Views > \"Web - My active cases\"\n  Columns in display order: Case Number, Title, Status Reason, Created On\n  Filter: Status = Active        Sort: Created On descending\n  The list shows the view's columns and sort. Row scope comes from table permissions, not from the view.\n\nAdd the list\n  Design studio > page > + List > New list\n    Name: My cases        Table: Case        Views: Web - My active cases, Web - My resolved cases\n  Several views appear as a drop-down on the page.\n\nList settings (design studio or Portal Management > Lists)\n  General\n    Page Size: 10\n    Enable Table Permissions: On            (always, except truly public reference data)\n    Empty List Text: You have no cases yet.\n  Search\n    Enabled: Yes        Tooltip / hint text: Search title or number\n    Searches the view's text columns. A leading * allows contains matches, for example *printer.\n  Actions (Grid Configuration)\n    View Actions > Create:  Target: Page (/support/new-case) or Basic form \"Web - New case\"\n    Item Actions > Details: Target: Page (/support/case) or form \"Web - Case details\", Record ID parameter: id\n                 > Edit:    Basic form \"Web - Edit case\"\n                 > Delete:  with confirmation text\n                 > Workflow: run an on-demand classic workflow against the row\n    Download: adds an Excel export of the current view (respects permissions).\n  Each action can have a custom button label.\n\nFilter panel (Metadata Filter, Portal Management > List > Metadata Filter)\n  Enabled: Yes        Orientation: Vertical | Horizontal        Apply button label: Apply\n  Add filter types:\n    Text            Column: Title                     free-text contains\n    Attribute set   Column: Status Reason, Priority   check boxes built from choice options\n    Lookup set      Column: Product                   check boxes from related rows\n    Range set       Column: Created On                named ranges such as Last 7 days\n    FetchXML        custom condition for anything else\n\nFilter by the signed-in user without table permissions (Options tab)\n  Portal User Attribute: customerid (or a contact lookup)        rows where that column = the current contact\n  Account Attribute: parent customer account                     rows for the user's account\n  Table permissions are the stronger control. Use both only when the view must narrow further.\n\nTable permissions\n  Table: Case        Access type: Contact (customerid) or Account        Privileges: Read, Write, Create, Append, Append To\n  Web role: Authenticated Users (or a customer role)\n  Child permission for notes if the details form shows the timeline:\n    Table: Note (annotation)   Access type: Parent   Parent: the Case permission   Relationship: Case_Annotation\n\nDetails page\n  Add a page /support/case with a basic form in Edit or Read-only mode,\n  Record source: Query string, parameter name: id. The list's Details action passes ?id=<guid>.\n\nMap and calendar views\n  A list can render as a calendar (Calendar View settings: start, end, summary columns) or a map when rows\n  hold latitude and longitude.\n\nPerformance\n  Keep the view to under ten columns, avoid sorting on lookups, and filter the view itself (active only).\n  Lists are cached per user for a short time: new rows can take a moment to appear.\n\nStyling\n  The list renders a Bootstrap table. Target it in the page's CSS: .entitylist .view-grid table { ... }\n  Add a script on the list's \"loaded\" event to adjust cells:\n    $(\".entitylist.entity-grid\").on(\"loaded\", function () { /* format status cells */ });",
+    "stepByStepInstructions": [
+      "Create Dataverse views with the columns and sort the page should show.",
+      "Add a list to the page and select the views.",
+      "Turn on table permissions and create permissions scoped to the contact or account.",
+      "Enable search and add metadata filters for the main columns.",
+      "Add create, details, edit and delete actions that target forms or pages.",
+      "Create the details page that reads the record ID from the query string."
+    ],
+    "commonMistakes": [
+      "Turning table permissions off to make rows appear.",
+      "Using a view with twenty columns.",
+      "Forgetting permissions for related tables shown on the details form.",
+      "Expecting the view's owner filter to restrict rows for web users."
+    ],
+    "troubleshooting": [
+      "If the list is empty, check table permissions, the web role and that the view returns rows for that contact.",
+      "If an action button is missing, the user lacks the matching privilege, such as Write for Edit.",
+      "If search finds nothing, the searched column is not a text column in the view.",
+      "If changes do not show, clear the site cache or wait for it to refresh."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-liquid-fetchxml-list",
+      "build-a-my-requests-view"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Configure a Power Pages list with search, filters and row actions",
+    "seoDescription": "Show Dataverse rows on a page with paging, search, a filter panel, a details link and create, edit and delete actions, all limited by table permissions.",
+    "primaryKeyword": "Power Pages list filter search",
+    "secondaryKeywords": [
+      "Lists",
+      "Views",
+      "Filters",
+      "Table Permissions"
+    ],
+    "faqs": [
+      {
+        "question": "How do I show Dataverse records on a Power Pages site?",
+        "answer": "Add a list component, choose the table and views, and set table permissions so visitors see only the rows they should."
+      },
+      {
+        "question": "How do I show only the signed-in user's rows?",
+        "answer": "Create a table permission with Contact or Account access type and enable table permissions on the list."
+      },
+      {
+        "question": "Can visitors filter a list?",
+        "answer": "Yes. Enable search and add metadata filters for text, choice, lookup and range columns."
+      }
+    ]
+  },
+  {
+    "id": "pat-1623",
+    "slug": "power-pages-web-api-read-update-delete",
+    "title": "Read, update and delete Dataverse rows with the Power Pages Web API",
+    "shortDescription": "Query rows with OData, patch a column and delete a record from page script using the portal Web API, with the site settings and wrapper each call needs.",
+    "fullDescription": "The portal Web API exposes Dataverse tables to page script under /_api. Reads use OData query options, updates use PATCH and deletes use DELETE. Every table must be enabled through site settings, every call is checked against table permissions and column permissions, and write calls must carry an anti-forgery token.",
+    "category": "Power Pages",
+    "subCategory": "Web API",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Web API",
+      "JavaScript",
+      "safeAjax",
+      "Table Permissions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A page needs to load a user's open orders, let them change a delivery note inline and cancel an order, without full page reloads or a form per action.",
+    "whenToUse": [
+      "Interactive pages that read and change data without reloads",
+      "Inline edits, toggles and quick actions",
+      "Custom layouts fed by JSON"
+    ],
+    "whenNotToUse": [
+      "Tables holding data a visitor should never query, even filtered",
+      "Complex transactions better handled by a flow or server logic"
+    ],
+    "formulaOrCode": "1. Site settings (Portal Management > Site Settings), per table\n  Webapi/cr1a2_order/enabled        true\n  Webapi/cr1a2_order/fields         cr1a2_name,cr1a2_status,cr1a2_deliverynote,cr1a2_total,createdon\n                                    (use * only for non-sensitive tables)\n  Webapi/error/innererror           true        while developing only\n  Table permissions: Read, Write, Delete as needed, scoped to Contact, for the user's web role.\n\n2. Wrapper that adds the request verification token (put it in a web template or the page's script)\n(function (webapi, $) {\n  function safeAjax(ajaxOptions) {\n    var deferredAjax = $.Deferred();\n    shell.getTokenDeferred().done(function (token) {\n      if (!ajaxOptions.headers) { $.extend(ajaxOptions, { headers: { \"__RequestVerificationToken\": token } }); }\n      else { ajaxOptions.headers[\"__RequestVerificationToken\"] = token; }\n      $.ajax(ajaxOptions)\n        .done(function (data, textStatus, jqXHR) { validateLoginSession(data, textStatus, jqXHR, deferredAjax.resolve); })\n        .fail(deferredAjax.reject);\n    }).fail(function () { deferredAjax.rejectWith(this, arguments); });\n    return deferredAjax.promise();\n  }\n  webapi.safeAjax = safeAjax;\n})(window.webapi = window.webapi || {}, jQuery);\n\n3. Read\n  // Use the entity set name (plural), for example cr1a2_orders\n  webapi.safeAjax({\n    type: \"GET\",\n    url: \"/_api/cr1a2_orders?$select=cr1a2_name,cr1a2_status,cr1a2_total,createdon\" +\n         \"&$filter=statecode eq 0 and cr1a2_status eq 100000000\" +\n         \"&$orderby=createdon desc&$top=20&$count=true\",\n    contentType: \"application/json\"\n  }).done(function (res) {\n    console.log(res[\"@odata.count\"]);\n    res.value.forEach(function (o) {\n      // formatted values need the Prefer header shown below\n      $(\"#orders\").append($(\"<li>\").text(o.cr1a2_name + \" \" + o.cr1a2_total));\n    });\n  }).fail(function (xhr) { console.error(xhr.responseJSON); });\n\n  Formatted choice labels and lookups:\n    headers: { \"Prefer\": \"odata.include-annotations=\\\"OData.Community.Display.V1.FormattedValue\\\"\" }\n    o[\"cr1a2_status@OData.Community.Display.V1.FormattedValue\"]\n  Single row:      /_api/cr1a2_orders(<guid>)?$select=cr1a2_name\n  Related rows:    /_api/cr1a2_orders(<guid>)?$select=cr1a2_name&$expand=cr1a2_order_lines($select=cr1a2_product,cr1a2_qty)\n  Paging:          follow res[\"@odata.nextLink\"], or use Prefer: odata.maxpagesize=20\n\n4. Update\n  webapi.safeAjax({\n    type: \"PATCH\",\n    url: \"/_api/cr1a2_orders(\" + orderId + \")\",\n    contentType: \"application/json\",\n    data: JSON.stringify({ \"cr1a2_deliverynote\": $(\"#note\").val() })\n  }).done(function () { showMessage(\"Saved\"); });\n  Single column:  PUT /_api/cr1a2_orders(<guid>)/cr1a2_deliverynote   { \"value\": \"Leave with reception\" }\n  Set a lookup:   { \"cr1a2_Product@odata.bind\": \"/cr1a2_products(<guid>)\" }      (navigation property name is case-sensitive)\n  Clear a lookup: DELETE /_api/cr1a2_orders(<guid>)/cr1a2_Product/$ref\n\n5. Delete\n  webapi.safeAjax({ type: \"DELETE\", url: \"/_api/cr1a2_orders(\" + orderId + \")\", contentType: \"application/json\" })\n    .done(function () { $(\"#row-\" + orderId).remove(); });\n  Often better: PATCH a status to Cancelled and keep the row.\n\n6. Errors\n  403 with code 90040120    table permission missing for that operation\n  403 \"Attribute ... is not enabled for Web Api\"   add the column to Webapi/<table>/fields\n  404 on /_api/...          table not enabled, or wrong entity set name\n  401 / redirect to sign-in session expired (validateLoginSession handles it)\n\nSecurity points\n  The Web API respects table permissions and column permission profiles, so a visitor can only touch rows\n  and columns they are granted. List only needed columns in the fields setting.\n  Anonymous access requires permissions on the Anonymous Users role. Grant read-only at most and only for public data.\n  Rate limiting applies per user. Avoid loops of single calls: fetch sets with one query.",
+    "stepByStepInstructions": [
+      "Enable the table and list the allowed columns in site settings.",
+      "Create table permissions for the operations the page needs.",
+      "Add the safeAjax wrapper to the site.",
+      "Query rows with select, filter, orderby and top.",
+      "Patch changed columns and delete or cancel rows through the wrapper.",
+      "Handle 403 and 404 responses with clear messages and test as different users."
+    ],
+    "commonMistakes": [
+      "Using the table's singular logical name instead of the entity set name.",
+      "Setting fields to * on sensitive tables.",
+      "Calling $.ajax directly without the verification token for writes.",
+      "Assuming the filter in the query is the security boundary."
+    ],
+    "troubleshooting": [
+      "If you get 404, check the Webapi/<table>/enabled setting and the plural entity set name.",
+      "If a column is rejected, add it to the fields setting and wait for the cache to refresh.",
+      "If writes return 403, add Write or Delete to the table permission for that web role.",
+      "If a lookup bind fails, use the navigation property's schema name with exact casing."
+    ],
+    "relatedPatterns": [
+      "power-pages-web-api-create-record",
+      "power-pages-table-permissions-web-roles",
+      "dataverse-filter-rows-odata-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Read, update and delete Dataverse rows with the Power Pages Web API",
+    "seoDescription": "Query rows with OData, patch a column and delete a record from page script using the portal Web API, with the site settings and wrapper each call needs.",
+    "primaryKeyword": "Power Pages Web API GET PATCH DELETE",
+    "secondaryKeywords": [
+      "Web API",
+      "JavaScript",
+      "safeAjax",
+      "Table Permissions"
+    ],
+    "faqs": [
+      {
+        "question": "How do I query Dataverse from Power Pages JavaScript?",
+        "answer": "Enable the table for the Web API in site settings, then send a GET to /_api/<entity set> with OData options through the safeAjax wrapper."
+      },
+      {
+        "question": "Does the Power Pages Web API respect security?",
+        "answer": "Yes. Every call is checked against table permissions and column permissions for the signed-in user's web roles."
+      },
+      {
+        "question": "Why do I get 404 from /_api?",
+        "answer": "The table is not enabled in site settings or the URL uses the wrong entity set name."
+      }
+    ]
+  },
+  {
+    "id": "pat-1624",
+    "slug": "power-pages-file-upload-notes-sharepoint-azure",
+    "title": "Let visitors upload files on a Power Pages form",
+    "shortDescription": "Add attachments to basic and multistep forms, choose between Dataverse notes, Azure Blob Storage and SharePoint, and set file type and size limits.",
+    "fullDescription": "Power Pages forms can accept files in three ways: as notes on the record, as notes whose content is stored in Azure Blob Storage, or as documents in a SharePoint library linked to the record. Each needs the right table permissions. Limits on type, size and count belong in the form configuration, not just in guidance text.",
+    "category": "Power Pages",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "File Upload",
+      "Notes",
+      "SharePoint",
+      "Azure Blob Storage"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Applicants must attach proof documents. Emailing them separately breaks the link to the application and loses files.",
+    "whenToUse": [
+      "Supporting documents on applications and cases",
+      "Photos or evidence attached to requests",
+      "Document exchange with customers through SharePoint"
+    ],
+    "whenNotToUse": [
+      "Very large files such as video without Azure storage",
+      "Accepting any file type on a public anonymous form"
+    ],
+    "formulaOrCode": "Option A: attach on submit, stored as notes (simplest)\n  Portal Management > Basic Forms > your form > Additional Settings > Add Attach File\n    Attach File: Yes\n    Attach File Storage Location: Note Attachment\n    Allow Multiple Files: Yes\n    Attach File Required: Yes (with a required error message)\n    Restrict File Types: Yes     Accept (MIME): application/pdf,image/png,image/jpeg\n                                 Accept (extensions): .pdf,.png,.jpg\n    Maximum File Size (KB): 5120\n    Label: Supporting documents\n  Works on Insert-mode forms: files are saved as notes on the new record.\n  Table permissions:\n    Parent: your table (Create, Read, Write, Append To)\n    Child:  Note (annotation), Access type Parent, relationship <table>_Annotations, privileges Create, Read, Write, Append\n  Dataverse limit: environment's maximum attachment size (System Settings > Email > file size, default 5 MB,\n  up to about 128 MB). Blocked extensions list also applies.\n\nOption B: timeline (notes) control on an edit form\n  Add the Timeline to the Dataverse form used by the basic form (Edit mode).\n  Basic form metadata: Type Notes > Create Dialog Options, Edit, Delete enabled as needed.\n  Notes are shown on the site only when their text starts with *WEB* by default. Notes added through the\n  site get the prefix automatically. Staff adding a note for the customer type *WEB* first.\n\nOption C: notes stored in Azure Blob Storage (large files, cheaper storage)\n  Create a storage account and a container. Set CORS on the storage account for the site's URL.\n  Site settings:\n    FileStorage/CloudStorageAccount            <storage connection string>\n    FileStorage/CloudStorageContainerName      <container>\n  Form: Attach File Storage Location: Azure Blob Storage\n  The note row stays in Dataverse with a pointer. Staff view files in model-driven apps through the\n  Azure storage web resource from the Power Pages configuration.\n\nOption D: SharePoint document library\n  Admin: Power Pages admin > Set up > External apps / SharePoint integration: Enable.\n  Dataverse: Document management enabled for the table, with a SharePoint site.\n  Dataverse form: add a sub-grid for Document Locations (table: Document Locations, view: Active Document Locations).\n  The basic form in Edit mode shows the library with Add files and New folder.\n  Table permissions:\n    Parent on your table, plus Child on Document Location (sharepointdocumentlocation), Access type Parent,\n    privileges Create, Read, Write, Append, Append To.\n  Good for exchanging documents both ways. Files live in SharePoint with its storage and versioning.\n\nOption E: file columns\n  A Dataverse File column on a form renders an upload control on the page. One file per column, size limit\n  set on the column (up to several GB). Suits a fixed set of named documents, such as \"Proof of identity\".\n\nValidation and safety\n  Restrict types to what you need. Extension checks are not content checks: enable malware scanning where\n  your platform plan includes it and treat uploads as untrusted.\n  State limits beside the control with a content snippet: \"PDF, JPG or PNG, up to 5 MB each\".\n  Anonymous uploads: add a CAPTCHA to the form (Additional Settings > Add Captcha) and keep size limits low.\n\nAfter upload\n  Cloud flow on note or document creation: virus scan service, move to a case folder, notify staff.\n  Show the user what they uploaded on the confirmation page with a notes list or a Liquid query.",
+    "stepByStepInstructions": [
+      "Choose the storage approach that suits file size and how staff will use the files.",
+      "Enable attach file on the form with type, size and count limits.",
+      "Add child table permissions for notes or document locations.",
+      "Configure Azure storage or SharePoint integration if selected.",
+      "Add a CAPTCHA and clear limit text for public forms.",
+      "Test upload, viewing by staff and viewing by the visitor."
+    ],
+    "commonMistakes": [
+      "No child permission on notes, so uploads fail silently or files are invisible.",
+      "Unlimited file types on a public form.",
+      "Expecting notes added by staff to show on the site without the web prefix.",
+      "Using notes for very large files."
+    ],
+    "troubleshooting": [
+      "If the upload control does not appear, check Attach File is enabled and the form mode supports it.",
+      "If the file is rejected, compare its size with both the form limit and the environment's attachment limit.",
+      "If uploaded files are not visible to the user, add Read on the note or document location child permission.",
+      "If SharePoint shows access denied, re-enable the integration and check the document location permission."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-multistep-form-conditional-steps",
+      "dataverse-notes-attachments-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Let visitors upload files on a Power Pages form",
+    "seoDescription": "Add attachments to basic and multistep forms, choose between Dataverse notes, Azure Blob Storage and SharePoint, and set file type and size limits.",
+    "primaryKeyword": "Power Pages file upload attachments",
+    "secondaryKeywords": [
+      "File Upload",
+      "Notes",
+      "SharePoint",
+      "Azure Blob Storage"
+    ],
+    "faqs": [
+      {
+        "question": "How do I add file upload to a Power Pages form?",
+        "answer": "Enable Attach File in the form's additional settings, choose a storage location and add table permissions for notes."
+      },
+      {
+        "question": "Where are uploaded files stored?",
+        "answer": "As Dataverse notes by default, or in Azure Blob Storage, a SharePoint library or a file column depending on configuration."
+      },
+      {
+        "question": "How do I limit file type and size?",
+        "answer": "Set Restrict File Types, the accepted types and the maximum file size on the form's attach file settings."
+      }
+    ]
+  },
+  {
+    "id": "pat-1625",
+    "slug": "power-pages-authentication-entra-external-id",
+    "title": "Set up sign-in for a Power Pages site",
+    "shortDescription": "Choose between workforce Entra ID, Entra External ID and local accounts, configure the provider, map claims to the contact and control registration.",
+    "fullDescription": "Every signed-in visitor on a Power Pages site is a Dataverse contact linked to an external identity. The identity provider decides who can sign in: employees through Microsoft Entra ID, customers through Entra External ID or another OpenID Connect provider. Getting claims mapping and registration settings right avoids duplicate contacts and open sign-up.",
+    "category": "Power Pages",
+    "subCategory": "Authentication",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Authentication",
+      "Identity Providers",
+      "Entra ID",
+      "External Users"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "A partner site launched with local username and password accounts and open registration. There are duplicate contacts, forgotten passwords and sign-ups from people who are not partners.",
+    "whenToUse": [
+      "Any site with signed-in content",
+      "Employee-facing sites using the corporate directory",
+      "Customer or partner sites needing self-service sign-up or invitation only"
+    ],
+    "whenNotToUse": [
+      "Local authentication for new sites, where an external identity provider is the recommended route",
+      "Open registration on sites exposing customer data without an approval or invitation step"
+    ],
+    "formulaOrCode": "Where\n  Power Pages design studio > Security > Identity providers\n\nOption 1: employees (Microsoft Entra ID, workforce tenant)\n  Enabled by default as \"Microsoft Entra ID\". Any user in your tenant can sign in.\n  Restrict to some employees: Entra admin center > Enterprise applications > the site's app >\n    Properties > Assignment required: Yes > Users and groups: add the allowed group.\n  Set as default provider so visitors skip the provider choice page.\n\nOption 2: customers and partners (Microsoft Entra External ID, or Azure AD B2C on existing sites)\n  In the external tenant:\n    App registrations > New: redirect URI  https://<site>.powerappsportals.com/signin-<provider-name>\n      (the exact Reply URL is shown in the Power Pages provider wizard)\n    Authentication: ID tokens enabled. Front-channel logout URL: https://<site>/Account/Login/LogOff\n    User flows > Sign up and sign in: attributes Email, Given name, Surname. Identity providers: email one-time\n      passcode or password, plus Google or Facebook if wanted. Add the app to the user flow.\n  In Power Pages > Identity providers > New provider > OpenID Connect (or the Entra External ID tile)\n    Authority:      https://<tenant-subdomain>.ciamlogin.com/<tenant-id>/v2.0\n    Client ID:      the app registration's application ID\n    Redirect URL:   as shown\n    Metadata address: <authority>/.well-known/openid-configuration\n    Scope: openid email profile        Response type: id_token (or code with a client secret)\n    External logout: On\n  Additional settings\n    Registration claims mapping:  firstname=given_name,lastname=family_name,emailaddress1=email\n    Login claims mapping:         same list, to refresh the contact at each sign-in\n    Contact mapping with email:   On       links the sign-in to an existing contact with that email\n                                           instead of creating a duplicate. Use only when the provider\n                                           verifies email addresses.\n    Registration enabled:         On for self-service, Off for invitation only\n\nOption 3: other providers\n  OpenID Connect, SAML 2.0 or WS-Federation for a customer's own identity system. Same claims mapping idea.\n  Social providers (Microsoft, LinkedIn, Facebook, Google, X) are available as direct tiles.\n\nLocal authentication (username and password stored with the contact)\n  Supported but not recommended for new sites. Turn it off when using an external provider:\n    Site setting  Authentication/Registration/LocalLoginEnabled = false\n  Also consider\n    Authentication/Registration/Enabled                     master switch for any registration\n    Authentication/Registration/OpenRegistrationEnabled     false = no self sign-up\n    Authentication/Registration/InvitationEnabled           true = redeem invitation codes\n    Authentication/Registration/RequiresConfirmation        email confirmation\n    Authentication/Registration/LoginButtonAuthenticationType = <provider authority>   go straight to one provider\n    Authentication/Registration/ProfileRedirectEnabled      false to skip the profile page after first sign-in\n\nWhat happens at first sign-in\n  A contact is created (or matched by email) and an External Identity row links it to the provider's subject ID.\n  The contact receives the Authenticated Users web role. Other roles are assigned by staff, a flow, or\n  through an invitation that carries web roles.\n\nAssign a web role automatically for a known domain (cloud flow)\n  Trigger: Dataverse > When a row is added: External Identities (adx_externalidentity)\n  Get the contact > Condition: endsWith(emailaddress1, '@partner.com')\n  Dataverse > Relate rows: Contact <> Web Role (adx_webrole_contact) with the Partner role\n\nSession and sign-out\n  Authentication/ApplicationCookie/ExpireTimeSpan   default 24:00:00. Shorten for sensitive sites (for example 01:00:00)\n  Authentication/ApplicationCookie/SlidingExpiration  true keeps active users signed in\n\nTest matrix\n  New user self-registers. Existing contact with the same email signs in for the first time (no duplicate).\n  A user outside the allowed group or without an invitation is refused. Sign-out clears the provider session.",
+    "stepByStepInstructions": [
+      "Decide who the audience is and pick the matching identity provider.",
+      "Register the site as an application with the provider and set the reply URL.",
+      "Add the provider in the design studio with authority, client ID and scope.",
+      "Map claims to contact columns and enable contact mapping by email where emails are verified.",
+      "Set registration to open, invitation only or closed, and turn off local sign-in.",
+      "Test first sign-in, existing-contact matching, refusal and sign-out."
+    ],
+    "commonMistakes": [
+      "Leaving local sign-in and open registration on by default.",
+      "No claims mapping, creating contacts with blank names.",
+      "Contact mapping by email with a provider that does not verify addresses.",
+      "Granting data access to the Authenticated Users role when anyone can register."
+    ],
+    "troubleshooting": [
+      "If sign-in fails with a redirect error, the reply URL in the app registration does not match the site's exactly.",
+      "If duplicate contacts appear, enable contact mapping with email and merge existing duplicates.",
+      "If names are blank, check the token contains the claims and the mapping uses the right claim names.",
+      "If users land on the profile page every time, set ProfileRedirectEnabled to false."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "create-a-web-role-matrix",
+      "create-an-anonymous-access-risk-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Set up sign-in for a Power Pages site",
+    "seoDescription": "Choose between workforce Entra ID, Entra External ID and local accounts, configure the provider, map claims to the contact and control registration.",
+    "primaryKeyword": "Power Pages authentication identity provider",
+    "secondaryKeywords": [
+      "Authentication",
+      "Identity Providers",
+      "Entra ID",
+      "External Users"
+    ],
+    "faqs": [
+      {
+        "question": "How do users sign in to a Power Pages site?",
+        "answer": "Through an identity provider such as Microsoft Entra ID for employees or Entra External ID for customers. Each user is linked to a Dataverse contact."
+      },
+      {
+        "question": "How do I stop anyone registering on my site?",
+        "answer": "Turn off open registration and use invitations, or require assignment on the Entra application for employee sites."
+      },
+      {
+        "question": "How do I avoid duplicate contacts at sign-in?",
+        "answer": "Enable contact mapping with email so a new sign-in links to the existing contact with that address."
+      }
+    ]
+  },
+  {
+    "id": "pat-1626",
+    "slug": "power-pages-liquid-user-object-personalise",
+    "title": "Personalise Power Pages content with the Liquid user object",
+    "shortDescription": "Greet the signed-in contact, show their account details, branch on sign-in state and roles, and pass user values safely into page script.",
+    "fullDescription": "Liquid runs on the server before a page is sent. The user object is the signed-in visitor's contact row, so any contact column, the parent account and the visitor's web roles are available to templates. It covers most personalisation without script, and it is the right way to hand the user's ID to JavaScript.",
+    "category": "Power Pages",
+    "subCategory": "Liquid",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Liquid",
+      "Personalisation",
+      "User Object",
+      "Web Templates"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Every visitor sees the same generic page. The site knows who is signed in but shows no name, no account context and the same calls to action to everyone.",
+    "whenToUse": [
+      "Greeting and account context on dashboards and headers",
+      "Different content for anonymous and signed-in visitors",
+      "Passing the contact ID or roles to page script"
+    ],
+    "whenNotToUse": [
+      "Hiding sensitive data with Liquid alone, without table permissions",
+      "Heavy queries in headers that run on every page"
+    ],
+    "formulaOrCode": "Signed in or not\n  {% if user %}\n    <p>Welcome back, {{ user.firstname | escape }}.</p>\n    <a href=\"{{ sitemarkers['My Requests'].url }}\">My requests</a>\n  {% else %}\n    <p>Sign in to see your requests.</p>\n    <a href=\"/SignIn?returnUrl={{ request.path | url_encode }}\">Sign in</a>\n  {% endif %}\n\nContact columns (logical names)\n  {{ user.fullname }}  {{ user.emailaddress1 }}  {{ user.telephone1 }}  {{ user.jobtitle }}\n  {{ user.id }}                      contact GUID\n  {{ user.cr1a2_customertier }}      custom column. Choice columns:\n  {{ user.cr1a2_customertier.label }}  {{ user.cr1a2_customertier.value }}\n  Dates: {{ user.createdon | date: \"d MMM yyyy\" }}\n\nParent account (lookup)\n  {% if user.parentcustomerid %}\n    {{ user.parentcustomerid.name }}          lookup display name\n    {{ user.parentcustomerid.id }}\n    {% assign account = entities.account[user.parentcustomerid.id] %}\n    {% if account %} Account number: {{ account.accountnumber }} {% endif %}\n  {% endif %}\n  entities.account[...] returns the row only if table permissions allow this user to read it.\n\nWeb roles\n  {% if user.roles contains 'Partner Admin' %}\n    <a href=\"/partner/team\">Manage team</a>\n  {% endif %}\n  {% assign isStaff = false %}\n  {% for r in user.roles %}{% if r == 'Administrators' or r == 'Support Staff' %}{% assign isStaff = true %}{% endif %}{% endfor %}\n\nRelated rows for the user\n  {% fetchxml myOpen %}\n    <fetch aggregate=\"true\">\n      <entity name=\"incident\">\n        <attribute name=\"incidentid\" alias=\"total\" aggregate=\"count\" />\n        <filter>\n          <condition attribute=\"customerid\" operator=\"eq\" value=\"{{ user.id }}\" />\n          <condition attribute=\"statecode\" operator=\"eq\" value=\"0\" />\n        </filter>\n      </entity>\n    </fetch>\n  {% endfetchxml %}\n  <p>You have {{ myOpen.results.entities[0].total }} open cases.</p>\n\nPass values to JavaScript safely\n  <script>\n    window.portalUser = {\n      id: \"{{ user.id }}\",\n      name: {{ user.fullname | default: \"\" | json }},\n      roles: {{ user.roles | json }},\n      isAuthenticated: {% if user %}true{% else %}false{% endif %}\n    };\n  </script>\n  Never interpolate raw text into script: {{ value | json }} produces a correctly quoted string.\n  In HTML use {{ value | escape }}.\n\nUseful companions\n  {{ request.params['id'] }}        query string value\n  {{ page.title }}  {{ website.name }}  {{ now | date: \"yyyy\" }}\n  {{ snippets['Home/Welcome'] }}    editable text block\n  {{ settings['Support/Phone'] }}   site setting value\n\nGreeting by time of day\n  {% assign hour = now | date: \"HH\" | plus: 0 %}\n  {% if hour < 12 %}Good morning{% elsif hour < 18 %}Good afternoon{% else %}Good evening{% endif %}, {{ user.firstname | escape }}\n  (server time is UTC. Adjust with the user's time zone if you store it.)\n\nCaching caution\n  Liquid output for signed-in users is rendered per user, but header and footer web templates can be output\n  cached: Site settings Header/OutputCache/Enabled and Footer/OutputCache/Enabled. Wrap user-specific parts\n  in {% substitution %} ... {% endsubstitution %} so they are evaluated on every request.",
+    "stepByStepInstructions": [
+      "Check sign-in state with the user object.",
+      "Output contact columns with the escape filter.",
+      "Read the parent account through the lookup and entities object.",
+      "Branch on web roles for role-specific links and content.",
+      "Pass the user's ID and roles to script with the json filter.",
+      "Wrap user-specific markup in substitution tags inside cached templates."
+    ],
+    "commonMistakes": [
+      "Using Liquid visibility as the only protection for data.",
+      "Outputting user values without escape or json filters.",
+      "Personalised content inside a cached header without substitution.",
+      "Comparing role names with different casing or spelling."
+    ],
+    "troubleshooting": [
+      "If user is empty for a signed-in visitor, the template is output cached. Add substitution tags.",
+      "If a custom column prints nothing, check the logical name and that the column has a value.",
+      "If the account row is blank, the visitor lacks a table permission to read their account.",
+      "If script breaks on names with apostrophes, switch to the json filter."
+    ],
+    "relatedPatterns": [
+      "power-pages-show-content-by-web-role",
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-table-permissions-web-roles"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Personalise Power Pages content with the Liquid user object",
+    "seoDescription": "Greet the signed-in contact, show their account details, branch on sign-in state and roles, and pass user values safely into page script.",
+    "primaryKeyword": "Power Pages Liquid user object",
+    "secondaryKeywords": [
+      "Liquid",
+      "Personalisation",
+      "User Object",
+      "Web Templates"
+    ],
+    "faqs": [
+      {
+        "question": "What is the Liquid user object in Power Pages?",
+        "answer": "It is the signed-in visitor's contact row, giving templates access to contact columns, the parent account and web roles."
+      },
+      {
+        "question": "How do I check whether a visitor is signed in?",
+        "answer": "Use {% if user %}. The object is empty for anonymous visitors."
+      },
+      {
+        "question": "How do I get the current user's ID in JavaScript?",
+        "answer": "Output it with Liquid into a script block, for example {{ user.id }}, using the json filter for text values."
+      }
+    ]
+  },
+  {
+    "id": "pat-1627",
+    "slug": "power-pages-web-templates-reusable-layouts",
+    "title": "Build reusable layouts with Power Pages web templates",
+    "shortDescription": "Compose pages from a base layout and small partial templates using extends, block and include, and pass parameters to partials for cards, banners and lists.",
+    "fullDescription": "Web templates are the source code of a Power Pages site. Template inheritance lets every page share one base layout with named blocks to override. Includes pull in partials such as a card or breadcrumb, with parameters. Structured this way, a design change is made once and appears everywhere.",
+    "category": "Power Pages",
+    "subCategory": "Liquid",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Web Templates",
+      "Liquid",
+      "Layouts",
+      "Reuse"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The same hero banner and card markup is pasted into fifteen pages. A design tweak means editing each one, and they have already drifted apart.",
+    "whenToUse": [
+      "Sites with more than a handful of custom pages",
+      "Repeated components such as cards, banners and alerts",
+      "Custom page layouts beyond the built-in templates"
+    ],
+    "whenNotToUse": [
+      "Simple sites built entirely in the design studio's visual editor",
+      "Deep inheritance chains that are hard to follow"
+    ],
+    "formulaOrCode": "Where\n  Design studio > Edit code, or Portal Management > Web Templates. A Page Template record points at a web\n  template (Type: Web Template, Use Website Header and Footer: checked), and pages choose a page template.\n\n1. Base layout: web template \"Layout - Base\"\n<div class=\"container\">\n  {% block breadcrumbs %}{% include 'Breadcrumbs' %}{% endblock %}\n  <div class=\"page-heading\">\n    {% block title %}<h1>{{ page.title | escape }}</h1>{% endblock %}\n  </div>\n  <div class=\"row\">\n    <div class=\"col-md-8\">\n      {% block main %}\n        {% include 'Page Copy' %}\n      {% endblock %}\n    </div>\n    <div class=\"col-md-4\">\n      {% block aside %}{% include 'Partial - Contact Card' %}{% endblock %}\n    </div>\n  </div>\n</div>\n\n2. A page layout that extends it: \"Layout - Dashboard\"\n{% extends 'Layout - Base' %}\n{% block title %}\n  <h1>Hello {{ user.firstname | default: 'there' | escape }}</h1>\n{% endblock %}\n{% block main %}\n  {% include 'Partial - Alert', level: 'info', text: snippets['Dashboard/Notice'] %}\n  <div class=\"row\">\n    {% include 'Partial - Stat Card', label: 'Open requests', value: openCount, url: '/requests' %}\n    {% include 'Partial - Stat Card', label: 'Awaiting you', value: actionCount, url: '/requests?view=action' %}\n  </div>\n  {{ block.super }}\n{% endblock %}\n  extends must be the first thing in the template. Only content inside block tags is rendered.\n  {{ block.super }} outputs the parent block's content as well.\n\n3. Partials with parameters\n  \"Partial - Stat Card\"\n<div class=\"col-sm-6\">\n  <a class=\"stat-card\" href=\"{{ url | default: '#' }}\">\n    <span class=\"stat-value\">{{ value | default: 0 }}</span>\n    <span class=\"stat-label\">{{ label | escape }}</span>\n  </a>\n</div>\n  \"Partial - Alert\"\n{% if text %}\n<div class=\"alert alert-{{ level | default: 'info' }}\" role=\"status\">{{ text }}</div>\n{% endif %}\n  Parameters passed on the include line are available as variables inside the partial.\n\n4. Loops with a partial\n{% for item in cases.results.entities %}\n  {% include 'Partial - Case Row', case: item %}\n{% endfor %}\n\n5. Template used as a JSON endpoint (for script)\n  Web template \"API - My Cases\", MIME type: application/json\n{% fetchxml q %}<fetch top=\"20\"><entity name=\"incident\"><attribute name=\"title\" /><attribute name=\"ticketnumber\" />\n  <filter><condition attribute=\"customerid\" operator=\"eq\" value=\"{{ user.id }}\" /></filter></entity></fetch>{% endfetchxml %}\n[{% for c in q.results.entities %}{ \"number\": {{ c.ticketnumber | json }}, \"title\": {{ c.title | json }} }{% unless forloop.last %},{% endunless %}{% endfor %}]\n  Page template: Use Website Header and Footer unchecked. Page: /api/my-cases. Fetch it with $.getJSON.\n  Table permissions still apply to the query.\n\n6. Component-style templates with a manifest (configurable in the design studio)\n{% manifest %}\n  { \"type\": \"Functional\", \"displayName\": \"Stat card\", \"description\": \"Number with a label\",\n    \"params\": [ { \"id\": \"label\", \"displayName\": \"Label\" }, { \"id\": \"value\", \"displayName\": \"Value\" } ] }\n{% endmanifest %}\n<div class=\"stat-card\"><span>{{ value }}</span> {{ label }}</div>\n  Use on a page: {% include 'Stat Card' label:'Open requests' value:'12' %}\n\nNaming and organisation\n  Prefix by role: \"Layout - \", \"Partial - \", \"API - \". Keep partials small and free of page-specific queries:\n  run the query in the page layout and pass results in.\n\nSource control\n  pac pages download puts each web template in web-templates/<name>/<name>.webtemplate.source.html, which\n  diffs cleanly in Git.\n\nDebugging\n  {% comment %} ... {% endcomment %} to disable sections. Output {{ variable | json }} temporarily to inspect.\n  A Liquid error renders an inline message on the page: fix it before publishing.",
+    "stepByStepInstructions": [
+      "Create a base layout web template with named blocks.",
+      "Create page layouts that extend the base and override blocks.",
+      "Move repeated markup into partial templates with parameters.",
+      "Create page templates that point at the layouts and assign them to pages.",
+      "Use JSON-returning templates for script-driven parts.",
+      "Keep templates in source control with the PAC CLI."
+    ],
+    "commonMistakes": [
+      "Copying markup between pages instead of including a partial.",
+      "Putting content outside block tags in an extending template, where it is ignored.",
+      "Queries inside partials that run once per loop iteration.",
+      "Unescaped user input in partial output."
+    ],
+    "troubleshooting": [
+      "If the extended layout renders nothing, check extends is the first statement and content sits inside blocks.",
+      "If an include prints nothing, the template name is misspelled or its parameters are empty.",
+      "If a JSON template returns HTML, set the MIME type and remove the header and footer on its page template.",
+      "If changes do not appear, clear the cache from the design studio's preview or the site's admin actions."
+    ],
+    "relatedPatterns": [
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-liquid-user-object-personalise",
+      "create-a-page-template-governance-guide"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Build reusable layouts with Power Pages web templates",
+    "seoDescription": "Compose pages from a base layout and small partial templates using extends, block and include, and pass parameters to partials for cards, banners and lists.",
+    "primaryKeyword": "Power Pages web template include extends",
+    "secondaryKeywords": [
+      "Web Templates",
+      "Liquid",
+      "Layouts",
+      "Reuse"
+    ],
+    "faqs": [
+      {
+        "question": "What is a web template in Power Pages?",
+        "answer": "A stored block of HTML and Liquid that page templates render, used for layouts, partials and custom endpoints."
+      },
+      {
+        "question": "How do I reuse markup across Power Pages pages?",
+        "answer": "Put it in a web template and include it, passing parameters, or build a base layout and extend it."
+      },
+      {
+        "question": "Can a web template return JSON?",
+        "answer": "Yes. Set its MIME type to application/json and use a page template without the site header and footer."
+      }
+    ]
+  },
+  {
+    "id": "pat-1628",
+    "slug": "power-pages-content-snippets-site-settings",
+    "title": "Manage editable text and configuration with content snippets and site settings",
+    "shortDescription": "Keep labels, notices and footer text in content snippets and keep switches, URLs and limits in site settings, so content editors never touch templates.",
+    "fullDescription": "Text typed into templates needs a developer for every wording change. Content snippets are named pieces of text or HTML that editors change in the studio or the Portal Management app, per language. Site settings hold configuration values that templates and platform features read. Using both keeps templates stable across environments.",
+    "category": "Power Pages",
+    "subCategory": "Content",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Content Snippets",
+      "Site Settings",
+      "Configuration",
+      "Localisation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "The support phone number appears in eight templates. Changing it took a developer, a deployment and still missed two pages.",
+    "whenToUse": [
+      "Text that changes without a release: notices, labels, legal lines",
+      "Values that differ between environments, such as URLs and feature switches",
+      "Multilingual sites"
+    ],
+    "whenNotToUse": [
+      "Secrets such as API keys, which site settings do not protect from templates or exports",
+      "Large page bodies, which belong in page copy"
+    ],
+    "formulaOrCode": "Content snippets (Portal Management > Content Snippets)\n  Name: Support/Phone             Type: Text    Language: English    Value: +1 555 0100\n  Name: Home/Notice               Type: HTML    Value: <strong>Offices closed 25 December.</strong>\n  Name: Footer/Legal              Type: HTML\n  Name: Requests/EmptyState       Type: Text    Value: You have no requests yet.\n  Naming: Area/Purpose. One row per language for multilingual sites.\n\n  In templates\n    {{ snippets['Support/Phone'] }}\n    {{ snippets['Home/Notice'] | default: '' }}\n    {% assign notice = snippets['Home/Notice'] %}\n    {% if notice and notice != '' %}<div class=\"alert alert-info\">{{ notice }}</div>{% endif %}\n    Editable in place by content authors (shows an edit affordance to users with content permissions):\n    {% editable snippets 'Home/Notice' type: 'html' %}\n    {% editable snippets 'Support/Phone' type: 'text', default: 'Contact us' %}\n\n  Built-in snippets worth knowing\n    Footer, Head/Bottom (extra tags before </head>, for analytics or meta tags), Site name,\n    Account/SignIn/PageTitle, Search/Title, Profile/..., and many labels used by forms and sign-in pages.\n    Search the list before writing your own label.\n\nSite settings (Portal Management > Site Settings)\n  Name: Support/Email                         Value: help@contoso.com\n  Name: Feature/ShowChat                      Value: true\n  Name: Requests/MaxOpen                      Value: 5\n  Name: Integration/StatusPageUrl             Value: https://status.contoso.com\n\n  In templates\n    {{ settings['Support/Email'] }}\n    {% assign showChat = settings['Feature/ShowChat'] | boolean %}\n    {% if showChat %}{% include 'Partial - Chat Widget' %}{% endif %}\n    {% assign maxOpen = settings['Requests/MaxOpen'] | integer | default: 5 %}\n    {% if openCount >= maxOpen %}<p>{{ snippets['Requests/LimitReached'] }}</p>{% endif %}\n  In script (publish only non-sensitive values)\n    <script>window.siteConfig = { statusUrl: {{ settings['Integration/StatusPageUrl'] | json }} };</script>\n\n  Platform settings you will meet\n    Authentication/Registration/OpenRegistrationEnabled      Search/Enabled\n    Webapi/<table>/enabled, Webapi/<table>/fields           HTTP/X-Frame-Options, HTTP/Content-Security-Policy\n    Header/OutputCache/Enabled, Footer/OutputCache/Enabled   Site/EnableDefaultHtmlEditor\n    Profile/ForceSignUp                                       Authentication/ApplicationCookie/ExpireTimeSpan\n\nEnvironment-specific values\n  Site settings can take their value from a Dataverse environment variable: on the setting choose\n  Source: Environment variable and select it. The same solution then carries different values per\n  environment. Without that, keep a short post-deployment list of settings to check.\n  Secrets: reference an environment variable of type Secret (Azure Key Vault) only for server-side features\n  that support it. Anything rendered by Liquid can be seen by visitors.\n\nWho can edit\n  Snippets: content authors with a web role that has website access permission \"Manage Content Snippets\".\n  Site settings: administrators in the Portal Management app.\n\nCaching\n  Changes made in the Portal Management app can take a few minutes to appear. Use the design studio's\n  Sync button or the site's \"Clear cache\" action (/_services/about as an administrator) to refresh at once.\n\nConvention\n  Text a business person may reword: snippet.  A value that changes behaviour: site setting.\n  A value that differs per environment: site setting backed by an environment variable.",
+    "stepByStepInstructions": [
+      "List the hard-coded text and values in your templates.",
+      "Create content snippets for wording and site settings for configuration.",
+      "Replace literals in templates with snippets and settings lookups.",
+      "Add default values so a missing row does not break the page.",
+      "Back environment-specific settings with environment variables.",
+      "Give content authors permission to edit snippets and show them where."
+    ],
+    "commonMistakes": [
+      "Hard-coding contact details and notices in templates.",
+      "Storing secrets in site settings.",
+      "No defaults, leaving blank gaps when a snippet is missing.",
+      "One snippet reused for unrelated purposes."
+    ],
+    "troubleshooting": [
+      "If a snippet shows nothing, check the name, the language and that the row belongs to this website.",
+      "If a setting change has no effect, clear the site cache.",
+      "If a boolean setting behaves oddly, convert it with the boolean filter before testing it.",
+      "If values are wrong after deployment, check environment variable values in the target."
+    ],
+    "relatedPatterns": [
+      "power-pages-web-templates-reusable-layouts",
+      "dataverse-environment-variables-canvas-apps-flows",
+      "create-a-portal-content-publishing-workflow"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Manage editable text and configuration with content snippets and site settings",
+    "seoDescription": "Keep labels, notices and footer text in content snippets and keep switches, URLs and limits in site settings, so content editors never touch templates.",
+    "primaryKeyword": "Power Pages content snippets site settings",
+    "secondaryKeywords": [
+      "Content Snippets",
+      "Site Settings",
+      "Configuration",
+      "Localisation"
+    ],
+    "faqs": [
+      {
+        "question": "What is a content snippet in Power Pages?",
+        "answer": "A named piece of text or HTML that templates output and editors can change without touching code."
+      },
+      {
+        "question": "What are site settings used for?",
+        "answer": "Configuration values read by templates and platform features, such as feature switches, limits and URLs."
+      },
+      {
+        "question": "Should I store API keys in site settings?",
+        "answer": "No. Anything a template can read can end up in the page. Keep secrets in server-side components."
+      }
+    ]
+  },
+  {
+    "id": "pat-1629",
+    "slug": "power-pages-cascading-dropdown-javascript-web-api",
+    "title": "Create dependent drop-downs on a Power Pages form",
+    "shortDescription": "Filter a second drop-down by the first on a basic form, using the Web API to fetch matching rows, with a fallback that needs no code.",
+    "fullDescription": "Country then city, category then subcategory: dependent choices are a common form need. On Power Pages, lookups can render as drop-downs, and a short script can reload the child's options when the parent changes, using the portal Web API. For lookups, Dataverse's related-records filtering on the form also works with no script at all.",
+    "category": "Power Pages",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Cascading Dropdowns",
+      "JavaScript",
+      "Web API",
+      "Lookups"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A request form lists 300 subcategories in one drop-down, most of which do not belong to the chosen category, and people pick invalid combinations.",
+    "whenToUse": [
+      "Two-level choices stored as lookups",
+      "Forms where an invalid parent and child pair must be prevented",
+      "Long child lists that need narrowing"
+    ],
+    "whenNotToUse": [
+      "Three or more dependent levels on one form, where a guided multistep form is clearer",
+      "Relying on client filtering alone to guarantee valid combinations"
+    ],
+    "formulaOrCode": "Data model\n  Category (cr1a2_category): name\n  Subcategory (cr1a2_subcategory): name, cr1a2_category (lookup to Category)\n  Request (cr1a2_request): cr1a2_category (lookup), cr1a2_subcategory (lookup)\n\nNo-code route (try first)\n  In the Dataverse form designer: select the Subcategory lookup > Properties > Filtering >\n    Filter by related rows: Category (Requests) > Category (Subcategories)\n  Basic form metadata (Portal Management > Basic Form Metadata), for both lookups:\n    Control Style: Render Lookup as Dropdown\n  Power Pages honours related-records filtering for lookups rendered as drop-downs on many form\n  configurations. If the child does not refresh on change in your site version, use the script route.\n\nScript route\n  Site settings:  Webapi/cr1a2_subcategory/enabled = true      Webapi/cr1a2_subcategory/fields = cr1a2_name,cr1a2_subcategoryid,_cr1a2_category_value\n  Table permission: Subcategory, Global, Read, for the role using the form (Category likewise).\n  Both lookups rendered as drop-downs. Requires the safeAjax wrapper (see the Web API patterns).\n\n$(document).ready(function () {\n  var $parent = $(\"#cr1a2_category\");\n  var $child = $(\"#cr1a2_subcategory\");\n  var initialChild = $child.val();\n\n  function setOptions(rows, keep) {\n    $child.empty().append($(\"<option>\").val(\"\").text(\"Select\"));\n    rows.forEach(function (r) {\n      $child.append($(\"<option>\").val(r.cr1a2_subcategoryid).text(r.cr1a2_name));\n    });\n    if (keep && $child.find(\"option[value='\" + keep + \"']\").length) { $child.val(keep); }\n    $child.prop(\"disabled\", rows.length === 0).trigger(\"change\");\n  }\n\n  function load(keep) {\n    var parentId = $parent.val();\n    if (!parentId) { setOptions([], null); return; }\n    webapi.safeAjax({\n      type: \"GET\",\n      url: \"/_api/cr1a2_subcategories?$select=cr1a2_name,cr1a2_subcategoryid\" +\n           \"&$filter=_cr1a2_category_value eq \" + parentId + \" and statecode eq 0&$orderby=cr1a2_name\",\n      contentType: \"application/json\"\n    }).done(function (res) { setOptions(res.value, keep); })\n      .fail(function () { setOptions([], null); });\n  }\n\n  $parent.on(\"change\", function () { load(null); });\n  load(initialChild);          // edit forms: keep the saved value\n});\n\nWhy this works with the form's save\n  A lookup rendered as a drop-down posts the selected option's value (the GUID) with hidden fields for the\n  name and table. Replacing options keeps the same select element, so the form saves normally.\n  If your form version uses hidden inputs #cr1a2_subcategory_name and #cr1a2_subcategory_entityname,\n  update them on change:\n    $child.on(\"change\", function () {\n      $(\"#cr1a2_subcategory_name\").val($child.find(\"option:selected\").text());\n      $(\"#cr1a2_subcategory_entityname\").val(\"cr1a2_subcategory\");\n    });\n\nChoice columns instead of lookups\n  Two choice columns cannot be related in Dataverse. Hide the options that do not apply:\n    var map = { \"100000000\": [\"100000000\",\"100000001\"], \"100000001\": [\"100000002\",\"100000003\"] };\n    var $all = $(\"#cr1a2_subtype option\").clone();\n    $(\"#cr1a2_type\").on(\"change\", function () {\n      var allowed = map[$(this).val()] || [];\n      $(\"#cr1a2_subtype\").empty().append($all.filter(function () { return this.value === \"\" || allowed.indexOf(this.value) > -1; }).clone());\n    }).trigger(\"change\");\n  The mapping lives in script, so lookups are easier to maintain.\n\nWithout the Web API (Liquid-rendered data)\n  Output all child rows as JSON in the page with fetchxml and filter in memory:\n    var subs = {{ subsJson }};        // [{ id, name, category }]\n  Fine for a few hundred rows. No extra request on change.\n\nServer-side guard\n  Business rule or plug-in: reject a save where the subcategory's category differs from the request's category.",
+    "stepByStepInstructions": [
+      "Model the child table with a lookup to the parent.",
+      "Try related-records filtering with both lookups rendered as drop-downs.",
+      "If needed, enable the Web API for the child table and grant read permission.",
+      "Add script that reloads the child's options when the parent changes.",
+      "Preserve the saved child value on edit forms.",
+      "Add a server-side rule that rejects mismatched pairs."
+    ],
+    "commonMistakes": [
+      "Loading every child row into one long drop-down.",
+      "Forgetting to restore the saved value in edit mode.",
+      "No table permission on the child table, so the list is empty.",
+      "Trusting the client filter to guarantee valid data."
+    ],
+    "troubleshooting": [
+      "If the child list is empty, test the /_api URL in the browser while signed in and read the error.",
+      "If the saved value disappears on edit, pass the initial value into the first load.",
+      "If the form saves a blank lookup, update the hidden name and entity name fields on change.",
+      "If options do not refresh, check the parent's change event fires for a drop-down, not the modal lookup."
+    ],
+    "relatedPatterns": [
+      "power-apps-cascading-dropdowns-sharepoint",
+      "power-pages-web-api-read-update-delete",
+      "power-pages-basic-form-javascript-validation"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Create dependent drop-downs on a Power Pages form",
+    "seoDescription": "Filter a second drop-down by the first on a basic form, using the Web API to fetch matching rows, with a fallback that needs no code.",
+    "primaryKeyword": "Power Pages cascading dropdown",
+    "secondaryKeywords": [
+      "Cascading Dropdowns",
+      "JavaScript",
+      "Web API",
+      "Lookups"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Pages forms have cascading drop-downs?",
+        "answer": "Yes. Use lookups rendered as drop-downs with related-records filtering, or reload the child options with script and the Web API."
+      },
+      {
+        "question": "Do I need the Web API for dependent drop-downs?",
+        "answer": "Not always. Form-level lookup filtering or Liquid-rendered JSON can work without it."
+      },
+      {
+        "question": "How do I keep the selected value on an edit form?",
+        "answer": "Read the child's value before reloading options and select it again after the options are rebuilt."
+      }
+    ]
+  },
+  {
+    "id": "pat-1630",
+    "slug": "power-pages-prefill-form-fields",
+    "title": "Prefill Power Pages form fields from the user, the URL or a parent record",
+    "shortDescription": "Set default values on a basic form from the signed-in contact, a query string parameter or a parent record, using form metadata first and script only where needed.",
+    "fullDescription": "Asking visitors to retype what the site already knows makes forms longer and data worse. Basic form metadata can prepopulate a field from the current contact or a fixed value, set values on save, and link a new record to a parent passed in the URL. A few lines of script cover what metadata cannot.",
+    "category": "Power Pages",
+    "subCategory": "Forms",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Basic Forms",
+      "Prefill",
+      "Form Metadata",
+      "Query String"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A signed-in customer opening 'New case' has to type their name, email and account again, and the case is not linked to the product page they came from.",
+    "whenToUse": [
+      "Create forms for signed-in users",
+      "Forms opened from a parent record or a specific product or event",
+      "Hidden values such as source or campaign"
+    ],
+    "whenNotToUse": [
+      "Trusting prefilled hidden values for security decisions",
+      "Overwriting values on edit forms"
+    ],
+    "formulaOrCode": "1. From the signed-in contact (no code)\n  Portal Management > Basic Forms > your form > Basic Form Metadata > New\n    Type: Attribute        Attribute Logical Name: cr1a2_contactemail\n    Prepopulate Field: Yes\n      Type: Current Portal User\n      From Attribute: emailaddress1\n  Repeat for name, phone and so on. From Attribute is a column on the contact.\n  For a lookup to the contact itself (for example customerid): on the basic form >\n    Additional Settings > Associate Current Portal User: Yes > Target column: the contact lookup\n    (and \"Is Part Of Parent Relationship\" where it applies).\n\n2. Fixed value or today's date (no code)\n  Basic Form Metadata > Type: Attribute > Prepopulate Field: Yes > Type: Value > Value: Web\n  Type: Today's Date  for date columns.\n  Set Value On Save: Yes > Type: Value | Today's Date | Current Portal User\n    overrides whatever was entered, at save time. Use it for Source = \"Portal\", Submitted On, Status Reason.\n\n3. Link the new record to a parent from the URL (no code)\n  Page URL: /events/register?id=<event guid>\n  Basic form > Additional Settings > Reference Entity (Set Entity Reference On Save): Yes\n    Table Name: cr1a2_event        Relationship Name: cr1a2_event_registration\n    Source: Query String        Query String Name: id        Query String Is Primary Key: Yes\n    Populate Lookup Field / Target Lookup Attribute: cr1a2_event      Show ReadOnly Details: Yes with a form name\n      to display the event summary above the form.\n  The registration is created already related to the event.\n\n4. From a query string into an ordinary field (script)\n  URL: /contact-us?topic=Billing&ref=newsletter\n  $(document).ready(function () {\n    var p = new URLSearchParams(window.location.search);\n    var topic = p.get(\"topic\");\n    if (topic && !$(\"#cr1a2_topic\").val()) { $(\"#cr1a2_topic\").val(topic.substring(0, 100)); }\n    var ref = p.get(\"ref\");\n    if (ref) { $(\"#cr1a2_source\").val(ref.replace(/[^a-z0-9_-]/gi, \"\").substring(0, 50)); }\n  });\n  Choice column by value: $(\"#cr1a2_category\").val(\"100000002\");\n  Only set when empty, so edit forms and validation postbacks keep the user's entry.\n\n5. With Liquid, when the value needs a query\n  {% assign product = entities.product[request.params['productid']] %}\n  <script>\n    window.prefill = { productName: {{ product.name | default: \"\" | json }}, productId: \"{{ product.id }}\" };\n  </script>\n  $(document).ready(function () {\n    if (window.prefill && window.prefill.productId) {\n      $(\"#cr1a2_product_name\").val(window.prefill.productName);\n      $(\"#cr1a2_product\").val(window.prefill.productId);\n      $(\"#cr1a2_product_entityname\").val(\"product\");\n    }\n  });\n  A lookup has three inputs: <field> (GUID), <field>_name (text) and <field>_entityname (table).\n\n6. Read-only display of prefilled values\n  $(\"#cr1a2_contactemail\").prop(\"readonly\", true);        still submitted\n  Avoid .prop(\"disabled\", true): disabled inputs are not posted, and the value is lost.\n  Better: leave the column off the form and use Set Value On Save.\n\n7. Profile page first\n  If contact data is incomplete, send new users to the profile page before forms:\n  site setting Profile/ForceSignUp = true.\n\nIntegrity\n  Anything in the URL or a hidden field can be changed by the visitor. For values that matter (price,\n  owner, status), set them on the server: Set Value On Save, a business rule, or a flow on create.",
+    "stepByStepInstructions": [
+      "List which fields the site already knows for a signed-in user or from the entry link.",
+      "Add basic form metadata to prepopulate those fields from the current portal user.",
+      "Use Set Value On Save for hidden values such as source and submitted date.",
+      "Configure the entity reference from the query string to link to a parent record.",
+      "Add script for remaining query string values, only filling empty fields.",
+      "Enforce important values on the server."
+    ],
+    "commonMistakes": [
+      "Reaching for script before form metadata.",
+      "Disabling a prefilled input so its value is not saved.",
+      "Prefilling on edit forms and overwriting saved data.",
+      "Trusting URL parameters for sensitive columns."
+    ],
+    "troubleshooting": [
+      "If the field stays empty, check the metadata's attribute logical name and that the user is signed in.",
+      "If the parent link is not set, confirm the relationship name and the query string parameter name.",
+      "If a lookup shows blank after script prefill, set the name and entity name inputs as well as the ID.",
+      "If a value reverts after a validation error, set it only when the field is empty on load."
+    ],
+    "relatedPatterns": [
+      "power-pages-basic-form-javascript-validation",
+      "power-pages-liquid-user-object-personalise",
+      "patch-a-requester-department-snapshot"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Prefill Power Pages form fields from the user, the URL or a parent record",
+    "seoDescription": "Set default values on a basic form from the signed-in contact, a query string parameter or a parent record, using form metadata first and script only where needed.",
+    "primaryKeyword": "Power Pages prefill form fields",
+    "secondaryKeywords": [
+      "Basic Forms",
+      "Prefill",
+      "Form Metadata",
+      "Query String"
+    ],
+    "faqs": [
+      {
+        "question": "How do I prefill a Power Pages form with the user's details?",
+        "answer": "Add basic form metadata for each field with Prepopulate Field set to Current Portal User and the contact column to copy."
+      },
+      {
+        "question": "Can I pass values to a form in the URL?",
+        "answer": "Yes. Read query string parameters with script, or use the form's entity reference setting to link a parent record by ID."
+      },
+      {
+        "question": "How do I set a hidden value when the form is saved?",
+        "answer": "Use Set Value On Save in basic form metadata, which applies the value on the server at save time."
+      }
+    ]
+  },
+  {
+    "id": "pat-1631",
+    "slug": "power-pages-trigger-cloud-flow-from-page",
+    "title": "Call a Power Automate flow from a Power Pages page",
+    "shortDescription": "Register a cloud flow with a site, restrict it to web roles, call it from page script with inputs and use the values it returns.",
+    "fullDescription": "Some page actions need more than a Dataverse write: checking stock in another system, creating a payment link, sending a document. Power Pages can call a cloud flow directly. The flow is registered against the site, limited to chosen web roles, and invoked from script through a site endpoint that carries the visitor's identity.",
+    "category": "Power Pages",
+    "subCategory": "Integration",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Cloud Flows",
+      "Integration",
+      "JavaScript",
+      "Web Roles"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A page needs live delivery slots from an external API. Calling the API from the browser would expose the key, and writing a row then waiting for a triggered flow is slow and awkward.",
+    "whenToUse": [
+      "Calling external systems without exposing credentials",
+      "Server-side logic started by a button on a page",
+      "Returning a computed result to the visitor"
+    ],
+    "whenNotToUse": [
+      "Simple Dataverse creates and updates, where the Web API is faster",
+      "Operations longer than about two minutes, which should be asynchronous"
+    ],
+    "formulaOrCode": "1. Create the flow\n  Design studio > Set up > Cloud flows > + Create new flow  (or in a solution)\n  Trigger: Power Pages > When Power Pages calls a flow\n    + Add an input: Text \"postcode\", Number \"orderTotal\", Text \"contactId\"\n  Actions: for example HTTP to the delivery API (key from an environment variable or Key Vault),\n           Select to shape the slots.\n  Final action: Power Pages > Return value(s) to Power Pages\n    + Add an output: Text \"slots\" = string(body('Select'))      Text \"status\" = ok\n  Inputs and outputs are Text, Number or Boolean. Return arrays as a JSON string.\n\n2. Add it to the site and restrict it\n  Set up > Cloud flows > + Add cloud flow > pick the flow > Roles: Authenticated Users (or a narrower role) > Add\n  Copy the URL shown, of the form:  /_api/cloudflow/v1.0/trigger/<flow guid>\n  Only visitors in the selected web roles can call it. Others receive 403.\n\n3. Call it from the page\n  // requires the shell token helper present on Power Pages\n  function callFlow(url, payload) {\n    return shell.ajaxSafePost({\n      type: \"POST\",\n      url: url,\n      contentType: \"application/json\",\n      data: JSON.stringify({ eventData: JSON.stringify(payload) })\n    });\n  }\n\n  $(\"#btnSlots\").on(\"click\", function () {\n    var $btn = $(this).prop(\"disabled\", true).text(\"Checking\");\n    callFlow(\"/_api/cloudflow/v1.0/trigger/1a2b3c4d-0000-0000-0000-000000000000\", {\n      postcode: $(\"#postcode\").val(),\n      orderTotal: Number($(\"#total\").val())\n    }).done(function (response) {\n      var result = JSON.parse(response);                 // keys are the output names in lower case\n      var slots = JSON.parse(result[\"slots\"] || \"[]\");\n      $(\"#slots\").empty();\n      slots.forEach(function (s) { $(\"#slots\").append($(\"<li>\").text(s.label)); });\n    }).fail(function (xhr) {\n      $(\"#slotError\").text(\"Slots are unavailable right now. Try again shortly.\");\n      console.error(xhr.status, xhr.responseText);\n    }).always(function () { $btn.prop(\"disabled\", false).text(\"Check delivery slots\"); });\n  });\n  The body must be { \"eventData\": \"<JSON string of your inputs>\" }. Input names match the trigger's inputs.\n\n4. Identify the caller inside the flow\n  Do not trust a contact ID sent from the browser. Pass it only as a hint and verify it, or have the page\n  send nothing and let the flow act on data the site has already secured. Where the trigger exposes the\n  caller's contact, use that value. Check any record ID received against the contact before returning data:\n    Dataverse > List rows: Orders, Filter rows: cr1a2_orderid eq <id> and _cr1a2_contact_value eq <verified contact id>\n\n5. Connections and licensing\n  The flow runs with the connections of its owner, not the visitor. Keep it in a solution, owned by a\n  service account, with connection references.\n  It is covered by the site's licence when in the same environment and registered with the site.\n\n6. Limits\n  The call is synchronous: the page waits for Return value(s). Keep the flow under about 120 seconds.\n  Payload size is limited (keep requests and responses small, well under 1 MB).\n  Throttling applies per user. Disable the button while a call is running.\n\n7. Asynchronous alternative for long work\n  Page: create a \"Job\" row through the Web API with status Queued.\n  Flow: Dataverse trigger on the Job row > do the work > update status and result.\n  Page: poll the Job row every few seconds, or show the result on the next visit.\n\n8. Deployment\n  Flow and site travel in the same solution. After import, confirm the flow is on and still linked under\n  Set up > Cloud flows, and that the role assignment is present in the target.",
+    "stepByStepInstructions": [
+      "Create a flow with the Power Pages trigger and typed inputs.",
+      "End it with Return value(s) to Power Pages.",
+      "Register the flow with the site and select the web roles allowed to call it.",
+      "Call the flow URL from script with the inputs wrapped in eventData.",
+      "Verify identifiers inside the flow before returning or changing data.",
+      "Handle errors and disable the button while the call runs."
+    ],
+    "commonMistakes": [
+      "Putting an API key in page script instead of calling a flow.",
+      "Trusting a contact ID sent by the browser.",
+      "Long-running flows called synchronously.",
+      "Allowing the Anonymous Users role to trigger a flow that sends email or costs money."
+    ],
+    "troubleshooting": [
+      "If the call returns 403, the visitor's web role is not assigned to the flow on the site.",
+      "If inputs arrive empty, check the eventData wrapper and that names match the trigger inputs.",
+      "If the response cannot be parsed, return text outputs and parse nested JSON strings twice.",
+      "If it works in development only, turn the flow on in the target and re-add it under Cloud flows."
+    ],
+    "relatedPatterns": [
+      "power-pages-web-api-read-update-delete",
+      "respond-to-power-app-return-values-from-flow",
+      "environment-variable-secrets-azure-key-vault"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Call a Power Automate flow from a Power Pages page",
+    "seoDescription": "Register a cloud flow with a site, restrict it to web roles, call it from page script with inputs and use the values it returns.",
+    "primaryKeyword": "Power Pages cloud flow integration",
+    "secondaryKeywords": [
+      "Cloud Flows",
+      "Integration",
+      "JavaScript",
+      "Web Roles"
+    ],
+    "faqs": [
+      {
+        "question": "Can a Power Pages site call a Power Automate flow?",
+        "answer": "Yes. Use the When Power Pages calls a flow trigger, register the flow with the site and call its URL from page script."
+      },
+      {
+        "question": "Who can trigger the flow?",
+        "answer": "Only visitors in the web roles you assign to the flow when adding it to the site."
+      },
+      {
+        "question": "Can the flow return data to the page?",
+        "answer": "Yes. The Return value(s) to Power Pages action sends text, number or boolean outputs back in the response."
+      }
+    ]
+  },
+  {
+    "id": "pat-1632",
+    "slug": "power-pages-go-live-checklist-site-visibility",
+    "title": "Take a Power Pages site live: visibility, domain and security checks",
+    "shortDescription": "The steps from private trial site to public production: convert to production, set visibility, add a custom domain and certificate, run the security scan and tune caching.",
+    "fullDescription": "A Power Pages site starts private and on a trial. Going live is more than flipping a switch: it needs a production licence state, public visibility, a custom domain with TLS, a review of table permissions and anonymous access, and performance settings such as the content delivery network. Working through a fixed list avoids the classic launch-day surprises.",
+    "category": "Power Pages",
+    "subCategory": "Go-live",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Go-Live",
+      "Site Visibility",
+      "Custom Domain",
+      "Security Scan"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "Half a day",
+    "problemStatement": "A site is announced to customers while still private, on a trial about to expire, with the default domain and a table permission that exposes every contact to signed-in users.",
+    "whenToUse": [
+      "First launch of any Power Pages site",
+      "Major releases that change permissions or authentication",
+      "Periodic health reviews"
+    ],
+    "whenNotToUse": [
+      "Making the site public before permissions have been reviewed",
+      "Skipping the checklist for internal-only sites, which still hold real data"
+    ],
+    "formulaOrCode": "Where: Power Pages home > site > ... > Admin center (Power Platform admin center > Resources > Power Pages sites > site)\n\n1. Licence and state\n   Site Details > Convert to production (trial sites stop after 30 days)\n   Confirm capacity: authenticated users per site per month and anonymous users per site per month licences\n   or pay-as-you-go linked to the environment.\n   Application type shown as Production.\n\n2. Site visibility\n   Design studio > Security > Site visibility (or admin center > Site visibility)\n     Private: only makers and people you list (Entra accounts) can view.  Public: anyone.\n   Keep Private through testing. Switch to Public at launch. Only admins or allowed makers can change it\n   (tenant setting can restrict who may make sites public).\n\n3. Custom domain and certificate\n   Admin center > Custom domains > + Add new\n     Upload a TLS certificate (.pfx with password) or select an existing one. Enter www.contoso.com.\n     Create the DNS record: CNAME  www  ->  <site>.powerappsportals.com\n   After adding: update the identity provider's redirect URLs to the new host, plus any hard-coded links,\n   CORS settings on storage, and the Web API allowed origins if used from other sites.\n   One custom domain per site. For an apex domain, use Azure Front Door in front of the site.\n\n4. Security review\n   Design studio > Security > Run scan (security scan): fix reported issues (headers, exposed tables, libraries).\n   Table permissions:\n     No Global Read on tables with personal data for Authenticated or Anonymous roles.\n     Every list and form has Enable Table Permissions on.\n     Anonymous Users role: read only, public reference tables only.\n   Web API: Webapi/<table>/fields lists columns explicitly. innererror setting removed or false.\n   Authentication: open registration off unless intended. Local sign-in disabled when using an external provider.\n   Page permissions: restricted pages have Restrict Read rules for the right web roles.\n   HTTP headers (site settings):\n     HTTP/X-Frame-Options                 SAMEORIGIN\n     HTTP/Content-Security-Policy         script-src 'self' 'nonce' https://trusted.cdn.com; frame-ancestors 'self'\n     HTTP/X-Content-Type-Options          nosniff\n     HTTP/Strict-Transport-Security       max-age=31536000\n   Web application firewall: admin center > Security > Web Application Firewall: Enable (requires CDN).\n   IP restrictions: only for sites meant for known networks.\n   Minimum TLS and \"Maker identity provider\" settings as per your policy.\n\n5. Performance\n   Admin center > Content Delivery Network: Enable       static files served from edge locations\n   Server-side caching is on by default. Header and footer output caching site settings enabled.\n   Large images compressed. Lists limited to 10 to 25 rows. Avoid heavy fetchxml in the header.\n   Region: the site runs in the environment's region. Check latency from your main audience.\n\n6. Content and SEO\n   Page titles and descriptions set. Remove sample pages and lorem text. 404 and access denied pages customised.\n   robots.txt: a web file named robots.txt at the site root (Home), partial URL robots.txt.\n   Sitemap: add a page that outputs XML with Liquid, or submit key URLs in the search console.\n   Head/Bottom content snippet: analytics tags and consent banner script.\n   Search: Search/Enabled true, and confirm results respect permissions.\n\n7. Operations\n   Diagnostics: admin center > Site actions > Enable diagnostic logging to Azure Blob Storage for errors.\n   Site health: Run Site Checker and fix warnings.\n   Maintenance: admin center > Enable maintenance mode shows a holding page during big deployments.\n   Restart site and Clear cache actions known to the support team.\n   Backups: environment backups cover site metadata, since it lives in Dataverse.\n   Authentication key: note the expiry date shown in the admin center and renew before it lapses.\n\n8. Launch\n   Smoke test as anonymous, as a new registrant and as each web role, on desktop and phone.\n   Switch visibility to Public. Test again on the custom domain. Monitor diagnostics for the first days.",
+    "stepByStepInstructions": [
+      "Convert the site to production and confirm licensing.",
+      "Review table permissions, anonymous access, Web API settings and registration.",
+      "Run the security scan and add security headers.",
+      "Add the custom domain and certificate and update identity provider redirect URLs.",
+      "Enable the content delivery network and check caching.",
+      "Smoke test every role, then set the site to public and monitor."
+    ],
+    "commonMistakes": [
+      "Launching on a trial site.",
+      "Adding the custom domain without updating sign-in redirect URLs.",
+      "Global read permissions left over from development.",
+      "Developer error settings left on in production."
+    ],
+    "troubleshooting": [
+      "If visitors are asked to sign in with a work account, the site is still private.",
+      "If sign-in fails after the domain change, add the new redirect URL at the identity provider.",
+      "If pages are slow, enable the CDN and reduce queries in shared templates.",
+      "If the site shows an authentication key warning, renew the key in the admin center."
+    ],
+    "relatedPatterns": [
+      "create-a-site-launch-readiness-review",
+      "create-an-anonymous-access-risk-checklist",
+      "power-pages-table-permissions-web-roles"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Take a Power Pages site live: visibility, domain and security checks",
+    "seoDescription": "The steps from private trial site to public production: convert to production, set visibility, add a custom domain and certificate, run the security scan and tune caching.",
+    "primaryKeyword": "Power Pages go live checklist",
+    "secondaryKeywords": [
+      "Go-Live",
+      "Site Visibility",
+      "Custom Domain",
+      "Security Scan"
+    ],
+    "faqs": [
+      {
+        "question": "How do I make a Power Pages site public?",
+        "answer": "Change Site visibility from Private to Public in the design studio's Security area or the admin center."
+      },
+      {
+        "question": "Can a Power Pages site use my own domain?",
+        "answer": "Yes. Add a custom domain with a TLS certificate in the admin center and point a CNAME record at the site."
+      },
+      {
+        "question": "What should I check before launch?",
+        "answer": "Production state and licences, table permissions and anonymous access, the security scan, custom domain and sign-in redirects, and CDN and caching."
+      }
+    ]
+  },
+  {
+    "id": "pat-1633",
+    "slug": "power-pages-invitations-web-roles-onboarding",
+    "title": "Onboard external users with Power Pages invitations",
+    "shortDescription": "Send invitation codes that link a known contact to their sign-in, assign web roles and an account automatically on redemption, and automate the whole cycle.",
+    "fullDescription": "For partner and customer sites, people should not be able to register and see data just by signing up. Invitations tie a contact you created to whichever identity they sign in with. On redemption the invitation can grant web roles and associate an account, so access is decided by you, not by the registration form.",
+    "category": "Power Pages",
+    "subCategory": "Authentication",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Invitations",
+      "Web Roles",
+      "Onboarding",
+      "Contacts"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Open registration creates new, empty contacts unconnected to the customer's account, so new users see nothing and staff fix every one by hand.",
+    "whenToUse": [
+      "Partner and customer sites where access is granted, not self-claimed",
+      "Bulk onboarding of contacts from a customer list",
+      "Giving roles and account association at first sign-in"
+    ],
+    "whenNotToUse": [
+      "Public community sites where anyone may join",
+      "Sending codes to shared mailboxes"
+    ],
+    "formulaOrCode": "Site settings\n  Authentication/Registration/Enabled                  true\n  Authentication/Registration/OpenRegistrationEnabled  false      no self sign-up\n  Authentication/Registration/InvitationEnabled        true\n  Authentication/Registration/RequiresInvitation       true       (where present) sign-up only with a code\n\nCreate an invitation (Portal Management > Contacts > select contact > Create Invitation, or Invitations > New)\n  Name: Onboard Priya Shah\n  Type: Single (one contact, one redemption) | Group (one code, many redemptions up to Maximum Redemptions)\n  Invited Contact(s): the contact row\n  Owner / Inviter: staff user (used in the email)\n  Expiry Date: 14 days ahead\n  Assign to Account: the customer account      sets the contact's parent customer on redemption\n  Assign to Web Roles: Customer User (and Customer Admin where relevant)\n  Execute Workflow on Redeeming Contact: optional classic workflow\n  Invitation Code: generated automatically\n\nSend it\n  Invitation > Flow / Process > Run workflow \"Send Invitation\" (classic workflow installed with the site).\n  Edit that workflow's email: sender, wording and the link\n    https://www.contoso.com/register?invitation=<Invitation Code>\n  Or send from a cloud flow (below) for better templates.\n\nWhat the user does\n  Opens the link > Redeem invitation page with the code filled in > signs in or signs up with the identity\n  provider > the sign-in is linked to the invited contact > roles and account applied > invitation status\n  becomes Redeemed.\n\nAutomate with a cloud flow\n  Trigger: Dataverse > When a row is added: Contacts, filter: cr1a2_portalaccess eq true\n           (or a button flow / approval from an access request list)\n  Add a new row: Invitations (adx_invitation)\n    Name: Onboard @{fullname}        Type: Single (756150000)\n    Invite Contact (adx_invitecontact): contacts(<contact id>)\n    Expiry Date: addDays(utcNow(), 14)\n    Assign To Account (adx_assigntoaccount): accounts(<parent account id>)\n  Relate rows: Invitation <> Web Roles (adx_invitation_webrole or the relationship shown in your environment)\n    with the Customer User role\n  Get the row again to read adx_invitationcode\n  Send an email (V2) from a shared mailbox:\n    Subject: Your access to the Contoso customer site\n    Body: link with the code, expiry date, a named contact for help.\n  Update the contact: cr1a2_invitedon = utcNow()\n\nReminders and expiry\n  Scheduled flow daily: Invitations where statuscode is Sent and expiry within 3 days and not redeemed >\n  one reminder. Expired and unredeemed: notify the account manager.\n\nBulk onboarding\n  Import contacts (Excel or dataflow) with cr1a2_portalaccess = true. The flow above issues invitations.\n  Throttle email sending with low concurrency.\n\nOffboarding\n  Remove web roles from the contact (Relate/Unrelate rows) and, for a full block, delete the contact's\n  External Identity row or deactivate the contact. Flow trigger: contact deactivated or account relationship ended.\n\nWithout invitations (Entra External ID with contact mapping)\n  Create contacts in advance with the right email, account and web roles. Enable \"Contact mapping with email\".\n  When the person signs up with that verified email, they are linked to the existing contact and already\n  have access. Simpler for users. Requires verified emails at the provider.\n\nAudit\n  Invitations view: Redeemed, Sent, Expired counts. Contact > Web Roles subgrid shows current access.\n  Review external access per account twice a year with the account's admin.",
+    "stepByStepInstructions": [
+      "Turn off open registration and enable invitations in site settings.",
+      "Create contacts with the right account before inviting.",
+      "Create invitations that assign web roles and the account.",
+      "Send the invitation link by email with an expiry date.",
+      "Automate creation, reminders and expiry with flows.",
+      "Remove roles and identities when access should end."
+    ],
+    "commonMistakes": [
+      "Open registration left on beside invitations.",
+      "Invitations with no web roles, leaving users with no access after redemption.",
+      "No expiry date on codes.",
+      "Never removing access for people who leave the customer."
+    ],
+    "troubleshooting": [
+      "If redemption creates a new contact, the user registered without the code. Merge and re-link, and require invitations.",
+      "If the user has no access after redeeming, check the invitation's web roles and the account assignment.",
+      "If the code is rejected, it has expired or reached its maximum redemptions.",
+      "If emails are not sent, the classic workflow is off or its sender has no mailbox. Use the cloud flow."
+    ],
+    "relatedPatterns": [
+      "power-pages-authentication-entra-external-id",
+      "create-a-web-role-matrix",
+      "power-pages-table-permissions-web-roles"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Onboard external users with Power Pages invitations",
+    "seoDescription": "Send invitation codes that link a known contact to their sign-in, assign web roles and an account automatically on redemption, and automate the whole cycle.",
+    "primaryKeyword": "Power Pages invitation code contact",
+    "secondaryKeywords": [
+      "Invitations",
+      "Web Roles",
+      "Onboarding",
+      "Contacts"
+    ],
+    "faqs": [
+      {
+        "question": "What is a Power Pages invitation?",
+        "answer": "A record with a code that links an existing contact to the identity they sign in with, optionally granting web roles and an account."
+      },
+      {
+        "question": "How do I stop self-registration on my site?",
+        "answer": "Set OpenRegistrationEnabled to false and enable invitations, so only people with a valid code can register."
+      },
+      {
+        "question": "Can invitations assign web roles automatically?",
+        "answer": "Yes. Roles listed on the invitation are given to the contact when the code is redeemed."
+      }
+    ]
+  },
+  {
+    "id": "pat-1634",
+    "slug": "power-pages-pac-cli-download-upload-source-control",
+    "title": "Put a Power Pages site in source control with the PAC CLI",
+    "shortDescription": "Download a site's pages, templates and settings as files, edit and review them in Git, upload changes, and move the site between environments with deployment profiles.",
+    "fullDescription": "A Power Pages site is stored as rows in Dataverse. The PAC CLI turns those rows into a folder of HTML, CSS, JavaScript and YAML files, which makes changes reviewable and repeatable. Deployment profiles swap environment-specific values such as site settings during upload. Sites using the enhanced data model can also travel inside solutions.",
+    "category": "Power Pages",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Pages",
+      "Power Platform"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "PAC CLI",
+      "Source Control",
+      "Deployment",
+      "Site Metadata"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Site changes are made directly in production because nobody can say what differs between the development and live sites, and there is no history of who changed a template.",
+    "whenToUse": [
+      "Teams with more than one person editing a site",
+      "Promoting a site through development, test and production",
+      "Editing templates in a code editor with search and diff"
+    ],
+    "whenNotToUse": [
+      "Uploading over a target someone is editing in the studio at the same time",
+      "Expecting table data such as products or cases to move with the site"
+    ],
+    "formulaOrCode": "Set up\n  pac auth create --name PagesDev --environment https://contoso-dev.crm.dynamics.com\n  pac pages list\n      Index  Website Id                             Friendly Name      Model Version\n      [1]    8a7b6c5d-....                          Customer Portal    Enhanced (2)\n\nDownload\n  pac pages download --path ./site --webSiteId 8a7b6c5d-... --modelVersion 2 --overwrite\n  (modelVersion 1 = standard data model, 2 = enhanced data model)\n\nFolder layout (./site/customer-portal)\n  web-pages/<page>/<Page>.webpage.yml                  page properties\n  web-pages/<page>/content-pages/<Page>.en-US.webpage.copy.html      page content (HTML and Liquid)\n                                 <Page>.en-US.webpage.custom_css.css\n                                 <Page>.en-US.webpage.custom_javascript.js\n  web-templates/<name>/<Name>.webtemplate.source.html\n  content-snippets/<name>/<Name>.en-US.contentsnippet.value.html\n  basic-forms/, advanced-forms/ (multistep), lists/, web-files/ (css, js, images)\n  sitesetting.yml, webrole.yml, table-permissions/*.yml, page-templates/, sitemarker.yml, website.yml\n  .portalconfig/                                       manifest used to detect changes. Commit it.\n\nEdit and upload\n  Open the folder in Visual Studio Code (the Power Platform Tools extension adds Liquid support and icons).\n  pac pages upload --path ./site/customer-portal --modelVersion 2\n  Only changed files are sent, based on the manifest. Then clear the site cache:\n  design studio > Preview > or Sync, or admin center > Site actions > Restart for stubborn cases.\n\nGit\n  git init && git add -A && git commit -m \"Baseline of customer portal\"\n  .gitignore: nothing special is required. Do not commit certificates or exported secrets.\n  Branch per change, pull request, review the diff of templates and YAML.\n  Refresh from the environment before starting, since colleagues may have used the studio:\n    pac pages download --path ./site --webSiteId <id> --modelVersion 2 --overwrite && git status\n\nDeployment profiles (environment-specific values)\n  ./site/customer-portal/deployment-profiles/test.deployment.yml\n    adx_sitesetting:\n      - adx_sitesettingid: 3f0c....            # id from sitesetting.yml\n        adx_value: https://test-api.contoso.com\n        adx_name: Integration/ApiUrl\n      - adx_sitesettingid: 9b1d....\n        adx_value: \"false\"\n        adx_name: Authentication/Registration/OpenRegistrationEnabled\n  Upload with the profile:\n    pac auth select --name PagesTest\n    pac pages upload --path ./site/customer-portal --deploymentProfile test --modelVersion 2\n\nFirst move to a new environment\n  1. Deploy the Dataverse solution first: tables, forms, views, flows, environment variables.\n  2. Target environment: create a site (same template family) or, for the enhanced model, import a solution\n     containing the site components.\n  3. pac pages upload with the profile for that environment.\n  4. Bind or check: identity provider settings, custom domain, cloud flow registrations, table permissions'\n     web role links, and site visibility.\n\nSolutions route (enhanced data model)\n  Add the site and its components to a solution (Solutions > Add existing > Site) and deploy managed with\n  pipelines. Use the CLI for developer editing and diffing, solutions for promotion.\n\nPipeline (Azure DevOps or GitHub)\n  Steps: install PAC CLI > pac auth create with a service principal > pac pages upload --deploymentProfile prod\n  The application user needs a role with access to the site's tables (System Administrator is typical).\n\nBootstrap version\n  pac pages bootstrap-migrate --path ./site/customer-portal      converts Bootstrap 3 markup to 5 for older sites.\n\nWhat does not travel\n  Business data rows, contacts and their web role assignments, authentication secrets entered in the\n  target, and custom domain configuration.",
+    "stepByStepInstructions": [
+      "Authenticate the PAC CLI and list sites to get the website ID and data model version.",
+      "Download the site to a folder and commit it as a baseline.",
+      "Edit files in a code editor and upload changes.",
+      "Create deployment profiles for values that differ per environment.",
+      "Deploy the Dataverse solution first, then upload the site with the target's profile.",
+      "Automate uploads in a pipeline with a service principal."
+    ],
+    "commonMistakes": [
+      "Uploading stale local files over newer studio changes.",
+      "Not committing the .portalconfig manifest.",
+      "Moving the site before the tables and forms it depends on.",
+      "Keeping environment-specific URLs in the main site settings instead of a profile."
+    ],
+    "troubleshooting": [
+      "If upload reports nothing to change, the manifest is out of step. Download again or delete the target entry in .portalconfig.",
+      "If changes do not appear on the site, clear the cache or restart the site.",
+      "If download fails on model version, pass the version shown by pac pages list.",
+      "If forms break in the target, the Dataverse form or view names differ. Deploy the solution first."
+    ],
+    "relatedPatterns": [
+      "unpack-solution-source-control-git",
+      "pac-cli-auth-profiles-multiple-environments",
+      "power-pages-go-live-checklist-site-visibility"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Put a Power Pages site in source control with the PAC CLI",
+    "seoDescription": "Download a site's pages, templates and settings as files, edit and review them in Git, upload changes, and move the site between environments with deployment profiles.",
+    "primaryKeyword": "pac pages download upload",
+    "secondaryKeywords": [
+      "PAC CLI",
+      "Source Control",
+      "Deployment",
+      "Site Metadata"
+    ],
+    "faqs": [
+      {
+        "question": "How do I export a Power Pages site?",
+        "answer": "Use pac pages download with the website ID to save the site's pages, templates and settings as files."
+      },
+      {
+        "question": "How do I move a Power Pages site to another environment?",
+        "answer": "Deploy the Dataverse solution, then upload the site files with pac pages upload and a deployment profile, or use solutions for enhanced data model sites."
+      },
+      {
+        "question": "What are deployment profiles?",
+        "answer": "YAML files that override values such as site settings for a specific environment during upload."
+      }
+    ]
   }
 ]
