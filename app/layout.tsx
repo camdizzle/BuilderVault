@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { AnalyticsScripts } from "@/components/analytics/analytics-scripts";
+import { AnalyticsScripts, GtmNoScript } from "@/components/analytics/analytics-scripts";
 import { analyticsConfig } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
 
@@ -40,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <GtmNoScript />
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />

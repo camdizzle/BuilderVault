@@ -19,7 +19,17 @@ NEXT_PUBLIC_NEWSLETTER_FORM_ACTION=https://buttondown.com/api/emails/embed-subsc
 
 ## Analytics
 
-Pick one of the two.
+The site uses Google Tag Manager. The container ID is set in `.env.production`, so there is nothing to configure on the server. Google Analytics is added as a tag inside the container, not in the site code:
+
+1. In Tag Manager, open the container and go to Tags > New.
+2. Choose Tag Configuration > Google Tag and enter the GA4 Measurement ID (`G-...`).
+3. Set the trigger to Initialization - All Pages, save, then Submit and Publish.
+
+Don't also set `NEXT_PUBLIC_GA_MEASUREMENT_ID` while Tag Manager carries the GA4 tag, or page views are counted twice.
+
+Custom events arrive in `dataLayer` in snake case: `formatter_copied`, `code_copied`, `pack_downloaded`, `newsletter_signup`, `services_cta_clicked`, `services_request_started`, `adaptive_card_copied`. To send one to GA4, add a Custom Event trigger with that name and a GA4 Event tag that uses it.
+
+The two options below are alternatives to Tag Manager.
 
 ### Option A: Plausible (recommended)
 
