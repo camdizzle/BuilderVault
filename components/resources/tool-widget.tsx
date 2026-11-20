@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import {
   findDelegationHints,
@@ -16,6 +17,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
+  if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
   if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
