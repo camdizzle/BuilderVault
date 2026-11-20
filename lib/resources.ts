@@ -281,7 +281,7 @@ With(
     {me: Lower(User().Email)},
     Filter(Requests, Owner.Email = me)
 )`,
-        expectedResult: "The data source filters the rows on the server instead of only checking the first 500 to 2,000.",
+        expectedResult: "The data source filters the rows on the server instead of only checking the first 500 to 10,000.",
         commonMistakes: ["Assuming no blue underline means no delegation issue on every data source.", "Raising the data row limit instead of fixing the predicate."]
       }
     ],
@@ -937,7 +937,7 @@ Set(
     eyebrow: "Free tool",
     description: "Check a Power Apps formula for delegation problems against SharePoint, Dataverse, SQL Server, or Excel. See which functions and operators are delegated for your data source, what the limits are, and how to rewrite the ones that aren't.",
     keywords: ["Power Apps delegation", "delegation warning Power Apps", "SharePoint delegation", "Dataverse delegation", "Power Apps 2000 row limit"],
-    audience: "Makers whose apps work in testing and then miss records once the list grows past 500 or 2,000 rows, and anyone who wants to check a formula before it reaches production.",
+    audience: "Makers whose apps work in testing and then miss records once the list grows past 500 (or the data row limit you set, up to 10,000) rows, and anyone who wants to check a formula before it reaches production.",
     summaryBullets: [
       "Checks the formula against the data source you pick, because each source delegates a different set of functions.",
       "Flags functions applied to a column inside Filter, LookUp, and CountIf, and skips ones applied to a value such as User().Email or a text box.",
@@ -954,8 +954,8 @@ Search(Requests, txtSearch.Text, "Title")
 
 // Delegated to SharePoint
 Filter(Requests, StartsWith(Title, txtSearch.Text))`,
-        expectedResult: "On SharePoint, the second formula searches the whole list instead of the first 500 to 2,000 rows.",
-        commonMistakes: ["Testing with a small list, where the problem never shows.", "Raising the data row limit to 2,000 and calling it fixed."]
+        expectedResult: "On SharePoint, the second formula searches the whole list instead of the first 500 to 10,000 rows.",
+        commonMistakes: ["Testing with a small list, where the problem never shows.", "Raising the data row limit to 10,000 and calling it fixed."]
       },
       {
         title: "Move the work off the column",
@@ -977,7 +977,7 @@ Filter(
     faqs: [
       {
         question: "What is delegation?",
-        answer: "Delegation means Power Apps hands the filtering, sorting, or totalling to the data source, which returns only the rows you need. When a formula can't be delegated, Power Apps downloads the first 500 rows (2,000 at most, if you raise the limit) and works on those. Rows beyond that are ignored without an error."
+        answer: "Delegation means Power Apps hands the filtering, sorting, or totalling to the data source, which returns only the rows you need. When a formula can't be delegated, Power Apps downloads the first 500 rows (10,000 at most, if you raise the limit) and works on those. Rows beyond that are ignored without an error."
       },
       {
         question: "How is this different from the check in the Power Fx Formatter?",

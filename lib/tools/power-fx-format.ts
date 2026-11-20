@@ -662,7 +662,7 @@ export function findDelegationHints(input: string, locale: PowerFxLocale = "en")
             if (new RegExp("(^|[^A-Za-z0-9_.])" + fn + "\\(", "i").test(text)) {
               hints.set(`${name}-${fn}`, {
                 title: `${fn}() inside ${name}`,
-                detail: `${fn}() applied to a column inside ${name} usually can't be delegated, so only the first 500 to 2,000 rows are checked. Compare against a stored column, or move the calculation outside the predicate if it doesn't depend on the row.`
+                detail: `${fn}() applied to a column inside ${name} usually can't be delegated, so only the first 500 to 10,000 rows are checked. Compare against a stored column, or move the calculation outside the predicate if it doesn't depend on the row.`
               });
             }
           });
