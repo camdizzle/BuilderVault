@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-generator";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -15,6 +16,7 @@ import {
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
+  if (slug === "parse-json-schema-generator") return <ParseJsonSchemaGenerator />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;

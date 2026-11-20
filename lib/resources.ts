@@ -307,6 +307,69 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
   item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
 Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest"] }),
+  item({
+    slug: "parse-json-schema-generator",
+    kind: "tool",
+    title: "Parse JSON Schema Generator for Power Automate",
+    eyebrow: "Free tool",
+    description: "Generate a Parse JSON schema from a sample payload that won't fail on empty fields. Allows null where you need it, avoids integer-only numbers, and lists the expression for every value.",
+    keywords: ["Parse JSON schema", "Power Automate Parse JSON", "Expected String but got Null", "Parse JSON null", "generate JSON schema from sample"],
+    audience: "Flow builders who parse responses from HTTP calls, Power Apps, Forms, or other flows, and keep hitting schema validation errors when a field is empty.",
+    summaryBullets: [
+      "Builds a schema from any sample JSON, including nested objects and arrays of objects.",
+      "Can let every property accept null, so empty fields don't fail the run.",
+      "Can use number instead of integer, so a value such as 12.5 doesn't fail a schema built from 12.",
+      "Merges all items in a sample array, so properties that only appear in some items are still included.",
+      "Lists a copy-ready expression for every value, including items('Apply_to_each') for array items."
+    ],
+    examples: [
+      {
+        title: "The error this avoids",
+        problem: "A schema made with Generate from sample types every field from one sample. When a later run has an empty field, the action fails.",
+        code: `ValidationFailed. The schema validation failed.
+Invalid type. Expected String but got Null.
+Path 'manager'.`,
+        expectedResult: "With Allow null on every property turned on, the same run passes and manager is simply null.",
+        commonMistakes: ["Editing the schema by hand in the designer and missing a nested property.", "Removing the schema entirely, which loses dynamic content for later actions."]
+      },
+      {
+        title: "A property that accepts null",
+        problem: "Each property lists null as an extra allowed type.",
+        code: `"manager": {
+  "type": ["string", "null"]
+}`,
+        expectedResult: "Parse JSON accepts both a text value and null for manager.",
+        commonMistakes: ["Writing \"type\": \"string, null\" as one text value instead of a list."]
+      },
+      {
+        title: "Reading a value after Parse JSON",
+        problem: "Use the ?[] syntax so a missing property returns null instead of failing the flow.",
+        code: `body('Parse_JSON')?['requester']?['email']`,
+        expectedResult: "Returns the requester's email, or null when it is missing.",
+        commonMistakes: ["Using spaces in the action name inside body(). Power Automate uses underscores, such as Parse_JSON."]
+      }
+    ],
+    relatedPatterns: ["power-automate-parse-json-from-power-apps", "parse-json-sharepoint-power-apps-collection", "save-gallery-rows-json-multiline-text"],
+    relatedTools: ["power-fx-formatter", "power-automate-expression-builder"],
+    faqs: [
+      {
+        question: "How is this different from Generate from sample?",
+        answer: "Generate from sample types each property from the one value it sees, so a field that is empty in a later run fails validation. This tool can allow null on every property, can use number instead of integer, merges every item in a sample array, and leaves out required lists unless you ask for them."
+      },
+      {
+        question: "Why does a null value in my sample become an empty schema?",
+        answer: "A null tells the generator nothing about the real type, so the schema accepts any type there. The tool lists those properties. Paste a sample where they have a value to get a typed schema."
+      },
+      {
+        question: "Should I turn off Allow null on every property?",
+        answer: "Turn it off when you want Parse JSON to stop the flow if a value is missing, for example to catch a broken integration early. Leave it on when empty fields are normal."
+      },
+      {
+        question: "Is my JSON sent anywhere?",
+        answer: "No. The schema is generated in your browser, and the sample is not uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
 Table display name: Service Request
 Schema name: bv_ServiceRequest
