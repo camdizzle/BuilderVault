@@ -4154,5 +4154,1836 @@
     ],
     "createdAt": "2026-05-10",
     "updatedAt": "2026-05-10"
+  },
+  {
+    "id": "pat-1501",
+    "slug": "dataverse-environment-variables-canvas-apps-flows",
+    "title": "Use Dataverse environment variables in canvas apps and flows",
+    "shortDescription": "Read a site URL, list name or email address from an environment variable so nothing is hard-coded per environment.",
+    "fullDescription": "Environment variables hold the values that change between dev, test and production. This pattern shows how to read them in a canvas app and in a cloud flow, and how to set them during a solution import.",
+    "category": "Dataverse",
+    "subCategory": "Environment variables",
+    "platform": [
+      "Dataverse",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Environment Variables",
+      "ALM",
+      "Solutions",
+      "Configuration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Apps and flows that hard-code a SharePoint site URL or a support mailbox have to be edited by hand after every deployment, which creates an unmanaged layer on top of a managed solution.",
+    "whenToUse": [
+      "The same solution is deployed to more than one environment",
+      "A value such as a site URL, list, mailbox or feature flag differs per environment",
+      "You want to change a setting without editing the app or flow"
+    ],
+    "whenNotToUse": [
+      "Secrets such as passwords or API keys, unless you use the secret type backed by Azure Key Vault",
+      "Values that change per user or per record",
+      "Apps that are not in a solution"
+    ],
+    "formulaOrCode": "// Canvas app: add the \"Environment Variable Definitions\" and\n// \"Environment Variable Values\" tables as data sources.\n\n// App.Formulas (named formula, evaluated once and cached)\nnfSupportEmail =\n    With(\n        {\n            def: LookUp(\n                'Environment Variable Definitions',\n                'Schema Name' = \"bv_SupportEmail\"\n            )\n        },\n        Coalesce(\n            LookUp(\n                'Environment Variable Values',\n                'Environment Variable Definition'.'Environment Variable Definition' =\n                    def.'Environment Variable Definition'\n            ).Value,\n            def.'Default Value'\n        )\n    );\n\n// Use it anywhere\nOffice365Outlook.SendEmailV2(nfSupportEmail, \"New request\", txtBody.Text)\n\n// Cloud flow (inside the same solution): pick the variable from\n// dynamic content, or reference it in an expression\nparameters('Support Email (bv_SupportEmail)')",
+    "stepByStepInstructions": [
+      "In the solution, choose New, More, Environment variable. Give it a display name, a schema name with your publisher prefix, and a data type.",
+      "Enter a default value only if it is safe in every environment. Leave the current value empty in the development solution so it is not exported.",
+      "In the canvas app, add the two environment variable tables and read the value with the formula above. Fall back to the default value when no current value exists.",
+      "In a flow, select the variable from dynamic content under Environment Variables, or use the parameters() expression.",
+      "For SharePoint sites and lists, use the Data source type. The SharePoint connector then accepts the variable directly in the Site Address and List Name fields.",
+      "On import, enter the target value in the import wizard or supply it in a deployment settings file."
+    ],
+    "commonMistakes": [
+      "Leaving a current value in the dev solution, so the dev value is exported and silently used in production.",
+      "Reading only the value table. When no current value exists the lookup returns blank, so always fall back to the default value.",
+      "Forgetting that makers and users need read access to both environment variable tables.",
+      "Storing a secret in a text variable. Text variables are readable by anyone with table access."
+    ],
+    "troubleshooting": [
+      "If the app shows blank, check that the user's security role has read access to Environment Variable Definition and Environment Variable Value.",
+      "If the flow still uses the old value after you change it, turn the flow off and on. Flows cache the value when they are activated.",
+      "If the canvas app shows the old value, close and reopen the app. Named formulas cache for the session.",
+      "If the import wizard does not ask for a value, the solution was exported with a current value. Remove it from the solution in dev and export again."
+    ],
+    "relatedPatterns": [
+      "connection-references-for-solution-flows",
+      "deployment-settings-file-pac-cli",
+      "use-named-formulas-for-app-constants"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Dataverse environment variables in canvas apps and flows",
+    "seoDescription": "Read Dataverse environment variables in a Power Apps canvas app and a Power Automate flow, with a fallback to the default value and notes on deployment.",
+    "primaryKeyword": "Dataverse environment variables",
+    "secondaryKeywords": [
+      "environment variable canvas app",
+      "environment variable Power Automate",
+      "parameters expression environment variable",
+      "environment variable default value"
+    ],
+    "faqs": [
+      {
+        "question": "Do environment variables need a Dataverse licence?",
+        "answer": "They need an environment with a Dataverse database, because they are stored in Dataverse tables. Reading them from a canvas app adds a Dataverse data source, so check whether that makes the app premium under your licensing."
+      },
+      {
+        "question": "What is the difference between the default value and the current value?",
+        "answer": "The default value travels with the solution. The current value is set per environment and overrides the default. Export without a current value so each environment supplies its own."
+      },
+      {
+        "question": "Why does my flow not pick up a changed environment variable?",
+        "answer": "A flow reads environment variable values when it is turned on. After changing a value, turn the flow off and on again."
+      }
+    ]
+  },
+  {
+    "id": "pat-1502",
+    "slug": "patch-dataverse-lookup-and-choice-columns",
+    "title": "Patch Dataverse lookup and choice columns from Power Apps",
+    "shortDescription": "Set lookup, choice, choices and yes/no columns in a Dataverse table with Patch.",
+    "fullDescription": "Dataverse columns take different value shapes than SharePoint columns. A lookup takes a whole record, a choice takes an enum value, and a choices column takes a table of enum values. This pattern shows each one in a single Patch.",
+    "category": "Dataverse",
+    "subCategory": "Patch patterns",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Patch",
+      "Lookup",
+      "Choice",
+      "Dataverse"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Makers who learned Patch against SharePoint try to send an Id and Value record to Dataverse and get type errors, because Dataverse expects records and enum values instead.",
+    "whenToUse": [
+      "Creating or updating Dataverse rows from a canvas app with Patch",
+      "Forms that are too custom for an Edit form control",
+      "Setting a lookup from a combo box or gallery selection"
+    ],
+    "whenNotToUse": [
+      "SharePoint lists, which need the Id and Value record shape",
+      "Simple forms where an Edit form and SubmitForm already work"
+    ],
+    "formulaOrCode": "IfError(\n    Patch(\n        Requests,\n        Coalesce(varSelectedRequest, Defaults(Requests)),\n        {\n            // Text\n            Name: txtTitle.Text,\n\n            // Lookup: pass the whole related record\n            Customer: cmbCustomer.Selected,\n\n            // Lookup when you only have the GUID\n            'Assigned To': LookUp(Users, User = GUID(varUserId)),\n\n            // Choice (single): use the enum, not text\n            Priority: 'Priority (Requests)'.High,\n\n            // Choice from a dropdown whose Items = Choices('Priority (Requests)')\n            Status: ddStatus.Selected.Value,\n\n            // Choices (multi-select): a table of enum values\n            Channels: cmbChannels.SelectedItems,\n\n            // Yes/No is an enum too\n            'Is Urgent': If(tglUrgent.Value, 'Is Urgent (Requests)'.Yes, 'Is Urgent (Requests)'.No)\n        }\n    ),\n    Notify(\"Save failed: \" & FirstError.Message, NotificationType.Error),\n    Notify(\"Saved.\", NotificationType.Success)\n);\n\n// Clear a lookup\nPatch(Requests, varSelectedRequest, { Customer: Blank() })",
+    "stepByStepInstructions": [
+      "Add the table and every related table you patch a lookup to as data sources.",
+      "Set combo box Items to the related table, for example Accounts, so Selected is already a full record.",
+      "Set choice dropdown Items to Choices('Priority (Requests)') so Selected.Value is the enum value.",
+      "Write the Patch with the shapes above and wrap it in IfError.",
+      "To clear a lookup or choice, patch Blank(). Turn on the formula-level error management setting if Blank() is ignored in an older app."
+    ],
+    "commonMistakes": [
+      "Passing a GUID or name to a lookup column. Dataverse needs the related record.",
+      "Comparing or patching a choice with text such as \"High\" instead of 'Priority (Requests)'.High.",
+      "Using the SharePoint shape { Id: 1, Value: \"High\" } out of habit.",
+      "Patching a polymorphic lookup such as Customer or Owner with a record from a table the column does not accept."
+    ],
+    "troubleshooting": [
+      "\"The type of this argument does not match the expected type 'Record'\" means a lookup was given a text or GUID value. Wrap it in LookUp to pass the record.",
+      "\"Expected enum value\" or \"OptionSetValue\" errors mean a choice column was given text. Use the enum or Choices() as the dropdown source.",
+      "If the saved lookup is empty, check that the combo box Items is the related table itself and not a collection with different columns.",
+      "If a yes/no column will not save true or false, use the column's own enum as shown above."
+    ],
+    "relatedPatterns": [
+      "dataverse-delegation-filter-search-large-tables",
+      "relate-unrelate-dataverse-many-to-many",
+      "power-apps-error-handling-iferror-patch"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Patch Dataverse lookup and choice columns in Power Apps",
+    "seoDescription": "Power Fx Patch examples for Dataverse lookup, choice, multi-select choices and yes/no columns, with the errors each wrong shape produces.",
+    "primaryKeyword": "Patch Dataverse lookup column",
+    "secondaryKeywords": [
+      "Patch Dataverse choice column",
+      "Power Apps Patch Dataverse",
+      "Dataverse choices multi-select Patch",
+      "polymorphic lookup Patch"
+    ],
+    "faqs": [
+      {
+        "question": "How do I patch a Dataverse lookup when I only have the ID?",
+        "answer": "Use LookUp against the related table with the GUID, for example LookUp(Accounts, Account = GUID(varId)), and pass the result. The lookup column needs the record."
+      },
+      {
+        "question": "How do I patch a Dataverse choice column?",
+        "answer": "Pass the enum value, such as 'Priority (Requests)'.High, or the Selected.Value of a dropdown whose Items is Choices() for that column."
+      },
+      {
+        "question": "How do I clear a Dataverse lookup with Patch?",
+        "answer": "Patch the column with Blank(). In older apps, turn on formula-level error management for this to take effect."
+      }
+    ]
+  },
+  {
+    "id": "pat-1503",
+    "slug": "dataverse-delegation-filter-search-large-tables",
+    "title": "Filter and search large Dataverse tables without delegation warnings",
+    "shortDescription": "Write Filter, Search and CountRows formulas that Dataverse evaluates on the server.",
+    "fullDescription": "Dataverse delegates far more than SharePoint, but a few habits still pull only the first 500 rows. This pattern gives a gallery formula that stays delegable with a search box, a choice filter, a lookup filter and a date range.",
+    "category": "Dataverse",
+    "subCategory": "Delegation-safe filtering",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Delegation",
+      "Filter",
+      "Search",
+      "Views"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A gallery works in testing and then silently misses rows in production, because one part of the formula is not delegable and Power Apps only processes the first 500 rows locally.",
+    "whenToUse": [
+      "Tables that will pass 500 rows",
+      "Galleries with several optional filters",
+      "Apps moving from SharePoint to Dataverse"
+    ],
+    "whenNotToUse": [
+      "Small reference tables that you load once into a collection",
+      "Reports that need every row, which belong in a view, Power BI or a flow"
+    ],
+    "formulaOrCode": "// Gallery.Items: every part of this is delegable to Dataverse\nSortByColumns(\n    Filter(\n        Requests,\n        // Text search on two columns\n        IsBlank(txtSearch.Text) ||\n            StartsWith(Name, txtSearch.Text) ||\n            StartsWith('Requester Email', txtSearch.Text),\n        // Choice filter\n        IsBlank(ddStatus.Selected.Value) || Status = ddStatus.Selected.Value,\n        // Lookup filter: compare the lookup's primary key\n        IsBlank(cmbCustomer.Selected) ||\n            Customer.Account = cmbCustomer.Selected.Account,\n        // Date range\n        'Created On' >= dpFrom.SelectedDate,\n        'Created On' < DateAdd(dpTo.SelectedDate, 1, TimeUnit.Days)\n    ),\n    \"createdon\",\n    SortOrder.Descending\n)\n\n// Reuse a Dataverse view as the filter (also delegable)\nFilter(Requests, 'Requests (Views)'.'Active Requests')\n\n// Contains-style search across columns\nSearch(Requests, txtSearch.Text, \"bv_name\", \"bv_requesteremail\")",
+    "stepByStepInstructions": [
+      "Check Settings, General, Data row limit. Leave it at 500 while building so missing delegation shows up early.",
+      "Build the filter from delegable parts: comparison operators, StartsWith, And, Or, Not, and the in operator against a small local list.",
+      "Compare lookups by primary key as shown, instead of comparing the related row's name.",
+      "Move complex conditions into a Dataverse view and reference it with the Views enum.",
+      "Test with a filter value that only matches rows beyond the first 500."
+    ],
+    "commonMistakes": [
+      "Raising the data row limit to 2,000 and treating that as a fix.",
+      "Wrapping a column in a function, such as Lower(Name) or Text('Created On'), which stops delegation for that condition.",
+      "Using CountRows on a filtered table and expecting an exact count. Dataverse caps delegated counts and Filter results are not counted on the server.",
+      "Filtering on a column of a related table two levels away."
+    ],
+    "troubleshooting": [
+      "A blue underline or yellow triangle marks the exact non-delegable part. Rewrite that condition first.",
+      "If results are missing but there is no warning, check for a collection or AddColumns earlier in the formula. Those are evaluated locally.",
+      "If Search finds nothing, confirm the columns are text and that you passed logical column names in quotes.",
+      "If a view filter errors, open the view in Dataverse and remove conditions on related tables, then try again."
+    ],
+    "relatedPatterns": [
+      "avoid-delegation-warnings-sharepoint-filters",
+      "delegation-safe-date-range-filter",
+      "patch-dataverse-lookup-and-choice-columns"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Dataverse delegation: Filter and Search large tables in Power Apps",
+    "seoDescription": "Delegable Power Fx formulas for Dataverse galleries: StartsWith search, choice and lookup filters, date ranges, views, and what still breaks delegation.",
+    "primaryKeyword": "Dataverse delegation",
+    "secondaryKeywords": [
+      "Power Apps Dataverse Filter delegation",
+      "Dataverse Search function",
+      "Dataverse views in canvas app",
+      "data row limit 500"
+    ],
+    "faqs": [
+      {
+        "question": "Is Search delegable in Dataverse?",
+        "answer": "Yes. Search is delegable against Dataverse text columns, which is one of the main differences from SharePoint, where it is not."
+      },
+      {
+        "question": "What is the row limit for non-delegable queries?",
+        "answer": "500 by default. You can raise it to 2,000 in app settings, but any non-delegable formula still only sees that many rows."
+      },
+      {
+        "question": "Can I use a Dataverse view in a canvas app?",
+        "answer": "Yes. Filter(Requests, 'Requests (Views)'.'Active Requests') applies the view's filter on the server."
+      }
+    ]
+  },
+  {
+    "id": "pat-1504",
+    "slug": "relate-unrelate-dataverse-many-to-many",
+    "title": "Link rows in a Dataverse many-to-many relationship with Relate and Unrelate",
+    "shortDescription": "Add and remove links between two Dataverse tables from a canvas app.",
+    "fullDescription": "Many-to-many relationships have no column to patch. Power Fx uses Relate and Unrelate instead. This pattern covers adding, removing and listing related rows, and saving a multi-select combo box as a set of links.",
+    "category": "Dataverse",
+    "subCategory": "Relationships",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Relate",
+      "Unrelate",
+      "Many-to-Many",
+      "Relationships"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Makers try to Patch a many-to-many relationship like a lookup and find there is nothing to patch, because the links live in a hidden intersect table.",
+    "whenToUse": [
+      "A row can link to many rows of another table and the reverse, such as Requests and Tags",
+      "One-to-many relationships where you want to move a child row to another parent",
+      "Multi-select pickers backed by a real table"
+    ],
+    "whenNotToUse": [
+      "When the link needs its own data, such as a role or date. Create a custom intersect table with two lookups instead.",
+      "Simple fixed lists, where a choices column is enough"
+    ],
+    "formulaOrCode": "// Add a link: first argument is the relationship on one row,\n// second is the row from the other table\nRelate(varSelectedRequest.Tags, cmbTag.Selected);\n\n// Remove a link\nUnrelate(varSelectedRequest.Tags, ThisItem);\n\n// List related rows (gallery Items)\nvarSelectedRequest.Tags\n\n// Save a multi-select combo box as the full set of links\nForAll(\n    Filter(varSelectedRequest.Tags, Not(Tag in cmbTags.SelectedItems.Tag)) As old,\n    Unrelate(varSelectedRequest.Tags, old)\n);\nForAll(\n    cmbTags.SelectedItems As new,\n    Relate(varSelectedRequest.Tags, new)\n);\n\n// Refresh the selected row so the gallery shows the change\nSet(varSelectedRequest, LookUp(Requests, Request = varSelectedRequest.Request));",
+    "stepByStepInstructions": [
+      "Create the many-to-many relationship in Dataverse and add both tables to the app.",
+      "Save the parent row first. Relate needs a row that already exists.",
+      "Call Relate with the relationship column on the parent and the row to link.",
+      "Show linked rows by using the relationship as gallery Items.",
+      "Call Unrelate from a remove icon inside that gallery, then refresh the parent row variable."
+    ],
+    "commonMistakes": [
+      "Calling Relate on a new row before it has been saved.",
+      "Passing a GUID or name as the second argument instead of a row.",
+      "Expecting the gallery to refresh on its own after Relate when Items uses a variable.",
+      "Using a native many-to-many relationship when the link needs extra columns."
+    ],
+    "troubleshooting": [
+      "If Relate shows a type error, check that the second argument comes from the related table and not from a collection with a different shape.",
+      "If a link appears twice, guard the call with If(Not(cmbTag.Selected in varSelectedRequest.Tags), Relate(...)).",
+      "If nothing is saved and no error shows, wrap the call in IfError. The user may lack Append and Append To privileges on the two tables.",
+      "If the relationship name is missing from IntelliSense, remove and re-add both tables to refresh the app's metadata."
+    ],
+    "relatedPatterns": [
+      "patch-dataverse-lookup-and-choice-columns",
+      "dataverse-delegation-filter-search-large-tables",
+      "power-apps-error-handling-iferror-patch"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps Relate and Unrelate for Dataverse many-to-many",
+    "seoDescription": "Use the Power Fx Relate and Unrelate functions to add, remove and list links in a Dataverse many-to-many relationship, including saving a multi-select combo box.",
+    "primaryKeyword": "Power Apps Relate function",
+    "secondaryKeywords": [
+      "Unrelate function",
+      "Dataverse many-to-many canvas app",
+      "N:N relationship Power Apps",
+      "intersect table"
+    ],
+    "faqs": [
+      {
+        "question": "Can I Patch a many-to-many relationship?",
+        "answer": "No. Use Relate to add a link and Unrelate to remove one. Patch only works for the lookup side of a one-to-many relationship."
+      },
+      {
+        "question": "Which privileges does Relate need?",
+        "answer": "The user needs Append on one table and Append To on the other, plus read access to both."
+      },
+      {
+        "question": "When should I build my own intersect table?",
+        "answer": "When the link itself needs data, such as a role, a date or a status. A native many-to-many relationship cannot store extra columns."
+      }
+    ]
+  },
+  {
+    "id": "pat-1505",
+    "slug": "check-dataverse-security-role-in-canvas-app",
+    "title": "Show or hide canvas app features by Dataverse security role",
+    "shortDescription": "Read the signed-in user's Dataverse security roles once and use them to control visibility.",
+    "fullDescription": "This pattern loads the current user's directly assigned security roles at startup and exposes simple true or false flags for the rest of the app. It keeps the role check in one place and makes clear that the real protection is still the security role itself.",
+    "category": "Dataverse",
+    "subCategory": "Security roles",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Security Roles",
+      "Visibility",
+      "Users",
+      "Named Formulas"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Apps need an admin screen or an approve button that only some people see, and makers end up hard-coding email addresses that go stale.",
+    "whenToUse": [
+      "Dataverse-backed canvas apps where roles are already assigned",
+      "Hiding navigation, buttons or screens that a user could not use anyway",
+      "Replacing hard-coded email lists"
+    ],
+    "whenNotToUse": [
+      "As the only protection for data. Hidden controls do not stop access; table privileges do.",
+      "SharePoint-backed apps, which should check a security list or group membership instead"
+    ],
+    "formulaOrCode": "// App.Formulas\nnfCurrentUser =\n    LookUp(Users, 'Primary Email' = User().Email);\n\nnfMyRoles =\n    Concat(\n        nfCurrentUser.'Security Roles (systemuserroles_association)',\n        Name,\n        \";\"\n    );\n\nnfIsAdmin = \"System Administrator\" in nfMyRoles || \"BV Request Admin\" in nfMyRoles;\nnfIsApprover = \"BV Request Approver\" in nfMyRoles;\n\n// Admin menu item: Visible\nnfIsAdmin\n\n// Approve button: DisplayMode\nIf(nfIsApprover, DisplayMode.Edit, DisplayMode.Disabled)\n\n// Guard a screen (Screen.OnVisible)\nIf(Not(nfIsAdmin), Navigate(scrHome, ScreenTransition.None))",
+    "stepByStepInstructions": [
+      "Create custom security roles for the app, such as BV Request Admin, instead of checking built-in roles only.",
+      "Add the Users table to the app. The Security Roles relationship comes with it.",
+      "Add the named formulas above to App.Formulas.",
+      "Bind Visible and DisplayMode properties to the flags.",
+      "Set the matching table privileges on each role, so a user who reaches a hidden screen still cannot read or write the data.",
+      "Test with an account that has only the basic user role."
+    ],
+    "commonMistakes": [
+      "Treating hidden buttons as security. Anyone with table access can still use the data through other tools.",
+      "Checking role names that differ between environments. Custom roles in a solution keep the same name everywhere.",
+      "Forgetting roles inherited from team membership. The relationship above lists roles assigned directly to the user.",
+      "Matching on a partial name, where \"Admin\" also matches \"BV Request Admin Readonly\"."
+    ],
+    "troubleshooting": [
+      "If nfMyRoles is blank, the user lacks read access to the User or Security Role tables. Add read privileges to their role.",
+      "If the lookup returns nothing, compare User().Email with the Primary Email stored in Dataverse. Guest accounts and renamed users can differ.",
+      "If team-based roles are needed, check team membership with nfCurrentUser.'Teams (teammembership_association)' and map teams to flags.",
+      "If the flags are right but data still fails to save, the security role lacks the table privilege. Fix the role, not the app."
+    ],
+    "relatedPatterns": [
+      "role-based-button-visibility-sharepoint-security-list",
+      "patch-dataverse-lookup-and-choice-columns",
+      "dataverse-environment-variables-canvas-apps-flows"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Check a Dataverse security role in a Power Apps canvas app",
+    "seoDescription": "Read the current user's Dataverse security roles in a canvas app with named formulas and use them to show, hide or disable features safely.",
+    "primaryKeyword": "check security role in canvas app",
+    "secondaryKeywords": [
+      "Dataverse security role Power Fx",
+      "systemuserroles_association",
+      "role-based visibility Power Apps",
+      "canvas app admin screen"
+    ],
+    "faqs": [
+      {
+        "question": "Does hiding a button secure the data?",
+        "answer": "No. It only changes the interface. Access is controlled by the table privileges on the user's security roles."
+      },
+      {
+        "question": "Does this include roles a user gets from a team?",
+        "answer": "No. The user's Security Roles relationship lists directly assigned roles. Check team membership separately if your roles are assigned to teams."
+      },
+      {
+        "question": "Why use named formulas for this?",
+        "answer": "They are evaluated when first needed and cached, so the role lookup runs once and every screen reads the same flags."
+      }
+    ]
+  },
+  {
+    "id": "pat-1506",
+    "slug": "connection-references-for-solution-flows",
+    "title": "Use connection references so flows survive deployment",
+    "shortDescription": "Point every flow action at a connection reference and map it once per environment.",
+    "fullDescription": "A connection reference is a solution component that stands in for a connection. Flows bind to the reference, and each environment maps the reference to a real connection. This pattern covers naming, how many to create, and what to check before export.",
+    "category": "ALM & Governance",
+    "subCategory": "Connection references",
+    "platform": [
+      "Power Platform",
+      "Power Automate",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Connection References",
+      "Solutions",
+      "ALM",
+      "Deployment"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "After import, flows arrive turned off or tied to the maker's personal connection, and someone edits each flow by hand in production.",
+    "whenToUse": [
+      "Any flow that moves between environments in a solution",
+      "Flows that should run under a service account",
+      "Teams with more than one maker on the same solution"
+    ],
+    "whenNotToUse": [
+      "Personal productivity flows outside solutions",
+      "Canvas apps for most connectors, where each user signs in with their own connection"
+    ],
+    "formulaOrCode": "Naming (display name | logical name)\n  BV SharePoint - Requests   | bv_sharedsharepointonline_requests\n  BV Outlook - Notifications | bv_sharedoffice365_notifications\n  BV Dataverse               | bv_sharedcommondataserviceforapps\n\nRules\n  1. One reference per connector per purpose, not one per flow.\n  2. Create the reference in the solution first, then build the flow.\n  3. Name it for what it is used for, never for the person who made it.\n  4. In test and production, map it to a service account connection.\n\nBefore export\n  [ ] Every action in every flow uses a reference from this solution\n  [ ] No reference named after a maker\n  [ ] No duplicate references for the same connector and purpose\n  [ ] Flow checker shows no \"use connection references\" warning\n\nAfter import\n  [ ] Each reference is mapped to a connection owned by the service account\n  [ ] The service account has access to the sites, mailboxes and tables used\n  [ ] All flows are turned on",
+    "stepByStepInstructions": [
+      "In the solution, choose New, More, Connection reference. Pick the connector and name it by purpose.",
+      "Build or edit flows inside the solution, and select the existing reference in each action instead of creating a new connection.",
+      "Open the solution's connection references list and remove duplicates by repointing flows to one reference.",
+      "Export the solution as managed.",
+      "During import, map each reference to a connection in the target environment, or supply the mapping in a deployment settings file.",
+      "Turn on any flows that were imported in the off state."
+    ],
+    "commonMistakes": [
+      "Letting the designer create a new reference for every flow, which leaves dozens to map on import.",
+      "Mapping production references to a personal account that later leaves the organization.",
+      "Adding a flow built outside the solution without replacing its connections with references.",
+      "Assuming canvas apps use the reference at run time. For most connectors, app users still sign in themselves."
+    ],
+    "troubleshooting": [
+      "If a flow is off after import, open its details. A missing connection mapping or an owner without a licence is the usual cause.",
+      "If the import wizard does not ask for connections, the references already exist in the target and keep their current mapping.",
+      "If you see \"connection not configured for this service\", the mapped connection was deleted. Edit the connection reference and select a valid one.",
+      "If a flow action still shows a personal connection, edit the action, choose the reference, and save."
+    ],
+    "relatedPatterns": [
+      "deployment-settings-file-pac-cli",
+      "dataverse-environment-variables-canvas-apps-flows",
+      "export-import-managed-solution-pac-cli"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate connection references: naming and deployment",
+    "seoDescription": "How to use connection references in Power Platform solutions so flows deploy cleanly: naming rules, how many to create, and export and import checks.",
+    "primaryKeyword": "Power Automate connection references",
+    "secondaryKeywords": [
+      "connection reference vs connection",
+      "solution flow deployment",
+      "service account connection",
+      "flow turned off after import"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between a connection and a connection reference?",
+        "answer": "A connection holds the credentials for a connector in one environment. A connection reference is a solution component that points at a connection, so the flow does not need editing when the connection changes."
+      },
+      {
+        "question": "How many connection references should a solution have?",
+        "answer": "Usually one per connector, or one per connector and purpose when different accounts are needed. Avoid one per flow."
+      },
+      {
+        "question": "Why are my flows off after importing a solution?",
+        "answer": "Most often a connection reference was not mapped to a connection, or the flow owner lacks a licence for a premium connector."
+      }
+    ]
+  },
+  {
+    "id": "pat-1507",
+    "slug": "deployment-settings-file-pac-cli",
+    "title": "Set environment variables and connections with a deployment settings file",
+    "shortDescription": "Generate a settings file with the Power Platform CLI and use it to import a solution without manual prompts.",
+    "fullDescription": "A deployment settings file lists the environment variable values and connection IDs for one target environment. With it, a solution import is repeatable and nobody types production values into a wizard.",
+    "category": "ALM & Governance",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Platform",
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "PAC CLI",
+      "Deployment Settings",
+      "Environment Variables",
+      "Connection References"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Manual imports depend on someone remembering the right site URL and picking the right connection for each reference, and mistakes only show up when a flow fails in production.",
+    "whenToUse": [
+      "Solutions with environment variables or connection references",
+      "Imports run from a pipeline or script",
+      "Teams that want the same result on every deployment"
+    ],
+    "whenNotToUse": [
+      "One-off imports of a solution with no variables or references",
+      "Teams using Power Platform pipelines, which collect these values in the pipeline run instead"
+    ],
+    "formulaOrCode": "# 1. Generate the file from the exported solution\npac solution create-settings --solution-zip ./BVRequests_managed.zip --settings-file ./settings.test.json\n\n# 2. Fill in one file per target environment (settings.test.json)\n{\n  \"EnvironmentVariables\": [\n    { \"SchemaName\": \"bv_SupportEmail\", \"Value\": \"support-test@contoso.com\" },\n    { \"SchemaName\": \"bv_SiteUrl\", \"Value\": \"https://contoso.sharepoint.com/sites/requests-test\" }\n  ],\n  \"ConnectionReferences\": [\n    {\n      \"LogicalName\": \"bv_sharedsharepointonline_requests\",\n      \"ConnectionId\": \"shared-sharepointonl-00000000-0000-0000-0000-000000000000\",\n      \"ConnectorId\": \"/providers/Microsoft.PowerApps/apis/shared_sharepointonline\"\n    }\n  ]\n}\n\n# 3. Import with the file\npac auth create --environment https://contoso-test.crm.dynamics.com\npac solution import --path ./BVRequests_managed.zip --settings-file ./settings.test.json --publish-changes",
+    "stepByStepInstructions": [
+      "Install the Power Platform CLI and export the solution as managed.",
+      "Run pac solution create-settings to produce a file listing every variable and reference in the solution.",
+      "Copy the file once per target environment and fill in the values.",
+      "Find each ConnectionId by opening the connection in the target environment. The ID is the last segment of the URL.",
+      "Import with --settings-file.",
+      "Keep the settings files in source control. They contain no secrets if you use Key Vault for secret variables."
+    ],
+    "commonMistakes": [
+      "Using a connection ID from the wrong environment. IDs are unique per environment.",
+      "Using a connection owned by a different account than the one running the import, without sharing it first.",
+      "Editing the generated ConnectorId, which must stay exactly as generated.",
+      "Leaving a value empty and expecting the import to prompt. An empty value is imported as empty."
+    ],
+    "troubleshooting": [
+      "If a flow stays off after import, check that the connection in the file exists and is shared with the importing account.",
+      "If a variable keeps its old value, confirm the SchemaName matches exactly, including the publisher prefix and case.",
+      "If create-settings returns an empty file, the solution has no environment variables or connection references in it. Add them to the solution and export again.",
+      "If the import fails on a data source variable, check that the site or list exists in the target and the account can reach it."
+    ],
+    "relatedPatterns": [
+      "connection-references-for-solution-flows",
+      "dataverse-environment-variables-canvas-apps-flows",
+      "export-import-managed-solution-pac-cli"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Platform deployment settings file with pac CLI",
+    "seoDescription": "Generate and use a deployment settings file with pac solution create-settings to set environment variables and connection references on solution import.",
+    "primaryKeyword": "deployment settings file Power Platform",
+    "secondaryKeywords": [
+      "pac solution create-settings",
+      "pac solution import settings-file",
+      "connection reference ConnectionId",
+      "environment variable deployment"
+    ],
+    "faqs": [
+      {
+        "question": "Where do I find the connection ID?",
+        "answer": "Open the connection in the target environment in the maker portal. The ID is the last part of the page URL."
+      },
+      {
+        "question": "Do I need one settings file per environment?",
+        "answer": "Yes. Values and connection IDs differ per environment, so keep one file for each target."
+      },
+      {
+        "question": "Is it safe to store the settings file in source control?",
+        "answer": "Yes, if it holds only non-secret values. Use the secret variable type with Azure Key Vault for anything sensitive."
+      }
+    ]
+  },
+  {
+    "id": "pat-1508",
+    "slug": "export-import-managed-solution-pac-cli",
+    "title": "Export and import a managed solution with the Power Platform CLI",
+    "shortDescription": "A short, repeatable command sequence for moving a solution from development to test and production.",
+    "fullDescription": "This pattern gives the minimum set of Power Platform CLI commands to version, export, unpack and import a solution. It suits teams that are not ready for a full pipeline but want deployments to be the same every time.",
+    "category": "ALM & Governance",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "PAC CLI",
+      "Managed Solution",
+      "Export",
+      "Import"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "Deployments done by clicking through the maker portal vary by person, and nobody can say afterwards which version is in production.",
+    "whenToUse": [
+      "Moving solutions between environments by hand today",
+      "Wanting the solution source in Git",
+      "Preparing for automated pipelines later"
+    ],
+    "whenNotToUse": [
+      "Apps that live in the default environment outside a solution. Move them into a solution first.",
+      "Organizations already using Power Platform pipelines or Azure DevOps build tools for the same job"
+    ],
+    "formulaOrCode": "# One-time: sign in to each environment\npac auth create --name dev  --environment https://contoso-dev.crm.dynamics.com\npac auth create --name test --environment https://contoso-test.crm.dynamics.com\n\n# 1. Set the version in dev\npac auth select --name dev\npac solution online-version --solution-name BVRequests --solution-version 1.4.0.0\n\n# 2. Export unmanaged (for source control) and managed (for deployment)\npac solution export --name BVRequests --path ./out/BVRequests.zip --overwrite\npac solution export --name BVRequests --path ./out/BVRequests_managed.zip --managed --overwrite\n\n# 3. Unpack the unmanaged zip into readable files and commit them\npac solution unpack --zipfile ./out/BVRequests.zip --folder ./src/BVRequests\n\n# 4. Check the solution before import\npac solution check --path ./out/BVRequests_managed.zip\n\n# 5. Import managed into test\npac auth select --name test\npac solution import --path ./out/BVRequests_managed.zip --settings-file ./settings.test.json --publish-changes",
+    "stepByStepInstructions": [
+      "Install the Power Platform CLI and create one auth profile per environment.",
+      "Raise the solution version before every export so each deployment can be identified.",
+      "Export both the unmanaged and the managed zip from development.",
+      "Unpack the unmanaged zip and commit the folder to Git.",
+      "Run the solution checker and fix critical findings.",
+      "Import the managed zip into test, then into production, using a settings file for each."
+    ],
+    "commonMistakes": [
+      "Importing an unmanaged solution into test or production, which makes later clean-up hard.",
+      "Forgetting to raise the version, so two different builds share a number.",
+      "Exporting before publishing all customizations in development.",
+      "Editing components directly in production, which creates an unmanaged layer that hides later updates."
+    ],
+    "troubleshooting": [
+      "If import fails with missing dependencies, the target lacks a solution or component that yours references. Import that first or remove the dependency.",
+      "If changes do not appear after import, look for an unmanaged layer on the component in the target and remove it.",
+      "If export times out on a large solution, add --async to the export command.",
+      "If pac says no profile is selected, run pac auth list and pac auth select."
+    ],
+    "relatedPatterns": [
+      "deployment-settings-file-pac-cli",
+      "connection-references-for-solution-flows",
+      "solution-publisher-prefix-naming-standard"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "pac solution export and import: managed solution steps",
+    "seoDescription": "Power Platform CLI commands to version, export, unpack, check and import a managed solution from dev to test and production.",
+    "primaryKeyword": "pac solution export import",
+    "secondaryKeywords": [
+      "managed solution deployment",
+      "pac solution unpack",
+      "Power Platform CLI ALM",
+      "solution version"
+    ],
+    "faqs": [
+      {
+        "question": "Should test and production get managed or unmanaged solutions?",
+        "answer": "Managed. Keep unmanaged solutions in development only, so that removing or updating a solution downstream is clean."
+      },
+      {
+        "question": "Why unpack the solution?",
+        "answer": "Unpacking turns the zip into individual files that Git can compare, so you can see what changed between versions."
+      },
+      {
+        "question": "Do I need Azure DevOps for this?",
+        "answer": "No. The commands run from any terminal. A pipeline can run the same commands later."
+      }
+    ]
+  },
+  {
+    "id": "pat-1509",
+    "slug": "solution-publisher-prefix-naming-standard",
+    "title": "Choose a solution publisher and prefix before you build",
+    "shortDescription": "Set up one publisher and a short prefix so every table, column and variable is named consistently.",
+    "fullDescription": "The publisher prefix is stamped into the logical name of everything you create, and it cannot be changed later. This pattern gives a small naming standard to agree on before the first table is made.",
+    "category": "ALM & Governance",
+    "subCategory": "Solution standards",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Publisher",
+      "Prefix",
+      "Naming",
+      "Solutions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Components created in the default solution get a random prefix such as cr1a2_ or new_, and the mixed names stay in formulas, flows and integrations for the life of the app.",
+    "whenToUse": [
+      "Starting any new solution",
+      "Before creating the first Dataverse table or column",
+      "Cleaning up before a team grows beyond one maker"
+    ],
+    "whenNotToUse": [
+      "Solutions from a vendor, which keep the vendor's publisher",
+      "Renaming existing components. Logical names are fixed once created."
+    ],
+    "formulaOrCode": "Publisher\n  Display name : Contoso Business Apps\n  Name         : contosobusinessapps\n  Prefix       : bv            (2 to 8 lowercase letters, no numbers)\n  Choice prefix: 72000         (leave the generated value)\n\nSolutions (all use the same publisher)\n  BV Core      : shared tables, choices, security roles\n  BV Requests  : apps, flows and tables for one product\n  BV Config    : environment variables and connection references\n\nComponent names\n  Table        : bv_request            display \"Request\"\n  Column       : bv_duedate            display \"Due Date\"\n  Choice       : bv_priority           display \"Priority\"\n  Env variable : bv_SiteUrl            display \"Site URL\"\n  Connection ref: bv_sharedsharepointonline_requests\n  Security role: BV Request Approver\n  Canvas app   : BV Requests\n  Cloud flow   : BV Requests - Notify approver on submit",
+    "stepByStepInstructions": [
+      "In the maker portal, open Solutions, Publishers, and create one publisher for your organization or team.",
+      "Pick a prefix of two to five letters that will still make sense in years.",
+      "Create each solution with that publisher selected.",
+      "Set the solution as your preferred solution so new components land in it instead of the default solution.",
+      "Write the naming rules above into the team's standards page.",
+      "Review new components in each pull request or release check."
+    ],
+    "commonMistakes": [
+      "Building in the default solution, which uses the default publisher and a generated prefix.",
+      "Creating a new publisher for each solution, so related components have different prefixes.",
+      "Putting the environment or year in a name, such as bv_dev_request.",
+      "Using the same display name for two columns on one table."
+    ],
+    "troubleshooting": [
+      "If a new column gets the wrong prefix, it was created outside your solution. Delete it before it is used and create it again inside the solution.",
+      "If a table already has a wrong prefix and holds data, leave it. Fix the display name and document the exception.",
+      "If two publishers already exist, pick one for new work and do not move existing components.",
+      "If the maker portal keeps adding components to the default solution, set a preferred solution in the Solutions list."
+    ],
+    "relatedPatterns": [
+      "export-import-managed-solution-pac-cli",
+      "connection-references-for-solution-flows",
+      "sharepoint-internal-name-safe-column-design"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Platform solution publisher prefix and naming standard",
+    "seoDescription": "How to choose a Dataverse solution publisher and prefix, with a naming standard for tables, columns, environment variables, flows and apps.",
+    "primaryKeyword": "solution publisher prefix",
+    "secondaryKeywords": [
+      "Dataverse publisher prefix",
+      "Power Platform naming convention",
+      "change publisher prefix",
+      "preferred solution"
+    ],
+    "faqs": [
+      {
+        "question": "Can I change the prefix of an existing table or column?",
+        "answer": "No. The logical name is fixed when the component is created. You can only delete and recreate it, which loses data unless you migrate it."
+      },
+      {
+        "question": "Should each solution have its own publisher?",
+        "answer": "No. Use one publisher for all the solutions your team owns, so components can move between them."
+      },
+      {
+        "question": "What is wrong with the default publisher?",
+        "answer": "Its prefix is generated and differs per environment, which makes names inconsistent and marks the components as not belonging to any managed product."
+      }
+    ]
+  },
+  {
+    "id": "pat-1510",
+    "slug": "power-platform-pipelines-dev-test-prod",
+    "title": "Set up Power Platform pipelines for dev, test and production",
+    "shortDescription": "Configure the built-in pipelines so makers deploy a solution with a button instead of export and import.",
+    "fullDescription": "Power Platform pipelines move a solution through a fixed sequence of environments from inside the maker portal. This pattern lists the setup steps, who needs which role, and the checks to run before the first deployment.",
+    "category": "ALM & Governance",
+    "subCategory": "Deployment",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Pipelines",
+      "Deployment",
+      "ALM",
+      "Managed Environments"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Manual export and import is slow and easy to get wrong, but a full Azure DevOps or GitHub pipeline is more than many teams can maintain.",
+    "whenToUse": [
+      "Teams that deploy solutions by hand today",
+      "Makers who should deploy without admin rights on production",
+      "A fixed path such as dev to test to production"
+    ],
+    "whenNotToUse": [
+      "Deployments that need custom build steps, automated tests or branching. Use Azure DevOps or GitHub Actions.",
+      "Environments that cannot be enabled as Managed Environments"
+    ],
+    "formulaOrCode": "Setup checklist\n\nHost environment\n  [ ] Create a production-type environment with Dataverse to host pipelines\n  [ ] Install the \"Power Platform Pipelines\" app from the admin center\n  [ ] Open \"Deployment Pipeline Configuration\"\n\nEnvironments (add each one as a record)\n  [ ] Development  : type = Development Environment\n  [ ] Test         : type = Target Environment\n  [ ] Production   : type = Target Environment\n  [ ] Test and production are enabled as Managed Environments\n\nPipeline\n  [ ] Create the pipeline and link the development environment\n  [ ] Add stage 1 \"Deploy to test\" then stage 2 \"Deploy to production\"\n  [ ] Set stage 2's previous stage to stage 1\n\nAccess\n  [ ] Makers: \"Deployment Pipeline User\" role in the host, pipeline shared with them\n  [ ] Admins: \"Deployment Pipeline Administrator\" role in the host\n  [ ] Makers have import rights in each target, or stages use delegated deployment\n\nBefore the first run\n  [ ] Solution uses connection references and environment variables\n  [ ] Service account connections exist in test and production",
+    "stepByStepInstructions": [
+      "Create or choose a host environment and install the Power Platform Pipelines app in it.",
+      "Register the development and target environments in the configuration app.",
+      "Create a pipeline, link the development environment, and add one stage per target in order.",
+      "Assign the pipeline roles and share the pipeline with the makers who will use it.",
+      "In the development environment, open the solution and choose Pipelines, then Deploy here on the first stage.",
+      "Enter connection and environment variable values when prompted, and confirm the deployment in the run history."
+    ],
+    "commonMistakes": [
+      "Using a development or target environment as the host. A separate host keeps history when environments are reset.",
+      "Skipping connection references, so flows arrive turned off.",
+      "Giving every maker System Administrator in production instead of using delegated deployment.",
+      "Editing the solution in test after deployment, which blocks or hides the next update."
+    ],
+    "troubleshooting": [
+      "If the Pipelines option is missing in the solution, the development environment is not linked to a pipeline or the pipeline is not shared with you.",
+      "If validation fails on missing dependencies, deploy the solution that owns those components first.",
+      "If a stage is greyed out, the previous stage has not completed for this solution version.",
+      "If deployment fails on a connection, create the connection in the target with the deploying account or use a delegated service principal."
+    ],
+    "relatedPatterns": [
+      "export-import-managed-solution-pac-cli",
+      "connection-references-for-solution-flows",
+      "power-platform-environment-strategy"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Platform pipelines setup: dev, test and production",
+    "seoDescription": "Step-by-step setup checklist for Power Platform pipelines: host environment, stages, roles, managed environments and first deployment checks.",
+    "primaryKeyword": "Power Platform pipelines setup",
+    "secondaryKeywords": [
+      "deployment pipeline configuration",
+      "Deployment Pipeline User role",
+      "managed environments pipelines",
+      "delegated deployment"
+    ],
+    "faqs": [
+      {
+        "question": "Do pipelines need Managed Environments?",
+        "answer": "Target environments used by pipelines are expected to be Managed Environments. Check the current licensing terms before enabling them."
+      },
+      {
+        "question": "Do pipelines replace Azure DevOps?",
+        "answer": "For simple promote-through-stages deployments, yes. For source control branching, automated tests or custom build steps, a DevOps or GitHub pipeline is still the better fit."
+      },
+      {
+        "question": "Does the pipeline deploy managed solutions?",
+        "answer": "Yes. It exports from development and imports the solution as managed into each target stage."
+      }
+    ]
+  },
+  {
+    "id": "pat-1511",
+    "slug": "power-platform-environment-strategy",
+    "title": "Plan a Power Platform environment strategy",
+    "shortDescription": "Decide which environments you need, what each is for, and who can create things in them.",
+    "fullDescription": "Most tenants start with everything in the default environment. This pattern gives a small, practical layout: a locked-down default, developer environments for makers, and dev, test and production for anything the business depends on.",
+    "category": "Power Platform Admin",
+    "subCategory": "Environment strategy",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Environments",
+      "Governance",
+      "Default Environment",
+      "Security Groups"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Business-critical apps end up in the default environment next to personal experiments, where every licensed user is a maker and nothing can be isolated, backed up separately or governed differently.",
+    "whenToUse": [
+      "More than a handful of makers in the tenant",
+      "An app in the default environment has become important",
+      "Before buying premium licences or enabling Dataverse widely"
+    ],
+    "whenNotToUse": [
+      "A single maker with one or two personal apps",
+      "As a reason to block makers. The aim is a clear path, not a closed door."
+    ],
+    "formulaOrCode": "Environment layout\n\nDefault (rename to \"Personal Productivity\")\n  Purpose : personal apps and flows, Microsoft 365 connectors only\n  Makers  : everyone (cannot be restricted)\n  DLP     : strictest policy, premium and HTTP connectors blocked\n  Rule    : nothing business-critical lives here\n\nDeveloper environments (one per maker)\n  Purpose : learning and building with Dataverse and premium connectors\n  Makers  : the owner only\n  DLP     : standard policy\n\n<Team> Dev / <Team> Test / <Team> Prod\n  Type    : Sandbox, Sandbox, Production\n  Access  : each bound to its own Entra security group\n  Makers  : Dev = team makers, Test and Prod = service account only\n  Content : unmanaged in Dev, managed in Test and Prod\n  DLP     : policy scoped to the connectors the team needs\n\nTenant settings\n  [ ] Restrict who can create production and sandbox environments to admins\n  [ ] Allow developer environment creation for makers\n  [ ] Route new makers to a developer environment\n  [ ] Document how to request a team environment",
+    "stepByStepInstructions": [
+      "List the apps and flows in the default environment and mark the ones the business depends on.",
+      "Rename the default environment so its purpose is obvious, and apply the strictest DLP policy to it.",
+      "Restrict creation of production and sandbox environments to admins in the admin center's tenant settings.",
+      "Create dev, test and production environments for the first team, each with a security group.",
+      "Move the business-critical apps into a solution and deploy them through dev, test and production.",
+      "Publish a short page that tells makers where to build and how to ask for an environment."
+    ],
+    "commonMistakes": [
+      "Trying to remove maker rights from the default environment. Every licensed user has them and that cannot be changed.",
+      "Creating environments without a security group, which leaves them open to the whole tenant.",
+      "One shared development environment for every team, where makers overwrite each other's work.",
+      "Blocking connectors in the default environment without telling makers first, which suspends their existing flows."
+    ],
+    "troubleshooting": [
+      "If makers still create environments, check the tenant settings for production, sandbox and trial creation separately.",
+      "If a user cannot see an environment, add them to its security group and wait for the sync.",
+      "If capacity runs short, review trial and developer environments that are no longer used.",
+      "If apps break after a DLP change, check which connectors each affected app uses and decide whether to move it or adjust the policy."
+    ],
+    "relatedPatterns": [
+      "dlp-policy-connector-groups",
+      "find-orphaned-apps-and-flows-powershell",
+      "power-platform-pipelines-dev-test-prod"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Platform environment strategy: default, dev, test, prod",
+    "seoDescription": "A practical Power Platform environment strategy: lock down the default environment, give makers developer environments, and run dev, test and production per team.",
+    "primaryKeyword": "Power Platform environment strategy",
+    "secondaryKeywords": [
+      "default environment governance",
+      "developer environment",
+      "environment security group",
+      "restrict environment creation"
+    ],
+    "faqs": [
+      {
+        "question": "Can I stop people making apps in the default environment?",
+        "answer": "No. Every licensed user is a maker there. You can limit what they build by applying a strict DLP policy and by offering a better place to build."
+      },
+      {
+        "question": "How many environments does a team need?",
+        "answer": "Usually three: development, test and production. Small, low-risk solutions can combine test and production, but never development and production."
+      },
+      {
+        "question": "What is a developer environment?",
+        "answer": "A personal environment with Dataverse that a maker can create under the developer plan, intended for building and learning rather than running production workloads."
+      }
+    ]
+  },
+  {
+    "id": "pat-1512",
+    "slug": "dlp-policy-connector-groups",
+    "title": "Design a DLP policy with business, non-business and blocked connectors",
+    "shortDescription": "Group connectors so company data cannot flow to services you have not approved.",
+    "fullDescription": "A data loss prevention policy sorts connectors into three groups. Connectors in different groups cannot be used together in one app or flow. This pattern shows a sensible starting layout and how to roll it out without breaking existing work.",
+    "category": "Power Platform Admin",
+    "subCategory": "Data loss prevention",
+    "platform": [
+      "Power Platform",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "DLP",
+      "Connectors",
+      "Governance",
+      "Policy"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Without a policy, any maker can build a flow that copies SharePoint or Dataverse records to a personal Dropbox or a social network, and nobody is alerted.",
+    "whenToUse": [
+      "Any tenant where users can make apps and flows",
+      "Before premium connectors are widely licensed",
+      "When a new environment is created for a team"
+    ],
+    "whenNotToUse": [
+      "As the only control over sensitive data. DLP limits connector combinations, not what a permitted connector can read.",
+      "Blocking connectors that existing business flows rely on, without a migration plan"
+    ],
+    "formulaOrCode": "Tenant baseline policy (all environments except those excluded)\n\nBusiness\n  SharePoint, OneDrive for Business, Office 365 Outlook,\n  Office 365 Users, Microsoft Teams, Approvals, Excel Online (Business),\n  Planner, Microsoft Forms, Notifications, Dataverse\n\nNon-business (default group for new connectors)\n  Everything not listed elsewhere, such as MSN Weather and RSS\n\nBlocked\n  Consumer storage and social connectors (Dropbox, Google Drive,\n  X, Facebook), HTTP, HTTP with Microsoft Entra ID, custom connectors\n  not on the approved list\n\nTeam environment policy (scoped to <Team> Dev, Test and Prod)\n  Business adds : SQL Server, HTTP, the team's approved custom connectors\n  Endpoint rules: HTTP allowed only to https://api.contoso.com/*\n\nRoll-out\n  [ ] List connectors in use with the admin PowerShell module\n  [ ] Tell owners of affected apps and flows the date and the reason\n  [ ] Apply to one pilot environment first\n  [ ] Set the default group for new connectors to Non-business or Blocked\n  [ ] Review the policy every quarter",
+    "stepByStepInstructions": [
+      "In the Power Platform admin center, open Policies, Data policies, and choose New policy.",
+      "Move the Microsoft 365 connectors your organization uses into Business.",
+      "Move connectors you never want used into Blocked. Some Microsoft connectors cannot be blocked.",
+      "Set the default group for new connectors so future connectors do not land in Business.",
+      "Scope the policy to all environments, then create a second policy for environments that need more.",
+      "Before saving, check which existing apps and flows would be affected and contact their owners."
+    ],
+    "commonMistakes": [
+      "Putting every connector in Business, which permits every combination.",
+      "Leaving the default group as Business, so new connectors are trusted automatically.",
+      "Applying several overlapping policies without knowing that the most restrictive combination wins.",
+      "Forgetting custom connectors and HTTP, which can reach any endpoint."
+    ],
+    "troubleshooting": [
+      "If a flow is suspended after the change, its connectors are now in different groups or blocked. Open the flow to see which.",
+      "If a maker sees a policy error when saving an app, compare the app's connectors with the policy groups for that environment.",
+      "If a connector cannot be moved to Blocked, it is one of the non-blockable Microsoft connectors. Classify it as Business or Non-business instead.",
+      "If two policies seem to conflict, remember both apply. A connector blocked in either is blocked."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "find-orphaned-apps-and-flows-powershell",
+      "export-power-platform-inventory-powershell"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Platform DLP policy: business, non-business, blocked",
+    "seoDescription": "How to design a Power Platform DLP policy with business, non-business and blocked connector groups, plus a roll-out checklist that avoids breaking flows.",
+    "primaryKeyword": "Power Platform DLP policy",
+    "secondaryKeywords": [
+      "data loss prevention connectors",
+      "business vs non-business connectors",
+      "block HTTP connector",
+      "DLP default group"
+    ],
+    "faqs": [
+      {
+        "question": "What happens when business and non-business connectors are mixed?",
+        "answer": "The app cannot be saved or run, and a flow is suspended. Connectors in the same group can be combined freely."
+      },
+      {
+        "question": "What happens when more than one DLP policy applies?",
+        "answer": "All of them apply. The result is the most restrictive combination, so a connector blocked by any policy is blocked."
+      },
+      {
+        "question": "Will a new DLP policy break existing flows?",
+        "answer": "It can. Flows that violate the policy are suspended. Check usage and warn owners before turning a policy on."
+      }
+    ]
+  },
+  {
+    "id": "pat-1513",
+    "slug": "export-power-platform-inventory-powershell",
+    "title": "Export an inventory of apps and flows with PowerShell",
+    "shortDescription": "List every canvas app and cloud flow in the tenant, with owner and environment, into CSV files.",
+    "fullDescription": "A short script using the Power Apps administration module that produces two CSV files: one for apps and one for flows. It is a quick way to see what exists before setting policy, and a lighter option than installing the full CoE Starter Kit.",
+    "category": "Power Platform Admin",
+    "subCategory": "Inventory",
+    "platform": [
+      "Power Platform",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "PowerShell",
+      "Inventory",
+      "Governance",
+      "Admin"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Admins are asked how many apps exist, who owns them and which environments they live in, and the admin center only answers one environment at a time.",
+    "whenToUse": [
+      "Before writing a DLP policy or environment strategy",
+      "A quick audit without installing extra solutions",
+      "Scheduled exports for a simple report"
+    ],
+    "whenNotToUse": [
+      "Ongoing governance at scale, where the CoE Starter Kit or the admin center's inventory views are a better fit",
+      "When you are not a Power Platform or Dynamics 365 administrator"
+    ],
+    "formulaOrCode": "# Run once\nInstall-Module -Name Microsoft.PowerApps.Administration.PowerShell -Scope CurrentUser\n\n# Sign in as a Power Platform administrator\nAdd-PowerAppsAccount\n\n# Environments, for readable names\n$envs = @{}\nGet-AdminPowerAppEnvironment | ForEach-Object { $envs[$_.EnvironmentName] = $_.DisplayName }\n\n# Canvas apps\nGet-AdminPowerApp |\n    Select-Object DisplayName,\n        AppName,\n        @{ n = 'Environment'; e = { $envs[$_.EnvironmentName] } },\n        @{ n = 'Owner';       e = { $_.Owner.displayName } },\n        @{ n = 'OwnerEmail';  e = { $_.Owner.email } },\n        CreatedTime,\n        LastModifiedTime |\n    Export-Csv -Path .\\apps.csv -NoTypeInformation\n\n# Cloud flows\nGet-AdminFlow |\n    Select-Object DisplayName,\n        FlowName,\n        Enabled,\n        @{ n = 'Environment'; e = { $envs[$_.EnvironmentName] } },\n        @{ n = 'CreatorId';   e = { $_.CreatedBy.userId } },\n        CreatedTime,\n        LastModifiedTime |\n    Export-Csv -Path .\\flows.csv -NoTypeInformation",
+    "stepByStepInstructions": [
+      "Open PowerShell and install the administration module.",
+      "Run Add-PowerAppsAccount and sign in with an admin account.",
+      "Run the script. Large tenants can take several minutes.",
+      "Open apps.csv and flows.csv in Excel and add a pivot by environment and by owner.",
+      "Match the flow CreatorId values to people with Microsoft Graph or the Entra admin center if you need names.",
+      "Save the script and re-run it on a schedule if you want a trend."
+    ],
+    "commonMistakes": [
+      "Running the maker cmdlets such as Get-PowerApp, which only return what the signed-in user can see.",
+      "Running without an admin role and concluding the tenant is nearly empty.",
+      "Treating last modified as last used. The script does not report usage.",
+      "Sharing the CSV widely. It contains names and email addresses."
+    ],
+    "troubleshooting": [
+      "If the cmdlets are not recognized, the module did not install. Run Install-Module again and restart PowerShell.",
+      "If sign-in fails in PowerShell 7, try Windows PowerShell 5.1, which the module supports most reliably.",
+      "If the owner column is empty, the app's owner account has been deleted. Those are your orphaned apps.",
+      "If the export stops part-way in a very large tenant, loop over environments and pass -EnvironmentName to each call."
+    ],
+    "relatedPatterns": [
+      "find-orphaned-apps-and-flows-powershell",
+      "dlp-policy-connector-groups",
+      "power-platform-environment-strategy"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "PowerShell: export all Power Apps and flows to CSV",
+    "seoDescription": "Use Get-AdminPowerApp and Get-AdminFlow to export a tenant-wide inventory of canvas apps and cloud flows with owner and environment to CSV.",
+    "primaryKeyword": "Get-AdminPowerApp export",
+    "secondaryKeywords": [
+      "Power Platform inventory PowerShell",
+      "Get-AdminFlow",
+      "list all Power Apps in tenant",
+      "Microsoft.PowerApps.Administration.PowerShell"
+    ],
+    "faqs": [
+      {
+        "question": "Which role do I need to run this?",
+        "answer": "Power Platform administrator or Dynamics 365 administrator. Without it, the admin cmdlets return little or nothing."
+      },
+      {
+        "question": "Does this show how often an app is used?",
+        "answer": "No. It lists what exists and who owns it. Usage comes from the admin center analytics or the CoE Starter Kit."
+      },
+      {
+        "question": "Does it include model-driven apps?",
+        "answer": "No. Get-AdminPowerApp returns canvas apps. Model-driven apps are listed per environment in Dataverse."
+      }
+    ]
+  },
+  {
+    "id": "pat-1514",
+    "slug": "find-orphaned-apps-and-flows-powershell",
+    "title": "Find and reassign orphaned apps and flows",
+    "shortDescription": "Identify apps and flows whose owner has left, then give them a new owner with PowerShell.",
+    "fullDescription": "When a maker leaves, their apps keep running but nobody can edit them, and their flows eventually fail when connections expire. This pattern finds those items and reassigns them before that happens.",
+    "category": "Power Platform Admin",
+    "subCategory": "Ownership",
+    "platform": [
+      "Power Platform",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "PowerShell",
+      "Orphaned Apps",
+      "Ownership",
+      "Offboarding"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "A business process stops weeks after someone leaves, because the flow that ran it was owned by their account and its connections have expired.",
+    "whenToUse": [
+      "As part of the leaver process",
+      "A periodic clean-up of the default environment",
+      "Before deleting user accounts in bulk"
+    ],
+    "whenNotToUse": [
+      "Solution-aware flows in managed environments, which should be owned by a service account from the start",
+      "Reassigning items without telling the new owner what they do"
+    ],
+    "formulaOrCode": "Add-PowerAppsAccount\n\n# 1. Canvas apps with no resolvable owner\n$orphanApps = Get-AdminPowerApp | Where-Object { -not $_.Owner.displayName }\n$orphanApps | Select-Object DisplayName, AppName, EnvironmentName\n\n# 2. Everything owned by one leaver (use their Entra object ID)\n$leaverId = '00000000-0000-0000-0000-000000000000'\n$apps  = Get-AdminPowerApp -Owner $leaverId\n$flows = Get-AdminFlow -CreatedBy $leaverId\n\n# 3. Give each app a new owner\n$newOwnerId = '11111111-1111-1111-1111-111111111111'\nforeach ($app in $apps) {\n    Set-AdminPowerAppOwner -AppName $app.AppName -EnvironmentName $app.EnvironmentName -AppOwner $newOwnerId\n}\n\n# 4. Add the new person as a co-owner of each flow\nforeach ($flow in $flows) {\n    Set-AdminFlowOwnerRole -EnvironmentName $flow.EnvironmentName -FlowName $flow.FlowName -RoleName CanEdit -PrincipalType User -PrincipalObjectId $newOwnerId\n}",
+    "stepByStepInstructions": [
+      "Get the leaver's object ID from the Entra admin center before the account is deleted.",
+      "Run steps 1 and 2 to list what they own, and export the list for the manager.",
+      "Agree a new owner for each item.",
+      "Run step 3 to change app ownership and step 4 to add a flow co-owner.",
+      "Ask the new owner to open each flow and replace the connections with their own or a service account's.",
+      "Delete items nobody claims after a notice period."
+    ],
+    "commonMistakes": [
+      "Waiting until the account is deleted, which makes ownership harder to trace.",
+      "Adding a flow co-owner and stopping there. The flow still runs on the leaver's connections until someone replaces them.",
+      "Reassigning everything to one admin, who then owns hundreds of items they do not understand.",
+      "Forgetting flows that the leaver co-owned but did not create."
+    ],
+    "troubleshooting": [
+      "If Set-AdminPowerAppOwner fails, check that the new owner has a licence and access to the environment.",
+      "If a flow still fails after reassignment, open it and fix connections. Ownership and connections are separate.",
+      "If a solution-aware flow does not change owner, change the owner in the flow's details page in the maker portal or through Dataverse instead.",
+      "If Get-AdminFlow -CreatedBy returns nothing, confirm you passed the object ID and not the email address."
+    ],
+    "relatedPatterns": [
+      "export-power-platform-inventory-powershell",
+      "power-platform-environment-strategy",
+      "connection-references-for-solution-flows"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Find orphaned Power Apps and flows and change the owner",
+    "seoDescription": "PowerShell to find orphaned canvas apps and flows, change an app owner with Set-AdminPowerAppOwner, and add a flow co-owner with Set-AdminFlowOwnerRole.",
+    "primaryKeyword": "orphaned Power Apps flows",
+    "secondaryKeywords": [
+      "Set-AdminPowerAppOwner",
+      "Set-AdminFlowOwnerRole",
+      "change flow owner",
+      "employee left Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "What happens to a flow when its owner leaves?",
+        "answer": "It keeps running until its connections expire or the account is deleted, and then it fails. Until it is reassigned, nobody else can edit it."
+      },
+      {
+        "question": "Can I change the owner of a canvas app?",
+        "answer": "Yes. An administrator can run Set-AdminPowerAppOwner, or set a new owner from the admin center."
+      },
+      {
+        "question": "Does adding a co-owner fix the flow's connections?",
+        "answer": "No. The new owner must open the flow and switch each action to a valid connection."
+      }
+    ]
+  },
+  {
+    "id": "pat-1515",
+    "slug": "power-pages-table-permissions-web-roles",
+    "title": "Secure Power Pages data with table permissions and web roles",
+    "shortDescription": "Give site visitors access to exactly the Dataverse rows they should see, and no more.",
+    "fullDescription": "On a Power Pages site, a user sees a row only when a table permission linked to one of their web roles allows it. This pattern explains the access types, shows a typical setup for a request portal, and lists the checks to run before launch.",
+    "category": "Power Pages",
+    "subCategory": "Security",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Table Permissions",
+      "Web Roles",
+      "Security",
+      "Portal"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Lists and forms show \"You don't have permission to view these records\", or worse, a permission set to global access exposes every row to every visitor.",
+    "whenToUse": [
+      "Any list, form or Liquid query that reads Dataverse data on a site",
+      "Portals where users should see only their own or their company's rows",
+      "Before making a site public"
+    ],
+    "whenNotToUse": [
+      "Static content pages with no Dataverse data",
+      "As a replacement for Dataverse security roles, which still govern internal users"
+    ],
+    "formulaOrCode": "Request portal: table permissions\n\nTable        Access type  Relationship           Privileges            Web role\n-----------  -----------  ---------------------  --------------------  -------------------\nRequest      Contact      Request -> Contact     Read, Create, Write   Authenticated Users\nRequest      Account      Request -> Account     Read                  Account Managers\nComment      Parent       Request -> Comment     Read, Create, Append  (inherits from Request)\nCategory     Global       -                      Read                  Authenticated Users,\n                                                                        Anonymous Users\nRequest      Global       -                      Read, Write, Delete   Portal Staff\n\nAccess types\n  Global  : every row of the table\n  Contact : rows linked to the signed-in contact\n  Account : rows linked to the contact's parent account\n  Self    : the signed-in user's own contact row\n  Parent  : rows related to a row the user can already access\n\nPre-launch checks\n  [ ] No Global permission with Write or Delete on the Anonymous Users role\n  [ ] Every list and form has \"Enable table permissions\" on\n  [ ] Lookup targets used on forms have at least Read\n  [ ] Tested as anonymous, as a normal user, and as a user from another account",
+    "stepByStepInstructions": [
+      "In the Power Pages design studio, open Security, Table permissions, and choose New permission.",
+      "Pick the table and the narrowest access type that works. For Contact and Account access, choose the relationship that links the row to the user.",
+      "Tick only the privileges needed and assign the web role.",
+      "Add child permissions with Parent access for related tables such as comments or attachments.",
+      "Add Read on tables used by lookups and dropdowns on your forms.",
+      "Sign in as test users in different roles and confirm each sees only what they should."
+    ],
+    "commonMistakes": [
+      "Using Global access because it makes the error go away.",
+      "Turning off table permissions on a list or form to fix an access error.",
+      "Forgetting Append and Append To when a form sets a lookup or adds a child row.",
+      "Assigning permissions to a custom role but forgetting that signed-in users only get Authenticated Users by default."
+    ],
+    "troubleshooting": [
+      "If a list shows a permission error, check that a permission exists for that table, has Read, and is linked to a web role the user holds.",
+      "If a form saves but a lookup stays empty, add Append on the child table and Append To on the lookup's target table.",
+      "If changes do not show, clear the site cache from the design studio's preview options or wait for it to refresh.",
+      "If a user sees too much, look for a Global permission on a role they hold. Permissions add together."
+    ],
+    "relatedPatterns": [
+      "power-pages-show-content-by-web-role",
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-web-api-create-record"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Pages table permissions and web roles explained",
+    "seoDescription": "How Power Pages table permissions and web roles work: global, contact, account, self and parent access, a sample request portal setup, and launch checks.",
+    "primaryKeyword": "Power Pages table permissions",
+    "secondaryKeywords": [
+      "Power Pages web roles",
+      "contact access type",
+      "you don't have permission to view these records",
+      "parent table permission"
+    ],
+    "faqs": [
+      {
+        "question": "Why does my list say I don't have permission to view these records?",
+        "answer": "No table permission grants Read on that table to a web role the current user has. Add one with the right access type."
+      },
+      {
+        "question": "What is the difference between contact and account access?",
+        "answer": "Contact access returns rows linked to the signed-in contact. Account access returns rows linked to that contact's parent account, so colleagues see each other's rows."
+      },
+      {
+        "question": "Do anonymous visitors need table permissions?",
+        "answer": "Yes. Give the Anonymous Users role a Read permission only on the tables that are safe to show publicly."
+      }
+    ]
+  },
+  {
+    "id": "pat-1516",
+    "slug": "power-pages-liquid-fetchxml-list",
+    "title": "Query Dataverse with FetchXML in Power Pages Liquid",
+    "shortDescription": "Render a custom list of Dataverse rows on a page with the Liquid fetchxml tag.",
+    "fullDescription": "When the built-in list component is not flexible enough, Liquid can run a FetchXML query and loop over the results to produce any HTML. This pattern shows a filtered, sorted query with a link to a detail page and an empty state.",
+    "category": "Power Pages",
+    "subCategory": "Liquid templates",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Liquid",
+      "FetchXML",
+      "Web Templates",
+      "Lists"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "The list component cannot produce cards, grouped layouts or custom markup, and makers are unsure how to read Dataverse rows directly in a page.",
+    "whenToUse": [
+      "Custom layouts such as cards, tiles or grouped lists",
+      "Showing rows filtered by the signed-in user",
+      "Small result sets rendered on the server"
+    ],
+    "whenNotToUse": [
+      "Large tables that need paging, sorting and search. Use the list component or the Web API.",
+      "Data that changes after the page loads without a refresh"
+    ],
+    "formulaOrCode": "{% fetchxml requests %}\n<fetch top=\"20\">\n  <entity name=\"bv_request\">\n    <attribute name=\"bv_requestid\" />\n    <attribute name=\"bv_name\" />\n    <attribute name=\"bv_status\" />\n    <attribute name=\"createdon\" />\n    <order attribute=\"createdon\" descending=\"true\" />\n    <filter type=\"and\">\n      <condition attribute=\"statecode\" operator=\"eq\" value=\"0\" />\n      <condition attribute=\"bv_requesterid\" operator=\"eq\" value=\"{{ user.id }}\" />\n    </filter>\n  </entity>\n</fetch>\n{% endfetchxml %}\n\n{% assign rows = requests.results.entities %}\n\n{% if rows.size > 0 %}\n  <ul class=\"list-group\">\n    {% for row in rows %}\n      <li class=\"list-group-item\">\n        <a href=\"/request-detail/?id={{ row.bv_requestid }}\">{{ row.bv_name | escape }}</a>\n        <span class=\"badge\">{{ row.bv_status.label }}</span>\n        <small>{{ row.createdon | date: \"d MMM yyyy\" }}</small>\n      </li>\n    {% endfor %}\n  </ul>\n{% else %}\n  <p>You have no open requests.</p>\n{% endif %}",
+    "stepByStepInstructions": [
+      "Build and test the query in Dataverse first, for example with a view's Download FetchXML option.",
+      "Create a web template in the Portal Management app and paste the code above, changing table and column names.",
+      "Add a table permission that gives the user's web role Read on the table. Liquid queries respect table permissions.",
+      "Include the web template in a page with {% include 'Template Name' %} or use it as the source of a page template.",
+      "Open the page signed in as a test user and confirm only their rows appear.",
+      "Escape any text column you print with the escape filter."
+    ],
+    "commonMistakes": [
+      "Forgetting the table permission, so the query returns no rows and shows no error.",
+      "Printing user-entered text without the escape filter.",
+      "Using display names instead of logical names in the FetchXML.",
+      "Running a large query on every page load, which slows the page."
+    ],
+    "troubleshooting": [
+      "If the list is empty, test as a user with a Global Read permission. If rows appear, the query is right and the permission is the problem.",
+      "If the page shows a Liquid error, check that every tag is closed and that the FetchXML is valid XML.",
+      "If a choice column prints a number, use .label. For a lookup, use .name and .id.",
+      "If results look stale, the server cache has not refreshed. Clear the cache from the design studio preview options or the site's admin tools."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-show-content-by-web-role",
+      "power-pages-web-api-create-record"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Pages Liquid fetchxml example: custom Dataverse list",
+    "seoDescription": "A Power Pages Liquid fetchxml example that lists the signed-in user's Dataverse rows with sorting, an empty state, and links to a detail page.",
+    "primaryKeyword": "Power Pages Liquid fetchxml",
+    "secondaryKeywords": [
+      "Liquid fetchxml example",
+      "web template Dataverse query",
+      "results.entities",
+      "Power Pages custom list"
+    ],
+    "faqs": [
+      {
+        "question": "Does Liquid fetchxml respect table permissions?",
+        "answer": "Yes. The query returns only rows the current user's web roles allow, so a missing permission looks like an empty result."
+      },
+      {
+        "question": "How do I read a choice or lookup value in Liquid?",
+        "answer": "Use row.column.label for a choice, and row.column.name or row.column.id for a lookup."
+      },
+      {
+        "question": "How many rows can a Liquid fetchxml query return?",
+        "answer": "Keep it small. Set top or count in the query and use the list component or Web API when you need paging."
+      }
+    ]
+  },
+  {
+    "id": "pat-1517",
+    "slug": "power-pages-web-api-create-record",
+    "title": "Create a Dataverse row from Power Pages with the Web API",
+    "shortDescription": "Enable the portal Web API for a table and post a new row from JavaScript.",
+    "fullDescription": "The Power Pages Web API lets page scripts create, update and delete Dataverse rows without a form component. This pattern covers the site settings that switch it on, the token wrapper every request needs, and a create call with a lookup.",
+    "category": "Power Pages",
+    "subCategory": "Web API",
+    "platform": [
+      "Power Pages",
+      "Dataverse"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Web API",
+      "JavaScript",
+      "Site Settings",
+      "CRUD"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Custom interfaces such as inline editing or multi-step wizards need to write to Dataverse from script, and requests fail with 403 or 404 until three separate settings line up.",
+    "whenToUse": [
+      "Custom forms or wizards that the form component cannot produce",
+      "Inline updates without a page reload",
+      "Saving several related rows from one screen"
+    ],
+    "whenNotToUse": [
+      "Simple create or edit pages, where a basic form is quicker and safer",
+      "Anonymous writes to sensitive tables"
+    ],
+    "formulaOrCode": "// 1. Site settings (Portal Management app)\n//    Webapi/bv_request/enabled = true\n//    Webapi/bv_request/fields  = bv_name,bv_details,bv_Category\n\n// 2. Table permission: Create on Request for the user's web role\n\n// 3. Wrapper that adds the anti-forgery token\n(function (webapi, $) {\n  function safeAjax(ajaxOptions) {\n    var deferredAjax = $.Deferred();\n    shell.getTokenDeferred().done(function (token) {\n      if (!ajaxOptions.headers) {\n        $.extend(ajaxOptions, { headers: { __RequestVerificationToken: token } });\n      } else {\n        ajaxOptions.headers[\"__RequestVerificationToken\"] = token;\n      }\n      $.ajax(ajaxOptions)\n        .done(function (data, textStatus, jqXHR) {\n          validateLoginSession(data, textStatus, jqXHR, deferredAjax.resolve);\n        })\n        .fail(deferredAjax.reject);\n    }).fail(function () {\n      deferredAjax.rejectWith(this, arguments);\n    });\n    return deferredAjax.promise();\n  }\n  webapi.safeAjax = safeAjax;\n})((window.webapi = window.webapi || {}), jQuery);\n\n// 4. Create a row. The URL uses the table's entity set name (plural).\nwebapi.safeAjax({\n  type: \"POST\",\n  url: \"/_api/bv_requests\",\n  contentType: \"application/json\",\n  data: JSON.stringify({\n    bv_name: $(\"#title\").val(),\n    bv_details: $(\"#details\").val(),\n    \"bv_Category@odata.bind\": \"/bv_categories(\" + $(\"#category\").val() + \")\"\n  }),\n  success: function (res, status, xhr) {\n    var newId = xhr.getResponseHeader(\"entityid\");\n    window.location.href = \"/request-detail/?id=\" + newId;\n  },\n  error: function (xhr) {\n    console.error(xhr.responseText);\n  }\n});",
+    "stepByStepInstructions": [
+      "Add the two site settings for the table. List only the columns the script needs instead of using *.",
+      "Create a table permission with the privileges the script uses and link it to a web role.",
+      "Add the wrapper function to the page or to a shared web file.",
+      "Call the API with the entity set name in the URL and logical column names in the body.",
+      "Set lookups with the navigation property name followed by @odata.bind.",
+      "Test signed in as a normal user and read the response text when a call fails."
+    ],
+    "commonMistakes": [
+      "Using the table's logical name in the URL instead of the plural entity set name.",
+      "Setting the fields site setting to * on a table with sensitive columns.",
+      "Calling $.ajax directly without the token wrapper.",
+      "Using the lookup's logical name in @odata.bind. It needs the navigation property name, which is case-sensitive."
+    ],
+    "troubleshooting": [
+      "A 404 usually means the enabled site setting is missing or the entity set name is wrong.",
+      "A 403 means the user's web role has no table permission with the needed privilege.",
+      "\"Attribute X is not enabled for Web Api\" means the column is missing from the fields site setting.",
+      "If nothing changes after adding site settings, clear the site cache and reload."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-show-content-by-web-role"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Pages Web API: create a Dataverse record with JavaScript",
+    "seoDescription": "Enable the Power Pages Web API with site settings and table permissions, then create a Dataverse row from JavaScript using the safeAjax wrapper.",
+    "primaryKeyword": "Power Pages Web API create record",
+    "secondaryKeywords": [
+      "Webapi site settings",
+      "safeAjax wrapper",
+      "portal Web API odata.bind",
+      "Power Pages 403 Web API"
+    ],
+    "faqs": [
+      {
+        "question": "Which site settings turn on the Web API?",
+        "answer": "Webapi/<table logical name>/enabled set to true, and Webapi/<table logical name>/fields set to a comma-separated list of column logical names."
+      },
+      {
+        "question": "Why do I need the safeAjax wrapper?",
+        "answer": "Every write request must carry the site's anti-forgery token. The wrapper fetches the token and adds it to the request header."
+      },
+      {
+        "question": "Can anonymous visitors use the Web API?",
+        "answer": "Only if the Anonymous Users role has a table permission for it. Grant that with great care, and never for sensitive tables."
+      }
+    ]
+  },
+  {
+    "id": "pat-1518",
+    "slug": "power-pages-show-content-by-web-role",
+    "title": "Show Power Pages content by sign-in state and web role",
+    "shortDescription": "Use Liquid to show different content to anonymous visitors, signed-in users and specific roles.",
+    "fullDescription": "Liquid exposes the current user and their web roles on every page. This pattern shows the common checks and explains where they are enough and where page permissions or table permissions are needed instead.",
+    "category": "Power Pages",
+    "subCategory": "Liquid templates",
+    "platform": [
+      "Power Pages"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Liquid",
+      "Web Roles",
+      "Personalization",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A page needs a staff-only panel or a different message for signed-in users, and makers are unsure how to test the user's role in a template.",
+    "whenToUse": [
+      "Showing or hiding sections of a page by role",
+      "Greeting the signed-in user",
+      "Showing a sign-in prompt to anonymous visitors"
+    ],
+    "whenNotToUse": [
+      "Protecting a whole page. Use page permissions.",
+      "Protecting data. Use table permissions. Hidden HTML is not security."
+    ],
+    "formulaOrCode": "{% if user %}\n  <p>Welcome back, {{ user.fullname | escape }}.</p>\n\n  {% if user.roles contains 'Portal Staff' %}\n    <a class=\"btn btn-primary\" href=\"/staff-queue/\">Open the staff queue</a>\n  {% endif %}\n\n  {% assign is_manager = false %}\n  {% for role in user.roles %}\n    {% if role == 'Account Managers' or role == 'Administrators' %}\n      {% assign is_manager = true %}\n    {% endif %}\n  {% endfor %}\n\n  {% if is_manager %}\n    {% include 'Team Requests Panel' %}\n  {% endif %}\n\n{% else %}\n  <p>\n    <a href=\"{{ sitemarkers['Login'].url | default: '/SignIn' }}?returnUrl={{ request.path | url_encode }}\">Sign in</a>\n    to see your requests.\n  </p>\n{% endif %}",
+    "stepByStepInstructions": [
+      "Create the web roles in the design studio under Security, and assign them to contacts.",
+      "Open the page's code or a web template and add the Liquid above.",
+      "Match role names exactly, including capitals and spaces.",
+      "Move role-specific sections into their own web templates and include them, so the logic stays readable.",
+      "Add a page permission if anonymous users should not reach the page at all.",
+      "Test in a private browser window as anonymous, then as a user in each role."
+    ],
+    "commonMistakes": [
+      "Relying on hidden content to protect data that a list or Web API call would still return.",
+      "Misspelling the role name, which fails silently.",
+      "Forgetting that every signed-in user has the Authenticated Users role.",
+      "Putting role checks in content snippets that are cached and shared between users."
+    ],
+    "troubleshooting": [
+      "If a role check never passes, print {{ user.roles | join: ', ' }} temporarily to see the exact names.",
+      "If user is empty for a signed-in person, check that the page is not being served from an output cache for anonymous users.",
+      "If the sign-in link returns to the home page, check that returnUrl is URL-encoded.",
+      "If the content shows for the wrong people, check for the role being inherited through another assignment."
+    ],
+    "relatedPatterns": [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-web-api-create-record"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Pages Liquid: check user web role and sign-in state",
+    "seoDescription": "Liquid examples for Power Pages that check whether a user is signed in and which web roles they have, with notes on what this does and does not secure.",
+    "primaryKeyword": "Power Pages Liquid user roles",
+    "secondaryKeywords": [
+      "user.roles contains",
+      "Liquid if user signed in",
+      "web role conditional content",
+      "Power Pages personalization"
+    ],
+    "faqs": [
+      {
+        "question": "How do I check if a user is signed in with Liquid?",
+        "answer": "Use {% if user %}. The user object is empty for anonymous visitors."
+      },
+      {
+        "question": "Is hiding content with Liquid secure?",
+        "answer": "The hidden HTML is not sent to the browser, but any data it would have shown is only protected if table permissions also restrict it."
+      },
+      {
+        "question": "How do I restrict a whole page to a role?",
+        "answer": "Use page permissions in the design studio and choose which web roles can see the page."
+      }
+    ]
+  },
+  {
+    "id": "pat-1519",
+    "slug": "post-adaptive-card-and-wait-for-response",
+    "title": "Post an adaptive card in Teams and wait for a response",
+    "shortDescription": "Send a card with inputs and buttons from a flow, then branch on what the person chose.",
+    "fullDescription": "The Teams action Post adaptive card and wait for a response pauses a flow until someone submits the card. This pattern provides a card with a comment box and two buttons, and the expressions that read the answer.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive card approvals",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "Teams",
+      "Approvals",
+      "Wait for Response"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "The standard Approvals action cannot collect custom fields or use custom button labels, and makers are unsure how to read the values a card returns.",
+    "whenToUse": [
+      "Decisions that need extra input such as a reason, a date or a choice",
+      "Quick responses inside a Teams chat or channel",
+      "Custom button labels beyond Approve and Reject"
+    ],
+    "whenNotToUse": [
+      "Formal approvals that need the Approvals history, reassignment or mobile approval centre",
+      "Responses expected to take longer than 30 days, which is the flow run limit"
+    ],
+    "formulaOrCode": "{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"text\": \"Request needs a decision\", \"weight\": \"Bolder\", \"size\": \"Medium\" },\n    { \"type\": \"TextBlock\", \"text\": \"@{triggerBody()?['Title']}\", \"wrap\": true },\n    {\n      \"type\": \"FactSet\",\n      \"facts\": [\n        { \"title\": \"Requester\", \"value\": \"@{triggerBody()?['Author']?['DisplayName']}\" },\n        { \"title\": \"Amount\", \"value\": \"@{triggerBody()?['Amount']}\" }\n      ]\n    },\n    {\n      \"type\": \"Input.Text\",\n      \"id\": \"comments\",\n      \"label\": \"Comments\",\n      \"isMultiline\": true,\n      \"isRequired\": false\n    }\n  ],\n  \"actions\": [\n    { \"type\": \"Action.Submit\", \"title\": \"Approve\", \"id\": \"approve\", \"data\": { \"decision\": \"Approved\" } },\n    { \"type\": \"Action.Submit\", \"title\": \"Send back\", \"id\": \"sendback\", \"data\": { \"decision\": \"Returned\" } }\n  ]\n}\n\nRead the response in later actions:\n  Decision : body('Post_adaptive_card_and_wait_for_a_response')?['data']?['decision']\n  Comments : body('Post_adaptive_card_and_wait_for_a_response')?['data']?['comments']\n  Button id: body('Post_adaptive_card_and_wait_for_a_response')?['submitActionId']\n  Responder: body('Post_adaptive_card_and_wait_for_a_response')?['responder']?['userPrincipalName']",
+    "stepByStepInstructions": [
+      "Add the Microsoft Teams action Post adaptive card and wait for a response.",
+      "Set Post as to Flow bot and Post in to Chat with Flow bot or Channel, then choose the recipient.",
+      "Paste the card JSON into the Message field and replace the dynamic values with your own.",
+      "Fill in Update message so the card changes to a confirmation after it is submitted.",
+      "Add a Condition or Switch on the decision expression.",
+      "In the action's settings, set a timeout such as P7D, and add a parallel branch that runs after the action has timed out."
+    ],
+    "commonMistakes": [
+      "Using a card schema version newer than Teams supports, which makes the card fail to render.",
+      "Giving two inputs the same id, so one value overwrites the other.",
+      "Leaving no timeout, so runs wait for 30 days and then fail.",
+      "Posting to a channel and expecting only one named person to be able to respond. Anyone in the channel can submit."
+    ],
+    "troubleshooting": [
+      "If the card does not appear, validate the JSON in the Adaptive Cards designer with the host set to Microsoft Teams.",
+      "If an expression returns null, open the run history and read the action's raw output to see the exact property names.",
+      "If the flow never continues, check that the card uses Action.Submit. Action.OpenUrl and Action.Execute do not resume this action.",
+      "If the recipient reports \"something went wrong\" on submit, the flow run has already timed out or been cancelled."
+    ],
+    "relatedPatterns": [
+      "mention-a-user-in-teams-adaptive-card",
+      "adaptive-card-fact-set-from-sharepoint-items",
+      "power-automate-approval-timeout-escalation"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate: post adaptive card and wait for a response",
+    "seoDescription": "Adaptive card JSON with inputs and buttons for the Teams wait-for-response action, plus the expressions that read the decision, comments and responder.",
+    "primaryKeyword": "post adaptive card and wait for a response",
+    "secondaryKeywords": [
+      "adaptive card Power Automate Teams",
+      "read adaptive card response",
+      "submitActionId",
+      "adaptive card approval Teams"
+    ],
+    "faqs": [
+      {
+        "question": "How do I read the values from the card?",
+        "answer": "Use body('Post_adaptive_card_and_wait_for_a_response')?['data']?['<input id>'], replacing the action name with yours if you renamed it."
+      },
+      {
+        "question": "How long will the flow wait?",
+        "answer": "Up to the flow run limit of 30 days, or the timeout you set on the action. Add a branch for the timed-out case."
+      },
+      {
+        "question": "Which adaptive card version should I use?",
+        "answer": "Use 1.4 for flow-posted cards in Teams unless you have confirmed a newer version renders for your users."
+      }
+    ]
+  },
+  {
+    "id": "pat-1520",
+    "slug": "mention-a-user-in-teams-adaptive-card",
+    "title": "Mention a user in a Teams message or adaptive card from a flow",
+    "shortDescription": "Add an @mention that notifies the person, in both plain messages and adaptive cards.",
+    "fullDescription": "A mention needs more than the person's name in the text. Plain messages use a mention token, and adaptive cards need an at tag in the text plus a matching entry in the card's msteams entities. This pattern shows both.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams notifications",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Mentions",
+      "Teams",
+      "Adaptive Cards",
+      "Notifications"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A flow posts \"@Jane Doe\" as plain text, the name is not highlighted, and Jane never gets a notification.",
+    "whenToUse": [
+      "Channel posts where one person needs to act",
+      "Cards that assign work to a named owner",
+      "Escalations that must trigger a Teams notification"
+    ],
+    "whenNotToUse": [
+      "Messages sent to a one-to-one chat with the Flow bot, where the recipient is already notified",
+      "Mentioning large numbers of people in one message"
+    ],
+    "formulaOrCode": "Plain message\n  1. Add the action \"Get an @mention token for a user\"\n       User: the person's email or UPN\n  2. In \"Post message in a chat or channel\", insert the\n     \"@mention\" dynamic value where the name should appear:\n       @{outputs('Get_an_@mention_token_for_a_user')?['body/atMention']} please review this request.\n\nAdaptive card\n{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    {\n      \"type\": \"TextBlock\",\n      \"wrap\": true,\n      \"text\": \"<at>@{triggerBody()?['AssignedTo']?['DisplayName']}</at> a request is waiting for you.\"\n    }\n  ],\n  \"msteams\": {\n    \"entities\": [\n      {\n        \"type\": \"mention\",\n        \"text\": \"<at>@{triggerBody()?['AssignedTo']?['DisplayName']}</at>\",\n        \"mentioned\": {\n          \"id\": \"@{triggerBody()?['AssignedTo']?['Email']}\",\n          \"name\": \"@{triggerBody()?['AssignedTo']?['DisplayName']}\"\n        }\n      }\n    ]\n  }\n}",
+    "stepByStepInstructions": [
+      "For a plain message, add Get an @mention token for a user and pass the person's email address.",
+      "Insert the token's dynamic value into the message body.",
+      "For a card, write the name inside an at tag in a TextBlock.",
+      "Add an msteams entities entry whose text matches the at tag exactly, character for character.",
+      "Set mentioned.id to the user's UPN or Entra object ID and mentioned.name to their display name.",
+      "Post to a test channel and confirm the name is highlighted and the person gets a notification."
+    ],
+    "commonMistakes": [
+      "Typing @Name as text and expecting Teams to resolve it.",
+      "A mismatch between the at tag text and the entity text, including extra spaces.",
+      "Using an external email address for a guest instead of their UPN or object ID.",
+      "Putting the mention in a card element that does not support it. Use a TextBlock."
+    ],
+    "troubleshooting": [
+      "If the name shows as plain text in a card, compare the two at tag strings. They must be identical.",
+      "If the token action fails with user not found, check that the address is the person's UPN and that they are a member of the tenant.",
+      "If the mention renders but nobody is notified, the person may have muted the channel or turned off mention notifications.",
+      "To mention several people, add one at tag and one entity per person."
+    ],
+    "relatedPatterns": [
+      "post-adaptive-card-and-wait-for-response",
+      "adaptive-card-fact-set-from-sharepoint-items",
+      "power-automate-teams-notification-for-high-risk"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate: mention a user in Teams and adaptive cards",
+    "seoDescription": "How to @mention a user from Power Automate in a Teams message with a mention token, and in an adaptive card with at tags and msteams entities.",
+    "primaryKeyword": "Power Automate Teams mention user",
+    "secondaryKeywords": [
+      "adaptive card mention",
+      "msteams entities mention",
+      "Get an @mention token for a user",
+      "at tag adaptive card"
+    ],
+    "faqs": [
+      {
+        "question": "Why is my mention plain text in an adaptive card?",
+        "answer": "The text inside the at tag and the text in the msteams entity must match exactly. Any difference stops Teams from linking them."
+      },
+      {
+        "question": "Can I mention a channel or team from a flow?",
+        "answer": "Plain messages can use the tag mention token action for tags. Channel and team mentions are more limited, so test in your tenant before relying on them."
+      },
+      {
+        "question": "What goes in mentioned.id?",
+        "answer": "The user's UPN or their Entra object ID."
+      }
+    ]
+  },
+  {
+    "id": "pat-1521",
+    "slug": "adaptive-card-fact-set-from-sharepoint-items",
+    "title": "Build an adaptive card list from SharePoint items",
+    "shortDescription": "Turn a set of SharePoint items into rows on a single Teams card with the Select action.",
+    "fullDescription": "Instead of posting one message per item, this pattern shapes Get items results into card elements with Select and places them in one adaptive card. It works for daily digests, overdue lists and queue summaries.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive card design",
+    "platform": [
+      "Teams",
+      "Power Automate",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "Select",
+      "Digest",
+      "SharePoint"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow inside Apply to each posts a separate Teams message for every item, flooding the channel and hitting connector limits.",
+    "whenToUse": [
+      "Daily or weekly summaries of open items",
+      "Posting up to a few dozen rows in one card",
+      "Replacing an Apply to each that posts messages"
+    ],
+    "whenNotToUse": [
+      "Hundreds of rows. Link to a view instead.",
+      "Rows that each need their own buttons and response"
+    ],
+    "formulaOrCode": "1. Get items (SharePoint)\n     Filter Query : Status eq 'Open' and DueDate lt '@{utcNow()}'\n     Order By     : DueDate asc\n     Top Count    : 25\n\n2. Select\n     From : @{body('Get_items')?['value']}\n     Map (switch to text mode and paste):\n     {\n       \"type\": \"ColumnSet\",\n       \"columns\": [\n         { \"type\": \"Column\", \"width\": \"stretch\", \"items\": [\n           { \"type\": \"TextBlock\", \"wrap\": true,\n             \"text\": \"[@{item()?['Title']}](@{item()?['{Link}']})\" } ] },\n         { \"type\": \"Column\", \"width\": \"auto\", \"items\": [\n           { \"type\": \"TextBlock\",\n             \"text\": \"@{formatDateTime(item()?['DueDate'], 'd MMM')}\" } ] }\n       ]\n     }\n\n3. Condition: length(body('Select')) is greater than 0\n\n4. Post card in a chat or channel (in the Yes branch)\n{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"weight\": \"Bolder\", \"size\": \"Medium\",\n      \"text\": \"@{length(body('Select'))} overdue requests\" },\n    { \"type\": \"Container\", \"items\": @{body('Select')} }\n  ]\n}",
+    "stepByStepInstructions": [
+      "Add Get items with a filter query and a Top Count so the card stays a readable size.",
+      "Add a Select action. Switch Map to text mode with the small icon on the right, then paste the element JSON.",
+      "Add a Condition that checks the Select output is not empty.",
+      "Add Post card in a chat or channel and paste the card JSON. Insert the Select output as shown, without quotes around it.",
+      "Run the flow and open the Post card input in run history to check the JSON is valid.",
+      "Add a link to the full SharePoint view at the bottom of the card."
+    ],
+    "commonMistakes": [
+      "Wrapping the Select output in quotes, which turns the array into a string and breaks the card.",
+      "Using Map in key-value mode, which cannot produce nested card elements.",
+      "Posting without a row limit, so the card exceeds the size Teams accepts.",
+      "Forgetting the empty case and posting a card with no rows."
+    ],
+    "troubleshooting": [
+      "If the card fails to post, copy the action input from run history into the Adaptive Cards designer to find the invalid part.",
+      "If a title containing quotes or line breaks breaks the JSON, wrap the value in replace() to escape quotes or use a Compose with string handling first.",
+      "If dates show as raw text, the column is empty for some items. Wrap formatDateTime in an if(empty(...)) check.",
+      "If the message is rejected as too large, lower Top Count. Teams limits card payloads to roughly 28 KB."
+    ],
+    "relatedPatterns": [
+      "post-adaptive-card-and-wait-for-response",
+      "mention-a-user-in-teams-adaptive-card",
+      "power-automate-email-html-table"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Adaptive card from SharePoint list items with Select",
+    "seoDescription": "Build one Teams adaptive card listing many SharePoint items in Power Automate, using Get items, Select in text mode, and a container bound to the output.",
+    "primaryKeyword": "adaptive card SharePoint list items",
+    "secondaryKeywords": [
+      "Power Automate Select adaptive card",
+      "dynamic adaptive card rows",
+      "Teams digest card",
+      "loop adaptive card"
+    ],
+    "faqs": [
+      {
+        "question": "Can an adaptive card loop over an array in Power Automate?",
+        "answer": "Not by itself. Build the repeated elements with a Select action and insert the resulting array into the card's body."
+      },
+      {
+        "question": "How many items can one card show?",
+        "answer": "Keep it to a few dozen. Teams limits the card payload to roughly 28 KB, and long cards are hard to read."
+      },
+      {
+        "question": "Why use Select instead of Apply to each?",
+        "answer": "Select transforms the whole array in one action, runs much faster, and avoids posting a message per item."
+      }
+    ]
+  },
+  {
+    "id": "pat-1522",
+    "slug": "teams-channel-notification-deep-link-to-app",
+    "title": "Send a Teams notification that opens a Power Apps record",
+    "shortDescription": "Post a message with a button that launches a canvas app directly on the right record.",
+    "fullDescription": "A notification is more useful when one click takes the reader to the item. This pattern builds a link to a canvas app with a record ID parameter, reads that parameter when the app starts, and posts the link in a Teams card.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams notifications",
+    "platform": [
+      "Teams",
+      "Power Automate",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Deep Link",
+      "Param",
+      "Teams",
+      "Notifications"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "People receive a Teams notification, open the app, and then have to search for the record the message was about.",
+    "whenToUse": [
+      "Assignment, approval or escalation notifications",
+      "Apps that already have a detail screen for one record",
+      "Links shared in email as well as Teams"
+    ],
+    "whenNotToUse": [
+      "Apps embedded as a Teams tab, which use a Teams deep link format instead",
+      "Records the reader may not have permission to open"
+    ],
+    "formulaOrCode": "// 1. Flow: build the link (Compose)\n//    Get the app's web link from the app's Details page.\nconcat(\n  'https://apps.powerapps.com/play/e/<environment-id>/a/<app-id>',\n  '?tenantId=<tenant-id>',\n  '&requestId=', triggerBody()?['ID']\n)\n\n// 2. Flow: card with a button\n{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"weight\": \"Bolder\", \"text\": \"New request assigned to you\" },\n    { \"type\": \"TextBlock\", \"wrap\": true, \"text\": \"@{triggerBody()?['Title']}\" }\n  ],\n  \"actions\": [\n    { \"type\": \"Action.OpenUrl\", \"title\": \"Open request\", \"url\": \"@{outputs('Compose_Link')}\" }\n  ]\n}\n\n// 3. App.StartScreen\nIf(\n    IsBlank(Param(\"requestId\")),\n    scrHome,\n    scrRequestDetail\n)\n\n// 4. App.Formulas\nnfDeepLinkRequest =\n    LookUp(Requests, ID = Value(Param(\"requestId\")));\n\n// 5. scrRequestDetail: use nfDeepLinkRequest when present\nCoalesce(varSelectedRequest, nfDeepLinkRequest)",
+    "stepByStepInstructions": [
+      "Copy the app's web link from its Details page in the maker portal.",
+      "In the flow, build the link in a Compose action and append your own parameter with the record ID.",
+      "Add the link to an Action.OpenUrl button in the card.",
+      "In the app, set App.StartScreen to choose the detail screen when the parameter is present.",
+      "Load the record with LookUp and Param, converting the value with Value() for a numeric ID.",
+      "Test the link in a browser first, then from Teams on desktop and mobile."
+    ],
+    "commonMistakes": [
+      "Navigating in App.OnStart instead of using App.StartScreen.",
+      "Forgetting that Param always returns text, so a numeric ID comparison finds nothing.",
+      "Hard-coding the app link per environment instead of storing it in an environment variable.",
+      "Not handling a record that no longer exists or that the user cannot see."
+    ],
+    "troubleshooting": [
+      "If the app opens on the home screen, check the parameter name. Names are case-sensitive.",
+      "If the detail screen is blank, the lookup returned nothing. Show a message when nfDeepLinkRequest is blank and offer a way back.",
+      "If the link opens the browser instead of the Teams app, that is expected for web links. Use a Teams deep link if the app is pinned as a tab.",
+      "If the link works for you but not for others, share the app and the data source with them."
+    ],
+    "relatedPatterns": [
+      "post-adaptive-card-and-wait-for-response",
+      "power-automate-html-email-button-link",
+      "mention-a-user-in-teams-adaptive-card"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Deep link from Teams to a Power Apps record with Param",
+    "seoDescription": "Send a Teams adaptive card with a button that opens a canvas app on a specific record, using a URL parameter, Param() and App.StartScreen.",
+    "primaryKeyword": "Power Apps deep link Param",
+    "secondaryKeywords": [
+      "open Power Apps record from Teams",
+      "App.StartScreen Param",
+      "Action.OpenUrl Power Apps",
+      "canvas app URL parameter"
+    ],
+    "faqs": [
+      {
+        "question": "How do I pass a record ID to a canvas app?",
+        "answer": "Add a query parameter to the app's web link, such as &requestId=42, and read it in the app with Param(\"requestId\")."
+      },
+      {
+        "question": "Where should the app decide which screen to open?",
+        "answer": "In App.StartScreen. It replaces Navigate in OnStart and lets the app load faster."
+      },
+      {
+        "question": "Does the link work on mobile?",
+        "answer": "Yes. On a phone with the Power Apps app installed, the link opens the app and passes the parameter."
+      }
+    ]
   }
 ]
