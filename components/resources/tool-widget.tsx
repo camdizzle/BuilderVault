@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { FilterQueryBuilder } from "@/components/tools/filter-query-builder";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import {
   findDelegationHints,
   formatPowerFxFormula,
@@ -14,6 +15,7 @@ import {
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
+  if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
@@ -553,28 +555,6 @@ function SolutionChecklistGenerator() {
       </div>
       <CopyCodeBlock code={checklist} />
     </ToolShell>
-  );
-}
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <label className={`chip-button ${checked ? "active" : ""}`}>
-      <input checked={checked} onChange={(event) => onChange(event.target.checked)} style={{ marginRight: 8 }} type="checkbox" />
-      {label}
-    </label>
-  );
-}
-
-function ToolShell({ children, title, description }: { children: ReactNode; title: string; description: string }) {
-  return (
-    <section className="tool-panel">
-      <div>
-        <div className="eyebrow">Interactive tool</div>
-        <h2 className="section-title" style={{ fontSize: "1.8rem" }}>{title}</h2>
-        <p style={{ color: "#415049", lineHeight: 1.7, marginBottom: 0 }}>{description}</p>
-      </div>
-      {children}
-    </section>
   );
 }
 
