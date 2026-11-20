@@ -82,15 +82,6 @@ export default function PmoToolkitPage() {
             <SupportCard href="/pmo/bundle" title="Implementation bundle" text="Group the roadmap, module guides, mockup briefs, and starter files by 30/60/90 rollout phase." />
             <SupportCard href="/pmo/architecture" title="Solution architecture" text="Map the PMO system across apps, data, automations, reporting, Teams, security, and releases." />
             <SupportCard href="/pmo/data-dictionary" title="Data dictionary" text="Review PMO tables, fields, relationships, indexes, statuses, measures, and solution components." />
-            <SupportCard href="/pmo/uat" title="UAT scripts" text="Run role-based test scenarios across intake, charters, gates, RAID, changes, and reporting." />
-            <SupportCard href="/pmo/release" title="Release checklist" text="Confirm readiness, validation, reporting, and launch communications before release." />
-            <SupportCard href="/pmo/runbook" title="Support runbook" text="Operate the PMO system with daily checks, common fixes, and escalation guidance." />
-            <SupportCard href="/pmo/cadence" title="Governance cadence" text="Plan triage, delivery control, executive digest, and portfolio review rhythms." />
-            <SupportCard href="/pmo/communications" title="Communication templates" text="Reuse stakeholder messages for intake, approvals, gate exceptions, and digests." />
-            <SupportCard href="/pmo/kpis" title="KPI catalog" text="Define dashboard measures for demand, lifecycle, RAID, reporting, and benefits." />
-            <SupportCard href="/pmo/adoption" title="Adoption plan" text="Pilot, onboard, and measure behavior change for PMO users." />
-            <SupportCard href="/pmo/backlog" title="Enhancement backlog" text="Manage future improvements as a PMO product backlog." />
-            <SupportCard href="/pmo/escalations" title="Escalation playbook" text="Define escalation triggers and decision record requirements." />
             <SupportCard href="/pmo/glossary" title="PMO glossary" text="Define the terms that become tables, screens, workflows, reports, and operating cadence." />
             <SupportCard href="/pmo/demo" title="Demo narrative" text="Walk through how demand becomes a governed project with gates, RAID, reporting, and decisions." />
             <SupportCard href="/pmo/offer" title="PMO services" text="See who the PMO toolkit is for, what it helps build, and how the implementation path works." />

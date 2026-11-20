@@ -5,7 +5,6 @@ import { DetailSection } from "@/components/patterns/detail-section";
 import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
-import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { PatternBadges } from "@/components/patterns/pattern-badges";
 import { PatternCard } from "@/components/patterns/pattern-card";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
@@ -177,7 +176,6 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
             ) : null}
             Updated <time dateTime={pattern.updatedAt}>{formatDisplayDate(pattern.updatedAt)}</time> · {pattern.difficulty}
           </p>
-          <FavoriteButton patternSlug={pattern.slug} />
         </header>
 
         <div className="content-with-aside" style={{ gap: 28 }}>

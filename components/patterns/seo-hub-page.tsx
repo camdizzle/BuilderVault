@@ -2,7 +2,7 @@
 import { CollectionCard } from "@/components/collections/collection-card";
 import { PatternCard } from "@/components/patterns/pattern-card";
 import { getCollectionBySlug } from "@/lib/patterns/collections";
-import { getAllPatterns } from "@/lib/patterns/patterns";
+import { getPublishedPatterns } from "@/lib/patterns/patterns";
 import type { Pattern } from "@/types/pattern";
 
 export type SeoHubConfig = {
@@ -15,7 +15,7 @@ export type SeoHubConfig = {
 };
 
 export function SeoHubPage({ config }: { config: SeoHubConfig }) {
-  const patterns = getAllPatterns().filter(config.match).slice(0, 18);
+  const patterns = getPublishedPatterns().filter(config.match).slice(0, 18);
   const collections = config.collectionSlugs
     .map((slug) => getCollectionBySlug(slug))
     .filter((collection): collection is NonNullable<typeof collection> => Boolean(collection));

@@ -17,7 +17,7 @@ export default function PricingPage() {
         <Plan
           name="Public library"
           price="Free"
-          features={["Browse public Power Platform patterns", "Use examples, cookbooks, standards, and cheat sheets", "Use browser-based tools", "Save favorites locally in your browser"]}
+          features={["Browse public Power Platform patterns", "Use examples, cookbooks, standards, and cheat sheets", "Use browser-based tools", "Download free checklist packs"]}
         />
         <Plan
           name="Open developer resources"

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { PatternCard } from "@/components/patterns/pattern-card";
 import { getCollectionBySlug } from "@/lib/patterns/collections";
-import { getAllPatterns } from "@/lib/patterns/patterns";
+import { getPublishedPatterns } from "@/lib/patterns/patterns";
 
 export const metadata = {
   title: "Power Apps patterns for business app builders | BuilderVault",
@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default function TopicPage() {
-  const patterns = getAllPatterns()
+  const patterns = getPublishedPatterns()
     .filter((pattern) => pattern.category === "Power Apps")
     .slice(0, 12);
   const collections = ["power-apps-patching-cookbook", "delegation-survival-kit", "power-apps-app-design-kit", "request-management-app-kit"]
