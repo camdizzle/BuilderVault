@@ -14,6 +14,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Apps Patching Cookbook",
     shortDescription: "Core patching examples for SharePoint fields, Dataverse-style saves, validation, refresh, and save behavior.",
     patternSlugs: [
+      "forall-patch-multiple-records-power-apps",
+      "updateif-removeif-bulk-changes-power-apps",
       "patch-sharepoint-people-picker-power-apps",
       "patch-sharepoint-choice-field",
       "patch-sharepoint-lookup-field",
@@ -33,6 +35,9 @@ export const patternCollections: PatternCollection[] = [
     title: "Delegation Survival Kit",
     shortDescription: "Patterns for SharePoint filters, searchable galleries, query shaping, and predictable app performance.",
     patternSlugs: [
+      "sharepoint-list-view-threshold-5000-items",
+      "get-more-than-5000-items-power-automate",
+      "sort-gallery-by-column-header-power-apps",
       "dataverse-delegation-filter-search-large-tables",
       "avoid-delegation-warnings-sharepoint-filters",
       "build-a-queue-dashboard-gallery",
@@ -48,6 +53,9 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Apps App Design Kit",
     shortDescription: "Screen, state, dashboard, validation, command, and UX patterns for maintainable business apps.",
     patternSlugs: [
+      "responsive-canvas-app-layout-containers",
+      "with-function-readable-power-fx-formulas",
+      "check-microsoft-365-group-membership-power-apps",
       "build-a-queue-dashboard-gallery",
       "build-a-tabbed-request-detail-screen",
       "build-a-compact-mobile-request-form",
@@ -67,6 +75,8 @@ export const patternCollections: PatternCollection[] = [
     title: "SharePoint Backend Starter Kit",
     shortDescription: "List design, internal names, permissions, views, indexing, ownership, and support patterns for app backends.",
     patternSlugs: [
+      "sharepoint-list-view-threshold-5000-items",
+      "send-http-request-to-sharepoint-power-automate",
       "sharepoint-internal-name-safe-column-design",
       "sharepoint-view-indexing-for-large-lists",
       "sharepoint-permissions-request-list-pattern",
@@ -105,6 +115,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Automate Error Handling Kit",
     shortDescription: "Try/catch scopes, trigger conditions, failed-run triage, ownership transfer, retries, and support models.",
     patternSlugs: [
+      "coalesce-empty-null-handling-power-automate",
+      "apply-to-each-concurrency-variables-power-automate",
       "power-automate-try-catch-scope-error-handling",
       "power-automate-trigger-condition-status-changed",
       "create-a-failed-run-triage-process",
@@ -250,6 +262,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Notification and Digest Kit",
     shortDescription: "Email, Teams, reminder, escalation, digest, throttling, and routing patterns for workflow communication.",
     patternSlugs: [
+      "select-union-remove-duplicates-power-automate",
+      "convert-time-zone-format-date-power-automate",
       "power-automate-email-html-table",
       "send-reminder-emails-for-pending-approvals",
       "send-digest-emails-for-overdue-actions",

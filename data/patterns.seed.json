@@ -5985,5 +5985,1824 @@
         "answer": "Yes. On a phone with the Power Apps app installed, the link opens the app and passes the parameter."
       }
     ]
+  },
+  {
+    "id": "pat-1523",
+    "slug": "forall-patch-multiple-records-power-apps",
+    "title": "Patch multiple records at once with ForAll and Patch",
+    "shortDescription": "Save many rows in one call by passing a table to Patch, and know when ForAll is still needed.",
+    "fullDescription": "Looping over a collection with ForAll and calling Patch for each row works, but it sends one request per row. Passing two tables to Patch updates all rows in a single call. This pattern shows both forms, for creating and for updating.",
+    "category": "Power Apps",
+    "subCategory": "Patch patterns",
+    "platform": [
+      "Power Apps",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "ForAll",
+      "Patch",
+      "Bulk Update",
+      "Collections"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Saving an editable gallery or a checklist takes many seconds because the app patches rows one at a time, and a failure half-way leaves the data partly saved with no message.",
+    "whenToUse": [
+      "Saving edits from a gallery or a collection",
+      "Creating many rows from a template",
+      "Bulk status changes on selected items"
+    ],
+    "whenNotToUse": [
+      "Changing the same column to the same value on rows matching a condition. UpdateIf is shorter.",
+      "Thousands of rows, which belong in a flow"
+    ],
+    "formulaOrCode": "// Fastest: update many existing rows in one call.\n// Both tables must have the same number of rows, in the same order.\n// The first table holds the records to change, the second the changes.\nWith(\n    { changed: Filter(colTasks, IsDirty) },\n    IfError(\n        Patch(\n            Tasks,\n            ShowColumns(changed, ID),\n            ForAll(changed, { Title: Title, Done: Done, Notes: Notes })\n        ),\n        Notify(\"Save failed: \" & FirstError.Message, NotificationType.Error),\n        UpdateIf(colTasks, IsDirty, { IsDirty: false });\n        Notify(\"Saved \" & CountRows(changed) & \" tasks.\", NotificationType.Success)\n    )\n);\n\n// Create many new rows in one call\nPatch(\n    Tasks,\n    ForAll(\n        colTemplateSteps As step,\n        { Title: step.Title, RequestId: varSelectedRequest.ID, Done: false }\n    )\n);\n\n// Row by row, when each row needs different logic\nForAll(\n    colTasks As t,\n    If(\n        IsBlank(t.ID),\n        Patch(Tasks, Defaults(Tasks), { Title: t.Title }),\n        Patch(Tasks, LookUp(Tasks, ID = t.ID), { Title: t.Title })\n    )\n);",
+    "stepByStepInstructions": [
+      "Keep gallery edits in a collection, with an IsDirty column you set to true in each control's OnChange.",
+      "On Save, filter the collection to dirty rows.",
+      "Call Patch with the data source, a table of record identifiers, and a table of changes in the same order.",
+      "Wrap the call in IfError and clear the dirty flags only on success.",
+      "Use the ForAll form only when rows need different handling, such as a mix of new and existing rows."
+    ],
+    "commonMistakes": [
+      "Calling Patch inside ForAll for hundreds of rows, which sends hundreds of requests.",
+      "Passing two tables with different row counts or order to Patch.",
+      "Using ThisRecord or column names that clash between the collection and the data source. Name the loop record with As.",
+      "Assuming ForAll runs in order. It may run in parallel, so do not rely on one iteration seeing another's result."
+    ],
+    "troubleshooting": [
+      "\"The specified column is read-only\" means the change table includes a column such as ID, Created or a calculated column. Remove it from the change record.",
+      "If only some rows save, check Errors(Tasks) after the call to see which rows failed and why.",
+      "If new rows are created instead of updated, the first table does not contain the primary key. Include ID, or the Dataverse primary key column.",
+      "If the save is still slow, check for a formula inside ForAll that calls LookUp against the data source for every row."
+    ],
+    "relatedPatterns": [
+      "updateif-removeif-bulk-changes-power-apps",
+      "power-apps-bulk-update-selected-gallery-items",
+      "power-apps-gallery-inline-edit-save"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps ForAll Patch: update multiple records at once",
+    "seoDescription": "Patch multiple records in Power Apps with a single Patch call using two tables, or with ForAll, including error handling and the common read-only column error.",
+    "primaryKeyword": "Power Apps ForAll Patch",
+    "secondaryKeywords": [
+      "patch multiple records Power Apps",
+      "bulk update collection",
+      "Patch table of records",
+      "ForAll Patch slow"
+    ],
+    "faqs": [
+      {
+        "question": "Is Patch with a table faster than ForAll with Patch?",
+        "answer": "Yes, usually much faster. Patch with tables batches the work, while ForAll with Patch sends a separate request for each row."
+      },
+      {
+        "question": "Can I create and update rows in the same Patch call?",
+        "answer": "Not reliably. Split the collection into new rows and existing rows and make one call for each."
+      },
+      {
+        "question": "How do I know which rows failed?",
+        "answer": "Wrap the call in IfError for the first error, and read Errors(DataSource) afterwards for row-level detail."
+      }
+    ]
+  },
+  {
+    "id": "pat-1524",
+    "slug": "updateif-removeif-bulk-changes-power-apps",
+    "title": "Change or delete many rows with UpdateIf and RemoveIf",
+    "shortDescription": "Apply one change to every row that matches a condition, in a collection or a data source.",
+    "fullDescription": "UpdateIf and RemoveIf act on all rows that meet a condition, without a loop. They are ideal for collections and for small data sources, with one important limit: against a data source they are not delegable.",
+    "category": "Power Apps",
+    "subCategory": "Collection management",
+    "platform": [
+      "Power Apps",
+      "SharePoint",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "UpdateIf",
+      "RemoveIf",
+      "Collections",
+      "Bulk Update"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Makers write ForAll loops to tick every row, clear a flag or remove completed items, when one function call would do it faster and more clearly.",
+    "whenToUse": [
+      "Select all and clear all in a gallery backed by a collection",
+      "Marking every matching row with the same value",
+      "Removing rows from a collection or a small list"
+    ],
+    "whenNotToUse": [
+      "Data sources with more rows than the data row limit. Only the first 500 to 2,000 rows are considered.",
+      "Rows that each need a different value. Use Patch with a table."
+    ],
+    "formulaOrCode": "// Select all / clear all in a collection\nUpdateIf(colTasks, true, { IsSelected: true });\nUpdateIf(colTasks, true, { IsSelected: false });\n\n// Change matching rows, using the current value\nUpdateIf(\n    colCart,\n    ProductId = varProduct.ID,\n    { Quantity: Quantity + 1 }\n);\n\n// Several conditions and changes\nUpdateIf(\n    colTasks,\n    IsSelected && Status <> \"Done\",\n    { Status: \"Done\", CompletedOn: Now() }\n);\n\n// Remove matching rows from a collection\nRemoveIf(colTasks, IsSelected);\n\n// Against a small data source (not delegable)\nIfError(\n    RemoveIf(Tasks, RequestId = varSelectedRequest.ID && Done),\n    Notify(\"Could not remove tasks: \" & FirstError.Message, NotificationType.Error)\n);",
+    "stepByStepInstructions": [
+      "Identify the condition that picks the rows and the change they all share.",
+      "Call UpdateIf with the table, the condition and a record of changes.",
+      "Use the row's own column names inside the change record to build on current values.",
+      "Use RemoveIf with the same kind of condition to delete rows.",
+      "For a data source, confirm the table is small, or load the matching rows into a collection first and Patch them."
+    ],
+    "commonMistakes": [
+      "Using UpdateIf or RemoveIf on a large SharePoint list and assuming every matching row was processed.",
+      "Passing the gallery's AllItems instead of the underlying collection.",
+      "Using a context variable with the same name as a column, so the condition compares the column with itself.",
+      "Forgetting that RemoveIf on a data source deletes permanently."
+    ],
+    "troubleshooting": [
+      "If nothing changes, test the condition alone with CountRows(Filter(table, condition)).",
+      "If only some rows change in a data source, you have hit the data row limit. Filter into a collection and Patch instead.",
+      "If you see a delegation warning, that is the same limit being reported. Treat it as an error for these functions.",
+      "If the gallery does not refresh, make sure its Items is the collection you updated."
+    ],
+    "relatedPatterns": [
+      "forall-patch-multiple-records-power-apps",
+      "power-apps-bulk-update-selected-gallery-items",
+      "soft-delete-sharepoint-items-power-apps"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps UpdateIf and RemoveIf with examples",
+    "seoDescription": "Use UpdateIf and RemoveIf in Power Apps to change or delete all rows matching a condition, with select-all examples and the delegation limit explained.",
+    "primaryKeyword": "Power Apps UpdateIf",
+    "secondaryKeywords": [
+      "RemoveIf Power Apps",
+      "update collection Power Apps",
+      "select all gallery checkbox",
+      "UpdateIf delegation"
+    ],
+    "faqs": [
+      {
+        "question": "Is UpdateIf delegable?",
+        "answer": "No. Against a data source it only processes rows within the app's data row limit, which is 500 by default and 2,000 at most."
+      },
+      {
+        "question": "What is the difference between UpdateIf and Patch?",
+        "answer": "UpdateIf applies one change to every row that matches a condition. Patch changes specific records, each with its own values."
+      },
+      {
+        "question": "How do I update every row in a collection?",
+        "answer": "Use true as the condition: UpdateIf(colItems, true, { Column: value })."
+      }
+    ]
+  },
+  {
+    "id": "pat-1525",
+    "slug": "with-function-readable-power-fx-formulas",
+    "title": "Use With to make long Power Fx formulas readable",
+    "shortDescription": "Name intermediate values inside a formula instead of repeating the same lookup or calculation.",
+    "fullDescription": "The With function evaluates a record of named values once and makes them available to the rest of the formula. It removes repeated LookUp calls, shortens nested expressions and avoids creating variables that exist only for one calculation.",
+    "category": "Power Apps",
+    "subCategory": "Formula structure",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "With",
+      "Power Fx",
+      "Readability",
+      "Performance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A label or a Patch formula repeats the same LookUp three times, runs slower than it should, and is hard to change without missing one copy.",
+    "whenToUse": [
+      "The same sub-expression appears more than once in a formula",
+      "Multi-step calculations such as totals with tax and discount",
+      "Non-behaviour properties such as Text or Items, where Set is not allowed"
+    ],
+    "whenNotToUse": [
+      "Values needed across several controls. Use a named formula or a variable.",
+      "Simple formulas where naming a value adds nothing"
+    ],
+    "formulaOrCode": "// Before: three identical lookups\nIf(\n    LookUp(Requests, ID = varId).Status.Value = \"Approved\",\n    LookUp(Requests, ID = varId).Approver.DisplayName & \" on \" &\n        Text(LookUp(Requests, ID = varId).ApprovedOn, \"d mmm yyyy\"),\n    \"Not approved\"\n)\n\n// After: one lookup, named once\nWith(\n    { req: LookUp(Requests, ID = varId) },\n    If(\n        req.Status.Value = \"Approved\",\n        req.Approver.DisplayName & \" on \" & Text(req.ApprovedOn, \"d mmm yyyy\"),\n        \"Not approved\"\n    )\n)\n\n// Chained steps: later values can use earlier ones by nesting\nWith(\n    { subtotal: Sum(colCart, Quantity * UnitPrice) },\n    With(\n        {\n            discount: If(subtotal > 1000, subtotal * 0.1, 0),\n            taxRate: 0.2\n        },\n        With(\n            { net: subtotal - discount },\n            Text(net + net * taxRate, \"#,##0.00\")\n        )\n    )\n)\n\n// In a behaviour formula: capture a Patch result\nWith(\n    { saved: Patch(Requests, Defaults(Requests), { Title: txtTitle.Text }) },\n    Set(varSelectedRequest, saved);\n    Navigate(scrDetail)\n)",
+    "stepByStepInstructions": [
+      "Find a sub-expression that is repeated or hard to read.",
+      "Wrap the formula in With and move the sub-expression into the first argument as a named field.",
+      "Replace each repeat with the name.",
+      "Nest a second With when a value depends on an earlier one. Fields in the same record cannot refer to each other.",
+      "Check the result is unchanged, then format the formula so each named value is on its own line."
+    ],
+    "commonMistakes": [
+      "Referring to one field from another in the same With record, which is not allowed.",
+      "Giving a With name the same name as a column in scope, which makes the formula ambiguous.",
+      "Expecting a With value to exist outside the formula. It is scoped to that one call.",
+      "Using Set or UpdateContext for throwaway values, which leaves stale variables around the app."
+    ],
+    "troubleshooting": [
+      "\"Name isn't valid\" on a With field means you used it outside the With call or inside the same record that defines it.",
+      "If the wrong value appears inside a gallery or ForAll, a column has the same name. Rename the With field.",
+      "If performance did not improve, the expensive call is elsewhere. Use Monitor to see which requests repeat.",
+      "If delegation warnings appear after the change, keep the data source call directly inside Filter or LookUp and name only its result."
+    ],
+    "relatedPatterns": [
+      "use-named-formulas-for-app-constants",
+      "power-apps-error-handling-iferror-patch",
+      "forall-patch-multiple-records-power-apps"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps With function: examples and when to use it",
+    "seoDescription": "Power Fx With function examples that replace repeated LookUp calls, chain calculations and capture a Patch result, plus the scoping rules that trip people up.",
+    "primaryKeyword": "Power Apps With function",
+    "secondaryKeywords": [
+      "Power Fx With",
+      "With vs Set",
+      "avoid repeated LookUp",
+      "local variable Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between With and Set?",
+        "answer": "With names a value for one formula only and works in any property. Set creates a global variable and only works in behaviour formulas such as OnSelect."
+      },
+      {
+        "question": "Can one With value use another?",
+        "answer": "Not inside the same record. Nest a second With to build on an earlier value."
+      },
+      {
+        "question": "Does With improve performance?",
+        "answer": "It can. A repeated LookUp or calculation is evaluated once instead of several times."
+      }
+    ]
+  },
+  {
+    "id": "pat-1526",
+    "slug": "groupby-sum-count-gallery-power-apps",
+    "title": "Group rows and show totals with GroupBy and AddColumns",
+    "shortDescription": "Summarize a table by category with counts and sums, ready for a gallery or chart.",
+    "fullDescription": "GroupBy collects rows that share a value into a nested table. AddColumns then calculates a count or a total for each group. This pattern produces a summary table and a gallery with expandable detail rows.",
+    "category": "Power Apps",
+    "subCategory": "Collection management",
+    "platform": [
+      "Power Apps",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "GroupBy",
+      "AddColumns",
+      "Sum",
+      "Summary"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A dashboard needs totals by status or by owner, and makers end up writing one CountRows formula per label that has to be edited whenever a new status is added.",
+    "whenToUse": [
+      "Totals by status, owner, month or category",
+      "Feeding a chart control",
+      "Grouped galleries with a header row per group"
+    ],
+    "whenNotToUse": [
+      "Very large lists. GroupBy is not delegable, so summarize on the server with a view, a flow or Power BI.",
+      "A single total, where Sum or CountRows alone is enough"
+    ],
+    "formulaOrCode": "// Screen.OnVisible: build the summary once\nClearCollect(\n    colByStatus,\n    SortByColumns(\n        AddColumns(\n            GroupBy(\n                // Flatten the choice column to text first\n                AddColumns(colRequests, StatusText, Status.Value),\n                StatusText,\n                Items\n            ),\n            RequestCount, CountRows(Items),\n            TotalAmount, Sum(Items, Amount),\n            OldestOpen, Min(Items, Created)\n        ),\n        \"RequestCount\",\n        SortOrder.Descending\n    )\n);\n\n// Outer gallery Items\ncolByStatus\n\n// Group header label\nThisItem.StatusText & \" (\" & ThisItem.RequestCount & \") \" &\n    Text(ThisItem.TotalAmount, \"#,##0\")\n\n// Nested gallery Items: the rows in this group\nThisItem.Items\n\n// Column chart: Items = colByStatus, Labels = StatusText, Series = RequestCount",
+    "stepByStepInstructions": [
+      "Load the rows to summarize into a collection with a delegable filter, so the set is small and known.",
+      "Add a text column for any choice, lookup or person field you want to group by.",
+      "Call GroupBy with the column to group on and a name for the nested table.",
+      "Use AddColumns to calculate CountRows, Sum, Min or Max over the nested table.",
+      "Bind a gallery or chart to the result, and use a nested gallery for the detail rows."
+    ],
+    "commonMistakes": [
+      "Grouping directly on a choice or lookup column. Group on a text value instead.",
+      "Running GroupBy directly against a large data source and trusting the totals.",
+      "Using the older syntax with column names in quotes. Current versions take column names without quotes.",
+      "Recalculating the summary in a gallery's Items on every change instead of storing it once."
+    ],
+    "troubleshooting": [
+      "If GroupBy shows a type error, the group column is a record. Add a text column from its Value or DisplayName and group on that.",
+      "If totals look low, the source was cut off at the data row limit. Filter the source first so fewer rows are loaded.",
+      "If a group for blank values appears, replace blanks with a label using Coalesce in the AddColumns step.",
+      "If the nested gallery is empty, check that its Items uses the name you gave the nested table."
+    ],
+    "relatedPatterns": [
+      "calculate-totals-gallery-collection",
+      "sort-gallery-by-column-header-power-apps",
+      "avoid-delegation-warnings-sharepoint-filters"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps GroupBy with Sum and Count: gallery example",
+    "seoDescription": "Use GroupBy and AddColumns in Power Apps to count and sum rows by category, group on a choice column, and show the result in a nested gallery or chart.",
+    "primaryKeyword": "Power Apps GroupBy",
+    "secondaryKeywords": [
+      "GroupBy Sum Power Apps",
+      "AddColumns CountRows",
+      "group gallery by choice column",
+      "Power Apps summary table"
+    ],
+    "faqs": [
+      {
+        "question": "Is GroupBy delegable?",
+        "answer": "No. It runs in the app on the rows already loaded, so filter the source first or summarize on the server for large lists."
+      },
+      {
+        "question": "How do I group by a SharePoint choice column?",
+        "answer": "Add a text column with AddColumns that holds the choice's Value, then group by that column."
+      },
+      {
+        "question": "How do I get a total for each group?",
+        "answer": "Wrap GroupBy in AddColumns and use Sum, CountRows, Min or Max over the nested table."
+      }
+    ]
+  },
+  {
+    "id": "pat-1527",
+    "slug": "power-apps-offline-savedata-loaddata",
+    "title": "Make a canvas app work offline with SaveData and LoadData",
+    "shortDescription": "Cache reference data on the device, queue new records while offline, and sync when the connection returns.",
+    "fullDescription": "SaveData and LoadData store collections on the device. With the Connection signal, an app can keep working without a network, hold new records in a queue, and send them when it is back online. This pattern gives the three formulas that make that work.",
+    "category": "Power Apps",
+    "subCategory": "Offline",
+    "platform": [
+      "Power Apps",
+      "SharePoint"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Offline",
+      "SaveData",
+      "LoadData",
+      "Connection"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Field staff lose their entries when signal drops, because the app tries to Patch straight to the data source and fails.",
+    "whenToUse": [
+      "Inspections, site visits and field data capture on phones or tablets",
+      "Simple create-only scenarios with small reference lists",
+      "SharePoint-backed apps, which have no built-in offline mode"
+    ],
+    "whenNotToUse": [
+      "Dataverse apps that can use the built-in offline profile feature instead",
+      "Scenarios where several people edit the same record offline and conflicts must be merged",
+      "Large data sets. Device storage for SaveData is limited."
+    ],
+    "formulaOrCode": "// App.OnStart\nIf(\n    Connection.Connected,\n    // Online: refresh the cache\n    ClearCollect(colSites, Filter(Sites, Active));\n    SaveData(colSites, \"bvSites\"),\n    // Offline: read the cache\n    LoadData(colSites, \"bvSites\", true)\n);\n// Always restore any unsent records\nLoadData(colQueue, \"bvQueue\", true);\n\n// Save button OnSelect\nWith(\n    {\n        rec: {\n            Title: txtTitle.Text,\n            SiteId: ddSite.Selected.ID,\n            Notes: txtNotes.Text,\n            CapturedOn: Now(),\n            LocalId: GUID()\n        }\n    },\n    If(\n        Connection.Connected,\n        IfError(\n            Patch(Inspections, Defaults(Inspections),\n                { Title: rec.Title, SiteId: rec.SiteId, Notes: rec.Notes, CapturedOn: rec.CapturedOn }),\n            Collect(colQueue, rec); SaveData(colQueue, \"bvQueue\")\n        ),\n        Collect(colQueue, rec); SaveData(colQueue, \"bvQueue\")\n    )\n);\nNotify(If(Connection.Connected, \"Saved.\", \"Saved on this device. It will sync when you are online.\"));\n\n// Sync: Timer.OnTimerEnd (Duration 30000, Repeat and AutoStart on)\nIf(\n    Connection.Connected && CountRows(colQueue) > 0,\n    ForAll(\n        colQueue As q,\n        IfError(\n            Patch(Inspections, Defaults(Inspections),\n                { Title: q.Title, SiteId: q.SiteId, Notes: q.Notes, CapturedOn: q.CapturedOn });\n            Remove(colQueue, q),\n            false\n        )\n    );\n    SaveData(colQueue, \"bvQueue\")\n);",
+    "stepByStepInstructions": [
+      "List the reference data the app needs offline and keep it small.",
+      "Add the OnStart formula to cache reference data when online and read the cache when offline.",
+      "Change the Save button to queue the record when offline, saving the queue to the device after every change.",
+      "Add a timer that sends queued records when the connection returns and removes each one after it succeeds.",
+      "Show the number of unsent records on screen so users know nothing is lost.",
+      "Test on a real phone in airplane mode. SaveData behaves differently in the browser."
+    ],
+    "commonMistakes": [
+      "Testing only in the browser or Studio, where storage limits and behaviour differ from the mobile player.",
+      "Forgetting the third argument of LoadData, so the first run fails when no file exists.",
+      "Not saving the queue after each change, so a closed app loses unsent records.",
+      "Caching whole lists with attachments or images, which exceeds device storage."
+    ],
+    "troubleshooting": [
+      "If LoadData errors on first run, pass true as the third argument to ignore a missing file.",
+      "If queued records are sent twice, remove each record from the queue only after its Patch succeeds, and store a LocalId column to detect duplicates.",
+      "If the app will not open offline at all, it must have been opened online once on that device so the app itself is cached.",
+      "If Connection.Connected is true but saves fail, the device has a network without internet. The IfError branch queues the record."
+    ],
+    "relatedPatterns": [
+      "cache-reference-data-on-app-start",
+      "power-apps-error-handling-iferror-patch",
+      "power-apps-save-draft-submit-later"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps offline mode with SaveData and LoadData",
+    "seoDescription": "Build an offline-capable canvas app: cache data with SaveData and LoadData, queue new records with Connection.Connected, and sync with a timer.",
+    "primaryKeyword": "Power Apps offline SaveData LoadData",
+    "secondaryKeywords": [
+      "canvas app offline mode",
+      "Connection.Connected",
+      "offline queue sync Power Apps",
+      "LoadData file not found"
+    ],
+    "faqs": [
+      {
+        "question": "Does SaveData work in a web browser?",
+        "answer": "It works with much smaller limits than on the mobile players. Offline apps should be tested and used in the Power Apps mobile app."
+      },
+      {
+        "question": "How much data can SaveData store?",
+        "answer": "It depends on the device's free memory and storage. Keep cached collections to what the app needs, and avoid images."
+      },
+      {
+        "question": "Do I need this with Dataverse?",
+        "answer": "Not usually. Dataverse canvas apps can use the built-in offline feature with an offline profile, which handles sync for you."
+      }
+    ]
+  },
+  {
+    "id": "pat-1528",
+    "slug": "save-camera-photo-to-sharepoint-library-power-apps",
+    "title": "Save a photo from Power Apps to a SharePoint document library",
+    "shortDescription": "Send an image from the camera or Add picture control to a flow that creates the file.",
+    "fullDescription": "Power Apps cannot write to a document library directly. The reliable route is a small flow with a file input that the app calls. This pattern covers the flow, the formula that passes the image, and how to tag the file with the related record.",
+    "category": "Power Apps",
+    "subCategory": "Files and images",
+    "platform": [
+      "Power Apps",
+      "Power Automate",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Camera",
+      "Add Picture",
+      "Document Library",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "Photos saved to a list's attachments are hard to find and reuse, and makers struggle to pass an image to a flow in a form that produces a working file.",
+    "whenToUse": [
+      "Inspection or evidence photos that belong in a library with metadata",
+      "Images that other tools need to reach by URL",
+      "Several photos per record"
+    ],
+    "whenNotToUse": [
+      "A single small image that can live in a SharePoint image column",
+      "When list attachments through an Edit form are good enough"
+    ],
+    "formulaOrCode": "// Flow: \"BV Save Photo\"\n//   Trigger : Power Apps (V2)\n//     Inputs: File (type File)  -> name it \"file\"\n//             Text              -> \"fileName\"\n//             Number            -> \"requestId\"\n//   Action  : SharePoint - Create file\n//     Folder Path : /Shared Documents/Request Photos\n//     File Name   : @{triggerBody()?['text']}\n//     File Content: @{triggerBody()?['file']?['contentBytes']}\n//   Action  : SharePoint - Update file properties\n//     Id        : @{outputs('Create_file')?['body/ItemId']}\n//     RequestId : @{triggerBody()?['number']}\n//   Action  : Respond to a Power App or flow\n//     Text \"link\": @{outputs('Create_file')?['body/Path']}\n\n// App: Upload button OnSelect (Add picture control named AddMediaButton1)\nSet(varUploading, true);\nIfError(\n    Set(\n        varUpload,\n        BVSavePhoto.Run(\n            {\n                name: \"photo.jpg\",\n                contentBytes: UploadedImage1.Image\n            },\n            \"REQ-\" & varSelectedRequest.ID & \"-\" & Text(Now(), \"yyyymmdd-hhmmss\") & \".jpg\",\n            varSelectedRequest.ID\n        )\n    );\n    Notify(\"Photo saved.\", NotificationType.Success),\n    Notify(\"Upload failed: \" & FirstError.Message, NotificationType.Error)\n);\nSet(varUploading, false);\n\n// Camera control instead of Add picture\n//   contentBytes: Camera1.Stream     (set Camera1.StreamRate, or use Camera1.Photo after OnSelect)",
+    "stepByStepInstructions": [
+      "Create the flow with the Power Apps (V2) trigger and add a File input plus any text or number inputs.",
+      "Add Create file and map File Content to the file input's contentBytes.",
+      "Add Update file properties to set metadata such as the related request ID.",
+      "Add Respond to a Power App or flow so the app knows when the upload has finished.",
+      "Add the flow to the app from the Power Automate pane.",
+      "Call the flow with a record containing name and contentBytes, as shown."
+    ],
+    "commonMistakes": [
+      "Using the older Power Apps trigger, which has no file input type.",
+      "Passing the image as text built with JSON(), which adds a data URI prefix that corrupts the file.",
+      "Reusing the same file name, so each upload overwrites the last.",
+      "Uploading full-resolution photos on mobile data. Reduce the Add picture control's image size where possible."
+    ],
+    "troubleshooting": [
+      "If the file is created but will not open, the content was sent as text. Use a File input and pass the image directly as contentBytes.",
+      "If the flow fails with file already exists, add a timestamp to the name.",
+      "If the app shows a timeout on large photos, upload one photo per call and show a spinner while varUploading is true.",
+      "If Update file properties fails, use the ItemId output of Create file, not the file identifier."
+    ],
+    "relatedPatterns": [
+      "respond-to-power-app-return-values-from-flow",
+      "power-apps-attachment-control-guidance",
+      "sharepoint-document-library-metadata-pattern"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps: upload a photo to a SharePoint document library",
+    "seoDescription": "Save a camera or Add picture image from Power Apps to a SharePoint document library using a Power Apps (V2) flow with a file input and metadata.",
+    "primaryKeyword": "Power Apps upload image to SharePoint document library",
+    "secondaryKeywords": [
+      "Power Apps camera to SharePoint",
+      "Power Apps V2 file input",
+      "Add picture control flow",
+      "contentBytes Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Apps save a file to a document library without a flow?",
+        "answer": "Not directly. The SharePoint connector in canvas apps works with lists. A flow with Create file is the standard approach."
+      },
+      {
+        "question": "How do I pass an image to a flow?",
+        "answer": "Use the Power Apps (V2) trigger with a File input, and pass a record with name and contentBytes set to the control's image."
+      },
+      {
+        "question": "How do I link the photo to a list item?",
+        "answer": "Add a column to the library for the item's ID and set it with Update file properties after the file is created."
+      }
+    ]
+  },
+  {
+    "id": "pat-1529",
+    "slug": "barcode-scanner-lookup-record-power-apps",
+    "title": "Scan a barcode and look up a record in Power Apps",
+    "shortDescription": "Use the barcode reader control to find an item, with a clear message when nothing matches.",
+    "fullDescription": "The barcode reader control scans barcodes and QR codes on phones and tablets. This pattern reads the scanned value, finds the matching record with a delegable lookup, and handles the not-found and multiple-scan cases.",
+    "category": "Power Apps",
+    "subCategory": "Device features",
+    "platform": [
+      "Power Apps",
+      "SharePoint",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Barcode",
+      "QR Code",
+      "Mobile",
+      "LookUp"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Typing asset tags or product codes on a phone is slow and error-prone, and makers are unsure how to read the value the scanner returns.",
+    "whenToUse": [
+      "Asset check-in and check-out",
+      "Stock counts and receiving",
+      "Opening a record from a QR code on a label"
+    ],
+    "whenNotToUse": [
+      "Apps used only in a desktop browser, where the control is not supported",
+      "Continuous high-volume scanning, which suits a dedicated scanner device"
+    ],
+    "formulaOrCode": "// BarcodeReader1 properties\n//   Scanning mode : Automatically scan   (or \"Select to scan\" when several codes are in view)\n//   Barcode type  : Auto\n\n// BarcodeReader1.OnScan\nWith(\n    { code: Trim(First(BarcodeReader1.Barcodes).Value) },\n    Set(varScanned, code);\n    Set(varAsset, LookUp(Assets, AssetTag = code));\n    If(\n        IsBlank(varAsset),\n        Notify(\"No asset found for \" & code, NotificationType.Warning),\n        Navigate(scrAssetDetail, ScreenTransition.Cover)\n    )\n);\n\n// Scan several items into a list (Scanning mode: Scan multiple)\nForAll(\n    BarcodeReader1.Barcodes As b,\n    If(\n        IsBlank(LookUp(colScanned, Code = b.Value)),\n        Collect(colScanned, { Code: b.Value, ScannedOn: Now() })\n    )\n);\n\n// Fallback for manual entry: btnFind.OnSelect\nSet(varAsset, LookUp(Assets, AssetTag = Trim(txtAssetTag.Text)));",
+    "stepByStepInstructions": [
+      "Insert the Barcode reader control from the Media group.",
+      "Set the scanning mode. Automatic is fastest for one code at a time.",
+      "In OnScan, read the first barcode's Value and look up the record on an indexed text column.",
+      "Show a warning when no record matches, and navigate to the detail screen when one does.",
+      "Add a text input and button as a manual fallback.",
+      "Test on a real device. The control does not scan in the browser."
+    ],
+    "commonMistakes": [
+      "Reading BarcodeReader1.Value from older examples. The current control returns a Barcodes table.",
+      "Looking up on a number column when the barcode value is text.",
+      "Not trimming the value, so codes with trailing spaces or line breaks fail to match.",
+      "Forgetting a manual entry option for damaged labels."
+    ],
+    "troubleshooting": [
+      "If nothing happens on scan, check that the app has camera permission on the device.",
+      "If the lookup finds nothing, show varScanned in a label and compare it with the stored value. Leading zeros and check digits often differ.",
+      "If the wrong code is read when several are visible, switch to Select to scan so the user taps the right one.",
+      "If the lookup shows a delegation warning, compare with = on a text column instead of using in or a function on the column."
+    ],
+    "relatedPatterns": [
+      "power-apps-search-with-multiple-fields",
+      "power-apps-empty-state-gallery",
+      "power-apps-offline-savedata-loaddata"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps barcode scanner: scan and look up a record",
+    "seoDescription": "Use the Power Apps barcode reader control to scan a barcode or QR code and look up a record, with OnScan formulas for single and multiple scans.",
+    "primaryKeyword": "Power Apps barcode scanner",
+    "secondaryKeywords": [
+      "barcode reader control OnScan",
+      "Power Apps QR code scanner",
+      "BarcodeReader Barcodes Value",
+      "scan asset tag Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "Does the barcode reader work in a browser?",
+        "answer": "No. It works in the Power Apps mobile app on iOS and Android. Provide a manual entry option for desktop users."
+      },
+      {
+        "question": "How do I read the scanned value?",
+        "answer": "Use First(BarcodeReader1.Barcodes).Value in the control's OnScan property."
+      },
+      {
+        "question": "Can it scan QR codes?",
+        "answer": "Yes. With the barcode type set to Auto it reads QR codes and the common 1D barcode formats."
+      }
+    ]
+  },
+  {
+    "id": "pat-1530",
+    "slug": "export-collection-to-csv-power-apps",
+    "title": "Export a Power Apps collection or gallery to CSV",
+    "shortDescription": "Send the rows on screen to a flow that builds a CSV file and returns a download link.",
+    "fullDescription": "Canvas apps have no built-in export button. This pattern passes the filtered rows as JSON to a flow, which creates a CSV file in SharePoint and returns a link that the app opens.",
+    "category": "Power Apps",
+    "subCategory": "Files and images",
+    "platform": [
+      "Power Apps",
+      "Power Automate",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Export",
+      "CSV",
+      "JSON",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1.5 hours",
+    "problemStatement": "Users want the filtered list they see in the app as a file for Excel, and screenshots or copying from a gallery is not acceptable.",
+    "whenToUse": [
+      "Exporting the current filtered view",
+      "Up to a few thousand rows",
+      "Users who need the data in Excel"
+    ],
+    "whenNotToUse": [
+      "Full list exports, where SharePoint's own Export to Excel is simpler",
+      "Very large data sets, which should be generated by the flow from the source directly"
+    ],
+    "formulaOrCode": "// App: Export button OnSelect\nSet(varExporting, true);\nWith(\n    {\n        rows: ForAll(\n            galRequests.AllItems,\n            {\n                Title: Title,\n                Status: Status.Value,\n                Requester: Author.DisplayName,\n                Created: Text(Created, \"yyyy-mm-dd\"),\n                Amount: Amount\n            }\n        )\n    },\n    IfError(\n        Set(\n            varExport,\n            BVExportCsv.Run(JSON(rows, JSONFormat.IgnoreUnsupportedTypes))\n        );\n        Launch(varExport.link),\n        Notify(\"Export failed: \" & FirstError.Message, NotificationType.Error)\n    )\n);\nSet(varExporting, false);\n\n// Flow: \"BV Export CSV\"\n//   Trigger : Power Apps (V2), Text input \"rowsJson\"\n//   Compose : json(triggerBody()?['text'])\n//   Create CSV table\n//     From    : @{outputs('Compose')}\n//     Columns : Automatic\n//   Create file (SharePoint)\n//     Folder  : /Shared Documents/Exports\n//     Name    : requests-@{formatDateTime(utcNow(), 'yyyyMMdd-HHmmss')}.csv\n//     Content : @{concat(decodeUriComponent('%EF%BB%BF'), body('Create_CSV_table'))}\n//   Create sharing link for a file or folder (View, People in your organization)\n//   Respond to a Power App or flow\n//     Text \"link\": @{body('Create_sharing_link_for_a_file_or_folder')?['link']?['webUrl']}",
+    "stepByStepInstructions": [
+      "Shape the rows with ForAll so the export has plain text and number columns with friendly names.",
+      "Convert the table to text with JSON and pass it to the flow.",
+      "In the flow, convert the text back with json() and feed it to Create CSV table.",
+      "Create the file with a byte order mark in front, so Excel reads accented characters correctly.",
+      "Create a sharing link and return it with Respond to a Power App or flow.",
+      "Open the link in the app with Launch."
+    ],
+    "commonMistakes": [
+      "Passing records with choice, person or lookup columns, which export as nested JSON instead of text.",
+      "Exporting galRequests.AllItems when the gallery has only loaded the first 100 rows. Use the underlying filtered collection for a complete export.",
+      "Leaving out the byte order mark, so Excel shows garbled characters.",
+      "Returning the file path instead of a link the user is allowed to open."
+    ],
+    "troubleshooting": [
+      "If the CSV has a single column of JSON, the flow skipped the json() step and treated the input as text.",
+      "If the flow fails on a large export, the text input is too big. Send filter values to the flow and let it query the source itself.",
+      "If dates shift by a day, format them as text in the app before sending.",
+      "If Launch does nothing on mobile, the link type is blocked for the user. Use an organization view link."
+    ],
+    "relatedPatterns": [
+      "respond-to-power-app-return-values-from-flow",
+      "power-automate-parse-json-from-power-apps",
+      "save-gallery-rows-json-multiline-text"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps export to CSV or Excel from a gallery",
+    "seoDescription": "Export a Power Apps collection or gallery to a CSV file: pass JSON to a Power Automate flow, create the CSV in SharePoint and return a download link.",
+    "primaryKeyword": "Power Apps export to CSV",
+    "secondaryKeywords": [
+      "Power Apps export gallery to Excel",
+      "JSON function Power Apps flow",
+      "Create CSV table",
+      "download file Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Apps export to Excel without a flow?",
+        "answer": "Not as a file. Canvas apps need a flow, or you can send users to the SharePoint list's own Export to Excel option."
+      },
+      {
+        "question": "Why does Excel show strange characters in my CSV?",
+        "answer": "The file has no byte order mark. Add one in front of the content when the flow creates the file."
+      },
+      {
+        "question": "Why are some rows missing from the export?",
+        "answer": "A gallery loads rows as you scroll, so AllItems may be incomplete. Export from the collection or filter that feeds the gallery."
+      }
+    ]
+  },
+  {
+    "id": "pat-1531",
+    "slug": "sort-gallery-by-column-header-power-apps",
+    "title": "Sort a gallery by clicking column headers",
+    "shortDescription": "Let users sort by any column and reverse the order with a second click, without breaking delegation.",
+    "fullDescription": "Two variables hold the sort column and direction. Header labels update them, and the gallery's Items formula uses SortByColumns so the sort is delegated to the data source.",
+    "category": "Power Apps",
+    "subCategory": "Gallery patterns",
+    "platform": [
+      "Power Apps",
+      "SharePoint"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "SortByColumns",
+      "Gallery",
+      "Sorting",
+      "Delegation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Table-style galleries feel unfinished without sortable headers, and a Switch full of separate Sort formulas quickly becomes hard to maintain.",
+    "whenToUse": [
+      "Galleries laid out as a table",
+      "Lists where users look for the newest, oldest or largest item",
+      "Any gallery that already uses Filter"
+    ],
+    "whenNotToUse": [
+      "Sorting by a choice, lookup or person column in SharePoint, which cannot be delegated",
+      "Small fixed lists where one default order is enough"
+    ],
+    "formulaOrCode": "// Screen.OnVisible: defaults\nUpdateContext({ locSortColumn: \"Created\", locSortDescending: true });\n\n// Each header label OnSelect (change the column name per header)\nUpdateContext({\n    locSortDescending: If(locSortColumn = \"Title\", !locSortDescending, false),\n    locSortColumn: \"Title\"\n});\n\n// Header sort icon (one per header)\n//   Icon    : If(locSortDescending, Icon.ChevronDown, Icon.ChevronUp)\n//   Visible : locSortColumn = \"Title\"\n\n// Gallery.Items\nSortByColumns(\n    Filter(\n        Requests,\n        IsBlank(txtSearch.Text) || StartsWith(Title, txtSearch.Text)\n    ),\n    locSortColumn,\n    If(locSortDescending, SortOrder.Descending, SortOrder.Ascending)\n)\n\n// Column names for SharePoint are internal names:\n//   \"Title\", \"Created\", \"Modified\", \"DueDate\", \"Amount\"",
+    "stepByStepInstructions": [
+      "Set default sort values in the screen's OnVisible.",
+      "Add a label above each gallery column and set its OnSelect to the formula above with that column's internal name.",
+      "Add a small icon to each header that shows the direction and is visible only for the active column.",
+      "Wrap the gallery's existing Items formula in SortByColumns.",
+      "Test each header twice to confirm the direction flips."
+    ],
+    "commonMistakes": [
+      "Using display names with spaces. SortByColumns needs the internal column name as text.",
+      "Offering a sortable header on a choice or person column and getting a delegation warning.",
+      "Putting the sort inside the filter instead of around it.",
+      "Using a global variable, so two screens fight over the same sort state."
+    ],
+    "troubleshooting": [
+      "If a header does nothing, the column name does not match the internal name. Check it in the list's column settings URL.",
+      "If you see a delegation warning, that column type cannot be sorted on the server. Sort on a text or date column, or add a text copy of the value.",
+      "If the direction never flips, check the order of fields in UpdateContext. The direction must be calculated from the old column value.",
+      "If sorting numbers gives 1, 10, 2, the column is stored as text."
+    ],
+    "relatedPatterns": [
+      "power-apps-search-with-multiple-fields",
+      "avoid-delegation-warnings-sharepoint-filters",
+      "groupby-sum-count-gallery-power-apps"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps sort gallery by column header (ascending/descending)",
+    "seoDescription": "Make a Power Apps gallery sortable by clicking column headers with SortByColumns and two variables, keeping the query delegable.",
+    "primaryKeyword": "Power Apps sort gallery by column",
+    "secondaryKeywords": [
+      "SortByColumns dynamic column",
+      "toggle ascending descending Power Apps",
+      "sortable table header",
+      "gallery sort delegation"
+    ],
+    "faqs": [
+      {
+        "question": "Can SortByColumns take the column name from a variable?",
+        "answer": "Yes. That is what makes header sorting possible. Sort does not allow it, because it takes a formula instead of a name."
+      },
+      {
+        "question": "Why can't I sort by a choice column?",
+        "answer": "SharePoint cannot sort complex columns such as choice, lookup and person on the server, so Power Apps shows a delegation warning."
+      },
+      {
+        "question": "Should the sort go inside or outside Filter?",
+        "answer": "Outside. Filter first, then sort the result."
+      }
+    ]
+  },
+  {
+    "id": "pat-1532",
+    "slug": "sequence-function-generate-rows-power-apps",
+    "title": "Generate rows, dates and repeats with the Sequence function",
+    "shortDescription": "Create a table of numbers on the fly to build calendars, pickers and repeated rows.",
+    "fullDescription": "Sequence returns a single-column table of numbers. Combined with ForAll or AddColumns it produces date ranges, time slots, numbered rows and loops with a counter, without a helper list.",
+    "category": "Power Apps",
+    "subCategory": "Formula structure",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Sequence",
+      "ForAll",
+      "Dates",
+      "Calendar"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Power Fx has no for loop, so makers build helper lists of numbers or dates in SharePoint just to drive a dropdown or a calendar.",
+    "whenToUse": [
+      "Dropdowns of years, quantities or time slots",
+      "Calendar and schedule galleries",
+      "Creating a set number of rows"
+    ],
+    "whenNotToUse": [
+      "Looping over existing records, where ForAll over the table is enough",
+      "Very large ranges. Sequence returns at most 50,000 rows."
+    ],
+    "formulaOrCode": "// Year dropdown: last 5 years, newest first\nForAll(Sequence(5, Year(Today()), -1), { Year: Value })\n\n// The next 14 days\nForAll(\n    Sequence(14, 0),\n    {\n        Day: DateAdd(Today(), Value, TimeUnit.Days),\n        Label: Text(DateAdd(Today(), Value, TimeUnit.Days), \"ddd d mmm\")\n    }\n)\n\n// Half-hour time slots from 08:00 to 17:30\nForAll(\n    Sequence(20, 0),\n    {\n        Slot: DateAdd(DateTimeValue(\"08:00\"), Value * 30, TimeUnit.Minutes),\n        Label: Text(DateAdd(DateTimeValue(\"08:00\"), Value * 30, TimeUnit.Minutes), \"hh:mm\")\n    }\n)\n\n// All days of the selected month (calendar gallery Items)\nWith(\n    { first: Date(Year(dpMonth.SelectedDate), Month(dpMonth.SelectedDate), 1) },\n    ForAll(\n        Sequence(Day(DateAdd(DateAdd(first, 1, TimeUnit.Months), -1, TimeUnit.Days)), 0),\n        { Day: DateAdd(first, Value, TimeUnit.Days) }\n    )\n)\n\n// Create N blank rows in a collection\nClearCollect(colLines, ForAll(Sequence(sldRows.Value), { LineNo: Value, Description: \"\", Qty: 1 }))\n\n// Number the rows of an existing table\nForAll(\n    Sequence(CountRows(colItems)),\n    Patch(Index(colItems, Value), { RowNo: Value })\n)",
+    "stepByStepInstructions": [
+      "Decide how many rows you need, the starting number and the step.",
+      "Call Sequence with those values. The column is named Value.",
+      "Wrap it in ForAll to turn each number into the record you need.",
+      "Use the result as Items for a dropdown or gallery, or collect it.",
+      "For dates, add the number to a start date with DateAdd."
+    ],
+    "commonMistakes": [
+      "Forgetting that Sequence starts at 1 unless you pass a start value.",
+      "Using Sequence where ForAll over the real table would do.",
+      "Building a helper list in SharePoint for numbers or dates.",
+      "Expecting more than 50,000 rows."
+    ],
+    "troubleshooting": [
+      "If the range is off by one, check the start argument. Sequence(5) gives 1 to 5 and Sequence(5, 0) gives 0 to 4.",
+      "If Value is ambiguous inside nested ForAll calls, name the outer record with As.",
+      "If a calendar shows the wrong last day, calculate the month length from the first of next month minus one day, as shown.",
+      "If Index reports an error, the position is larger than the table. Sequence over CountRows of the same table."
+    ],
+    "relatedPatterns": [
+      "with-function-readable-power-fx-formulas",
+      "forall-patch-multiple-records-power-apps",
+      "delegation-safe-date-range-filter"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps Sequence function: examples for dates and loops",
+    "seoDescription": "Power Apps Sequence function examples: year dropdowns, date ranges, time slots, calendar days, numbered rows and loops with a counter.",
+    "primaryKeyword": "Power Apps Sequence function",
+    "secondaryKeywords": [
+      "Power Apps for loop",
+      "generate dates Power Apps",
+      "ForAll Sequence",
+      "row number in gallery"
+    ],
+    "faqs": [
+      {
+        "question": "Does Power Apps have a for loop?",
+        "answer": "Not as such. ForAll over Sequence(n) does the same job, running a formula n times with a counter in Value."
+      },
+      {
+        "question": "How do I add a row number to a gallery?",
+        "answer": "Loop over Sequence(CountRows(table)) and use Index to reach each row, as in the last example."
+      },
+      {
+        "question": "What is the maximum size of a Sequence?",
+        "answer": "50,000 rows."
+      }
+    ]
+  },
+  {
+    "id": "pat-1533",
+    "slug": "responsive-canvas-app-layout-containers",
+    "title": "Build a responsive canvas app with layout containers",
+    "shortDescription": "Make one app fit phone, tablet and desktop using horizontal and vertical containers and screen size breakpoints.",
+    "fullDescription": "Responsive canvas apps turn off scaling and let containers decide where controls go. This pattern gives the settings to change, a standard screen skeleton, and the formulas that switch layout at a breakpoint.",
+    "category": "Power Apps",
+    "subCategory": "Layout",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Responsive",
+      "Containers",
+      "Layout",
+      "Mobile"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "An app built at a fixed size shows black bars on wide monitors and tiny text on phones, and positioning every control with X and Y formulas is fragile.",
+    "whenToUse": [
+      "Apps used on both desktop and mobile",
+      "New apps, where layout can be planned from the start",
+      "Screens with a header, side panel and content area"
+    ],
+    "whenNotToUse": [
+      "Apps used on one known device size",
+      "Retrofitting a large fixed-layout app in one pass. Convert screen by screen."
+    ],
+    "formulaOrCode": "// App settings > Display\n//   Scale to fit       : Off\n//   Lock aspect ratio  : Off\n//   Lock orientation   : Off\n\n// Screen skeleton (tree view)\n// scrRequests\n//   conRoot        Vertical container   X=0 Y=0 Width=Parent.Width Height=Parent.Height\n//     conHeader    Horizontal           Height=64, Flexible height Off, Align: stretch\n//     conBody      Horizontal           Flexible height On, Wrap On\n//       conList    Vertical             Fill portions 1, Minimum width 320\n//       conDetail  Vertical             Fill portions 2, Minimum width 320\n\n// Breakpoint helper (App.Formulas)\nnfIsCompact = App.ActiveScreen.Size <= ScreenSize.Small;\n\n// conBody.LayoutDirection: stack on phones, side by side otherwise\nIf(nfIsCompact, LayoutDirection.Vertical, LayoutDirection.Horizontal)\n\n// conDetail.Visible on phones: only after a row is selected\n!nfIsCompact || !IsBlank(varSelectedRequest)\n\n// conList.Visible on phones: hide while a detail is open\n!nfIsCompact || IsBlank(varSelectedRequest)\n\n// Gallery inside conList\n//   Width         : Parent.Width\n//   TemplateSize  : If(nfIsCompact, 88, 64)\n\n// Text size\nIf(nfIsCompact, 14, 12)",
+    "stepByStepInstructions": [
+      "Turn off Scale to fit in the app's display settings. Lock aspect ratio turns off with it.",
+      "Add one vertical container per screen that fills the screen.",
+      "Add a fixed-height header container and a flexible body container inside it.",
+      "Split the body into child containers with fill portions and minimum widths, and turn on wrap.",
+      "Place controls inside containers and set their width to Parent.Width or to stretch.",
+      "Switch layout direction or visibility with App.ActiveScreen.Size, then test by resizing the browser."
+    ],
+    "commonMistakes": [
+      "Leaving Scale to fit on, which scales the whole canvas instead of reflowing it.",
+      "Mixing manually positioned controls with containers on the same screen.",
+      "Setting fixed widths on controls inside a horizontal container, so nothing can shrink.",
+      "Testing only in Studio. Check the published app on a real phone."
+    ],
+    "troubleshooting": [
+      "If controls overflow on a phone, set a minimum width on the child containers and turn on wrap on the parent.",
+      "If a container collapses to nothing, it has flexible height with no content height. Give it a minimum height.",
+      "If the breakpoint never triggers, check the screen's SizeBreakpoints property and that Scale to fit is off.",
+      "If scrollbars appear inside a container, set its vertical overflow to scroll deliberately or reduce the content."
+    ],
+    "relatedPatterns": [
+      "power-apps-componentized-header-pattern",
+      "power-apps-empty-state-gallery",
+      "build-modal-edit-form"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps responsive design with containers",
+    "seoDescription": "Make a Power Apps canvas app responsive: turn off scale to fit, structure screens with horizontal and vertical containers, and switch layout by screen size.",
+    "primaryKeyword": "Power Apps responsive design",
+    "secondaryKeywords": [
+      "Power Apps containers",
+      "scale to fit off",
+      "App.ActiveScreen.Size",
+      "responsive canvas app layout"
+    ],
+    "faqs": [
+      {
+        "question": "What does turning off Scale to fit do?",
+        "answer": "The app stops scaling a fixed canvas and instead reports the real screen size, so your containers and formulas decide the layout."
+      },
+      {
+        "question": "What is the difference between horizontal and vertical containers?",
+        "answer": "A horizontal container places its children side by side, and a vertical container stacks them. Both can stretch children and distribute spare space."
+      },
+      {
+        "question": "How do I detect a phone?",
+        "answer": "Compare App.ActiveScreen.Size with ScreenSize.Small. It is based on the screen's width breakpoints."
+      }
+    ]
+  },
+  {
+    "id": "pat-1534",
+    "slug": "check-microsoft-365-group-membership-power-apps",
+    "title": "Check Microsoft 365 group membership in Power Apps",
+    "shortDescription": "Show admin features only to members of a group, checked once when the app starts.",
+    "fullDescription": "Group membership is easier to maintain than a list of email addresses in a formula. This pattern checks whether the signed-in user belongs to a Microsoft 365 group using the Office 365 Groups connector and stores the result in a named formula.",
+    "category": "Power Apps",
+    "subCategory": "Role-based visibility",
+    "platform": [
+      "Power Apps",
+      "Microsoft 365"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Office365Groups",
+      "Security",
+      "Roles",
+      "Visibility"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Admin emails are hard-coded in formulas across the app, and every staffing change needs a new published version.",
+    "whenToUse": [
+      "Admin or approver features for a known team",
+      "Apps on SharePoint, where there is no security role to check",
+      "Organizations that already manage access with groups"
+    ],
+    "whenNotToUse": [
+      "Protecting data. Set permissions on the list or table as well.",
+      "Very large groups, where listing members is slow. Use a security list or a flow instead."
+    ],
+    "formulaOrCode": "// Add the \"Office 365 Groups\" connector.\n// Find the group's Object ID in the Entra admin center or Teams.\n\n// App.Formulas\nnfAdminGroupId = \"00000000-0000-0000-0000-000000000000\";\n\nnfIsAdmin =\n    !IsBlank(\n        LookUp(\n            Office365Groups.ListGroupMembers(nfAdminGroupId, { '$top': 999 }).value,\n            Lower(mail) = Lower(User().Email) ||\n                Lower(userPrincipalName) = Lower(User().Email)\n        )\n    );\n\n// Admin button Visible\nnfIsAdmin\n\n// Admin screen OnVisible guard\nIf(!nfIsAdmin, Navigate(scrHome, ScreenTransition.None))\n\n// Several roles: one formula per group\nnfIsApprover =\n    !IsBlank(\n        LookUp(\n            Office365Groups.ListGroupMembers(nfApproverGroupId, { '$top': 999 }).value,\n            Lower(mail) = Lower(User().Email)\n        )\n    );",
+    "stepByStepInstructions": [
+      "Create or choose a Microsoft 365 group for each role and note its object ID.",
+      "Add the Office 365 Groups connector to the app.",
+      "Add the named formulas above, with your group IDs.",
+      "Bind Visible or DisplayMode of admin features to the flags.",
+      "Restrict the underlying list or library to the same group, so the data is protected too.",
+      "Test with a member and a non-member account."
+    ],
+    "commonMistakes": [
+      "Hiding buttons but leaving the SharePoint list editable by everyone.",
+      "Comparing email addresses without Lower, so case differences fail the match.",
+      "Calling the connector in several control properties instead of once in a named formula.",
+      "Using a security group that is not mail-enabled, which this connector may not return."
+    ],
+    "troubleshooting": [
+      "If the check is always false, show CountRows of the member list in a label. Zero means the group ID is wrong or the user cannot read the group.",
+      "If guests are not matched, compare userPrincipalName as well as mail.",
+      "If the group has more than 999 members, the list is cut off. Use a smaller role group or a different check.",
+      "If users are asked to consent to a new connector, that is expected the first time the app opens after the change."
+    ],
+    "relatedPatterns": [
+      "role-based-button-visibility-sharepoint-security-list",
+      "check-dataverse-security-role-in-canvas-app",
+      "power-apps-current-user-profile-cache"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Apps: check if user is in a Microsoft 365 group",
+    "seoDescription": "Check Microsoft 365 group membership in Power Apps with Office365Groups.ListGroupMembers and named formulas to show admin features to the right people.",
+    "primaryKeyword": "Power Apps check user group membership",
+    "secondaryKeywords": [
+      "Office365Groups.ListGroupMembers",
+      "Power Apps admin screen",
+      "role-based security canvas app",
+      "check if user is in group"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Apps check an Entra security group?",
+        "answer": "The Office 365 Groups connector is designed for Microsoft 365 groups. For plain security groups, use a flow or the Microsoft Entra ID connector, which is premium."
+      },
+      {
+        "question": "Does hiding a screen secure the data?",
+        "answer": "No. Also restrict the list, library or table so only the same group can change it."
+      },
+      {
+        "question": "Why use a named formula for this?",
+        "answer": "The membership call runs once when first needed and is reused everywhere, which keeps the app fast."
+      }
+    ]
+  },
+  {
+    "id": "pat-1535",
+    "slug": "sharepoint-list-view-threshold-5000-items",
+    "title": "Work with SharePoint lists over 5,000 items",
+    "shortDescription": "Design columns, indexes and queries so large lists keep working in views, Power Apps and Power Automate.",
+    "fullDescription": "SharePoint lists can hold millions of items, but any single query that has to examine more than 5,000 items is blocked. This pattern explains what triggers the limit and how to design a list, its views, and the apps and flows on top of it to stay under it.",
+    "category": "SharePoint",
+    "subCategory": "List schema design",
+    "platform": [
+      "SharePoint",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "List View Threshold",
+      "Indexed Columns",
+      "Large Lists",
+      "Performance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "A list that worked for months suddenly shows \"The attempted operation is prohibited because it exceeds the list view threshold\", and flows and apps on top of it start failing.",
+    "whenToUse": [
+      "Any list expected to pass 5,000 items",
+      "Lists that already show threshold errors",
+      "Before building an app or flow on a growing list"
+    ],
+    "whenNotToUse": [
+      "Small reference lists",
+      "Data that needs relational queries or very high volume, where Dataverse or SQL is the better store"
+    ],
+    "formulaOrCode": "Design rules for large lists\n\nIndexes (List settings > Indexed columns)\n  [ ] Index every column used to filter or sort: Status, DueDate, AssignedTo, Created\n  [ ] Add indexes BEFORE the list passes 5,000 items where possible\n  [ ] Maximum 20 indexes per list\n\nViews\n  [ ] First filter is on an indexed column and returns fewer than 5,000 items\n  [ ] Use AND between filters. OR on the first filter breaks the index.\n  [ ] No grouping or totals on non-indexed columns\n  [ ] Default view: Status = Active, sorted by an indexed column\n\nPower Apps\n  Filter(Requests, Status.Value = \"Open\" && DueDate >= dpFrom.SelectedDate)\n  // delegable operators only: =, <>, <, >, <=, >=, StartsWith, And, Or\n  // avoid: Search, in, IsBlank on columns, Not, functions around a column\n\nPower Automate (Get items)\n  Filter Query : Status eq 'Open' and DueDate ge '2026-01-01'\n  Top Count    : 5000\n  Settings     : Pagination On, Threshold 100000\n  // the first condition must be on an indexed column\n\nArchive\n  [ ] Move closed items older than N months to an archive list on a schedule\n  [ ] Keep the active list as small as the process allows",
+    "stepByStepInstructions": [
+      "List every column the views, apps and flows filter or sort on.",
+      "Create an index for each in List settings, Indexed columns.",
+      "Rewrite views so the first filter uses an indexed column and narrows the result below 5,000.",
+      "Check Power Apps formulas for delegation warnings and fix each one.",
+      "Add a filter query to every Get items action and turn on pagination where more than 5,000 rows are expected.",
+      "Schedule a flow to archive old items."
+    ],
+    "commonMistakes": [
+      "Assuming the limit is on list size. It is on the number of items one query must examine.",
+      "Filtering on an indexed column with a value that still matches more than 5,000 items.",
+      "Using OR in the first view filter, which bypasses the index.",
+      "Relying on Get items without a filter and raising Top Count."
+    ],
+    "troubleshooting": [
+      "If you cannot add an index because the list is already too large, SharePoint Online usually creates it in the background. Try again later, or add it in a quieter period.",
+      "If a view still fails, check its sort and group settings. Sorting on a non-indexed column triggers the limit.",
+      "If a flow's Get items returns only 100 rows, set Top Count or turn on pagination.",
+      "If Power Apps returns incomplete results with no error, look for a delegation warning. Non-delegable formulas only read the first 500 to 2,000 rows."
+    ],
+    "relatedPatterns": [
+      "sharepoint-view-indexing-for-large-lists",
+      "avoid-delegation-warnings-sharepoint-filters",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "SharePoint 5,000 item list view threshold: how to fix it",
+    "seoDescription": "Fix and avoid the SharePoint list view threshold: indexed columns, view filters, delegable Power Apps formulas, Get items pagination and archiving.",
+    "primaryKeyword": "SharePoint list view threshold",
+    "secondaryKeywords": [
+      "SharePoint 5000 item limit",
+      "indexed columns SharePoint",
+      "exceeds the list view threshold",
+      "large list Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "Can a SharePoint list hold more than 5,000 items?",
+        "answer": "Yes, up to 30 million. The 5,000 limit applies to how many items a single query can examine, not to how many the list stores."
+      },
+      {
+        "question": "Can the threshold be raised in SharePoint Online?",
+        "answer": "No. It is fixed in SharePoint Online. The fix is indexes and filters that keep each query under the limit."
+      },
+      {
+        "question": "Which column should I index first?",
+        "answer": "The one your default view and main app filter on, usually a status or date column."
+      }
+    ]
+  },
+  {
+    "id": "pat-1536",
+    "slug": "get-more-than-5000-items-power-automate",
+    "title": "Get more than 5,000 SharePoint items in Power Automate",
+    "shortDescription": "Use pagination and a filter query to read large lists reliably with Get items.",
+    "fullDescription": "Get items returns 100 rows unless told otherwise. This pattern shows the three settings that control how many rows come back, how to keep the query under the list view threshold, and how to process the result without a slow loop.",
+    "category": "Power Automate",
+    "subCategory": "SharePoint item updates",
+    "platform": [
+      "Power Automate",
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Get items",
+      "Pagination",
+      "Large Lists",
+      "OData"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow processes only the first 100 items of a list, or fails with a threshold error once the list grows past 5,000.",
+    "whenToUse": [
+      "Scheduled flows that read a whole list or a large slice of it",
+      "Exports and reports",
+      "Any Get items action on a list that will grow"
+    ],
+    "whenNotToUse": [
+      "Flows that need one item. Use Get item, or a filter with Top Count 1.",
+      "Reading everything in order to filter in the flow. Filter in the query instead."
+    ],
+    "formulaOrCode": "Get items\n  Site Address : <site>\n  List Name    : Requests\n  Filter Query : Status eq 'Open' and Created ge '@{addDays(utcNow(), -90)}'\n  Order By     : ID asc\n  Top Count    : 5000\n  Limit Columns by View : a view with only the columns you need\n\nSettings (the three dots > Settings)\n  Pagination : On\n  Threshold  : 100000\n\nHow the numbers combine\n  Top Count only          -> up to 5,000 rows, one request\n  Pagination only         -> pages of 100 until the threshold is reached\n  Top Count 5000 + Pagination -> pages of 5,000 until the threshold (fastest)\n\nCount the result\n  length(body('Get_items')?['value'])\n\nProcess without Apply to each where possible\n  Select       -> reshape every row in one action\n  Filter array -> keep a subset\n  Create CSV table / Create HTML table -> output directly",
+    "stepByStepInstructions": [
+      "Add a filter query so SharePoint returns only the rows you need, starting with an indexed column.",
+      "Set Top Count to 5000.",
+      "Open the action's settings, turn on Pagination and set a threshold above the largest expected result.",
+      "Choose a view in Limit Columns by View to reduce the payload, especially on lists with many lookup columns.",
+      "Check the count with a Compose using length().",
+      "Use Select or Filter array on the result instead of looping where you can."
+    ],
+    "commonMistakes": [
+      "Leaving Top Count empty and wondering why only 100 rows arrive.",
+      "Setting the pagination threshold but no filter, then hitting the list view threshold on a non-indexed sort.",
+      "Looping over 20,000 rows with Apply to each, which takes hours.",
+      "Selecting every column of a list with more than 12 lookup, person or choice columns, which fails."
+    ],
+    "troubleshooting": [
+      "\"The attempted operation is prohibited because it exceeds the list view threshold\" means the filter or order column is not indexed. Index it or filter on an indexed column first.",
+      "\"The query cannot be completed because the number of lookup columns it contains exceeds the lookup column threshold\" is fixed by Limit Columns by View.",
+      "If the result stops at 5,000, pagination is off.",
+      "If the threshold you can set is capped at 5,000, the flow owner's licence limits pagination. Run it under a licensed account or page manually with a filter on ID."
+    ],
+    "relatedPatterns": [
+      "sharepoint-list-view-threshold-5000-items",
+      "use-odata-filters-sharepoint-text-fields",
+      "filter-array-instead-of-apply-to-each"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate Get items: more than 5,000 SharePoint items",
+    "seoDescription": "Read more than 100 or 5,000 SharePoint items in Power Automate with Top Count, pagination and a filter query, and avoid list view threshold errors.",
+    "primaryKeyword": "Power Automate get more than 5000 items",
+    "secondaryKeywords": [
+      "Get items pagination threshold",
+      "Get items only 100",
+      "Top Count 5000",
+      "Limit Columns by View"
+    ],
+    "faqs": [
+      {
+        "question": "Why does Get items return only 100 items?",
+        "answer": "That is the default page size. Set Top Count, turn on pagination, or both."
+      },
+      {
+        "question": "What is the maximum for Top Count?",
+        "answer": "5,000 per request. Pagination repeats the request until the threshold you set is reached."
+      },
+      {
+        "question": "How high can the pagination threshold go?",
+        "answer": "Up to 100,000 on standard licences that include full Power Automate rights. Lower-tier plans are capped at 5,000."
+      }
+    ]
+  },
+  {
+    "id": "pat-1537",
+    "slug": "filter-array-instead-of-apply-to-each",
+    "title": "Replace Apply to each and Condition with Filter array",
+    "shortDescription": "Pick the rows you need from an array in one action instead of looping with a condition inside.",
+    "fullDescription": "A loop with a condition inside runs one iteration per item, slowly. Filter array evaluates the whole array in one step. This pattern shows the basic and advanced modes, combined conditions, and how to read the result.",
+    "category": "Power Automate",
+    "subCategory": "Array handling",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Filter array",
+      "Apply to each",
+      "Performance",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A flow takes minutes and thousands of action runs to find a handful of matching items, because it checks them one by one inside a loop.",
+    "whenToUse": [
+      "Finding items in an array that match a condition",
+      "Filtering data from a connector that has no filter option",
+      "Checking whether any item matches"
+    ],
+    "whenNotToUse": [
+      "When the source connector can filter itself, such as a SharePoint filter query. Filter at the source first.",
+      "When every item needs an action, where a loop is still needed"
+    ],
+    "formulaOrCode": "Filter array (basic mode)\n  From      : @{body('Get_items')?['value']}\n  Condition : item()?['Status']?['Value']   is equal to   Open\n\nFilter array (advanced mode: click \"Edit in advanced mode\")\n  // AND\n  @and(equals(item()?['Status']?['Value'], 'Open'), greater(item()?['Amount'], 1000))\n\n  // OR\n  @or(equals(item()?['Priority']?['Value'], 'High'), less(item()?['DueDate'], utcNow()))\n\n  // Text contains, case-insensitive\n  @contains(toLower(item()?['Title']), 'urgent')\n\n  // Not empty\n  @not(empty(item()?['AssignedTo']?['Email']))\n\n  // Items in one array that are also in another (array of IDs)\n  @contains(body('Select_ApprovedIds'), item()?['ID'])\n\nUse the result\n  Count       : length(body('Filter_array'))\n  Any match?  : greater(length(body('Filter_array')), 0)\n  First match : first(body('Filter_array'))?['Title']\n  Loop only the matches: Apply to each over body('Filter_array')",
+    "stepByStepInstructions": [
+      "Add the Data Operations action Filter array.",
+      "Set From to the array, such as the value output of Get items.",
+      "Enter the condition in basic mode, or switch to advanced mode for And, Or and functions.",
+      "Use the body of Filter array in later actions.",
+      "Remove the old loop and condition.",
+      "Compare run durations before and after."
+    ],
+    "commonMistakes": [
+      "Passing the whole Get items body instead of its value array.",
+      "Comparing a number with a quoted value in basic mode, which makes it text.",
+      "Forgetting the leading @ in advanced mode.",
+      "Using dynamic content from the original Get items after the filter, which silently adds a new loop."
+    ],
+    "troubleshooting": [
+      "If the result is empty, add a Compose with one item and check the property path. Choice and person columns need ?['Value'] or ?['Email'].",
+      "If you get a type error, convert with int(), float() or string() so both sides match.",
+      "If a new Apply to each appears by itself, you picked a field from the source action. Use item() or the Filter array output instead.",
+      "If dates do not compare correctly, make sure both are ISO strings, and use ticks() for exact comparisons."
+    ],
+    "relatedPatterns": [
+      "select-union-remove-duplicates-power-automate",
+      "get-more-than-5000-items-power-automate",
+      "apply-to-each-concurrency-variables-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate Filter array: multiple conditions and examples",
+    "seoDescription": "Use Filter array in Power Automate instead of Apply to each with a Condition: basic and advanced mode, and/or expressions, contains, and reading the result.",
+    "primaryKeyword": "Power Automate Filter array",
+    "secondaryKeywords": [
+      "Filter array multiple conditions",
+      "Filter array advanced mode",
+      "Filter array contains",
+      "Apply to each slow"
+    ],
+    "faqs": [
+      {
+        "question": "How do I use multiple conditions in Filter array?",
+        "answer": "Switch to advanced mode and combine them with @and(...) or @or(...)."
+      },
+      {
+        "question": "How do I check whether Filter array found anything?",
+        "answer": "Use length(body('Filter_array')) and compare it with zero."
+      },
+      {
+        "question": "Is Filter array faster than Apply to each?",
+        "answer": "Yes. It is one action regardless of array size, while a loop runs every inner action once per item."
+      }
+    ]
+  },
+  {
+    "id": "pat-1538",
+    "slug": "select-union-remove-duplicates-power-automate",
+    "title": "Reshape arrays with Select and remove duplicates with union",
+    "shortDescription": "Turn an array of objects into the shape you need and get a distinct list, without loops or variables.",
+    "fullDescription": "Select maps every item of an array to a new object or a simple value in one action. The union expression then removes duplicates. Together they replace the common pattern of a loop that appends to an array variable.",
+    "category": "Power Automate",
+    "subCategory": "Array handling",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Select",
+      "union",
+      "Arrays",
+      "Distinct"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Flows build lists of email addresses or IDs with Apply to each and Append to array variable, which is slow, blocks concurrency and still leaves duplicates.",
+    "whenToUse": [
+      "Building a recipient list from items",
+      "Getting distinct values of a column",
+      "Preparing rows for a table, CSV or card"
+    ],
+    "whenNotToUse": [
+      "When each item needs a connector call",
+      "Objects that differ in any property, which union treats as different"
+    ],
+    "formulaOrCode": "1. Select: array of objects with new property names\n   From : @{body('Get_items')?['value']}\n   Map  :  Title    -> item()?['Title']\n           Owner    -> item()?['AssignedTo']?['Email']\n           Due      -> formatDateTime(item()?['DueDate'], 'yyyy-MM-dd')\n\n2. Select: array of simple values (switch Map to text mode)\n   From : @{body('Get_items')?['value']}\n   Map  : @item()?['AssignedTo']?['Email']\n   Result: [\"a@contoso.com\",\"b@contoso.com\",\"a@contoso.com\"]\n\n3. Remove duplicates (Compose)\n   union(body('Select_Emails'), body('Select_Emails'))\n   Result: [\"a@contoso.com\",\"b@contoso.com\"]\n\n4. Use the distinct list\n   To field of an email : join(outputs('Compose_Distinct'), ';')\n   One email per owner  : Apply to each over outputs('Compose_Distinct'),\n                          with a Filter array inside:\n                          @equals(item()?['AssignedTo']?['Email'], items('Apply_to_each'))\n\nOther set operations\n   Items in both arrays : intersection(arrayA, arrayB)\n   Remove empty values  : Filter array with @not(empty(item()))",
+    "stepByStepInstructions": [
+      "Add a Select action and set From to the source array.",
+      "For objects, enter property names on the left and expressions on the right.",
+      "For a flat list, switch Map to text mode and enter a single expression.",
+      "Add a Compose with union of the Select output with itself to remove duplicates.",
+      "Use join to turn the list into text, or loop over the distinct list.",
+      "Delete the array variable and its loop."
+    ],
+    "commonMistakes": [
+      "Using key-value mode when a flat list is needed, which produces objects instead of values.",
+      "Expecting union to remove duplicate objects that differ in one property.",
+      "Forgetting empty values, which become one blank entry in the distinct list.",
+      "Keeping the old loop alongside the new actions."
+    ],
+    "troubleshooting": [
+      "If join fails, the Select produced objects. Switch Map to text mode.",
+      "If duplicates remain, they differ in case or spacing. Wrap the value in toLower(trim(...)) inside the Select.",
+      "If an email action fails on a blank address, filter out empty values before union.",
+      "If Select returns nulls, check the property path against one raw item in run history."
+    ],
+    "relatedPatterns": [
+      "filter-array-instead-of-apply-to-each",
+      "apply-to-each-concurrency-variables-power-automate",
+      "send-a-digest-email-grouped-by-owner"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate Select action and union to remove duplicates",
+    "seoDescription": "Use the Select action to reshape arrays and the union expression to remove duplicates in Power Automate, replacing loops and array variables.",
+    "primaryKeyword": "Power Automate remove duplicates from array",
+    "secondaryKeywords": [
+      "Select action Power Automate",
+      "union expression",
+      "distinct values Power Automate",
+      "array of emails from Get items"
+    ],
+    "faqs": [
+      {
+        "question": "How do I get distinct values in Power Automate?",
+        "answer": "Build a flat array with Select in text mode, then use union(array, array). union returns each value once."
+      },
+      {
+        "question": "What does the Select action do?",
+        "answer": "It transforms every item in an array into a new shape in one action, similar to a map function."
+      },
+      {
+        "question": "Why does union not remove my duplicate objects?",
+        "answer": "Objects must match on every property to count as duplicates. Reduce them to the key value first."
+      }
+    ]
+  },
+  {
+    "id": "pat-1539",
+    "slug": "apply-to-each-concurrency-variables-power-automate",
+    "title": "Speed up Apply to each with concurrency, safely",
+    "shortDescription": "Run loop iterations in parallel and avoid the variable bugs that parallel loops cause.",
+    "fullDescription": "Apply to each runs one item at a time by default. Turning on concurrency can make a loop many times faster, but any Set variable inside it will then produce wrong results. This pattern shows the setting and the variable-free way to write the loop.",
+    "category": "Power Automate",
+    "subCategory": "Loop performance",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Apply to each",
+      "Concurrency",
+      "Variables",
+      "Performance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A loop over a few hundred items takes most of an hour, and when concurrency is switched on, values from one item turn up in another item's email.",
+    "whenToUse": [
+      "Loops where each iteration calls a connector and does not depend on the others",
+      "Sending many emails, updating many items or creating many files",
+      "Flows that time out because of loop duration"
+    ],
+    "whenNotToUse": [
+      "Iterations that must run in order",
+      "Loops that build up a running total or a single string",
+      "Connectors with tight throttling limits"
+    ],
+    "formulaOrCode": "Turn on concurrency\n  Apply to each > Settings > Concurrency Control: On\n  Degree of Parallelism: 20   (1 to 50; start at 20)\n\nUnsafe inside a parallel loop\n  Set variable varEmail = items('Apply_to_each')?['Owner']?['Email']\n  Send an email To: variables('varEmail')\n  // Variables are shared by all iterations, so another\n  // iteration can overwrite varEmail before the email is sent.\n\nSafe: use Compose, which is scoped to the iteration\n  Compose_Email : items('Apply_to_each')?['Owner']?['Email']\n  Send an email To: outputs('Compose_Email')\n\nSafe: collect results without a variable\n  After the loop, read the outputs of an action inside it:\n    body('Update_item')          -> array of every iteration's result\n  Or build the list first with Select and skip the loop.\n\nCounting without a variable\n  length(body('Filter_array'))\n\nWhen order matters or throttling appears\n  Concurrency Control: On, Degree of Parallelism: 1",
+    "stepByStepInstructions": [
+      "Check that iterations are independent of each other.",
+      "Replace every Set variable inside the loop with a Compose, and refer to its output.",
+      "Replace Append to array variable with a Select before the loop, or read the loop action's outputs afterwards.",
+      "Open the loop's settings, turn on Concurrency Control and choose a degree of parallelism.",
+      "Run with test data and confirm each item received its own values.",
+      "Lower the parallelism if the connector returns 429 errors."
+    ],
+    "commonMistakes": [
+      "Turning on concurrency while Set variable is still used inside the loop.",
+      "Setting parallelism to 50 against SharePoint or Outlook and being throttled.",
+      "Assuming results arrive in the original order.",
+      "Nesting parallel loops, which multiplies the load."
+    ],
+    "troubleshooting": [
+      "If items receive each other's values, a variable is being set inside the loop. Use Compose.",
+      "If you see 429 Too Many Requests, reduce the degree of parallelism and let the built-in retry policy handle the rest.",
+      "If the loop is still slow, most time is in one connector action. Check whether a batch or filter option removes the need for the loop.",
+      "If an append variable has missing entries, parallel iterations overwrote each other. Build the array with Select."
+    ],
+    "relatedPatterns": [
+      "filter-array-instead-of-apply-to-each",
+      "select-union-remove-duplicates-power-automate",
+      "retry-transient-sharepoint-connector-failures"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate Apply to each concurrency and variables",
+    "seoDescription": "Make Apply to each faster with concurrency control in Power Automate, and avoid wrong values by replacing variables inside the loop with Compose.",
+    "primaryKeyword": "Power Automate Apply to each concurrency",
+    "secondaryKeywords": [
+      "Apply to each slow",
+      "degree of parallelism",
+      "variables in parallel loop",
+      "Compose instead of variable"
+    ],
+    "faqs": [
+      {
+        "question": "Why are my variables wrong inside a parallel loop?",
+        "answer": "Variables are global to the flow. With concurrency on, several iterations set the same variable at once. Use Compose inside the loop instead."
+      },
+      {
+        "question": "What degree of parallelism should I use?",
+        "answer": "Start at 20 and reduce it if the connector throttles. The maximum is 50."
+      },
+      {
+        "question": "Does Apply to each run in order?",
+        "answer": "Only when concurrency is off or set to 1."
+      }
+    ]
+  },
+  {
+    "id": "pat-1540",
+    "slug": "convert-time-zone-format-date-power-automate",
+    "title": "Convert UTC to local time and format dates in Power Automate",
+    "shortDescription": "Show the right local date and time in emails and messages, including daylight saving.",
+    "fullDescription": "SharePoint, Dataverse and utcNow all return UTC. This pattern converts to a named time zone with convertFromUtc or convertTimeZone, formats the result, handles empty dates, and compares dates correctly.",
+    "category": "Power Automate",
+    "subCategory": "Compose expressions",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Dates",
+      "Time Zone",
+      "formatDateTime",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Emails show times that are hours out, or a due date appears as the previous day, because the flow prints UTC values as they are.",
+    "whenToUse": [
+      "Any date or time shown to a person",
+      "Scheduling logic that depends on local working hours",
+      "Comparing a date column with today"
+    ],
+    "whenNotToUse": [
+      "Storing or passing dates between systems. Keep those in UTC.",
+      "Adding fixed offsets with addHours, which breaks at daylight saving changes"
+    ],
+    "formulaOrCode": "// UTC to a named time zone, formatted\nconvertFromUtc(triggerBody()?['Created'], 'GMT Standard Time', 'dd MMM yyyy HH:mm')\n\n// Between any two zones\nconvertTimeZone(triggerBody()?['StartTime'], 'UTC', 'Eastern Standard Time', 'yyyy-MM-dd HH:mm')\n\n// Local \"now\" and \"today\"\nconvertFromUtc(utcNow(), 'W. Europe Standard Time', 'yyyy-MM-dd HH:mm')\nconvertFromUtc(utcNow(), 'W. Europe Standard Time', 'yyyy-MM-dd')\n\n// Empty-safe formatting\nif(\n  empty(triggerBody()?['DueDate']),\n  'No due date',\n  formatDateTime(triggerBody()?['DueDate'], 'dd MMM yyyy')\n)\n\n// Common format strings\n//   'yyyy-MM-dd'            2026-11-20\n//   'dd/MM/yyyy'            20/11/2026\n//   'dddd d MMMM yyyy'      Friday 20 November 2026\n//   'HH:mm'                 14:05     (24-hour)\n//   'h:mm tt'               2:05 PM\n\n// Is the due date before today (local)?\nless(\n  formatDateTime(triggerBody()?['DueDate'], 'yyyy-MM-dd'),\n  convertFromUtc(utcNow(), 'GMT Standard Time', 'yyyy-MM-dd')\n)\n\n// Days between two dates\ndiv(sub(ticks(triggerBody()?['DueDate']), ticks(utcNow())), 864000000000)\n\n// Local time back to UTC for a filter query\nconvertToUtc('2026-11-20T09:00:00', 'GMT Standard Time')",
+    "stepByStepInstructions": [
+      "Find the Windows time zone name for your users, such as GMT Standard Time or Eastern Standard Time.",
+      "Wrap each date shown to a person in convertFromUtc with that zone and a format string.",
+      "Guard optional dates with empty() so blank values do not fail the flow.",
+      "Compare dates as yyyy-MM-dd strings or with ticks().",
+      "Convert local times back to UTC before using them in filter queries.",
+      "Test with a time close to midnight to catch date shifts."
+    ],
+    "commonMistakes": [
+      "Using addHours with a fixed offset, which is wrong for half the year.",
+      "Using mm for months. MM is months and mm is minutes.",
+      "Using hh without tt, which prints 02:00 for both 2 AM and 2 PM.",
+      "Passing an empty date to formatDateTime."
+    ],
+    "troubleshooting": [
+      "\"The datetime string must match ISO 8601 format\" means the value is empty or not a date. Check it with empty() first, or build an ISO string.",
+      "\"The time zone id is not valid\" means the name is not a Windows time zone name. 'GMT Standard Time' is valid and 'BST' is not.",
+      "If a date-only column shows the previous day, it is midnight local time stored as UTC. Convert before formatting.",
+      "If the names of days and months are in the wrong language, pass a locale such as 'en-GB' as the last argument of formatDateTime."
+    ],
+    "relatedPatterns": [
+      "power-automate-compose-date-formatting",
+      "power-automate-reminder-before-due-date",
+      "coalesce-empty-null-handling-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate convert time zone and format date",
+    "seoDescription": "Convert UTC to local time in Power Automate with convertFromUtc and convertTimeZone, format dates with formatDateTime, and handle empty dates.",
+    "primaryKeyword": "Power Automate convert time zone",
+    "secondaryKeywords": [
+      "convertFromUtc",
+      "formatDateTime Power Automate",
+      "utcNow local time",
+      "datetime string must match ISO 8601"
+    ],
+    "faqs": [
+      {
+        "question": "How do I get the current local time in Power Automate?",
+        "answer": "Use convertFromUtc(utcNow(), '<time zone name>', '<format>')."
+      },
+      {
+        "question": "Does convertFromUtc handle daylight saving?",
+        "answer": "Yes. Named time zones apply the correct offset for the date, which a fixed addHours cannot do."
+      },
+      {
+        "question": "Why does formatDateTime fail on some items?",
+        "answer": "The date is empty on those items. Wrap the call in if(empty(...), '', formatDateTime(...))."
+      }
+    ]
+  },
+  {
+    "id": "pat-1541",
+    "slug": "coalesce-empty-null-handling-power-automate",
+    "title": "Handle null and empty values in Power Automate expressions",
+    "shortDescription": "Stop flows failing on missing data with the question-mark operator, coalesce and empty.",
+    "fullDescription": "Most flow failures on real data come from a value that is missing. This pattern gives the small set of expressions that make a flow tolerant of nulls: safe property access, default values, empty checks and type-safe conversion.",
+    "category": "Power Automate",
+    "subCategory": "Compose expressions",
+    "platform": [
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "coalesce",
+      "empty",
+      "Null",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A flow works in testing and fails in production with \"cannot be evaluated because property doesn't exist\" or \"the provided value is of type Null\" when an optional field is left blank.",
+    "whenToUse": [
+      "Optional columns such as manager, due date or comments",
+      "Data from forms, emails and HTTP responses",
+      "Before int(), formatDateTime() or string functions"
+    ],
+    "whenNotToUse": [
+      "Hiding a real data problem. If a value is required, fail clearly with Terminate instead of defaulting it.",
+      "Required trigger fields that can never be blank"
+    ],
+    "formulaOrCode": "// Safe property access: ? returns null instead of failing\ntriggerBody()?['Manager']?['Email']\n\n// Default when null\ncoalesce(triggerBody()?['Manager']?['Email'], 'support@contoso.com')\n\n// First non-null of several\ncoalesce(triggerBody()?['PreferredName'], triggerBody()?['DisplayName'], 'there')\n\n// Null or empty string or empty array\nempty(triggerBody()?['Comments'])\n\n// Default when null OR empty text\nif(empty(triggerBody()?['Comments']), 'No comments', triggerBody()?['Comments'])\n\n// Safe number conversion\nint(coalesce(triggerBody()?['Quantity'], 0))\nfloat(if(empty(triggerBody()?['Amount']), '0', string(triggerBody()?['Amount'])))\n\n// Safe text functions\ntoLower(coalesce(triggerBody()?['Category'], ''))\nlength(coalesce(body('Get_items')?['value'], json('[]')))\n\n// Condition: is the field null?\nequals(triggerBody()?['DueDate'], null)\n\n// Write null to clear a SharePoint column (enter as an expression)\nnull\n\n// First item of an array that may be empty\nfirst(body('Filter_array'))?['Title']",
+    "stepByStepInstructions": [
+      "Open a failed run and find the expression that received null.",
+      "Add ? before each property in the path so a missing level returns null.",
+      "Wrap the value in coalesce with a sensible default, or in an if(empty(...)) check.",
+      "Convert types only after the default has been applied.",
+      "For required values, add a Condition and Terminate with a clear message when the value is missing.",
+      "Re-run the failed run with the same data."
+    ],
+    "commonMistakes": [
+      "Using coalesce for empty text. It only replaces null, so an empty string passes through.",
+      "Leaving out the question mark on the first level, as in triggerBody()['Manager'].",
+      "Comparing with the text 'null' instead of the null value.",
+      "Defaulting a required value silently, which hides bad data."
+    ],
+    "troubleshooting": [
+      "\"The template language expression cannot be evaluated because property 'X' doesn't exist\" is fixed by adding ? before ['X'].",
+      "\"The provided value is of type 'Null'\" from a function means its input needs coalesce or an empty check.",
+      "If a Condition on null never matches, compare with the null expression, not with a blank text box.",
+      "If a default never applies, the value is an empty string rather than null. Use empty()."
+    ],
+    "relatedPatterns": [
+      "convert-time-zone-format-date-power-automate",
+      "handle-missing-manager-lookup-gracefully",
+      "power-automate-try-catch-scope-error-handling"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate null handling: coalesce, empty and ?",
+    "seoDescription": "Handle null and empty values in Power Automate with the ? operator, coalesce, empty and safe conversions, with fixes for the common null errors.",
+    "primaryKeyword": "Power Automate check if null",
+    "secondaryKeywords": [
+      "coalesce Power Automate",
+      "empty function Power Automate",
+      "property doesn't exist expression",
+      "provided value is of type Null"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between coalesce and empty?",
+        "answer": "coalesce returns the first value that is not null. empty returns true for null, an empty string, an empty array or an empty object."
+      },
+      {
+        "question": "What does the question mark do in an expression?",
+        "answer": "It makes property access safe. If the property is missing, the expression returns null instead of failing."
+      },
+      {
+        "question": "How do I check for null in a Condition?",
+        "answer": "Put the value on the left, choose is equal to, and enter null as an expression on the right."
+      }
+    ]
+  },
+  {
+    "id": "pat-1542",
+    "slug": "send-http-request-to-sharepoint-power-automate",
+    "title": "Use Send an HTTP request to SharePoint for what the connector cannot do",
+    "shortDescription": "Call the SharePoint REST API from a flow with the standard connector, with ready-to-use requests.",
+    "fullDescription": "The action Send an HTTP request to SharePoint calls any SharePoint REST endpoint with the flow's connection and needs no premium licence. This pattern gives the headers and bodies for the tasks people most often need it for.",
+    "category": "Power Automate",
+    "subCategory": "SharePoint item updates",
+    "platform": [
+      "Power Automate",
+      "SharePoint"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "HTTP Request",
+      "REST API",
+      "SharePoint",
+      "Permissions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "The SharePoint connector has no action for tasks such as updating an item without creating a new version, breaking permission inheritance or reading a list's column definitions.",
+    "whenToUse": [
+      "Tasks with no dedicated SharePoint action",
+      "Updating only some fields without sending the rest",
+      "Item-level permissions and system updates"
+    ],
+    "whenNotToUse": [
+      "Anything a standard action already does. Standard actions are easier to maintain.",
+      "Calls to other Microsoft 365 services, which need Graph and a different connector"
+    ],
+    "formulaOrCode": "All requests: Site Address = your site, plus these headers for JSON\n  Accept       : application/json;odata=nometadata\n  Content-Type : application/json;odata=nometadata\n\n1. Update fields without adding a version\n   Method : POST\n   Uri    : _api/web/lists/getbytitle('Requests')/items(@{triggerBody()?['ID']})/validateUpdateListItem\n   Body   :\n   {\n     \"formValues\": [\n       { \"FieldName\": \"Status\", \"FieldValue\": \"Processed\" },\n       { \"FieldName\": \"ProcessedOn\", \"FieldValue\": \"@{utcNow()}\" }\n     ],\n     \"bNewDocumentUpdate\": true\n   }\n\n2. Update a few fields (normal update)\n   Method : POST\n   Uri    : _api/web/lists/getbytitle('Requests')/items(@{triggerBody()?['ID']})\n   Headers: IF-MATCH: *     X-HTTP-Method: MERGE\n   Body   : { \"Status\": \"Approved\" }\n\n3. Break inheritance on an item (keep nothing, clear existing)\n   Method : POST\n   Uri    : _api/web/lists/getbytitle('Requests')/items(@{triggerBody()?['ID']})/breakroleinheritance(copyRoleAssignments=false,clearSubscopes=true)\n\n4. Grant a user Contribute on that item\n   a. Get the user's ID\n      Method : POST\n      Uri    : _api/web/ensureuser\n      Body   : { \"logonName\": \"i:0#.f|membership|@{triggerBody()?['Author']?['Email']}\" }\n   b. Add the role (1073741827 = Contribute, 1073741826 = Read)\n      Method : POST\n      Uri    : _api/web/lists/getbytitle('Requests')/items(@{triggerBody()?['ID']})/roleassignments/addroleassignment(principalid=@{body('Ensure_user')?['Id']},roledefid=1073741827)\n\n5. Read columns of a list\n   Method : GET\n   Uri    : _api/web/lists/getbytitle('Requests')/fields?$filter=Hidden eq false&$select=Title,InternalName,TypeAsString",
+    "stepByStepInstructions": [
+      "Add the SharePoint action Send an HTTP request to SharePoint and choose the site.",
+      "Set the method and paste the Uri, starting with _api without a leading slash.",
+      "Add the Accept and Content-Type headers shown above.",
+      "Paste the body and replace list names and dynamic values.",
+      "Read results from the action's body, for example body('Send_an_HTTP_request_to_SharePoint')?['Id'].",
+      "Wrap the calls in a scope with error handling, since REST errors are less descriptive than connector errors."
+    ],
+    "commonMistakes": [
+      "Using the list's display name after it has been renamed. Use getbytitle with the current title or the list GUID.",
+      "Leaving out IF-MATCH and X-HTTP-Method on a MERGE update.",
+      "Using display names for fields. REST needs internal names.",
+      "Breaking inheritance in a flow that then loses its own access to the item."
+    ],
+    "troubleshooting": [
+      "400 with \"Invalid JSON\" usually means the Content-Type header is missing or the body has a trailing comma.",
+      "403 means the flow's connection account lacks permission, for example Manage Permissions when breaking inheritance.",
+      "404 means the list title or item ID in the Uri is wrong.",
+      "If validateUpdateListItem returns 200 but nothing changes, read the response body. Each field reports its own error message there."
+    ],
+    "relatedPatterns": [
+      "power-automate-sharepoint-update-item-with-etag-awareness",
+      "power-automate-avoid-infinite-update-loop",
+      "sharepoint-permissions-request-list-pattern"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Send an HTTP request to SharePoint: Power Automate examples",
+    "seoDescription": "Power Automate examples for Send an HTTP request to SharePoint: update without a new version, MERGE updates, break inheritance, grant permissions, read fields.",
+    "primaryKeyword": "Send an HTTP request to SharePoint",
+    "secondaryKeywords": [
+      "validateUpdateListItem Power Automate",
+      "break role inheritance flow",
+      "SharePoint REST API Power Automate",
+      "item level permissions flow"
+    ],
+    "faqs": [
+      {
+        "question": "Is Send an HTTP request to SharePoint a premium action?",
+        "answer": "No. It is part of the standard SharePoint connector and uses the same connection as the other SharePoint actions."
+      },
+      {
+        "question": "How do I update an item without creating a new version?",
+        "answer": "Use validateUpdateListItem with bNewDocumentUpdate set to true. The update still fires item-modified triggers, so add a trigger condition to stop the flow re-running on its own change."
+      },
+      {
+        "question": "Which role definition IDs are standard?",
+        "answer": "1073741826 is Read, 1073741827 is Contribute, 1073741828 is Design, 1073741830 is Edit and 1073741829 is Full Control."
+      }
+    ]
+  },
+  {
+    "id": "pat-1543",
+    "slug": "respond-to-power-app-return-values-from-flow",
+    "title": "Return values from a flow to Power Apps",
+    "shortDescription": "Call a flow from a button, wait for it, and use what it sends back.",
+    "fullDescription": "The Power Apps (V2) trigger with the action Respond to a Power App or flow turns a flow into a function the app can call. This pattern covers inputs, outputs, error reporting and the formula that handles success and failure.",
+    "category": "Power Automate",
+    "subCategory": "Power Apps integration",
+    "platform": [
+      "Power Automate",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Power Apps V2",
+      "Respond",
+      "Flow.Run",
+      "Integration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "An app starts a flow and immediately tells the user it worked, with no idea whether the flow succeeded or what it produced.",
+    "whenToUse": [
+      "The app needs an ID, a link or a status back from the flow",
+      "Operations the app cannot do itself, such as creating files or calling an API",
+      "Showing a real success or failure message"
+    ],
+    "whenNotToUse": [
+      "Long-running work. The app waits up to two minutes for a response.",
+      "Fire-and-forget notifications, where no response is needed"
+    ],
+    "formulaOrCode": "// Flow: \"BV Create Request\"\n//   Trigger: Power Apps (V2)\n//     Text   \"title\"\n//     Number \"amount\"\n//   Scope \"Try\"\n//     Create item ...\n//   Respond to a Power App or flow   (runs after Try succeeded)\n//     Text   \"status\"  : ok\n//     Number \"itemId\"  : @{outputs('Create_item')?['body/ID']}\n//     Text   \"message\" : Request created\n//   Respond to a Power App or flow 2 (run after Try has failed / timed out)\n//     Text   \"status\"  : error\n//     Number \"itemId\"  : 0\n//     Text   \"message\" : @{coalesce(result('Try')?[0]?['error']?['message'], 'Unknown error')}\n\n// App: Submit button OnSelect\nUpdateContext({ locBusy: true });\nIfError(\n    UpdateContext({ locResult: BVCreateRequest.Run(txtTitle.Text, Value(txtAmount.Text)) });\n    If(\n        locResult.status = \"ok\",\n        Notify(locResult.message, NotificationType.Success);\n        Set(varSelectedRequest, LookUp(Requests, ID = locResult.itemid));\n        Navigate(scrDetail),\n        Notify(locResult.message, NotificationType.Error)\n    ),\n    // The flow itself failed or timed out\n    Notify(\"The request could not be sent: \" & FirstError.Message, NotificationType.Error)\n);\nUpdateContext({ locBusy: false });\n\n// Button DisplayMode\nIf(locBusy, DisplayMode.Disabled, DisplayMode.Edit)",
+    "stepByStepInstructions": [
+      "Create the flow with the Power Apps (V2) trigger and add typed inputs.",
+      "Put the work in a scope so success and failure can be handled separately.",
+      "Add one Respond action for success and one configured to run after failure, with the same output names and types.",
+      "Add the flow to the app and call it with Run, storing the result in a variable.",
+      "Check the status output and show the message.",
+      "Disable the button while the call is in progress."
+    ],
+    "commonMistakes": [
+      "Responding with different output names in the success and failure branches, which the app cannot handle.",
+      "Changing the flow's inputs or outputs and not removing and re-adding it in the app.",
+      "Putting long work before the Respond action, so the app times out.",
+      "Ignoring the result and showing a success message unconditionally."
+    ],
+    "troubleshooting": [
+      "If the app shows an error about an invalid response, the two Respond actions return different schemas. Make them identical.",
+      "If new inputs do not appear in the app, remove the flow from the app and add it again.",
+      "If the app times out, respond first and continue the long work after the Respond action.",
+      "If the output name looks different in the app, note that Power Apps lowercases output names, as in locResult.itemid."
+    ],
+    "relatedPatterns": [
+      "power-automate-start-approval-from-power-apps",
+      "power-automate-parse-json-from-power-apps",
+      "use-a-loading-state-for-flow-calls"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate: respond to a Power App with return values",
+    "seoDescription": "Return values from a Power Automate flow to Power Apps using the Power Apps (V2) trigger and Respond to a Power App or flow, with error handling.",
+    "primaryKeyword": "Respond to a Power App or flow",
+    "secondaryKeywords": [
+      "return value from flow to Power Apps",
+      "Power Apps V2 trigger",
+      "Flow.Run result",
+      "flow timeout Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "How long will Power Apps wait for a flow?",
+        "answer": "About two minutes. Respond before then and continue any long-running work afterwards."
+      },
+      {
+        "question": "Can a flow return a table to Power Apps?",
+        "answer": "Not directly with this action. Return the array as JSON text and convert it in the app with ParseJSON."
+      },
+      {
+        "question": "Why did my app break after I edited the flow?",
+        "answer": "The app caches the flow's inputs and outputs. Remove the flow from the app and add it again after changing them."
+      }
+    ]
+  },
+  {
+    "id": "pat-1544",
+    "slug": "excel-date-serial-number-power-automate",
+    "title": "Convert Excel date serial numbers in Power Automate",
+    "shortDescription": "Turn values like 46346 from List rows present in a table into real dates.",
+    "fullDescription": "Excel stores dates as the number of days since 30 December 1899. The Excel connector returns that number unless told otherwise. This pattern shows the connector setting that avoids the problem and the expression that fixes it when you cannot.",
+    "category": "Power Automate",
+    "subCategory": "Excel",
+    "platform": [
+      "Power Automate",
+      "Microsoft 365"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Excel",
+      "Dates",
+      "Serial Number",
+      "List rows"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A flow reading an Excel table writes 46346 into a SharePoint date column, or fails with a message that the value is not a valid date.",
+    "whenToUse": [
+      "Importing Excel rows into SharePoint or Dataverse",
+      "Emails that show dates from a workbook",
+      "Any flow using List rows present in a table"
+    ],
+    "whenNotToUse": [
+      "Columns formatted as text in Excel, which already arrive as text",
+      "CSV files, which have no serial numbers"
+    ],
+    "formulaOrCode": "Preferred: let the connector convert\n  List rows present in a table > Advanced options\n    DateTime Format : ISO 8601\n  Dates then arrive as 2026-11-20T00:00:00.000Z\n\nWhen the value is still a serial number\n  // Date only\n  addDays('1899-12-30', int(item()?['StartDate']), 'yyyy-MM-dd')\n\n  // Date and time (the fraction is the time of day)\n  addSeconds(\n    '1899-12-30',\n    int(mul(float(item()?['StartDateTime']), 86400)),\n    'yyyy-MM-ddTHH:mm:ss'\n  )\n\n  // Empty-safe\n  if(\n    empty(item()?['StartDate']),\n    null,\n    addDays('1899-12-30', int(item()?['StartDate']), 'yyyy-MM-dd')\n  )\n\n  // Handles both serial numbers and text dates in the same column\n  if(\n    isFloat(string(item()?['StartDate'])),\n    addDays('1899-12-30', int(float(item()?['StartDate'])), 'yyyy-MM-dd'),\n    formatDateTime(item()?['StartDate'], 'yyyy-MM-dd')\n  )\n\nFilter rows by date (the connector Filter Query is unreliable on dates)\n  Filter array after List rows:\n  @greaterOrEquals(item()?['StartDate'], '2026-01-01')",
+    "stepByStepInstructions": [
+      "Open the List rows present in a table action and show the advanced options.",
+      "Set DateTime Format to ISO 8601 and run the flow.",
+      "If a column still returns a number, wrap it in the addDays expression.",
+      "Add the empty check for optional date cells.",
+      "Write the result to the date column in SharePoint or Dataverse.",
+      "Check a known date in the output to confirm it is not a day out."
+    ],
+    "commonMistakes": [
+      "Using 1900-01-01 as the base date, which gives a result two days late.",
+      "Passing a decimal serial number to int() directly, which fails. Convert with float first.",
+      "Leaving empty cells unguarded.",
+      "Relying on the Excel connector's Filter Query for date comparisons instead of Filter array."
+    ],
+    "troubleshooting": [
+      "If the date is two days out, the base date is wrong. Use 1899-12-30.",
+      "\"The template language function 'int' was invoked with a parameter that is not valid\" means the cell is empty or has a decimal. Add the empty check and convert through float.",
+      "If times are wrong by a few hours, the workbook stores local time. Treat the result as local and convert to UTC if the target needs it.",
+      "If only 256 rows arrive, turn on pagination in the action's settings."
+    ],
+    "relatedPatterns": [
+      "convert-time-zone-format-date-power-automate",
+      "coalesce-empty-null-handling-power-automate",
+      "filter-array-instead-of-apply-to-each"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Power Automate Excel date shows as number: how to convert",
+    "seoDescription": "Fix Excel dates arriving as serial numbers in Power Automate: set DateTime Format to ISO 8601, or convert with addDays from 1899-12-30.",
+    "primaryKeyword": "Power Automate Excel date number",
+    "secondaryKeywords": [
+      "Excel serial date to date",
+      "List rows present in a table date format",
+      "addDays 1899-12-30",
+      "ISO 8601 Excel connector"
+    ],
+    "faqs": [
+      {
+        "question": "Why does Excel return a number instead of a date?",
+        "answer": "Excel stores dates as a count of days since 30 December 1899. The connector returns that raw value unless DateTime Format is set to ISO 8601."
+      },
+      {
+        "question": "Why 1899-12-30 and not 1900-01-01?",
+        "answer": "Excel counts 1 January 1900 as day 1 and also includes a non-existent 29 February 1900, so the effective zero point is 30 December 1899."
+      },
+      {
+        "question": "Why do I only get 256 rows from Excel?",
+        "answer": "That is the default page size. Turn on pagination in the action's settings and set a higher threshold."
+      }
+    ]
   }
 ]
