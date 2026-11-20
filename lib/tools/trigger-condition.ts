@@ -217,11 +217,13 @@ export function buildTriggerCondition(
     else if (source === "dataverse" && !guidPattern.test(guard.value.trim())) notes.push("The loop guard compares the Modified By user's GUID (systemuserid).");
   }
 
+  // With "and", the guard is just one more rule. With "or", it must wrap the whole group.
+  const all = join === "and" ? [...parts, ...(guardExpression ? [guardExpression] : [])] : parts;
   let combinedBody = "";
-  if (parts.length === 1) combinedBody = parts[0];
-  else if (parts.length > 1) combinedBody = `${join}(${parts.join(", ")})`;
+  if (all.length === 1) combinedBody = all[0];
+  else if (all.length > 1) combinedBody = `${join}(${all.join(", ")})`;
 
-  if (guardExpression) combinedBody = combinedBody ? `and(${combinedBody}, ${guardExpression})` : guardExpression;
+  if (join === "or" && guardExpression) combinedBody = combinedBody ? `and(${combinedBody}, ${guardExpression})` : guardExpression;
 
   const combined = combinedBody ? "@" + combinedBody : "";
   const separate = join === "and" || parts.length <= 1 ? [...parts, ...(guardExpression ? [guardExpression] : [])].map((part) => "@" + part) : [];

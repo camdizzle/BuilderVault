@@ -40,7 +40,8 @@ test("and, or, and the loop guard", () => {
   const rules = [r("Status", "choice", "equals", "Approved"), r("IsUrgent", "boolean", "isTrue")];
   const guard = { enabled: true, value: "Flow@Contoso.com" };
   const andResult = buildTriggerCondition("sharepoint", rules, "and", guard);
-  assert.ok(andResult.combined.startsWith("@and(and(equals("));
+  assert.ok(andResult.combined.startsWith("@and(equals("));
+  assert.ok(!andResult.combined.includes("and(and("));
   assert.ok(andResult.combined.includes("'flow@contoso.com'"));
   assert.equal(andResult.separate.length, 3);
 
