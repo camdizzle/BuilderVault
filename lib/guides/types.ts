@@ -56,3 +56,5 @@ export const section = (id: string, heading: string, ...blocks: GuideBlock[]): G
 const learn = "https://learn.microsoft.com/en-us";
 export const canvasDoc = (page: string, label: string): GuideLink => ({ href: `${learn}/power-apps/maker/canvas-apps/${page}`, label });
 export const powerFxDoc = (page: string, label: string): GuideLink => ({ href: `${learn}/power-platform/power-fx/${page}`, label });
+export const automateDoc = (page: string, label: string): GuideLink => ({ href: `${learn}/power-automate/${page}`, label });
+export const learnDoc = (path: string, label: string): GuideLink => ({ href: `${learn}/${path}`, label });
