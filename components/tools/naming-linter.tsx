@@ -29,6 +29,8 @@ const sampleSource = `Screens:
 
 const cell = { borderBottom: "1px solid var(--line)", padding: "8px 10px 8px 0", textAlign: "left", verticalAlign: "top" } as const;
 
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
 export function NamingLinter() {
   const [source, setSource] = useState(sampleSource);
   const [overridesText, setOverridesText] = useState("");
@@ -63,7 +65,7 @@ export function NamingLinter() {
             <div className="eyebrow">Checked</div>
             <strong style={{ fontSize: "1.4rem" }}>{total}</strong>
             <p style={{ color: "#415049", margin: 0 }}>
-              {report.counts.screens} screens, {report.counts.controls} controls, {report.counts.variables} variables
+              {plural(report.counts.screens, "screen")}, {plural(report.counts.controls, "control")}, {plural(report.counts.variables, "variable")}
             </p>
           </div>
           <div className="stat-tile">
