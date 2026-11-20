@@ -848,6 +848,77 @@ Set(
       }
     ]
   }),
+  item({
+    slug: "power-apps-delegation-checker",
+    kind: "tool",
+    title: "Power Apps Delegation Checker by Data Source",
+    eyebrow: "Free tool",
+    description: "Check a Power Apps formula for delegation problems against SharePoint, Dataverse, SQL Server, or Excel. See which functions and operators are delegated for your data source, what the limits are, and how to rewrite the ones that aren't.",
+    keywords: ["Power Apps delegation", "delegation warning Power Apps", "SharePoint delegation", "Dataverse delegation", "Power Apps 2000 row limit"],
+    audience: "Makers whose apps work in testing and then miss records once the list grows past 500 or 2,000 rows, and anyone who wants to check a formula before it reaches production.",
+    summaryBullets: [
+      "Checks the formula against the data source you pick, because each source delegates a different set of functions.",
+      "Flags functions applied to a column inside Filter, LookUp, and CountIf, and skips ones applied to a value such as User().Email or a text box.",
+      "Covers Search, the in operator, IsBlank, aggregates, FirstN and LastN, and table shaping functions.",
+      "Separates hard problems from limits, such as Dataverse aggregates that stop at 50,000 rows.",
+      "Includes a reference table of what each data source delegates."
+    ],
+    examples: [
+      {
+        title: "One formula, different results",
+        problem: "Search is sent to Dataverse and SQL Server, but SharePoint can't run it.",
+        code: `// Not delegated to SharePoint
+Search(Requests, txtSearch.Text, "Title")
+
+// Delegated to SharePoint
+Filter(Requests, StartsWith(Title, txtSearch.Text))`,
+        expectedResult: "On SharePoint, the second formula searches the whole list instead of the first 500 to 2,000 rows.",
+        commonMistakes: ["Testing with a small list, where the problem never shows.", "Raising the data row limit to 2,000 and calling it fixed."]
+      },
+      {
+        title: "Move the work off the column",
+        problem: "A function applied to a column has to run on every row, so the data source can't do the filtering.",
+        code: `// Not delegated: Year() runs on every row
+Filter(Requests, Year(Created) = 2026)
+
+// Delegated: the column is compared with fixed dates
+Filter(
+    Requests,
+    Created >= Date(2026, 1, 1) && Created < Date(2027, 1, 1)
+)`,
+        expectedResult: "The data source returns only the rows from 2026.",
+        commonMistakes: ["Wrapping the column in Text() or Value() to make the types match. Convert the other side instead."]
+      }
+    ],
+    relatedPatterns: ["avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter", "use-odata-filters-sharepoint-text-fields"],
+    relatedTools: ["power-fx-formatter", "odata-filter-query-builder"],
+    faqs: [
+      {
+        question: "What is delegation?",
+        answer: "Delegation means Power Apps hands the filtering, sorting, or totalling to the data source, which returns only the rows you need. When a formula can't be delegated, Power Apps downloads the first 500 rows (2,000 at most, if you raise the limit) and works on those. Rows beyond that are ignored without an error."
+      },
+      {
+        question: "How is this different from the check in the Power Fx Formatter?",
+        answer: "The formatter gives general hints while it formats. This tool checks against one data source, tells problems apart from limits, suggests a rewrite for each finding, and shows the full support table for that source."
+      },
+      {
+        question: "How accurate is it?",
+        answer: "It follows Microsoft's delegation documentation for each connector, and it reads your formula as text. It can't see your column types, and connectors change over time, so treat it as a first pass and confirm with the warning triangle in Power Apps Studio."
+      },
+      {
+        question: "Why isn't Lower(User().Email) flagged?",
+        answer: "It doesn't depend on the row, so Power Apps works it out once and sends the result to the data source. Only functions applied to a column are a problem. The tool recognizes User(), literals, and controls or variables named with a common prefix such as txt or var."
+      },
+      {
+        question: "Does delegation matter for collections?",
+        answer: "No. A collection is already in the app's memory, so every function works on all of its rows. The limit applies when the collection is filled: ClearCollect loads at most the data row limit from a data source, so use a delegated Filter inside it to bring back the right rows."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The check runs in your browser, and nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
