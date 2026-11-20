@@ -15,6 +15,7 @@ import {
   type DelegationHint,
   type PowerFxLocale
 } from "@/lib/tools/power-fx-format";
+import { PowerFxTableGenerator } from "@/components/tools/power-fx-table-generator";
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
@@ -28,6 +29,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
   if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
   if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
+  if (slug === "csv-to-power-fx-table") return <PowerFxTableGenerator />;
   return null;
 }
 

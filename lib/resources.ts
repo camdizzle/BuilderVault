@@ -502,6 +502,72 @@ Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stay
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
 ] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["send-an-adaptive-card-approval-to-teams", "build-a-user-mention-notification-pattern"] }),
+  item({
+    slug: "csv-to-power-fx-table",
+    kind: "tool",
+    title: "CSV and JSON to Power Fx Table Converter",
+    eyebrow: "Free tool",
+    description: "Convert CSV, Excel rows, or JSON into a Power Fx Table() or ClearCollect formula. Detects numbers, true/false, and dates, handles quoted values and blank cells, and supports semicolon locales.",
+    keywords: ["CSV to Power Fx", "Power Apps ClearCollect table", "Power Apps collection from Excel", "JSON to Power Fx table", "Power Apps sample data"],
+    audience: "Makers who need test data, lookup lists, or menu options inside a canvas app without setting up a data source first.",
+    summaryBullets: [
+      "Reads comma, semicolon, and tab separated data, including rows pasted straight from Excel.",
+      "Reads a JSON array of objects, including nested records and tables.",
+      "Types each column: numbers stay numbers, true and false become booleans, and yyyy-mm-dd becomes Date().",
+      "Keeps values such as 00123 as text, so leading zeros in codes and ZIP codes aren't lost.",
+      "Outputs ClearCollect, Set, a named formula, or a plain Table(), for comma or semicolon locales."
+    ],
+    examples: [
+      {
+        title: "From CSV to a collection",
+        problem: "Two rows of product data pasted from Excel.",
+        code: `ClearCollect(
+    colProducts,
+    Table(
+        {Product: "Laptop 14", Price: 1299.5, 'In Stock': true, Added: Date(2026, 1, 15)},
+        {Product: "USB-C Dock", Price: 189, 'In Stock': true, Added: Blank()}
+    )
+)`,
+        expectedResult: "colProducts has typed columns, so Sum(colProducts, Price) and Filter(colProducts, 'In Stock') work without conversion.",
+        commonMistakes: ["Leaving numbers as text, which breaks Sum and sorting.", "Mixing text and numbers in one column. Power Fx needs one type per column."]
+      },
+      {
+        title: "Static lists as a named formula",
+        problem: "For data that never changes while the app runs, a named formula in App.Formulas loads only when it is first used.",
+        code: `StatusOptions = Table(
+    {Label: "Draft", Sort: 1},
+    {Label: "Submitted", Sort: 2},
+    {Label: "Approved", Sort: 3}
+);`,
+        expectedResult: "StatusOptions is available on every screen without adding work to App.OnStart.",
+        commonMistakes: ["Trying to Collect into a named formula. Named formulas are read-only."]
+      }
+    ],
+    relatedPatterns: ["calculate-totals-gallery-collection", "patch-collection-checklist-items", "parse-json-sharepoint-power-apps-collection"],
+    relatedTools: ["power-fx-formatter", "power-apps-color-token-generator"],
+    faqs: [
+      {
+        question: "Can I paste directly from Excel?",
+        answer: "Yes. Copy the cells including the header row and paste them in. Excel copies cells as tab separated text, which the tool detects."
+      },
+      {
+        question: "How many rows should I keep in a formula?",
+        answer: "A few hundred at most. Large tables inside formulas make the app slower to open and harder to maintain. For bigger or changing data, use a SharePoint list, a Dataverse table, or import the Excel file as static data."
+      },
+      {
+        question: "Why did a column stay as text?",
+        answer: "A column is only typed as number, true/false, or date when every filled value fits. One value such as n/a keeps the whole column as text, and so do values with leading zeros such as 00123."
+      },
+      {
+        question: "My region uses semicolons in formulas. Is that supported?",
+        answer: "Yes. Turn on semicolon separators to use ; between arguments and fields, and a comma as the decimal separator."
+      },
+      {
+        question: "Is my data sent anywhere?",
+        answer: "No. The conversion runs in your browser, and the data is not uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
 Set(gblColorSurface, RGBA(255, 255, 255, 1));
 Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["standardize-a-canvas-app-theme", "build-a-reusable-command-bar-component"] }),
