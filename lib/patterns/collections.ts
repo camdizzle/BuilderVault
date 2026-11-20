@@ -14,6 +14,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Apps Patching Cookbook",
     shortDescription: "Core patching examples for SharePoint fields, Dataverse-style saves, validation, refresh, and save behavior.",
     patternSlugs: [
+      "forall-patch-multiple-records-power-apps",
+      "updateif-removeif-bulk-changes-power-apps",
       "patch-sharepoint-people-picker-power-apps",
       "patch-sharepoint-choice-field",
       "patch-sharepoint-lookup-field",
@@ -33,6 +35,10 @@ export const patternCollections: PatternCollection[] = [
     title: "Delegation Survival Kit",
     shortDescription: "Patterns for SharePoint filters, searchable galleries, query shaping, and predictable app performance.",
     patternSlugs: [
+      "sharepoint-list-view-threshold-5000-items",
+      "get-more-than-5000-items-power-automate",
+      "sort-gallery-by-column-header-power-apps",
+      "dataverse-delegation-filter-search-large-tables",
       "avoid-delegation-warnings-sharepoint-filters",
       "build-a-queue-dashboard-gallery",
       "build-a-reusable-filter-panel",
@@ -47,6 +53,9 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Apps App Design Kit",
     shortDescription: "Screen, state, dashboard, validation, command, and UX patterns for maintainable business apps.",
     patternSlugs: [
+      "responsive-canvas-app-layout-containers",
+      "with-function-readable-power-fx-formulas",
+      "check-microsoft-365-group-membership-power-apps",
       "build-a-queue-dashboard-gallery",
       "build-a-tabbed-request-detail-screen",
       "build-a-compact-mobile-request-form",
@@ -66,6 +75,8 @@ export const patternCollections: PatternCollection[] = [
     title: "SharePoint Backend Starter Kit",
     shortDescription: "List design, internal names, permissions, views, indexing, ownership, and support patterns for app backends.",
     patternSlugs: [
+      "sharepoint-list-view-threshold-5000-items",
+      "send-http-request-to-sharepoint-power-automate",
       "sharepoint-internal-name-safe-column-design",
       "sharepoint-view-indexing-for-large-lists",
       "sharepoint-permissions-request-list-pattern",
@@ -104,6 +115,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Automate Error Handling Kit",
     shortDescription: "Try/catch scopes, trigger conditions, failed-run triage, ownership transfer, retries, and support models.",
     patternSlugs: [
+      "coalesce-empty-null-handling-power-automate",
+      "apply-to-each-concurrency-variables-power-automate",
       "power-automate-try-catch-scope-error-handling",
       "power-automate-trigger-condition-status-changed",
       "create-a-failed-run-triage-process",
@@ -118,6 +131,11 @@ export const patternCollections: PatternCollection[] = [
     title: "Dataverse App Foundation Pack",
     shortDescription: "Tables, relationships, choices, security, solution-aware configuration, and SharePoint migration patterns.",
     patternSlugs: [
+      "patch-dataverse-lookup-and-choice-columns",
+      "dataverse-delegation-filter-search-large-tables",
+      "relate-unrelate-dataverse-many-to-many",
+      "check-dataverse-security-role-in-canvas-app",
+      "dataverse-environment-variables-canvas-apps-flows",
       "create-a-dataverse-table-naming-standard",
       "build-a-request-table-schema",
       "design-a-lookup-relationship-model",
@@ -134,6 +152,11 @@ export const patternCollections: PatternCollection[] = [
     title: "Solution Deployment Checklist",
     shortDescription: "ALM patterns for solution layering, connection references, managed deployments, rollback, and handoff.",
     patternSlugs: [
+      "solution-publisher-prefix-naming-standard",
+      "connection-references-for-solution-flows",
+      "deployment-settings-file-pac-cli",
+      "export-import-managed-solution-pac-cli",
+      "power-platform-pipelines-dev-test-prod",
       "create-a-solution-layering-checklist",
       "build-an-environment-strategy-guide",
       "design-a-deployment-readiness-review",
@@ -150,6 +173,10 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Platform Admin Governance Kit",
     shortDescription: "Admin center patterns for environment inventory, connector review, DLP, maker activity, cleanup, and support.",
     patternSlugs: [
+      "power-platform-environment-strategy",
+      "dlp-policy-connector-groups",
+      "export-power-platform-inventory-powershell",
+      "find-orphaned-apps-and-flows-powershell",
       "create-an-environment-inventory",
       "build-a-connector-review-process",
       "design-a-data-loss-prevention-policy-checklist",
@@ -166,6 +193,10 @@ export const patternCollections: PatternCollection[] = [
     title: "Power Pages Delivery Pack",
     shortDescription: "Portal launch, table permissions, web roles, forms, anonymous access, and publishing governance patterns.",
     patternSlugs: [
+      "power-pages-table-permissions-web-roles",
+      "power-pages-show-content-by-web-role",
+      "power-pages-liquid-fetchxml-list",
+      "power-pages-web-api-create-record",
       "create-a-public-intake-portal-checklist",
       "build-a-portal-table-permission-model",
       "design-a-web-role-matrix",
@@ -181,6 +212,10 @@ export const patternCollections: PatternCollection[] = [
     title: "Teams Adaptive Card Workflows",
     shortDescription: "Teams card patterns for approvals, routing, queue digests, decisions, user mentions, retries, and handoff.",
     patternSlugs: [
+      "post-adaptive-card-and-wait-for-response",
+      "mention-a-user-in-teams-adaptive-card",
+      "adaptive-card-fact-set-from-sharepoint-items",
+      "teams-channel-notification-deep-link-to-app",
       "create-an-adaptive-card-approval-summary",
       "build-a-teams-notification-routing-rule",
       "design-a-channel-based-exception-alert",
@@ -227,6 +262,8 @@ export const patternCollections: PatternCollection[] = [
     title: "Notification and Digest Kit",
     shortDescription: "Email, Teams, reminder, escalation, digest, throttling, and routing patterns for workflow communication.",
     patternSlugs: [
+      "select-union-remove-duplicates-power-automate",
+      "convert-time-zone-format-date-power-automate",
       "power-automate-email-html-table",
       "send-reminder-emails-for-pending-approvals",
       "send-digest-emails-for-overdue-actions",

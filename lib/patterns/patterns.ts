@@ -1,3 +1,4 @@
+import patternRewrites from "@/data/pattern-rewrites.json";
 import patterns from "@/data/patterns.seed.json";
 import { expandedPatterns } from "@/lib/patterns/expanded-patterns";
 import { expandedPatterns2 } from "@/lib/patterns/expanded-patterns-2";
@@ -5,6 +6,8 @@ import { expandedPatterns3 } from "@/lib/patterns/expanded-patterns-3";
 import { expandedPatterns4 } from "@/lib/patterns/expanded-patterns-4";
 import { expandedPatterns5 } from "@/lib/patterns/expanded-patterns-5";
 import type { Pattern, PatternDifficulty, PatternPlatform } from "@/types/pattern";
+
+const rewrites = patternRewrites as Record<string, Partial<Pattern>>;
 
 const allPatterns = [
   ...(patterns as Pattern[]),
@@ -15,6 +18,8 @@ const allPatterns = [
   ...expandedPatterns5
 ].map((pattern) => ({
   ...pattern,
+  // Hand-written replacements for patterns whose body text was generated from a template.
+  ...(rewrites[pattern.slug] ?? {}),
   isPremium: false
 }));
 
