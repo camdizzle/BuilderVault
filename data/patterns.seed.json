@@ -8968,5 +8968,2083 @@
         "answer": "That is the default page size. Turn on pagination in the action's settings and set a higher threshold."
       }
     ]
+  },
+  {
+    "id": "pat-1545",
+    "slug": "dataverse-alternate-key-upsert-power-automate",
+    "title": "Upsert Dataverse rows with an alternate key in Power Automate",
+    "shortDescription": "Create or update a Dataverse row in one action by addressing it with an alternate key instead of looking up its GUID first.",
+    "fullDescription": "Data arriving from another system knows its own identifier, not the Dataverse GUID. An alternate key lets a flow address a row by that identifier. A single update call then creates the row if it is missing and updates it if it exists, with no List rows step and no condition.",
+    "category": "Dataverse",
+    "subCategory": "Integration",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Alternate Key",
+      "Upsert",
+      "Integration",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "Every import flow does List rows, checks whether anything came back, then branches into Add a new row or Update a row. It is slow, doubles the API calls and creates duplicates when two runs overlap.",
+    "whenToUse": [
+      "Loading rows from another system that has its own unique identifier",
+      "Flows that may receive the same record more than once",
+      "Setting lookups to rows you know only by an external code"
+    ],
+    "whenNotToUse": [
+      "Tables with no stable natural identifier",
+      "Keys built on columns users edit freely, since a changed value creates a second row"
+    ],
+    "formulaOrCode": "1. Define the key (once)\n   Table > Keys > New key\n     Name: cnt_ExternalIdKey        Columns: cnt_ExternalId\n   Wait for the key's status to become Active (an index is built in the background).\n   Key columns can be text, whole number, decimal, lookup, choice or date. Up to 16 columns per key.\n\n2. Upsert with the Dataverse connector\n   Action: Update a row      (this action upserts when the row ID does not exist)\n     Table name: Customers\n     Row ID:     cnt_externalid='@{items('Apply_to_each')?['CustomerCode']}'\n     Name:       @{items('Apply_to_each')?['Name']}\n     Email:      @{items('Apply_to_each')?['Email']}\n   Composite key Row ID:   cnt_region='EU',cnt_code='@{variables('varCode')}'\n   Text values need single quotes. Numbers do not. Encode quotes inside values by doubling them.\n\n3. Same call through the Web API (Invoke an HTTP request, or the Perform an unbound action pattern)\n   PATCH /api/data/v9.2/cnt_customers(cnt_externalid='C-1042')\n   { \"cnt_name\": \"Contoso\", \"emailaddress1\": \"info@contoso.com\" }\n   Header  If-Match: *          update only, never create\n   Header  If-None-Match: *     create only, never update\n\n4. Set a lookup by the related row's alternate key\n   \"cnt_Account@odata.bind\": \"/accounts(accountnumber='A-2001')\"\n   In the connector's lookup field:  accounts(accountnumber='A-2001')\n\n5. Read a row by key\n   Get a row by ID > Row ID: cnt_externalid='C-1042'",
+    "stepByStepInstructions": [
+      "Choose the column or columns that uniquely identify a row outside Dataverse.",
+      "Create a key on the table and wait until it is Active.",
+      "In the flow, use Update a row with the key expression as the Row ID.",
+      "Map the remaining columns as usual.",
+      "Use the same key syntax to set lookups to related rows.",
+      "Run the flow twice with the same data and confirm no duplicate appears."
+    ],
+    "commonMistakes": [
+      "Using List rows and a Condition to decide between create and update.",
+      "Forgetting single quotes around text key values.",
+      "Creating a key on a column that already contains duplicate values, so the key never activates.",
+      "Leaving the key column out of the solution."
+    ],
+    "troubleshooting": [
+      "If the action fails with 'Resource not found for the segment', check the key expression uses the column's logical name in lower case.",
+      "If the key stays in Failed status, remove duplicate or oversized values and reactivate it.",
+      "If a duplicate row appears, the flow wrote a different value into the key column, such as trailing spaces. Trim it first.",
+      "If a value contains a single quote, double it with replace(value, '''', '''''')."
+    ],
+    "relatedPatterns": [
+      "patch-dataverse-lookup-and-choice-columns",
+      "create-a-lookup-relationship-model",
+      "dataverse-set-lookup-odata-bind-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Upsert Dataverse rows with an alternate key in Power Automate",
+    "seoDescription": "Create or update a Dataverse row in one action by addressing it with an alternate key instead of looking up its GUID first.",
+    "primaryKeyword": "Dataverse upsert alternate key Power Automate",
+    "secondaryKeywords": [
+      "Alternate Key",
+      "Upsert",
+      "Integration",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "How do I upsert a row in Dataverse from Power Automate?",
+        "answer": "Create an alternate key on the table, then use Update a row with the key expression, such as cnt_externalid='C-1042', as the Row ID. The row is created when it does not exist."
+      },
+      {
+        "question": "What is an alternate key in Dataverse?",
+        "answer": "A column or set of columns declared unique on a table, so rows can be addressed by those values instead of the GUID."
+      },
+      {
+        "question": "Can I stop an upsert from creating rows?",
+        "answer": "Yes, through the Web API. Send the PATCH with the header If-Match: * and it will only update existing rows."
+      }
+    ]
+  },
+  {
+    "id": "pat-1546",
+    "slug": "dataverse-autonumber-column-request-numbers",
+    "title": "Generate request numbers with a Dataverse autonumber column",
+    "shortDescription": "Give every row a readable reference such as REQ-001042 with an autonumber column, including date and random segments, and reset the seed after a migration.",
+    "fullDescription": "People quote reference numbers, not GUIDs. An autonumber column produces one on the server when a row is created, so numbers are unique whichever app, flow or import created the row. The format can combine text, a sequence, the date and random characters.",
+    "category": "Dataverse",
+    "subCategory": "Columns",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Autonumber",
+      "Columns",
+      "Numbering",
+      "Model-driven"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Reference numbers are built in the app with CountRows plus one, so two users get the same number, and rows created by flows or imports have none.",
+    "whenToUse": [
+      "Requests, cases, orders or any row users refer to by number",
+      "Rows created from several apps, flows or imports",
+      "As the table's primary name column, so lookups show the number"
+    ],
+    "whenNotToUse": [
+      "Numbers that must have no gaps, since deleted or failed creates leave gaps",
+      "Numbering that restarts per parent row or per year, which needs custom logic"
+    ],
+    "formulaOrCode": "Create the column\n  Table > Columns > New column\n    Data type: Autonumber (under Text)\n    Autonumber type: String prefixed number | Date prefixed number | Custom\n    Prefix: REQ      Minimum number of digits: 6      Seed value: 1000\n  Preview: REQ-001000\n\nCustom formats\n  REQ-{SEQNUM:6}                         REQ-001000\n  {DATETIMEUTC:yyyy}-{SEQNUM:5}          2026-01000\n  CASE-{DATETIMEUTC:yyMM}-{SEQNUM:4}     CASE-2603-1000\n  WO-{RANDSTRING:4}-{SEQNUM:6}           WO-K7QX-001000\n  SEQNUM length is a minimum: numbers keep growing past it. RANDSTRING is 1 to 6 characters.\n  The date segment is UTC and does not restart the sequence.\n\nMake it the primary name\n  When creating the table: Primary column > Advanced options > data type Autonumber is not offered there, so\n  either convert the existing primary column (Edit column > Data type > Autonumber) or keep a separate\n  autonumber column and show it first in views and the form header.\n\nUse it in a canvas app\n  Do not send a value. Dataverse fills it on create.\n  Set(gblNew, Patch('Service Requests', Defaults('Service Requests'), { Subject: txtSubject.Text }));\n  Notify(\"Created \" & gblNew.'Request Number', NotificationType.Success)\n\nChange the next number (after importing old rows)\n  Maker portal: Edit column > Seed value applies only before rows exist.\n  Later, call the SetAutoNumberSeed action:\n  POST /api/data/v9.2/SetAutoNumberSeed\n  { \"EntityName\": \"cnt_servicerequest\", \"AttributeName\": \"cnt_requestnumber\", \"Value\": 250000 }\n  XrmToolBox \"Auto Number Manager\" does the same with a form.\n\nImports\n  If the import file supplies a value for the column, that value is kept and the sequence is not advanced.\n  Set the seed above the highest imported number afterwards.",
+    "stepByStepInstructions": [
+      "Add an autonumber column to the table, or convert the primary column.",
+      "Choose the format, digits and starting seed.",
+      "Add the column to the main form as read-only and to the key views.",
+      "Remove any app or flow logic that builds numbers by hand.",
+      "Create a test row from the app and from a flow and compare the numbers.",
+      "After a data migration, set the seed above the highest imported value."
+    ],
+    "commonMistakes": [
+      "Calculating the number in the app with a row count.",
+      "Expecting the sequence to restart each year because the format includes the year.",
+      "Sending a blank string for the column from a flow, which stores blank on some paths. Leave the field out instead.",
+      "Seeding below existing values after an import, which causes duplicate key errors when a key is on the column."
+    ],
+    "troubleshooting": [
+      "If numbers are blank on new rows, the column was populated by the create request. Remove it from the Patch or flow action.",
+      "If two environments produce the same numbers, that is expected. Use a different prefix per environment if rows are ever merged.",
+      "If the seed setting has no effect, rows already exist. Use SetAutoNumberSeed.",
+      "If users need to search by number, add the column to the table's Quick Find view."
+    ],
+    "relatedPatterns": [
+      "create-a-request-table-schema",
+      "create-a-dataverse-table-naming-standard",
+      "dataverse-alternate-key-upsert-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Generate request numbers with a Dataverse autonumber column",
+    "seoDescription": "Give every row a readable reference such as REQ-001042 with an autonumber column, including date and random segments, and reset the seed after a migration.",
+    "primaryKeyword": "Dataverse autonumber column",
+    "secondaryKeywords": [
+      "Autonumber",
+      "Columns",
+      "Numbering",
+      "Model-driven"
+    ],
+    "faqs": [
+      {
+        "question": "How do I create an auto-incrementing number in Dataverse?",
+        "answer": "Add a column with the Autonumber data type and choose a format such as REQ-{SEQNUM:6}. Dataverse assigns the next number when each row is created."
+      },
+      {
+        "question": "Can I reset a Dataverse autonumber sequence?",
+        "answer": "Yes. Call the SetAutoNumberSeed action through the Web API or a tool such as Auto Number Manager to set the next value."
+      },
+      {
+        "question": "Will autonumber values have gaps?",
+        "answer": "They can. A number is consumed even if the create later fails or the row is deleted, so do not rely on an unbroken sequence."
+      }
+    ]
+  },
+  {
+    "id": "pat-1547",
+    "slug": "dataverse-formula-columns-power-fx",
+    "title": "Add calculated values with Dataverse formula columns",
+    "shortDescription": "Use Power Fx formula columns for values such as totals, ages and flags that every app, view and flow should see the same way.",
+    "fullDescription": "A formula column is defined once on the table with Power Fx and calculated by Dataverse whenever it is read. Apps, views, flows and reports all get the same answer without repeating the logic. They are the current replacement for classic calculated columns in most cases.",
+    "category": "Dataverse",
+    "subCategory": "Columns",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Formula Columns",
+      "Power Fx",
+      "Calculated",
+      "Columns"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The same calculation, such as days open or line total, is rewritten in the canvas app, the flow and the Power BI report, and the three versions drift apart.",
+    "whenToUse": [
+      "Values derived from other columns on the same row",
+      "Values pulled from a parent row through a lookup",
+      "Flags and labels used in views and filters"
+    ],
+    "whenNotToUse": [
+      "Totals over child rows, which need a rollup column or a flow",
+      "Values that must be stored and indexed for heavy filtering on very large tables"
+    ],
+    "formulaOrCode": "Create: Table > Columns > New column > Data type: Formula (fx)\n\nArithmetic\n  Line total              cnt_Quantity * cnt_UnitPrice\n  With discount           cnt_Quantity * cnt_UnitPrice * (1 - cnt_DiscountPercent / 100)\n  Rounded                 Round(cnt_Amount * 0.2, 2)\n\nDates\n  Days open               DateDiff('Created On', UTCNow(), TimeUnit.Days)\n  Due date                DateAdd('Created On', 14, TimeUnit.Days)\n  Is overdue              cnt_DueDate < UTCToday() && cnt_Status <> 'Status (Service Requests)'.Closed\n\nText\n  Display name            cnt_FirstName & \" \" & cnt_LastName\n  Short reference         Left(cnt_RequestNumber, 8)\n  Clean code              Upper(Trim(cnt_Code))\n\nConditions\n  Priority band           If(cnt_Amount >= 10000, \"High\", cnt_Amount >= 1000, \"Medium\", \"Low\")\n  Switch on a choice      Switch(cnt_Priority, 'Priority'.High, 1, 'Priority'.Normal, 2, 3)\n\nValues from a parent row (through a lookup, one or more levels)\n  Account city            cnt_Account.'Address 1: City'\n  Owner manager name      cnt_Account.'Primary Contact'.'Full Name'\n\nBlank handling\n  Safe division           If(IsBlank(cnt_Total) || cnt_Total = 0, 0, cnt_Done / cnt_Total)\n  Fallback text           Coalesce(cnt_PreferredName, cnt_FirstName)\n\nResult types: text, decimal, whole number, yes/no, date and time, choice (in newer releases).\nFormula columns are read-only. They can be shown on forms and in views, sorted and filtered.\nUse UTCNow() and UTCToday() for values everyone should agree on. Now() and Today() are user-local and limit\nwhere the column can be used.",
+    "stepByStepInstructions": [
+      "Open the table and add a column with the Formula data type.",
+      "Write the Power Fx expression using the table's column display names.",
+      "Save and check the inferred result type.",
+      "Add the column to a view and a form and confirm the values.",
+      "Replace the duplicate logic in apps, flows and reports with the new column.",
+      "Add the column to your solution."
+    ],
+    "commonMistakes": [
+      "Using a formula column for a sum over child rows.",
+      "Referring to columns by a name that has since changed, which breaks the formula.",
+      "Using Today() where the result must be the same for users in different time zones.",
+      "Expecting to write to the column from an app or flow."
+    ],
+    "troubleshooting": [
+      "If the editor rejects a function, it is not supported in formula columns. Check the supported list and simplify.",
+      "If the column cannot be used in a view filter, the formula uses a user-local function such as Now().",
+      "If the value looks stale in a report, the report cached it. Formula columns are calculated on read.",
+      "If saving fails after a referenced column was deleted, edit the formula to remove the reference."
+    ],
+    "relatedPatterns": [
+      "dataverse-rollup-columns-totals",
+      "create-a-business-rule-checklist",
+      "create-a-request-table-schema"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Add calculated values with Dataverse formula columns",
+    "seoDescription": "Use Power Fx formula columns for values such as totals, ages and flags that every app, view and flow should see the same way.",
+    "primaryKeyword": "Dataverse formula column Power Fx",
+    "secondaryKeywords": [
+      "Formula Columns",
+      "Power Fx",
+      "Calculated",
+      "Columns"
+    ],
+    "faqs": [
+      {
+        "question": "What is a formula column in Dataverse?",
+        "answer": "A read-only column whose value is defined with a Power Fx expression and calculated by Dataverse when the row is read."
+      },
+      {
+        "question": "What is the difference between formula columns and calculated columns?",
+        "answer": "Formula columns use Power Fx and support more functions. Calculated columns use the older editor. Microsoft recommends formula columns for new work."
+      },
+      {
+        "question": "Can a formula column sum related rows?",
+        "answer": "No. Use a rollup column for aggregates over child rows."
+      }
+    ]
+  },
+  {
+    "id": "pat-1548",
+    "slug": "dataverse-rollup-columns-totals",
+    "title": "Total child rows with Dataverse rollup columns",
+    "shortDescription": "Show a count, sum, minimum, maximum or average of related rows on the parent with a rollup column, and refresh it on demand when hourly is not enough.",
+    "fullDescription": "A rollup column stores an aggregate of child rows on the parent, such as the total of an order's lines or the number of open tasks on a project. Dataverse recalculates it on a schedule, and a flow or button can force a refresh for one row when the value must be current.",
+    "category": "Dataverse",
+    "subCategory": "Columns",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Rollup Columns",
+      "Aggregates",
+      "Columns",
+      "Model-driven"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The parent form needs a total, so the app sums child rows on every load, which is slow and not delegable, or a flow maintains a number that drifts out of step.",
+    "whenToUse": [
+      "Counts and totals of child rows shown on the parent",
+      "Totals needed in views, charts and filters",
+      "Aggregates over a hierarchy of rows"
+    ],
+    "whenNotToUse": [
+      "Values that must be exact the instant a child row changes",
+      "Aggregates that depend on other rollup or complex formula columns"
+    ],
+    "formulaOrCode": "Create: Parent table > Columns > New column\n  Data type: Whole number, Decimal, Currency or Date and time      Behavior: Rollup\n  Editor:\n    Source entity      Order (the parent)        Use hierarchy: No\n    Related entity     Order Lines (Order)       Filters:  Status equals Active\n    Aggregation        SUM of Line Amount\n  Other aggregations: COUNT, MIN, MAX, AVG\n\nExamples\n  Open task count          COUNT of Tasks           filter: Status Reason does not equal Completed\n  Order total              SUM of Order Lines.Line Amount\n  Latest activity date     MAX of Activities.Actual End\n  Earliest due date        MIN of Tasks.Due Date    filter: Status equals Active\n\nWhat Dataverse adds\n  cnt_ordertotal           the value\n  cnt_ordertotal_date      when it was last calculated\n  cnt_ordertotal_state     0 not calculated, 1 calculated, other values are error states\n\nRefresh timing\n  First calculation: a Mass Calculate job, 12 hours after the column is created (can be brought forward in\n  Settings > System jobs).\n  Then: a recurring job, hourly at most. Model-driven forms show a refresh icon beside the field.\n\nForce a refresh for one row from a flow\n  Dataverse > Perform a bound action is not available for this function, so call the Web API:\n  GET /api/data/v9.2/CalculateRollupField(Target=@t,FieldName=@f)\n      ?@t={'@odata.id':'cnt_orders(<order guid>)'}&@f='cnt_ordertotal'\n  With the HTTP with Microsoft Entra ID connector (\"Invoke an HTTP request\"), base URL = the environment URL.\n  Trigger it from: when an Order Line is added, modified or deleted.\n\nCanvas app\n  Read the stored value:  ThisItem.'Order Total'      (delegable, sortable)\n  After saving a line, call a flow that runs CalculateRollupField, then Refresh(Orders).\n\nLimits\n  Up to 200 rollup columns per environment and 50 per table (raised from earlier limits; check current docs).\n  A rollup cannot reference another rollup, or a formula column that uses a rollup.\n  Filters are fixed conditions. They cannot compare with the current user.",
+    "stepByStepInstructions": [
+      "Add a column on the parent table with Rollup behavior.",
+      "Choose the related table, filter and aggregation.",
+      "Add the column to the parent form and views.",
+      "Bring forward the first Mass Calculate job if you need values immediately.",
+      "Add a flow that calls CalculateRollupField when child rows change, if hourly is too slow.",
+      "Read the stored value in canvas apps instead of summing child rows."
+    ],
+    "commonMistakes": [
+      "Expecting the value to change the moment a child row is saved.",
+      "Summing child rows in a gallery when a rollup would do.",
+      "Filtering the rollup on another rollup column.",
+      "Forgetting that currency rollups use the base currency."
+    ],
+    "troubleshooting": [
+      "If the value is blank on all rows, the first Mass Calculate job has not run. Start it from System jobs.",
+      "If one row is wrong, refresh it from the form or call CalculateRollupField.",
+      "If the state column shows an error, a referenced column was changed or removed. Reopen and save the rollup definition.",
+      "If the refresh flow fails with 404, check the entity set name and that the GUID has no braces."
+    ],
+    "relatedPatterns": [
+      "dataverse-formula-columns-power-fx",
+      "create-a-lookup-relationship-model",
+      "dataverse-delegation-filter-search-large-tables"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Total child rows with Dataverse rollup columns",
+    "seoDescription": "Show a count, sum, minimum, maximum or average of related rows on the parent with a rollup column, and refresh it on demand when hourly is not enough.",
+    "primaryKeyword": "Dataverse rollup column",
+    "secondaryKeywords": [
+      "Rollup Columns",
+      "Aggregates",
+      "Columns",
+      "Model-driven"
+    ],
+    "faqs": [
+      {
+        "question": "How often do Dataverse rollup columns update?",
+        "answer": "A system job recalculates them about hourly. Users can refresh one row from a model-driven form, and a flow can call CalculateRollupField."
+      },
+      {
+        "question": "Can I use a rollup column in a canvas app?",
+        "answer": "Yes. It is a normal stored column, so it can be shown, sorted and filtered with delegation."
+      },
+      {
+        "question": "What is the difference between a rollup column and a formula column?",
+        "answer": "A rollup aggregates related child rows and is stored. A formula column calculates from the row itself or its parents and is worked out when read."
+      }
+    ]
+  },
+  {
+    "id": "pat-1549",
+    "slug": "dataverse-filter-rows-odata-power-automate",
+    "title": "Filter Dataverse rows in Power Automate with OData",
+    "shortDescription": "Write the Filter rows query for List rows: text, numbers, dates, choices, lookups, null checks and combined conditions, with the right column names.",
+    "fullDescription": "The List rows action takes an OData filter. Getting it right means using logical column names, the special name for lookups, and the right literal format for each data type. This reference covers the cases that come up in almost every Dataverse flow.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "List Rows",
+      "OData",
+      "Filter Rows",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow lists every row in the table and uses a Condition inside Apply to each to find the few it needs, because the Filter rows syntax kept returning errors.",
+    "whenToUse": [
+      "Any List rows action that should return a subset",
+      "Scheduled flows that process rows by status or date",
+      "Looking up a row by a business identifier"
+    ],
+    "whenNotToUse": [
+      "Aggregates and complex joins, which are easier in FetchXML",
+      "Row counts above what a single flow run should process without pagination planning"
+    ],
+    "formulaOrCode": "Use logical names (lower case, with prefix). Find them in the column's details: cnt_duedate.\n\nText\n  cnt_name eq 'Contoso'\n  contains(cnt_name, 'cont')          startswith(cnt_name, 'Con')          endswith(emailaddress1, '@contoso.com')\n  cnt_name eq '@{triggerOutputs()?['body/cnt_name']}'\n  Single quote inside a value: double it       cnt_name eq 'O''Brien'\n\nNumbers and currency\n  cnt_amount gt 1000          cnt_quantity le 10          cnt_amount ge 100 and cnt_amount lt 500\n\nYes/No\n  cnt_isurgent eq true\n\nChoice (use the numeric value)\n  cnt_priority eq 100000002\n  statecode eq 0                      Active rows\n  statuscode eq 1\n  Multi-select choice:  Microsoft.Dynamics.CRM.ContainValues(PropertyName='cnt_systems',PropertyValues=['100000001'])\n\nDates\n  cnt_duedate lt @{utcNow()}                          (no quotes around date values)\n  cnt_duedate ge @{startOfDay(utcNow())}\n  createdon ge @{addDays(utcNow(), -7)}\n  Date-only column: cnt_startdate eq @{formatDateTime(utcNow(), 'yyyy-MM-dd')}\n  Built-in functions:\n  Microsoft.Dynamics.CRM.Today(PropertyName='cnt_duedate')\n  Microsoft.Dynamics.CRM.LastXDays(PropertyName='createdon',PropertyValue=7)\n  Microsoft.Dynamics.CRM.ThisMonth(PropertyName='createdon')\n\nLookup (use _name_value and a GUID without quotes)\n  _cnt_account_value eq 0f8fad5b-d9cb-469f-a165-70867728950e\n  _ownerid_value eq @{triggerOutputs()?['body/_ownerid_value']}\n  _cnt_account_value eq null                         no account set\n\nFilter on a parent row's column\n  cnt_Account/name eq 'Contoso'                      (navigation property, case sensitive, then the column)\n\nNull checks\n  cnt_closedon eq null          cnt_closedon ne null\n\nCombine\n  statecode eq 0 and (cnt_priority eq 100000002 or cnt_isurgent eq true)\n  not contains(cnt_name, 'test')\n\nOther fields on the action\n  Select columns:  cnt_name,cnt_duedate,_cnt_account_value         fewer columns, faster\n  Sort by:         cnt_duedate asc, createdon desc\n  Row count:       1 when you expect one row\n  Expand query:    cnt_Account($select=name,accountnumber)",
+    "stepByStepInstructions": [
+      "Find the logical names of the columns you need.",
+      "Write the filter with the right literal format for each type.",
+      "Add Select columns to return only what the flow uses.",
+      "Set Row count when only the first match is needed.",
+      "Run the flow and check the number of rows returned in the action's output.",
+      "Turn on pagination in the action settings when more than 5,000 rows are expected."
+    ],
+    "commonMistakes": [
+      "Using display names or schema names with capital letters.",
+      "Putting quotes around GUIDs, numbers or dates.",
+      "Filtering a lookup by its column name without _value.",
+      "Filtering inside Apply to each instead of in the query."
+    ],
+    "troubleshooting": [
+      "If the error says a property could not be found, the logical name is wrong or a lookup is missing its _value form.",
+      "If a choice filter returns nothing, compare with the numeric value, not the label.",
+      "If the parent-column filter fails, use the navigation property name exactly as shown in the table's relationship, including capitals.",
+      "If only 5,000 rows come back, enable Pagination and set a threshold."
+    ],
+    "relatedPatterns": [
+      "dataverse-delegation-filter-search-large-tables",
+      "dataverse-expand-related-rows-power-automate",
+      "use-odata-filters-sharepoint-text-fields"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Filter Dataverse rows in Power Automate with OData",
+    "seoDescription": "Write the Filter rows query for List rows: text, numbers, dates, choices, lookups, null checks and combined conditions, with the right column names.",
+    "primaryKeyword": "Dataverse filter rows Power Automate",
+    "secondaryKeywords": [
+      "List Rows",
+      "OData",
+      "Filter Rows",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "How do I filter by a lookup column in List rows?",
+        "answer": "Use the form _columnname_value eq followed by the GUID with no quotes, for example _cnt_account_value eq 0f8fad5b-d9cb-469f-a165-70867728950e."
+      },
+      {
+        "question": "How do I filter Dataverse rows by a choice value?",
+        "answer": "Compare the column with the choice's numeric value, such as cnt_priority eq 100000002."
+      },
+      {
+        "question": "Why does my Dataverse filter say the property does not exist?",
+        "answer": "The filter needs the column's logical name in lower case. Lookups need the _name_value form."
+      }
+    ]
+  },
+  {
+    "id": "pat-1550",
+    "slug": "dataverse-expand-related-rows-power-automate",
+    "title": "Get related Dataverse rows in one call with Expand query",
+    "shortDescription": "Return parent columns and child rows with the same List rows or Get a row action by using Expand query, instead of a second lookup inside a loop.",
+    "fullDescription": "Expand query follows a relationship and brings back columns from the related table in the same response. One call can return a request with its account's name, or an order with all its lines. It removes the Get a row inside Apply to each that makes many Dataverse flows slow.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Expand Query",
+      "List Rows",
+      "Relationships",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow lists 200 requests, then calls Get a row by ID for each one to fetch the account name. It makes 201 calls and takes minutes.",
+    "whenToUse": [
+      "Emails and documents that need parent details",
+      "Processing a parent with its child rows",
+      "Reducing API calls in loops"
+    ],
+    "whenNotToUse": [
+      "Child collections with thousands of rows per parent, where a separate filtered List rows pages better",
+      "Relationships you cannot name, such as ad hoc matches on non-key columns"
+    ],
+    "formulaOrCode": "Many-to-one (child to parent): use the lookup's navigation property name\n  List rows > Table: Service Requests\n    Select columns:  cnt_name,cnt_duedate\n    Expand query:    cnt_Account($select=name,accountnumber,address1_city)\n  Read in the loop:\n    items('Apply_to_each')?['cnt_Account']?['name']\n    items('Apply_to_each')?['cnt_Account/address1_city']       (also works for single-valued expansions)\n\n  Several parents at once:\n    cnt_Account($select=name),ownerid($select=fullname,internalemailaddress),createdby($select=fullname)\n  Owner is polymorphic. Use the typed property for users:\n    owninguser($select=fullname,internalemailaddress)\n\nOne-to-many (parent to children): use the relationship's collection name\n  Get a row by ID > Table: Orders\n    Expand query:    cnt_Order_cnt_OrderLine($select=cnt_name,cnt_quantity,cnt_lineamount;$filter=statecode eq 0;$orderby=cnt_name asc)\n  Options inside the brackets are separated by semicolons.\n  Read the children:\n    outputs('Get_order')?['body/cnt_Order_cnt_OrderLine']        an array for Select, Create HTML table or Apply to each\n\nNested (parent of the parent)\n  cnt_Account($select=name;$expand=primarycontactid($select=fullname,emailaddress1))\n\nFinding the names\n  Maker portal > Table > Relationships: the \"Relationship name\" is the collection name for one-to-many.\n  For lookups, the navigation property is usually the lookup's schema name (case sensitive): cnt_Account.\n  Or read them from <environment>/api/data/v9.2/$metadata.\n\nFiltering the parent list on a child or parent value\n  Filter rows: cnt_Account/name eq 'Contoso'\n  Filter rows: cnt_Order_cnt_OrderLine/any(l: l/cnt_lineamount gt 1000)\n\nLimits\n  Up to 15 expands per query. Expanded collections return up to 5,000 rows each and are not paged.\n  Expanding collections in List rows is slower. Prefer it on Get a row, or filter the parent list tightly.",
+    "stepByStepInstructions": [
+      "Find the navigation property name for the lookup or relationship.",
+      "Add it to Expand query with a $select of the columns you need.",
+      "For child collections, add $filter and $orderby inside the brackets.",
+      "Reference the expanded values in later actions.",
+      "Remove the Get a row actions that the expand replaced.",
+      "Compare run duration before and after."
+    ],
+    "commonMistakes": [
+      "Using the logical name in lower case where the navigation property has capitals.",
+      "Separating options inside the brackets with commas or ampersands instead of semicolons.",
+      "Expanding without $select, returning every column of the related row.",
+      "Expecting expanded child rows to page beyond 5,000."
+    ],
+    "troubleshooting": [
+      "If the error says the property could not be found, check the exact case of the navigation property in $metadata.",
+      "If the expanded value is null, the lookup is empty on that row. Wrap reads in coalesce().",
+      "If owner details are missing, expand owninguser or owningteam instead of ownerid.",
+      "If the flow is slower after expanding children in List rows, move the expand to a Get a row or query the child table directly."
+    ],
+    "relatedPatterns": [
+      "dataverse-filter-rows-odata-power-automate",
+      "create-a-lookup-relationship-model",
+      "power-automate-email-html-table"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Get related Dataverse rows in one call with Expand query",
+    "seoDescription": "Return parent columns and child rows with the same List rows or Get a row action by using Expand query, instead of a second lookup inside a loop.",
+    "primaryKeyword": "Dataverse expand query Power Automate",
+    "secondaryKeywords": [
+      "Expand Query",
+      "List Rows",
+      "Relationships",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "What does Expand query do in the Dataverse connector?",
+        "answer": "It returns columns from related rows, parents or children, in the same response as the main row."
+      },
+      {
+        "question": "How do I get the name from a lookup column in Power Automate?",
+        "answer": "Expand the lookup's navigation property with $select=name, or read the lookup's formatted value: body/_cnt_account_value@OData.Community.Display.V1.FormattedValue."
+      },
+      {
+        "question": "Can I filter the expanded child rows?",
+        "answer": "Yes. Add $filter inside the brackets, separated from $select by a semicolon."
+      }
+    ]
+  },
+  {
+    "id": "pat-1551",
+    "slug": "dataverse-set-lookup-odata-bind-power-automate",
+    "title": "Set and clear Dataverse lookup columns in Power Automate",
+    "shortDescription": "Fill a lookup in Add a new row or Update a row with the entity set name and GUID, handle customer and owner lookups, and clear a lookup with Unrelate rows.",
+    "fullDescription": "Lookup fields in the Dataverse connector do not take a name or a bare GUID. They take a reference to the related row in the form entitysetname(guid). Polymorphic lookups such as Customer and Owner show one field per target table. Clearing a lookup needs a different action altogether.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Lookup",
+      "OData Bind",
+      "Add a Row",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "The flow fails with 'Resource not found for the segment' or 'URL was not parsed due to an ODataUnrecognizedPathException' whenever it tries to set a lookup.",
+    "whenToUse": [
+      "Creating or updating rows that reference other rows",
+      "Assigning owners from a flow",
+      "Removing a relationship without deleting either row"
+    ],
+    "whenNotToUse": [
+      "Many-to-many relationships, which use Relate rows and Unrelate rows only",
+      "Setting lookups to rows the connection's user cannot read"
+    ],
+    "formulaOrCode": "Format: <entity set name>(<guid>)\n\n  Account lookup          accounts(0f8fad5b-d9cb-469f-a165-70867728950e)\n  Custom table lookup     cnt_projects(@{outputs('Get_project')?['body/cnt_projectid']})\n  From a previous List rows item:\n                          accounts(@{items('Apply_to_each')?['accountid']})\n  From another row's lookup:\n                          accounts(@{triggerOutputs()?['body/_cnt_account_value']})\n\n  The entity set name is the plural logical name: account > accounts, contact > contacts,\n  cnt_project > cnt_projects, cnt_category > cnt_categories. Check it under Table > Properties > Advanced\n  options > \"Logical collection name\", or copy it from another action's @odata.id output.\n  No quotes, no braces, no leading slash is needed (a leading slash also works).\n\nCustomer lookup (Account or Contact): the action shows two fields. Fill exactly one.\n  Customer (Accounts)     accounts(<guid>)\n  Customer (Contacts)     contacts(<guid>)\n\nOwner\n  Owner (Users)           systemusers(<user guid>)\n  Owner (Teams)           teams(<team guid>)\n  Find the user row:  List rows > Users > Filter rows: internalemailaddress eq '@{variables('varEmail')}'\n                      > first(outputs('List_users')?['body/value'])?['systemuserid']\n\nBy alternate key instead of GUID\n  accounts(accountnumber='A-2001')\n\nLookup may be empty: only set it when there is a value\n  if(empty(triggerOutputs()?['body/_cnt_account_value']), null,\n     concat('accounts(', triggerOutputs()?['body/_cnt_account_value'], ')'))\n\nClear a lookup\n  Update a row cannot blank a lookup by leaving the field empty (empty means \"do not change\").\n  Use: Unrelate rows\n    Table name:    the table that holds the lookup (Service Requests)\n    Row ID:        the row to change\n    Relationship:  the lookup relationship (Account)\n    Unrelate with: the full URL of the related row\n                   @{outputs('Get_request')?['body/cnt_Account@odata.id']}   or\n                   https://<env>.crm.dynamics.com/api/data/v9.2/accounts(<guid>)\n\nIn raw Web API calls the same thing is written as\n  \"cnt_Account@odata.bind\": \"/accounts(<guid>)\"          (navigation property name, case sensitive)",
+    "stepByStepInstructions": [
+      "Find the related table's entity set name.",
+      "Get the related row's GUID from the trigger, a Get a row or a List rows action.",
+      "Enter entitysetname(guid) in the lookup field.",
+      "For Customer and Owner, fill only the field for the right target table.",
+      "Wrap the value in an if() expression when the source may be empty.",
+      "Use Unrelate rows when the lookup has to be cleared."
+    ],
+    "commonMistakes": [
+      "Typing the related row's name into the lookup field.",
+      "Using the singular table name or the display name.",
+      "Filling both the Accounts and Contacts fields of a customer lookup.",
+      "Leaving the field blank and expecting the lookup to be cleared."
+    ],
+    "troubleshooting": [
+      "If you see 'Resource not found for the segment', the entity set name is wrong. Check the logical collection name.",
+      "If the action reports a bad GUID, the dynamic value is empty or includes text. Check the previous action's output.",
+      "If the lookup saves but shows a different row, the GUID came from the wrong column, such as the row's own ID.",
+      "If Unrelate rows fails, pass the full OData URL of the related row, not just its GUID."
+    ],
+    "relatedPatterns": [
+      "patch-dataverse-lookup-and-choice-columns",
+      "dataverse-alternate-key-upsert-power-automate",
+      "dataverse-filter-rows-odata-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Set and clear Dataverse lookup columns in Power Automate",
+    "seoDescription": "Fill a lookup in Add a new row or Update a row with the entity set name and GUID, handle customer and owner lookups, and clear a lookup with Unrelate rows.",
+    "primaryKeyword": "Power Automate set Dataverse lookup",
+    "secondaryKeywords": [
+      "Lookup",
+      "OData Bind",
+      "Add a Row",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "How do I set a lookup column in Power Automate for Dataverse?",
+        "answer": "Enter the related table's entity set name followed by the row's GUID in brackets, for example accounts(0f8fad5b-d9cb-469f-a165-70867728950e)."
+      },
+      {
+        "question": "How do I clear a Dataverse lookup in a flow?",
+        "answer": "Use the Unrelate rows action with the lookup's relationship and the URL of the currently related row."
+      },
+      {
+        "question": "Where do I find the entity set name?",
+        "answer": "In the table's properties under Advanced options as the logical collection name. It is usually the plural logical name, such as accounts or cnt_projects."
+      }
+    ]
+  },
+  {
+    "id": "pat-1552",
+    "slug": "dataverse-trigger-filter-select-columns",
+    "title": "Limit Dataverse triggers with select columns and filter rows",
+    "shortDescription": "Make 'When a row is added, modified or deleted' fire only for the columns and rows that matter, and stop a flow retriggering itself.",
+    "fullDescription": "The Dataverse trigger fires on every change to a row unless told otherwise. Select columns limits it to changes in named columns. Filter rows limits it to rows that match a condition after the change. Together they cut run counts, prevent loops and make the flow's purpose clear.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Triggers",
+      "Select Columns",
+      "Filter Rows",
+      "Loops"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow meant to react to a status change runs on every edit to the row, including its own updates, and burns through the daily request allowance.",
+    "whenToUse": [
+      "Flows that should react to a change in one or two columns",
+      "Flows that update the row that triggered them",
+      "High-volume tables where most changes are irrelevant"
+    ],
+    "whenNotToUse": [
+      "Logic that needs the previous value of a column, which the trigger does not provide",
+      "Deletes, where only the row ID is available and Filter rows does not apply"
+    ],
+    "formulaOrCode": "Trigger: Microsoft Dataverse > When a row is added, modified or deleted\n  Change type:     Added or Modified\n  Table name:      Service Requests\n  Scope:           Organization          (User, Business unit, Parent: Child business unit, Organization)\n  Select columns:  cnt_status,cnt_priority\n                   Comma separated logical names. The flow runs only when one of these columns is in the update.\n                   Applies to Modified. Added always fires.\n  Filter rows:     cnt_status eq 100000002 and statecode eq 0\n                   OData filter evaluated on the row after the change.\n  Delay until:     @{addMinutes(utcNow(), 5)}      optional, postpones the run\n  Run as:          Flow owner | Modifying user | Row owner      whose permissions the Dataverse actions use\n\nStop self-triggering\n  The flow updates cnt_processedon on the same row.\n  Keep cnt_processedon OUT of Select columns. The update then does not match and the trigger does not fire again.\n  If the flow must update a watched column, add a guard to Filter rows:\n    cnt_status eq 100000002 and cnt_processedon eq null\n\nReact to a specific transition (old value to new value)\n  The trigger gives only current values. Options:\n  1. Store the last processed value in a column and compare:\n       Filter rows: cnt_status ne cnt_laststatus is not valid OData between two columns, so compare in a trigger\n       condition instead (Settings > Trigger conditions):\n       @not(equals(triggerOutputs()?['body/cnt_status'], triggerOutputs()?['body/cnt_laststatus']))\n  2. Turn on auditing and read the audit history for the old value when needed.\n\nWho made the change\n  triggerOutputs()?['body/_modifiedby_value']\n  Skip changes made by the flow's own account with a trigger condition:\n  @not(equals(triggerOutputs()?['body/_modifiedby_value'], '<service account systemuserid>'))\n\nUseful trigger outputs\n  triggerOutputs()?['body/cnt_servicerequestid']                       row ID\n  triggerOutputs()?['body/SdkMessage']                                 Create, Update or Delete\n  triggerOutputs()?['body/cnt_status@OData.Community.Display.V1.FormattedValue']    choice label\n\nScope matters\n  User scope fires only for rows owned by the flow owner. Use Organization for process flows.",
+    "stepByStepInstructions": [
+      "Set the change type to what the flow needs.",
+      "List the columns that should start the flow in Select columns.",
+      "Add a Filter rows condition for the row state you care about.",
+      "Keep any column the flow writes out of Select columns, or guard it in the filter.",
+      "Set Scope to Organization for flows that serve everyone.",
+      "Edit an unrelated column on a test row and confirm no run starts."
+    ],
+    "commonMistakes": [
+      "Leaving Select columns empty on a flow that updates its own row.",
+      "Using display names in Select columns.",
+      "Leaving Scope on User, so the flow runs only for the owner's rows.",
+      "Expecting Filter rows to see the old value."
+    ],
+    "troubleshooting": [
+      "If the flow does not fire, check the scope, then test the filter in a List rows action to see whether the row matches.",
+      "If it fires twice, another process updates a watched column. Check the modified-by value in each run.",
+      "If it loops, a column the flow updates is in Select columns.",
+      "If saving the trigger fails, a name in Select columns is not a valid logical name."
+    ],
+    "relatedPatterns": [
+      "power-automate-avoid-infinite-update-loop",
+      "dataverse-filter-rows-odata-power-automate",
+      "power-automate-trigger-condition-status-changed"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Limit Dataverse triggers with select columns and filter rows",
+    "seoDescription": "Make 'When a row is added, modified or deleted' fire only for the columns and rows that matter, and stop a flow retriggering itself.",
+    "primaryKeyword": "Dataverse trigger select columns filter rows",
+    "secondaryKeywords": [
+      "Triggers",
+      "Select Columns",
+      "Filter Rows",
+      "Loops"
+    ],
+    "faqs": [
+      {
+        "question": "How do I trigger a flow only when one Dataverse column changes?",
+        "answer": "Enter the column's logical name in the trigger's Select columns field. The flow then runs only when that column is part of the update."
+      },
+      {
+        "question": "How do I stop a Dataverse flow triggering itself?",
+        "answer": "Do not include the columns the flow updates in Select columns, or add a Filter rows condition that is false after the flow has run."
+      },
+      {
+        "question": "Can the Dataverse trigger give me the previous value?",
+        "answer": "No. It returns the current row. Keep the last value in another column or read it from audit history."
+      }
+    ]
+  },
+  {
+    "id": "pat-1553",
+    "slug": "dataverse-fetchxml-aggregate-power-automate",
+    "title": "Count and sum Dataverse rows with FetchXML in Power Automate",
+    "shortDescription": "Use the Fetch Xml Query field of List rows to return counts, sums and grouped totals from Dataverse without looping through rows.",
+    "fullDescription": "OData filters return rows. FetchXML can return answers: how many open requests per owner, the total value per month, the latest date per account. The List rows action accepts FetchXML directly, so a flow can get a summary in one call and a few rows instead of thousands.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "FetchXML",
+      "Aggregate",
+      "List Rows",
+      "Reporting"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "A weekly summary flow lists 30,000 rows and counts them with variables inside Apply to each. It takes an hour and sometimes times out.",
+    "whenToUse": [
+      "Digest emails and dashboards that need counts or totals",
+      "Checking whether any matching rows exist before doing work",
+      "Queries with joins or conditions OData cannot express"
+    ],
+    "whenNotToUse": [
+      "Simple filtered lists, where Filter rows is easier to read",
+      "Aggregates over more than 50,000 rows, which hit the aggregate limit and need narrower filters"
+    ],
+    "formulaOrCode": "List rows > Table name: Service Requests > Fetch Xml Query:\n\nCount of open requests\n<fetch aggregate=\"true\">\n  <entity name=\"cnt_servicerequest\">\n    <attribute name=\"cnt_servicerequestid\" alias=\"total\" aggregate=\"count\" />\n    <filter><condition attribute=\"statecode\" operator=\"eq\" value=\"0\" /></filter>\n  </entity>\n</fetch>\nRead: first(outputs('List_rows')?['body/value'])?['total']\n\nCount and sum grouped by owner\n<fetch aggregate=\"true\">\n  <entity name=\"cnt_servicerequest\">\n    <attribute name=\"ownerid\" alias=\"owner\" groupby=\"true\" />\n    <attribute name=\"cnt_servicerequestid\" alias=\"requests\" aggregate=\"count\" />\n    <attribute name=\"cnt_amount\" alias=\"amount\" aggregate=\"sum\" />\n    <filter><condition attribute=\"statecode\" operator=\"eq\" value=\"0\" /></filter>\n    <order alias=\"requests\" descending=\"true\" />\n  </entity>\n</fetch>\nEach item:  item()?['owner@OData.Community.Display.V1.FormattedValue']   item()?['requests']   item()?['amount']\n\nGrouped by month created\n    <attribute name=\"createdon\" alias=\"month\" groupby=\"true\" dategrouping=\"month\" />\n    <attribute name=\"createdon\" alias=\"year\" groupby=\"true\" dategrouping=\"year\" />\n    dategrouping: day | week | month | quarter | year | fiscal-period | fiscal-year\n\nOther aggregates:  aggregate=\"avg\" | \"min\" | \"max\" | \"countcolumn\" (non-null values)   distinct=\"true\"\n\nJoin to a parent and filter on it\n<fetch aggregate=\"true\">\n  <entity name=\"cnt_servicerequest\">\n    <attribute name=\"cnt_servicerequestid\" alias=\"total\" aggregate=\"count\" />\n    <link-entity name=\"account\" from=\"accountid\" to=\"cnt_account\" alias=\"acc\">\n      <attribute name=\"name\" alias=\"account\" groupby=\"true\" />\n      <filter><condition attribute=\"address1_country\" operator=\"eq\" value=\"UK\" /></filter>\n    </link-entity>\n  </entity>\n</fetch>\n\nDate operators (no calculation needed)\n  operator=\"today\" | \"last-x-days\" value=\"7\" | \"this-month\" | \"last-month\" | \"older-than-x-days\" value=\"30\" | \"next-x-days\" value=\"14\"\n\nDynamic values: insert flow expressions inside the XML\n  <condition attribute=\"ownerid\" operator=\"eq\" value=\"@{triggerOutputs()?['body/_ownerid_value']}\" />\n  Escape text with replace() for & < > and quotes if it comes from users.\n\nTop rows without aggregation\n<fetch top=\"10\"> ... <order attribute=\"createdon\" descending=\"true\" /> ... </fetch>\n\nBuild queries visually: model-driven Advanced find > Download FetchXML, or XrmToolBox FetchXML Builder.\nAggregate limit: 50,000 rows contribute to one aggregate query. Narrow the filter if you hit AggregateQueryRecordLimit.",
+    "stepByStepInstructions": [
+      "Build the query in Advanced find or FetchXML Builder and test it.",
+      "Add aggregate=\"true\" to the fetch element and an alias to every attribute.",
+      "Paste the XML into the Fetch Xml Query field of List rows.",
+      "Replace fixed values with flow expressions where needed.",
+      "Read results by alias from the action's value array.",
+      "Feed grouped results into Create HTML table for a digest."
+    ],
+    "commonMistakes": [
+      "Leaving out the alias on an aggregated attribute.",
+      "Mixing aggregated and non-grouped plain attributes in one query.",
+      "Filling Filter rows as well as Fetch Xml Query in the same action.",
+      "Summing a currency column across rows in different currencies without using the base column."
+    ],
+    "troubleshooting": [
+      "If you get 'An attribute can not be requested when an aggregate operation has been specified', every attribute needs aggregate or groupby.",
+      "If the result is empty rather than zero, no rows matched. Use coalesce(first(...)?['total'], 0).",
+      "If you hit the aggregate record limit, add date or status filters and combine several smaller queries.",
+      "If the lookup group shows a GUID, read the FormattedValue annotation for the name."
+    ],
+    "relatedPatterns": [
+      "dataverse-filter-rows-odata-power-automate",
+      "power-pages-liquid-fetchxml-list",
+      "send-a-digest-email-grouped-by-owner"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Count and sum Dataverse rows with FetchXML in Power Automate",
+    "seoDescription": "Use the Fetch Xml Query field of List rows to return counts, sums and grouped totals from Dataverse without looping through rows.",
+    "primaryKeyword": "FetchXML aggregate Power Automate",
+    "secondaryKeywords": [
+      "FetchXML",
+      "Aggregate",
+      "List Rows",
+      "Reporting"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate count Dataverse rows without a loop?",
+        "answer": "Yes. Put an aggregate FetchXML query with aggregate=\"count\" in the List rows action's Fetch Xml Query field and read the alias from the first result."
+      },
+      {
+        "question": "How do I group results in FetchXML?",
+        "answer": "Add groupby=\"true\" to the attribute to group on, and give every attribute an alias."
+      },
+      {
+        "question": "What is the row limit for FetchXML aggregates?",
+        "answer": "An aggregate query can cover up to 50,000 rows. Beyond that it fails, so filter to a smaller set."
+      }
+    ]
+  },
+  {
+    "id": "pat-1554",
+    "slug": "dataverse-polymorphic-lookup-patch-power-apps",
+    "title": "Patch customer, owner and regarding lookups in a canvas app",
+    "shortDescription": "Read and write Dataverse lookups that can point at more than one table, such as Customer, Owner and Regarding, with IsType and AsType.",
+    "fullDescription": "Some Dataverse lookups accept rows from several tables. Customer can be an account or a contact. Owner can be a user or a team. Regarding can be almost anything. Power Fx treats these as record references: you can patch any allowed record into them, but to read columns you must first say which table the row belongs to.",
+    "category": "Dataverse",
+    "subCategory": "Power Apps",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Polymorphic Lookup",
+      "Customer",
+      "Owner",
+      "Patch"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A gallery shows nothing for the customer's name, or the formula bar reports that the column cannot be used, because the lookup's table is not known until run time.",
+    "whenToUse": [
+      "Showing or setting Customer on cases, opportunities or custom tables",
+      "Assigning rows to users or teams",
+      "Linking activities and notes to parent rows"
+    ],
+    "whenNotToUse": [
+      "Ordinary single-table lookups, which need none of this",
+      "Filtering large tables by a polymorphic lookup's columns, which is not delegable"
+    ],
+    "formulaOrCode": "Add every target table as a data source (Accounts, Contacts, Users, Teams).\n\nWrite: patch the record itself\n  // Customer = the account chosen in a combo box\n  Patch(Cases, galCases.Selected, { Customer: cmbAccount.Selected })\n  // Customer = a contact\n  Patch(Cases, galCases.Selected, { Customer: cmbContact.Selected })\n  // Owner = a user, found by email\n  Patch(Cases, galCases.Selected, { Owner: LookUp(Users, 'Primary Email' = Lower(cmbUser.Selected.Mail)) })\n  // Owner = a team\n  Patch(Cases, galCases.Selected, { Owner: LookUp(Teams, 'Team Name' = \"Support Tier 2\") })\n  // Clear\n  Patch(Cases, galCases.Selected, { Customer: Blank() })\n\nRead: test the type, then convert\n  // lblCustomer.Text\n  If(\n      IsBlank(ThisItem.Customer), \"\",\n      IsType(ThisItem.Customer, Accounts), AsType(ThisItem.Customer, Accounts).'Account Name',\n      IsType(ThisItem.Customer, Contacts), AsType(ThisItem.Customer, Contacts).'Full Name'\n  )\n  // lblOwner.Text\n  If(\n      IsType(ThisItem.Owner, Users), AsType(ThisItem.Owner, Users).'Full Name',\n      IsType(ThisItem.Owner, Teams), AsType(ThisItem.Owner, Teams).'Team Name'\n  )\n\nFilter by a polymorphic lookup (delegable when comparing the reference to a record)\n  Filter(Cases, Customer = cmbAccount.Selected)\n  Filter(Cases, Owner = LookUp(Users, 'Primary Email' = Lower(User().Email)))\n  Filter(Cases, AsType(Customer, Accounts).'Account Name' = \"Contoso\")      // works, delegation is limited\n\nRegarding on activities and notes\n  // Create a note attached to a request\n  Patch(Notes, Defaults(Notes), { Title: \"Call summary\", Description: txtNote.Text, Regarding: gblSelectedRequest });\n  // Notes for the current request\n  Filter(Notes, Regarding = gblSelectedRequest)\n  // Or through the relationship\n  gblSelectedRequest.Notes\n\nOne picker for accounts and contacts\n  // radType.Items : [\"Account\", \"Contact\"]\n  // cmbCustomer.Items\n  If(radType.Selected.Value = \"Account\",\n      ShowColumns(Accounts, 'Account Name', Account),\n      ShowColumns(Contacts, 'Full Name', Contact))\n  Simpler: two combo boxes, shown one at a time, and patch whichever is visible.",
+    "stepByStepInstructions": [
+      "Add each table the lookup can point to as a data source.",
+      "Patch the lookup with a whole record from one of those tables.",
+      "Use IsType to test which table a row's lookup refers to.",
+      "Use AsType to read columns once the type is known.",
+      "Filter by comparing the lookup with a record.",
+      "Test with rows of each type and with a blank lookup."
+    ],
+    "commonMistakes": [
+      "Reading .Name directly from a polymorphic lookup.",
+      "Patching a GUID or text into the lookup.",
+      "Forgetting to add Teams as a data source when owners can be teams.",
+      "Calling AsType without checking IsType, which errors on rows of the other type."
+    ],
+    "troubleshooting": [
+      "If AsType fails for some rows, they point at a different table. Guard with IsType.",
+      "If Owner patches fail, the target user needs a security role with read access to the table.",
+      "If the gallery is slow, AsType runs per row. Show the lookup's name through a view column or cache the related tables.",
+      "If Regarding cannot be set, the parent table must have notes or activities enabled."
+    ],
+    "relatedPatterns": [
+      "patch-dataverse-lookup-and-choice-columns",
+      "relate-unrelate-dataverse-many-to-many",
+      "create-a-lookup-relationship-model"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Patch customer, owner and regarding lookups in a canvas app",
+    "seoDescription": "Read and write Dataverse lookups that can point at more than one table, such as Customer, Owner and Regarding, with IsType and AsType.",
+    "primaryKeyword": "Power Apps patch polymorphic lookup",
+    "secondaryKeywords": [
+      "Polymorphic Lookup",
+      "Customer",
+      "Owner",
+      "Patch"
+    ],
+    "faqs": [
+      {
+        "question": "How do I patch the Customer column in Power Apps?",
+        "answer": "Pass a whole account or contact record, for example Patch(Cases, ThisItem, { Customer: cmbAccount.Selected })."
+      },
+      {
+        "question": "How do I show the name from a polymorphic lookup?",
+        "answer": "Check the type with IsType, then use AsType to read the name: AsType(ThisItem.Customer, Accounts).'Account Name'."
+      },
+      {
+        "question": "How do I change the owner of a Dataverse row from a canvas app?",
+        "answer": "Patch the Owner column with a record from the Users or Teams table."
+      }
+    ]
+  },
+  {
+    "id": "pat-1555",
+    "slug": "dataverse-file-image-columns-canvas-app",
+    "title": "Upload and show Dataverse file and image columns in a canvas app",
+    "shortDescription": "Store documents and pictures on a Dataverse row with file and image columns, using the form's attachment control, Patch and the camera.",
+    "fullDescription": "File and image columns keep a document or picture on the row itself, with Dataverse security applied. In a canvas app the simplest route is an Edit form, which gives each file column an upload control. Images can also be patched directly from the camera or an Add picture control.",
+    "category": "Dataverse",
+    "subCategory": "Power Apps",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "File Column",
+      "Image Column",
+      "Attachments",
+      "Upload"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Files are pushed into SharePoint from a Dataverse app through a flow, which splits security in two and leaves orphaned documents when rows are deleted.",
+    "whenToUse": [
+      "One document or photo per column per row, such as a signed form or profile picture",
+      "Files that should follow the row's security",
+      "Photos taken on a phone in the field"
+    ],
+    "whenNotToUse": [
+      "Many files per row or files needing versioning and co-authoring, which belong in SharePoint",
+      "Files above the column's configured size limit"
+    ],
+    "formulaOrCode": "Columns\n  File column:   Data type File. Maximum size 32 MB by default (32768 KB), configurable up to 10 GB.\n  Image column:  Data type Image. Up to 30 MB. \"Can store full images\" keeps the original as well as the thumbnail.\n                 One image column can be marked Primary image and is shown in model-driven headers.\n\nEdit form (simplest)\n  Insert > Edit form > Data source: Service Requests > add the file column as a field.\n  The card contains an attachment-style control: users select a file, SubmitForm(frmRequest) uploads it.\n  One file per file column. Selecting another replaces it.\n\nShow or download a file\n  // Label with the name\n  ThisItem.'Signed Form'.FileName\n  // Download button OnSelect\n  Download(ThisItem.'Signed Form'.Value)\n  // PDF viewer Document\n  ThisItem.'Signed Form'.Value\n\nPatch a file from an attachment control outside a form\n  // attUpload is an attachment control copied from a form, MaxAttachments = 1\n  Patch(\n      'Service Requests', gblSelectedRequest,\n      { 'Signed Form': { FileName: First(attUpload.Attachments).Name, Value: First(attUpload.Attachments).Value } }\n  )\n  // Remove the file\n  Patch('Service Requests', gblSelectedRequest, { 'Signed Form': Blank() })\n\nImages\n  // Show (thumbnail by default)\n  Image.Image : ThisItem.Photo\n  // Full size\n  Image.Image : ThisItem.Photo.Full\n  // Save from the camera\n  Patch('Service Requests', gblSelectedRequest, { Photo: camCapture.Photo })\n  // Save from Add picture\n  Patch('Service Requests', gblSelectedRequest, { Photo: imgUploaded.Image })\n  // Clear\n  Patch('Service Requests', gblSelectedRequest, { Photo: Blank() })\n\nGalleries\n  Show thumbnails (ThisItem.Photo) in rows and load .Full only on the detail screen.\n\nPower Automate\n  Download a file or an image:  Dataverse > Download a file or an image (row ID + column)\n  Upload:                       Dataverse > Upload a file or an image (row ID + column + content + file name)\n  Email as an attachment:       Attachments Name = file name, Content = body of the download action\n\nNotes on a row (many files) as the alternative\n  Patch(Notes, Defaults(Notes), { Title: \"Photo\", Regarding: gblSelectedRequest, ... }) is limited from canvas.\n  For multiple files, use the form's built-in Attachments card (Notes) on tables with attachments enabled.",
+    "stepByStepInstructions": [
+      "Add a file or image column to the table and set its size limit.",
+      "Add the column to an Edit form to get the upload control.",
+      "Save with SubmitForm, or Patch the file record from an attachment control.",
+      "Show the file name with a download button, and images with an Image control.",
+      "Use thumbnails in galleries and the full image on detail screens.",
+      "Use the Dataverse upload and download actions when a flow needs the file."
+    ],
+    "commonMistakes": [
+      "Using file columns for many documents per row.",
+      "Loading full-size images in every gallery row.",
+      "Patching text or a URL into a file column.",
+      "Forgetting that file columns are not copied by simple row duplication or some import tools."
+    ],
+    "troubleshooting": [
+      "If upload fails on large files, raise the column's maximum size or reduce the file.",
+      "If the image looks blurry, you are showing the thumbnail. Use .Full where the column stores full images.",
+      "If Download does nothing on mobile, open the file in a PDF viewer control or launch it through a flow-generated link.",
+      "If the file card is missing in the form, refresh the data source after adding the column."
+    ],
+    "relatedPatterns": [
+      "save-camera-photo-to-sharepoint-library-power-apps",
+      "patch-dataverse-lookup-and-choice-columns",
+      "create-a-request-table-schema"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Upload and show Dataverse file and image columns in a canvas app",
+    "seoDescription": "Store documents and pictures on a Dataverse row with file and image columns, using the form's attachment control, Patch and the camera.",
+    "primaryKeyword": "Power Apps Dataverse file column upload",
+    "secondaryKeywords": [
+      "File Column",
+      "Image Column",
+      "Attachments",
+      "Upload"
+    ],
+    "faqs": [
+      {
+        "question": "How do I upload a file to Dataverse from a canvas app?",
+        "answer": "Add the file column to an Edit form and submit the form, or patch a record with FileName and Value taken from an attachment control."
+      },
+      {
+        "question": "How big can a Dataverse file column be?",
+        "answer": "The limit is set per column. The default is 32 MB and it can be raised to as much as 10 GB."
+      },
+      {
+        "question": "Should I use a file column or SharePoint?",
+        "answer": "Use a file column for one document per purpose that should share the row's security. Use SharePoint for many files, versioning and co-authoring."
+      }
+    ]
+  },
+  {
+    "id": "pat-1556",
+    "slug": "dataverse-views-in-canvas-app-filter",
+    "title": "Use Dataverse views as filters in a canvas app",
+    "shortDescription": "Point a gallery at a Dataverse system or personal view so complex filters live in the view, stay delegable and can be changed without editing the app.",
+    "fullDescription": "A Dataverse view is a saved query. A canvas app can use one as the first argument's filter, which pushes the whole view definition to the server. Conditions that are awkward or non-delegable in Power Fx, such as filters on related tables or relative dates, become a single delegable call.",
+    "category": "Dataverse",
+    "subCategory": "Power Apps",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Views",
+      "Filter",
+      "Delegation",
+      "Galleries"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A gallery formula with six conditions shows a delegation warning, and every change to the business rule means editing and republishing the app.",
+    "whenToUse": [
+      "Filters involving related tables or relative dates",
+      "Rules that administrators adjust from time to time",
+      "Offering users the same lists they know from the model-driven app"
+    ],
+    "whenNotToUse": [
+      "Filters driven by controls on the screen, which still need Power Fx conditions",
+      "Views whose columns matter, since the app decides its own columns"
+    ],
+    "formulaOrCode": "Syntax\n  Filter(<table>, <table> (Views).'<view name>')\n\nExamples\n  // Gallery of active requests, as defined by the system view\n  Filter('Service Requests', 'Service Requests (Views)'.'Active Service Requests')\n\n  // The built-in \"my rows\" view\n  Filter(Accounts, 'Accounts (Views)'.'My Active Accounts')\n\n  // Add screen-driven conditions on top (all delegated together)\n  Filter(\n      'Service Requests',\n      'Service Requests (Views)'.'Overdue Requests',\n      StartsWith(Subject, txtSearch.Text),\n      Priority = ddPriority.Selected.Value\n  )\n\n  // Sort the result\n  SortByColumns(\n      Filter('Service Requests', 'Service Requests (Views)'.'Overdue Requests'),\n      \"cnt_duedate\", SortOrder.Ascending\n  )\n\n  // Count (delegable up to 50,000 rows)\n  CountRows(Filter('Service Requests', 'Service Requests (Views)'.'Overdue Requests'))\n\nLet the user pick a view\n  // ddView.Items\n  Table(\n      { Label: \"Active\",  View: 'Service Requests (Views)'.'Active Service Requests' },\n      { Label: \"Overdue\", View: 'Service Requests (Views)'.'Overdue Requests' },\n      { Label: \"Mine\",    View: 'Service Requests (Views)'.'My Open Requests' }\n  )\n  // galRequests.Items\n  Filter('Service Requests', ddView.Selected.View)\n\nWhat the view contributes\n  Its filter conditions, including conditions on related tables and operators such as \"Last 7 days\",\n  \"Equals current user\" and \"Under\" for hierarchies.\n  Not its columns or sort order. Sort in the app.\n\nCreating the view\n  Maker portal > Table > Views > New view > add filters > Save and publish.\n  Add the view to your solution. After creating a new view, refresh the table's data source in the app\n  so the name appears.\n\nPersonal views\n  Views a user saved for themselves appear in the same (Views) enumeration for that user only. Do not\n  build app logic on them.",
+    "stepByStepInstructions": [
+      "Create or choose a system view that expresses the filter.",
+      "In the app, refresh the table's data source.",
+      "Use the view as a Filter argument with the (Views) enumeration.",
+      "Add further screen-driven conditions as extra Filter arguments.",
+      "Sort in the app with SortByColumns.",
+      "Change the view in the maker portal when the rule changes, with no app edit."
+    ],
+    "commonMistakes": [
+      "Expecting the gallery to follow the view's sort order and columns.",
+      "Renaming a view, which breaks the formula that names it.",
+      "Using a personal view in an app shared with others.",
+      "Rebuilding in Power Fx a filter that already exists as a view."
+    ],
+    "troubleshooting": [
+      "If the view name is not offered, refresh the data source or check the view is published.",
+      "If the app errors after a deployment, the view is missing from the solution in that environment.",
+      "If results differ from the model-driven app, the view was edited but not published.",
+      "If a delegation warning remains, it comes from the extra Power Fx conditions, not the view."
+    ],
+    "relatedPatterns": [
+      "dataverse-delegation-filter-search-large-tables",
+      "delegation-safe-date-range-filter",
+      "create-a-default-view-for-active-work-only"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Use Dataverse views as filters in a canvas app",
+    "seoDescription": "Point a gallery at a Dataverse system or personal view so complex filters live in the view, stay delegable and can be changed without editing the app.",
+    "primaryKeyword": "Power Apps Dataverse view filter",
+    "secondaryKeywords": [
+      "Views",
+      "Filter",
+      "Delegation",
+      "Galleries"
+    ],
+    "faqs": [
+      {
+        "question": "Can a canvas app use a Dataverse view?",
+        "answer": "Yes. Use Filter(Table, 'Table (Views)'.'View name'). The view's conditions run on the server."
+      },
+      {
+        "question": "Are Dataverse views delegable in Power Apps?",
+        "answer": "Yes. The whole view filter is delegated, including conditions on related tables."
+      },
+      {
+        "question": "Does the gallery use the view's columns and sorting?",
+        "answer": "No. Only the filter is applied. Choose columns and sorting in the app."
+      }
+    ]
+  },
+  {
+    "id": "pat-1557",
+    "slug": "dataverse-choices-combo-box-canvas-app",
+    "title": "Bind Dataverse choice columns to drop-downs and combo boxes",
+    "shortDescription": "Fill a control from a Dataverse choice column with Choices(), set its default, save single and multi-select values, and filter a gallery by the selection.",
+    "fullDescription": "Dataverse choices are typed values, not text. A control bound with Choices() always shows the current options, labels follow the user's language, and comparisons use the choice value itself. This covers the full round trip: items, default, save and filter.",
+    "category": "Dataverse",
+    "subCategory": "Power Apps",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Choices",
+      "Combo Box",
+      "Dropdown",
+      "Filter"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "The drop-down is filled with a hand-typed list of labels, so it breaks when an option is added or renamed, and filters compare text that does not match.",
+    "whenToUse": [
+      "Any form or filter bar that edits or filters on a choice column",
+      "Multi-select choice columns",
+      "Apps used in more than one language"
+    ],
+    "whenNotToUse": [
+      "Lists that business users must maintain themselves, which should be a lookup table",
+      "Very long lists, where a searchable lookup is easier to use"
+    ],
+    "formulaOrCode": "Single choice\n  // ddPriority.Items\n  Choices('Service Requests'.Priority)\n  // Global choice shared by several tables\n  Choices('Priority Levels')\n  // ddPriority.Default (drop-down) or DefaultSelectedItems (combo box): existing value, or High for new rows\n  Coalesce(gblSelectedRequest.Priority, 'Priority (Service Requests)'.High)\n  // Combo box DefaultSelectedItems needs a table\n  [Coalesce(gblSelectedRequest.Priority, 'Priority (Service Requests)'.Normal)]\n\n  // Save\n  Patch('Service Requests', gblSelectedRequest, { Priority: ddPriority.Selected.Value })\n  // Fixed value\n  Patch('Service Requests', gblSelectedRequest, { Priority: 'Priority (Service Requests)'.High })\n  // Clear\n  Patch('Service Requests', gblSelectedRequest, { Priority: Blank() })\n\nMulti-select choice (Choices column)\n  // cmbSystems.Items               : Choices('Service Requests'.Systems)\n  // cmbSystems.SelectMultiple      : true\n  // cmbSystems.DefaultSelectedItems: gblSelectedRequest.Systems\n  // Save\n  Patch('Service Requests', gblSelectedRequest, { Systems: cmbSystems.SelectedItems })\n  // Show as text\n  Concat(ThisItem.Systems, Text(Value), \", \")\n  // Contains a value\n  'Systems (Service Requests)'.CRM in ThisItem.Systems\n\nFilter a gallery (delegable)\n  Filter('Service Requests', Priority = ddPriority.Selected.Value)\n  // With an \"All\" choice: put a blank row first using a separate toggle or check\n  Filter('Service Requests', IsBlank(ddPriority.Selected.Value) || Priority = ddPriority.Selected.Value)\n  // Several values\n  Filter('Service Requests', Priority = 'Priority (Service Requests)'.High || Priority = 'Priority (Service Requests)'.Urgent)\n\nShow the label\n  Text(ThisItem.Priority)\n\nSwitch on a choice (colours, icons)\n  Switch(ThisItem.Priority,\n      'Priority (Service Requests)'.High,   Color.Red,\n      'Priority (Service Requests)'.Normal, Color.Orange,\n      Color.Gray)\n\nYes/No columns are choices too\n  Filter('Service Requests', 'Is Urgent' = 'Is Urgent (Service Requests)'.Yes)\n  Patch('Service Requests', ThisItem, { 'Is Urgent': tglUrgent.Checked })     // booleans are accepted\n\nStatus and Status Reason\n  Filter('Service Requests', Status = 'Status (Service Requests)'.Active)\n  Choices('Service Requests'.'Status Reason')\n\nNumeric value of a choice (rarely needed)\n  Value(ThisItem.Priority)",
+    "stepByStepInstructions": [
+      "Set the control's Items to Choices() for the column.",
+      "Set the default from the selected record, falling back to a sensible option.",
+      "Patch the control's selected value, or SelectedItems for multi-select.",
+      "Filter galleries by comparing the column with the selected choice.",
+      "Use Text() to display the label.",
+      "Refresh the data source after options are added in Dataverse."
+    ],
+    "commonMistakes": [
+      "Typing option labels as text in Items.",
+      "Comparing a choice column with a string.",
+      "Using Default on a combo box, which needs DefaultSelectedItems.",
+      "Patching .Selected.Value.Value or other guessed shapes."
+    ],
+    "troubleshooting": [
+      "If a new option does not appear, refresh the table in the Data pane.",
+      "If the filter returns nothing, compare with the enum or the control's Selected.Value, not text.",
+      "If the default is blank on edit, the record variable is not set before the screen opens.",
+      "If labels show in the wrong language, they follow the user's Dataverse language setting."
+    ],
+    "relatedPatterns": [
+      "patch-dataverse-lookup-and-choice-columns",
+      "create-a-choice-column-strategy",
+      "dataverse-delegation-filter-search-large-tables"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Bind Dataverse choice columns to drop-downs and combo boxes",
+    "seoDescription": "Fill a control from a Dataverse choice column with Choices(), set its default, save single and multi-select values, and filter a gallery by the selection.",
+    "primaryKeyword": "Power Apps Dataverse choice dropdown",
+    "secondaryKeywords": [
+      "Choices",
+      "Combo Box",
+      "Dropdown",
+      "Filter"
+    ],
+    "faqs": [
+      {
+        "question": "How do I populate a dropdown from a Dataverse choice column?",
+        "answer": "Set the control's Items property to Choices('Table'.Column)."
+      },
+      {
+        "question": "How do I patch a Dataverse choice column from a dropdown?",
+        "answer": "Patch the control's Selected.Value, for example { Priority: ddPriority.Selected.Value }."
+      },
+      {
+        "question": "How do I filter by a choice column in Power Apps?",
+        "answer": "Compare the column with the choice value: Filter(Table, Priority = ddPriority.Selected.Value). This is delegable."
+      }
+    ]
+  },
+  {
+    "id": "pat-1558",
+    "slug": "dataverse-column-security-profiles",
+    "title": "Protect sensitive Dataverse columns with column security profiles",
+    "shortDescription": "Hide or lock individual columns such as salary or national ID with column-level security, so only members of a profile can read or change them.",
+    "fullDescription": "Security roles decide which rows a user can reach. Column security decides which columns on those rows they can see. Turn it on for a sensitive column and only users or teams in a column security profile get the value. Everyone else sees it blank in apps, flows, exports and the API.",
+    "category": "Dataverse",
+    "subCategory": "Security",
+    "platform": [
+      "Dataverse",
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Column Security",
+      "Security",
+      "Profiles",
+      "Compliance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A sensitive value is 'hidden' by leaving it off the form, but anyone with access to the row can still read it in a view, an export or a canvas app.",
+    "whenToUse": [
+      "Personal or financial values on otherwise widely shared rows",
+      "Columns only a few roles may edit, such as approval limits",
+      "Compliance requirements for least-privilege access"
+    ],
+    "whenNotToUse": [
+      "Hiding whole rows, which is the job of security roles and ownership",
+      "Columns used as alternate keys or required by integrations running as ordinary users"
+    ],
+    "formulaOrCode": "1. Secure the column\n   Table > Columns > open the column > Advanced options > Enable column security: On\n   Works for most custom columns and some system columns. Not available for the primary key, some lookups\n   and formula columns.\n\n2. Create a profile\n   Power Platform admin centre > Environments > (env) > Settings > Users + permissions > Column security profiles\n   New profile: \"HR - Salary\"\n   Column permissions > select the column >\n     Read:    Allowed\n     Update:  Allowed | Not allowed\n     Create:  Allowed | Not allowed\n   Newer environments also offer masked read, where a masking rule shows part of the value.\n\n3. Add members\n   Profile > Users or Teams > Add. Prefer teams linked to Entra security groups.\n   System Administrators always have full access to secured columns.\n\n4. Add the profile and the column to your solution so both deploy together.\n\nWhat other users experience\n   Model-driven form:   field shows ******** with a key icon, read-only\n   Views and exports:   empty\n   Canvas app:          value is blank. Patch to the column fails with a permission error.\n   Flow:                value is null for connections without access. Updates fail.\n   Web API:             the property is omitted or null\n\nCanvas app: adapt the screen instead of showing an empty box\n   // Is the value readable for me? (works when the column is normally filled)\n   // conSalary.Visible\n   !IsBlank(gblSelectedEmployee.Salary) || nfIsHr\n   // Check access explicitly with the security role pattern, then hide or disable the card.\n   // Do not rely on hiding alone: the profile is what protects the data.\n\nShare one row's secured column with one person (model-driven)\n   Row > Share secured field: grant read or update on that column for that row only.\n   Stored in the Field Sharing (principalobjectattributeaccess) table.\n\nFlows and integrations\n   The connection's user must be in a profile that allows what the flow does. Add the service account or\n   application user to the profile, or the flow silently writes nulls and reads blanks.\n\nAudit\n   Turn on auditing for the column to record who changed it. Reads are not audited by column security;\n   use Purview activity logging for read auditing where licensed.",
+    "stepByStepInstructions": [
+      "Identify the sensitive columns and who needs to read or change them.",
+      "Enable column security on each column.",
+      "Create a profile per audience and set read, update and create permissions.",
+      "Add teams or users to each profile.",
+      "Add service accounts used by flows to the profiles they need.",
+      "Test with a user outside the profile in the app, a view and an export."
+    ],
+    "commonMistakes": [
+      "Relying on form layout to hide sensitive values.",
+      "Securing a column and forgetting the flow account, so automation writes blanks.",
+      "Adding individuals to profiles instead of teams.",
+      "Leaving the profile out of the solution."
+    ],
+    "troubleshooting": [
+      "If a flow suddenly reads null, its connection user is not in the profile.",
+      "If a user in the profile still sees asterisks, check the profile grants Read and that team membership has synced.",
+      "If Patch fails with a privilege message naming the column, the user lacks Update or Create in the profile.",
+      "If column security cannot be enabled, the column type does not support it. Move the value to a related table with tighter role access."
+    ],
+    "relatedPatterns": [
+      "check-dataverse-security-role-in-canvas-app",
+      "create-a-security-role-matrix",
+      "dataverse-team-ownership-access-teams"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Protect sensitive Dataverse columns with column security profiles",
+    "seoDescription": "Hide or lock individual columns such as salary or national ID with column-level security, so only members of a profile can read or change them.",
+    "primaryKeyword": "Dataverse column level security",
+    "secondaryKeywords": [
+      "Column Security",
+      "Security",
+      "Profiles",
+      "Compliance"
+    ],
+    "faqs": [
+      {
+        "question": "How do I hide a column from some users in Dataverse?",
+        "answer": "Enable column security on the column, then create a column security profile that grants read to the users or teams allowed to see it."
+      },
+      {
+        "question": "Do system administrators bypass column security?",
+        "answer": "Yes. Users with the System Administrator role can read and update all secured columns."
+      },
+      {
+        "question": "Does column security apply in canvas apps and flows?",
+        "answer": "Yes. It is enforced by Dataverse for every client, so the value is blank for users and connections without access."
+      }
+    ]
+  },
+  {
+    "id": "pat-1559",
+    "slug": "dataverse-team-ownership-access-teams",
+    "title": "Share Dataverse rows with owner teams and access teams",
+    "shortDescription": "Choose between team ownership, Entra group teams, access teams and row sharing to give the right people access to specific rows without widening security roles.",
+    "fullDescription": "User-level roles limit people to their own rows. Real work needs colleagues to see some of each other's rows. Dataverse offers four tools for that. Owner teams own rows and carry roles. Entra group teams do the same with membership managed in Entra. Access teams grant access per row with no ownership change. Sharing grants one user or team access to one row.",
+    "category": "Dataverse",
+    "subCategory": "Security",
+    "platform": [
+      "Dataverse",
+      "Power Platform"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Teams",
+      "Row Sharing",
+      "Access Teams",
+      "Ownership"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "To let a project group see each other's rows, everyone's Read privilege is raised to Organization, exposing every row to everyone.",
+    "whenToUse": [
+      "Rows that a department or queue should work on together",
+      "Rows that need an ad hoc group, such as a deal team",
+      "Giving one person access to one row"
+    ],
+    "whenNotToUse": [
+      "Sharing thousands of rows individually, which slows queries through the access table",
+      "Access teams when every row needs the same people, where an owner team is simpler"
+    ],
+    "formulaOrCode": "Choosing\n  Same group for many rows, group should own them        Owner team (or Entra group team)\n  Membership managed by IT in Entra                      Entra ID security group team / Office group team\n  Different people per row, owner stays the same          Access team (template on the table)\n  One-off access for a person or team to one row          Share\n\nOwner team\n  Admin centre > Environment > Settings > Users + permissions > Teams > New: type Owner\n  Assign a security role to the team. Add members.\n  Assign rows to the team (Owner = team).\n  Members get the team's role privileges. With User-level Read in the team's role, members can read rows\n  the team owns.\n  Role setting \"Member's privilege inheritance\":\n    Team privileges only                               members act through the team\n    Direct User (Basic) access level and Team privileges   members also get the privileges personally,\n                                                        so they can own rows without a personal role\n\nEntra group team\n  Team type: Microsoft Entra ID Security Group (or Office Group) > pick the group > Membership type: Members\n  Membership is applied when a user next signs in or is impersonated. No manual upkeep.\n\nAccess team (per row)\n  1. Table > Properties > Advanced options > Have an access team: On\n  2. Settings > Access team templates > New: table, access rights (Read, Write, Append, Append To, Delete, Share, Assign)\n  3. Model-driven form: add a sub-grid of Users > Team template: your template\n  4. Adding a user to the sub-grid creates the row's team automatically and grants those rights for that row.\n  From a flow: Perform a bound action on the row\n     Action name: AddUserToRecordTeam\n     Record:      the row\n     SystemUser@odata.id / TeamTemplate: systemusers(<guid>) and teamtemplates(<template guid>)\n  Remove: RemoveUserFromRecordTeam\n\nShare one row\n  Model-driven: Share > add user or team > tick rights\n  Flow: Dataverse > Perform an unbound action > GrantAccess\n     Target:            { \"@odata.type\": \"Microsoft.Dynamics.CRM.cnt_servicerequest\", \"cnt_servicerequestid\": \"<guid>\" }\n     PrincipalAccess:   { \"Principal\": { \"@odata.type\": \"Microsoft.Dynamics.CRM.systemuser\", \"systemuserid\": \"<guid>\" },\n                          \"AccessMask\": \"ReadAccess, WriteAccess, AppendAccess\" }\n  Revoke: RevokeAccess with Target and Revokee.\n  Sharing only works within the privileges the recipient's roles already grant on the table (at least User level).\n\nCanvas app\n  Assign to a team:  Patch('Service Requests', ThisItem, { Owner: LookUp(Teams, 'Team Name' = \"Support Tier 2\") })\n  My team's rows:    visible automatically when the role grants User-level Read and the team owns the row.\n\nCheck who has access to a row\n  Model-driven: command bar > Check access (shows roles, team memberships and shares that grant it).",
+    "stepByStepInstructions": [
+      "List who needs access to which rows and whether the group is fixed or per row.",
+      "Pick owner team, Entra group team, access team or sharing using the guide above.",
+      "Create the team or template and assign roles or rights.",
+      "Change row ownership or add members to the row's access team.",
+      "Keep table privileges at User level so access comes only through ownership, teams and shares.",
+      "Verify with Check access on a sample row."
+    ],
+    "commonMistakes": [
+      "Raising Read to Organization to solve a team access problem.",
+      "Sharing every row individually from a flow at high volume.",
+      "Forgetting the team needs a security role before it can own rows.",
+      "Expecting sharing to work for users with no privilege on the table at all."
+    ],
+    "troubleshooting": [
+      "If a team cannot be set as owner, assign it a role with privileges on the table.",
+      "If Entra group members do not get access, they must sign in after being added, and the role inheritance setting must suit your design.",
+      "If an access team sub-grid adds users but access is missing, check the template's rights and the user's base privilege.",
+      "If queries slow down, review the number of shares in the principal object access table and move to teams."
+    ],
+    "relatedPatterns": [
+      "create-a-security-role-matrix",
+      "check-dataverse-security-role-in-canvas-app",
+      "dataverse-column-security-profiles"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Share Dataverse rows with owner teams and access teams",
+    "seoDescription": "Choose between team ownership, Entra group teams, access teams and row sharing to give the right people access to specific rows without widening security roles.",
+    "primaryKeyword": "Dataverse access team vs owner team",
+    "secondaryKeywords": [
+      "Teams",
+      "Row Sharing",
+      "Access Teams",
+      "Ownership"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between an owner team and an access team?",
+        "answer": "An owner team owns rows and has security roles. An access team owns nothing and has no roles. It grants its members rights on individual rows through a template."
+      },
+      {
+        "question": "How do I share a Dataverse record with another user from a flow?",
+        "answer": "Call the GrantAccess action with the target row, the user or team and the access mask."
+      },
+      {
+        "question": "Should I use Entra group teams?",
+        "answer": "Yes, for stable groups. Membership is managed once in Entra and applied to Dataverse automatically."
+      }
+    ]
+  },
+  {
+    "id": "pat-1560",
+    "slug": "dataverse-auditing-enable-read-history",
+    "title": "Turn on Dataverse auditing and read change history",
+    "shortDescription": "Enable auditing at environment, table and column level, view who changed what on a row, read the audit log from a flow, and manage how long logs are kept.",
+    "fullDescription": "Dataverse can record every create, update and delete with the old value, the new value, the user and the time. It only does so when auditing is switched on at three levels. Once on, the history appears on each row in model-driven apps and can be queried for reports, investigations and flows that need a previous value.",
+    "category": "Dataverse",
+    "subCategory": "Governance",
+    "platform": [
+      "Dataverse",
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Auditing",
+      "Audit History",
+      "Compliance",
+      "Change Tracking"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Someone asks who changed a request's amount last month. Auditing was never enabled, so there is no answer.",
+    "whenToUse": [
+      "Business data where changes must be attributable",
+      "Investigating unexpected value changes",
+      "Flows that need the previous value of a column"
+    ],
+    "whenNotToUse": [
+      "High-churn technical tables such as logs, where audit rows multiply storage for no benefit",
+      "Treating audit as a backup. It records changes, it does not restore deleted rows by itself"
+    ],
+    "formulaOrCode": "Enable (all three levels are required)\n  1. Environment: Power Platform admin centre > Environments > (env) > Settings > Audit and logs > Audit settings\n       Start Auditing: On        Log access: optional        Read logs: optional (also sends to Purview)\n       Retain these logs for: 30 days | 90 | 180 | 1 year | 2 years | 7 years | Custom | Forever\n  2. Table: Table > Properties > Advanced options > Audit changes to its data: On\n  3. Column: each column > Advanced options > Enable auditing: On (default on for new columns)\n  Publish. Include table settings in your solution so auditing is on in every environment.\n\nView\n  Model-driven app > open a row > Related > Audit History: changed date, changed by, event, field, old value, new value\n  Admin centre > Environment > Settings > Audit and logs > Audit summary view: filter by table, user, event\n\nRead from a flow: who last changed a column and what it was\n  List rows > Table: Audits\n    Filter rows:  _objectid_value eq @{triggerOutputs()?['body/cnt_servicerequestid']} and action eq 2\n    Sort by:      createdon desc        Row count: 5\n    action: 1 Create, 2 Update, 3 Delete        operation: 1 Create, 2 Update, 3 Delete, 4 Access\n  The row gives who (_userid_value) and when (createdon). Old and new values are in the audit detail:\n  HTTP (Invoke an HTTP request) GET\n    /api/data/v9.2/audits(<auditid>)/Microsoft.Dynamics.CRM.RetrieveAuditDetails()\n  Response: AuditDetail.OldValue and AuditDetail.NewValue hold only the changed columns.\n\nFull history for one row\n  GET /api/data/v9.2/RetrieveRecordChangeHistory(Target=@t)?@t={'@odata.id':'cnt_servicerequests(<guid>)'}\n\nStorage\n  Audit data is stored in Log capacity, separate from Database capacity. See usage in\n  admin centre > Resources > Capacity > Dataverse > Log.\n  Reduce it: set a retention period (old logs are deleted automatically), turn off auditing on noisy columns\n  such as last-synced timestamps, and delete logs by table, date or user from\n  Audit settings > Delete logs.\n\nWhat is and is not recorded\n  Recorded: create, update (changed columns only), delete, assign, share, role changes, user access when enabled.\n  Not recorded: reads of individual rows unless Read logs is on, changes while auditing was off,\n  values of columns with auditing disabled, file contents.\n\nPermissions\n  View Audit History and View Audit Summary are privileges on the security role (Core Records > Miscellaneous).",
+    "stepByStepInstructions": [
+      "Turn on auditing for the environment and choose a retention period.",
+      "Enable auditing on each business table.",
+      "Review columns and switch auditing off for noisy technical ones.",
+      "Grant View Audit History to the roles that need it.",
+      "Check a row's audit history after a test edit.",
+      "Monitor log capacity and adjust retention."
+    ],
+    "commonMistakes": [
+      "Enabling the table but not the environment setting, so nothing is recorded.",
+      "Keeping logs forever on high-volume tables.",
+      "Assuming changes made before auditing was enabled can be recovered.",
+      "Forgetting that the setting does not travel between environments unless the table is in the solution."
+    ],
+    "troubleshooting": [
+      "If Audit History is empty, check all three levels and that the change happened after auditing was enabled.",
+      "If users cannot see the Audit History tab, add the View Audit History privilege to their role.",
+      "If log capacity is growing fast, find the noisiest table in the audit summary and narrow its audited columns.",
+      "If RetrieveAuditDetails returns 403, the caller needs audit view privileges."
+    ],
+    "relatedPatterns": [
+      "create-audit-rows-for-status-changes",
+      "dataverse-trigger-filter-select-columns",
+      "create-a-tenant-settings-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Turn on Dataverse auditing and read change history",
+    "seoDescription": "Enable auditing at environment, table and column level, view who changed what on a row, read the audit log from a flow, and manage how long logs are kept.",
+    "primaryKeyword": "Dataverse audit history",
+    "secondaryKeywords": [
+      "Auditing",
+      "Audit History",
+      "Compliance",
+      "Change Tracking"
+    ],
+    "faqs": [
+      {
+        "question": "How do I see who changed a record in Dataverse?",
+        "answer": "Open the row in a model-driven app and choose Related, then Audit History. Auditing must be enabled for the environment, the table and the column."
+      },
+      {
+        "question": "Does Dataverse auditing use database storage?",
+        "answer": "No. Audit logs use log capacity, which is measured separately."
+      },
+      {
+        "question": "Can I get the old value of a column in Power Automate?",
+        "answer": "Yes. Find the audit row for the change and call RetrieveAuditDetails to read the old and new values."
+      }
+    ]
+  },
+  {
+    "id": "pat-1561",
+    "slug": "dataverse-duplicate-detection-rules-keys",
+    "title": "Prevent duplicate rows in Dataverse with keys and detection rules",
+    "shortDescription": "Block exact duplicates with an alternate key, warn about likely duplicates with detection rules, and check before saving from a canvas app.",
+    "fullDescription": "Dataverse has two tools for duplicates. An alternate key makes a combination of columns unique and rejects a second row outright, from any source. Duplicate detection rules look for near matches and warn the user in model-driven apps. Canvas apps and flows should check for themselves before creating rows.",
+    "category": "Dataverse",
+    "subCategory": "Data quality",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Duplicates",
+      "Alternate Key",
+      "Duplicate Detection",
+      "Data Quality"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The same customer exists four times with slightly different spellings, and nobody knows which row holds the real history.",
+    "whenToUse": [
+      "Tables where a business identifier must be unique",
+      "Customer and contact data entered by many people",
+      "Imports that may contain rows already present"
+    ],
+    "whenNotToUse": [
+      "Keys on free-text names, which block legitimate rows and miss near matches",
+      "Detection rules as the only defence for data created by flows, since they are not enforced there by default"
+    ],
+    "formulaOrCode": "1. Hard block: alternate key\n   Table > Keys > New key > columns: cnt_RegistrationNumber   (or a combination: cnt_Email + cnt_Region)\n   A second row with the same values is rejected:\n     \"A record that has the attribute values ... already exists. The entity key ... requires that this set of\n      attributes contains unique values.\"  (error 0x80060892)\n   Blank values: rows where a key column is blank are not treated as duplicates of each other.\n\n2. Soft warning: duplicate detection rules (model-driven apps)\n   Admin centre > Environment > Settings > Data management > Duplicate detection settings: enable\n     \"When a record is created or updated\" and \"During data import\"\n   Duplicate detection rules > New\n     Base record type: Contact      Matching record type: Contact\n     Criteria:  Email   Exact match\n                Last Name  Same first characters: 5       First Name  Same first characters: 1\n     Exclude inactive matching records: Yes\n   Publish the rule. Up to 5 published rules per table. Rules are unpublished by solution import: republish.\n   Users see \"Duplicate records found\" and can save anyway or cancel.\n\n3. Canvas app: check before create\n   // btnSave.OnSelect\n   With(\n       { existing: LookUp(Contacts, Email = Lower(Trim(txtEmail.Text))) },\n       If(\n           !IsBlank(existing),\n           UpdateContext({ locDuplicate: existing, locShowDuplicate: true }),\n           IfError(\n               Patch(Contacts, Defaults(Contacts), { 'First Name': txtFirst.Text, 'Last Name': txtLast.Text, Email: Lower(Trim(txtEmail.Text)) });\n               Notify(\"Contact created\", NotificationType.Success),\n               Notify(If(\"already exists\" in FirstError.Message, \"A contact with these details already exists.\", FirstError.Message), NotificationType.Error)\n           )\n       )\n   )\n   // Dialog offers: open the existing row, or create anyway (if policy allows)\n\n4. Flow: upsert instead of create\n   Update a row with an alternate key as the Row ID creates or updates in one step, so reruns cannot duplicate.\n   To make detection rules apply to a Web API create, send header  MSCRM.SuppressDuplicateDetection: false\n\n5. Clean existing duplicates\n   Model-driven: Data management > Duplicate detection jobs > New: runs rules over existing rows.\n   Review results, select two rows > Merge (accounts, contacts, leads, cases): choose the master and which\n   values to keep. Child rows move to the master. The other row is deactivated.\n   Custom tables have no merge: reparent children with a flow, then deactivate the duplicate.\n\nNormalise before comparing\n   Store emails lower-case and trimmed. Keep a cleaned key column (cnt_NameKey = Upper letters and digits only)\n   and put the key or rule on that.",
+    "stepByStepInstructions": [
+      "Decide which columns identify a row uniquely.",
+      "Add an alternate key for identifiers that must never repeat.",
+      "Enable duplicate detection and publish rules for near matches.",
+      "Add a lookup check before create in canvas apps.",
+      "Change import flows to upsert by key.",
+      "Run a detection job on existing data and merge or deactivate duplicates."
+    ],
+    "commonMistakes": [
+      "Relying on detection rules for rows created by flows and canvas apps.",
+      "Putting a key on a column that already contains duplicates.",
+      "Forgetting to republish detection rules after a solution import.",
+      "Comparing emails without trimming and lower-casing."
+    ],
+    "troubleshooting": [
+      "If the key fails to activate, remove existing duplicates in the key columns first.",
+      "If users are never warned, check the rule is published and detection on create and update is enabled.",
+      "If the canvas check misses a duplicate, values differ by case or spaces. Normalise both sides.",
+      "If the create error text is unclear to users, catch it with IfError and show a plain message."
+    ],
+    "relatedPatterns": [
+      "dataverse-alternate-key-upsert-power-automate",
+      "handle-duplicate-flow-trigger-runs",
+      "validate-required-fields-before-patch"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Prevent duplicate rows in Dataverse with keys and detection rules",
+    "seoDescription": "Block exact duplicates with an alternate key, warn about likely duplicates with detection rules, and check before saving from a canvas app.",
+    "primaryKeyword": "Dataverse prevent duplicate records",
+    "secondaryKeywords": [
+      "Duplicates",
+      "Alternate Key",
+      "Duplicate Detection",
+      "Data Quality"
+    ],
+    "faqs": [
+      {
+        "question": "How do I stop duplicate records in Dataverse?",
+        "answer": "Create an alternate key on the columns that must be unique. Dataverse then rejects any row that repeats those values."
+      },
+      {
+        "question": "Do duplicate detection rules work in canvas apps?",
+        "answer": "No. They warn users in model-driven apps and during imports. In a canvas app, check with LookUp before creating the row."
+      },
+      {
+        "question": "How do I merge duplicates?",
+        "answer": "Select two accounts, contacts, leads or cases in a model-driven app and choose Merge. For custom tables, move child rows to the row you keep and deactivate the other."
+      }
+    ]
+  },
+  {
+    "id": "pat-1562",
+    "slug": "dataverse-bulk-delete-jobs",
+    "title": "Clean up Dataverse data with bulk delete jobs",
+    "shortDescription": "Remove old rows on a schedule with bulk deletion jobs: logs, completed system jobs, old emails and test data, without writing a flow.",
+    "fullDescription": "Deleting rows one by one from a flow is slow and uses API calls. A bulk deletion job runs inside Dataverse, takes a view-style filter, can repeat on a schedule and handles millions of rows. It is the standard tool for keeping storage under control.",
+    "category": "Dataverse",
+    "subCategory": "Governance",
+    "platform": [
+      "Dataverse",
+      "Power Platform"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Bulk Delete",
+      "Storage",
+      "Cleanup",
+      "System Jobs"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Database capacity is nearly full. Most of it is years of system job history, flow run logs and a custom log table nobody trims.",
+    "whenToUse": [
+      "Trimming log and history tables on a schedule",
+      "Removing test data before go-live",
+      "Storage clean-up of system jobs, emails with attachments and old audit-like tables"
+    ],
+    "whenNotToUse": [
+      "Business records under a retention obligation",
+      "Rows that should be archived rather than destroyed, where long-term retention policies fit better"
+    ],
+    "formulaOrCode": "Create a job\n  Power Platform admin centre > Environments > (env) > Settings > Data management > Bulk deletion > New\n  1. Look for: the table.  Add filter rows, or pick a saved view under \"Use saved view\".\n  2. Name the job. Start time.  Run this job after every: 7 | 30 | 90 | 180 | 365 days\n  3. Send an email when finished (optional).\n  The filter is re-evaluated on every run, so relative dates keep working.\n\nUseful filters\n  Custom log table        Created On    Older than X months: 3\n  System jobs             Status Reason equals Succeeded   AND   Completed On   Older than X days: 30\n                          System Job Type does not equal Bulk Delete\n  Workflow / process sessions   Status equals Completed  AND  Completed On older than 30 days\n  Emails with attachments Status Reason equals Completed  AND  Actual End older than X months: 12\n                          (check with the business first)\n  Import history          Import jobs: Created On older than 30 days\n  Flow run history        FlowRun table (cloud flow run history in Dataverse) has its own TTL setting:\n                          Organization table column FlowRunTimeToLiveInSeconds (default 28 days)\n  Test rows               Created By equals <tester>  AND  Created On on or after <project start>\n\nWhat happens\n  Rows are deleted as the job's owner, respecting cascade rules: children with Parental or Cascade Delete go too.\n  Restrict delete relationships cause failures for those rows.\n  Plug-ins and flows triggered on delete DO run. Disable noisy \"when a row is deleted\" flows if needed.\n  Deleted rows do not go to a recycle bin unless the environment's recycle bin (restore deleted rows)\n  feature is on, where they can be restored for the configured period.\n\nMonitor\n  Bulk deletion list shows Successes and Failures per run. Open a job for the failure reasons.\n  Storage figures in admin centre > Resources > Capacity update within about 24 hours.\n\nFrom a flow or script (BulkDelete action)\n  POST /api/data/v9.2/BulkDelete\n  {\n    \"QuerySet\": [ { \"@odata.type\": \"Microsoft.Dynamics.CRM.QueryExpression\", \"EntityName\": \"cnt_log\",\n        \"Criteria\": { \"FilterOperator\": \"And\", \"Conditions\": [\n          { \"AttributeName\": \"createdon\", \"Operator\": \"OlderThanXMonths\", \"Values\": [ { \"Value\": 3, \"Type\": \"System.Int32\" } ] } ] } } ],\n    \"JobName\": \"Trim cnt_log\", \"SendEmailNotification\": false, \"RecurrencePattern\": \"FREQ=DAILY;INTERVAL=7\",\n    \"StartDateTime\": \"2026-03-09T02:00:00Z\", \"ToRecipients\": [], \"CCRecipients\": []\n  }\n\nFind what is using space first\n  Admin centre > Resources > Capacity > (env) > details: top tables by size.\n  Common large tables: AsyncOperationBase (system jobs), ActivityPointerBase and attachments, AuditBase (log capacity),\n  WorkflowLogBase, custom log tables.",
+    "stepByStepInstructions": [
+      "Check which tables use the most storage.",
+      "Agree what may be deleted and after how long.",
+      "Create a bulk deletion job with a filter and a recurrence.",
+      "Run it first with a narrow filter and review successes and failures.",
+      "Widen the filter and leave the recurring job in place.",
+      "Record the jobs in the environment's support notes."
+    ],
+    "commonMistakes": [
+      "Deleting with a flow that loops over rows.",
+      "Forgetting cascade rules, so child rows vanish with their parents.",
+      "A filter with fixed dates that deletes nothing on later runs.",
+      "Running a first job across millions of rows in business hours."
+    ],
+    "troubleshooting": [
+      "If rows fail to delete, a Restrict relationship or a plug-in blocked them. The job detail lists the reason.",
+      "If storage does not drop, wait a day for capacity figures, and check the large table is the one you trimmed.",
+      "If the job never starts, the async service is busy or the start time is in the future.",
+      "If the wrong rows were deleted, restore from the environment recycle bin if enabled, or from a backup to a copy environment."
+    ],
+    "relatedPatterns": [
+      "create-a-capacity-monitoring-checklist",
+      "create-a-scheduled-maintenance-flow",
+      "dataverse-auditing-enable-read-history"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Clean up Dataverse data with bulk delete jobs",
+    "seoDescription": "Remove old rows on a schedule with bulk deletion jobs: logs, completed system jobs, old emails and test data, without writing a flow.",
+    "primaryKeyword": "Dataverse bulk delete job",
+    "secondaryKeywords": [
+      "Bulk Delete",
+      "Storage",
+      "Cleanup",
+      "System Jobs"
+    ],
+    "faqs": [
+      {
+        "question": "How do I delete many rows in Dataverse?",
+        "answer": "Create a bulk deletion job in the environment's Data management settings with a filter for the rows, and optionally a recurrence."
+      },
+      {
+        "question": "Can bulk delete jobs run on a schedule?",
+        "answer": "Yes. Set the job to run after every 7, 30, 90, 180 or 365 days. The filter is evaluated again each time."
+      },
+      {
+        "question": "Can I recover rows removed by a bulk delete?",
+        "answer": "Only if the environment's recycle bin feature is enabled, or by restoring a backup to another environment and copying the rows back."
+      }
+    ]
+  },
+  {
+    "id": "pat-1563",
+    "slug": "dataverse-date-only-time-zone-behavior",
+    "title": "Choose the right Dataverse date behavior to avoid off-by-one-day errors",
+    "shortDescription": "Pick User Local, Date Only or Time-Zone Independent for each date column, and handle the UTC values correctly in canvas apps and flows.",
+    "fullDescription": "A date column in Dataverse has a behavior setting that decides whether values shift with the user's time zone. Choosing the wrong one makes a birthday appear a day early for some users, or a deadline move when a flow reads it. The setting can be changed in only limited ways later, so it is worth getting right at creation.",
+    "category": "Dataverse",
+    "subCategory": "Columns",
+    "platform": [
+      "Dataverse",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Dates",
+      "Time Zones",
+      "Date Only",
+      "Columns"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A date entered as 9 March shows as 8 March in a report, in an email from a flow, or for a colleague in another country.",
+    "whenToUse": [
+      "Any new date or date and time column",
+      "Dates such as birthdays, contract dates and due dates that are the same everywhere",
+      "Timestamps of real events that should display in each user's local time"
+    ],
+    "whenNotToUse": [
+      "Changing behavior on a column full of data without planning a data fix",
+      "Storing dates as text to dodge the problem"
+    ],
+    "formulaOrCode": "Behaviors\n  User Local               Stored in UTC. Shown converted to each user's time zone.\n                           Use for moments in time: created on, meeting start, approval timestamp.\n  Date Only                Stored as a date with no time and no conversion. 9 March is 9 March for everyone.\n                           Use for birthdays, due dates, contract start and end, holidays.\n  Time-Zone Independent    Stored and shown exactly as entered, with a time, no conversion.\n                           Use for local opening hours, hotel check-in, \"08:00 at the site\".\n\nFormat vs behavior\n  Format \"Date only\" + behavior User Local = a UTC timestamp at the user's local midnight.\n  This is the classic source of off-by-one errors: a UK user's 9 March 00:00 (GMT) is 8 March 19:00 in New York.\n  For plain dates choose Format: Date only AND Behavior: Date Only.\n\nSet it\n  Column > Data type: Date and time or Date only > Advanced options > Time zone adjustment:\n    User local | Date only | Time zone independent\n  Changing later: User Local can be changed once to Date Only or Time-Zone Independent. Existing values are\n  not converted, so they keep their UTC value. Other changes are not allowed.\n\nCanvas app\n  // App setting per column on date pickers: DateTimeZone = DateTimeZone.Local (default) or DateTimeZone.UTC\n  // Date Only and Time-Zone Independent columns: Power Apps treats values as UTC.\n  // Show without shifting:\n  Text(ThisItem.'Contract Start', \"d mmm yyyy\", \"en-GB\")                 // Date Only columns display correctly\n  // If a Time-Zone Independent value appears shifted, add the offset back:\n  DateAdd(ThisItem.'Site Time', TimeZoneOffset(ThisItem.'Site Time'), TimeUnit.Minutes)\n  // Filter by a Date Only column\n  Filter('Service Requests', 'Due Date' = Today())\n  // Filter by a User Local date and time column for \"today\"\n  Filter('Service Requests', 'Created On' >= Today() && 'Created On' < DateAdd(Today(), 1, TimeUnit.Days))\n\nPower Automate\n  Date Only column returns  2026-03-09          Filter rows: cnt_duedate eq 2026-03-09\n                            write with formatDateTime(<value>, 'yyyy-MM-dd')\n  User Local column returns 2026-03-09T00:00:00Z (UTC)\n                            show with convertFromUtc(<value>, 'GMT Standard Time', 'd MMMM yyyy HH:mm')\n  \"Today\" for a Date Only column in a given zone:\n     convertFromUtc(utcNow(), 'GMT Standard Time', 'yyyy-MM-dd')\n  Overdue (Date Only): cnt_duedate lt @{convertFromUtc(utcNow(), 'GMT Standard Time', 'yyyy-MM-dd')}\n\nRepair values after switching a column from User Local to Date Only\n  Old rows hold UTC midnights of the entering user's zone. Run a one-off flow or script that converts each value\n  to that zone's local date and writes it back.\n\nPower BI and exports\n  User Local columns arrive as UTC. Convert in the model. Date Only columns need no conversion.",
+    "stepByStepInstructions": [
+      "Decide for each date whether it is a calendar date, a moment in time or a local wall-clock time.",
+      "Set format and behavior together when creating the column.",
+      "Use Date Only behavior for plain dates.",
+      "Convert User Local values to a named time zone in flows before showing them.",
+      "Test with two users in different time zones.",
+      "Plan a data fix before changing behavior on an existing column."
+    ],
+    "commonMistakes": [
+      "Date-only format left with User Local behavior.",
+      "Formatting a UTC value in a flow without converting it.",
+      "Comparing a date and time column with Today() using equals.",
+      "Assuming every user shares the maker's time zone."
+    ],
+    "troubleshooting": [
+      "If a date shows a day early, the column is User Local and the reader is west of the person who entered it. Switch to Date Only and repair the data.",
+      "If a flow's email shows midnight UTC, wrap the value in convertFromUtc.",
+      "If a canvas filter for today returns nothing, use a range from Today() to tomorrow for date and time columns.",
+      "If behavior cannot be changed, the column has already been changed once or is a system column. Create a new column and migrate."
+    ],
+    "relatedPatterns": [
+      "convert-time-zone-format-date-power-automate",
+      "delegation-safe-date-range-filter",
+      "create-a-request-table-schema"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Choose the right Dataverse date behavior to avoid off-by-one-day errors",
+    "seoDescription": "Pick User Local, Date Only or Time-Zone Independent for each date column, and handle the UTC values correctly in canvas apps and flows.",
+    "primaryKeyword": "Dataverse date only time zone independent",
+    "secondaryKeywords": [
+      "Dates",
+      "Time Zones",
+      "Date Only",
+      "Columns"
+    ],
+    "faqs": [
+      {
+        "question": "Why is my Dataverse date one day off?",
+        "answer": "The column uses User Local behavior, so the stored UTC value shifts across midnight for users in other time zones. Use Date Only behavior for calendar dates."
+      },
+      {
+        "question": "What is the difference between Date Only and Time-Zone Independent?",
+        "answer": "Date Only stores a date with no time. Time-Zone Independent stores a date and time and shows the same clock time to everyone."
+      },
+      {
+        "question": "Can I change a date column's behavior later?",
+        "answer": "A User Local column can be changed once to Date Only or Time-Zone Independent. Existing values are not converted."
+      }
+    ]
+  },
+  {
+    "id": "pat-1564",
+    "slug": "dataverse-status-reason-transitions",
+    "title": "Model a process with Dataverse Status and Status Reason",
+    "shortDescription": "Use the built-in Status and Status Reason columns for a row's lifecycle, add your own reasons, restrict allowed transitions and set both from apps and flows.",
+    "fullDescription": "Every Dataverse table has Status (active or inactive) and Status Reason (the detailed stage). Adding your stages as status reasons gives you views, filters and deactivation behavior for free, and optional transition rules stop rows jumping from New straight to Closed.",
+    "category": "Dataverse",
+    "subCategory": "Columns",
+    "platform": [
+      "Dataverse",
+      "Power Apps",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Status",
+      "Status Reason",
+      "State",
+      "Process"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A custom Stage choice column duplicates the built-in status, so rows are 'Closed' in one column and still Active in the other, and views show finished work.",
+    "whenToUse": [
+      "Any table with a lifecycle such as new, in progress, closed",
+      "When inactive rows should drop out of default views and lookups",
+      "When only certain stage changes are allowed"
+    ],
+    "whenNotToUse": [
+      "Several independent states on one row, which need their own choice columns",
+      "Stages that change often per customer, where a lookup to a stage table is more flexible"
+    ],
+    "formulaOrCode": "Columns\n  Status          statecode     0 Active, 1 Inactive (fixed for custom tables)\n  Status Reason   statuscode    your stages, each belonging to one Status\n    Active:    New (1), In Progress (100000001), Waiting (100000002)\n    Inactive:  Completed (2), Cancelled (100000003)\n\nAdd reasons\n  Table > Columns > Status Reason > Edit: pick Active or Inactive in the Status drop-down, then add choices.\n  Set the default reason for each status.\n\nRestrict transitions (optional)\n  Classic column editor (Switch to classic) > Status Reason > Edit Status Reason Transitions:\n  tick \"Enable Status Reason Transitions\", then for each reason list the reasons it may move to.\n    New          > In Progress, Cancelled\n    In Progress  > Waiting, Completed, Cancelled\n    Waiting      > In Progress, Cancelled\n  Any other change is rejected by Dataverse, whichever app or flow attempts it.\n\nCanvas app\n  // Set a reason within the same status\n  Patch('Service Requests', ThisItem, { 'Status Reason': 'Status Reason (Service Requests)'.'In Progress' })\n  // Close: set both columns together\n  Patch('Service Requests', ThisItem, {\n      Status: 'Status (Service Requests)'.Inactive,\n      'Status Reason': 'Status Reason (Service Requests)'.Completed\n  })\n  // Reopen\n  Patch('Service Requests', ThisItem, {\n      Status: 'Status (Service Requests)'.Active,\n      'Status Reason': 'Status Reason (Service Requests)'.'In Progress'\n  })\n  // Active rows only\n  Filter('Service Requests', Status = 'Status (Service Requests)'.Active)\n  // Offer only reasons valid for the row's status is not automatic in canvas: filter the list yourself\n  Filter(Choices('Service Requests'.'Status Reason'), Value in [ 'Status Reason (Service Requests)'.'In Progress', 'Status Reason (Service Requests)'.Waiting ])\n\nPower Automate\n  Update a row > Status: Inactive > Status Reason: Completed     (set both)\n  Filter rows:  statecode eq 0 and statuscode eq 100000001\n  Trigger: Select columns: statuscode       Filter rows: statuscode eq 2\n  Label:  triggerOutputs()?['body/statuscode@OData.Community.Display.V1.FormattedValue']\n\nBehavior you get for free\n  Inactive rows are read-only in model-driven forms, excluded from \"Active\" views and from lookups by default.\n  Deactivate and Activate buttons on the command bar set the default reasons.\n\nSpecial tables\n  Case, Opportunity, Quote and similar have extra states and must be closed with their own actions\n  (for example CloseIncident), not a plain update.",
+    "stepByStepInstructions": [
+      "List the stages and decide which are active and which inactive.",
+      "Add them as Status Reason values under the right Status.",
+      "Set default reasons for Active and Inactive.",
+      "Enable transitions if only some stage changes are valid.",
+      "Set Status and Status Reason together when closing or reopening rows.",
+      "Base default views and app filters on Status = Active."
+    ],
+    "commonMistakes": [
+      "Adding a separate Stage column that repeats Status Reason.",
+      "Setting a reason that belongs to the other Status without changing Status.",
+      "Renumbering or deleting reasons already in use.",
+      "Trying to close a Case with a plain update."
+    ],
+    "troubleshooting": [
+      "If the update fails with an invalid status code message, the reason does not belong to the status being set.",
+      "If a transition is refused, check the Status Reason Transitions list for the current reason.",
+      "If closed rows still appear in a gallery, filter on Status = Active.",
+      "If reasons differ between environments, the Status Reason column was not included in the solution."
+    ],
+    "relatedPatterns": [
+      "dataverse-choices-combo-box-canvas-app",
+      "patch-dataverse-lookup-and-choice-columns",
+      "create-a-request-table-schema"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Model a process with Dataverse Status and Status Reason",
+    "seoDescription": "Use the built-in Status and Status Reason columns for a row's lifecycle, add your own reasons, restrict allowed transitions and set both from apps and flows.",
+    "primaryKeyword": "Dataverse status reason transitions",
+    "secondaryKeywords": [
+      "Status",
+      "Status Reason",
+      "State",
+      "Process"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between Status and Status Reason in Dataverse?",
+        "answer": "Status is Active or Inactive. Status Reason is the detailed stage, and each reason belongs to one status."
+      },
+      {
+        "question": "How do I deactivate a Dataverse row from Power Apps?",
+        "answer": "Patch Status to Inactive together with an inactive Status Reason."
+      },
+      {
+        "question": "Can I limit which status changes are allowed?",
+        "answer": "Yes. Enable Status Reason Transitions on the column and list the allowed next reasons for each reason."
+      }
+    ]
+  },
+  {
+    "id": "pat-1565",
+    "slug": "dataverse-changeset-transaction-power-automate",
+    "title": "Save several Dataverse rows as one transaction in Power Automate",
+    "shortDescription": "Use Perform a changeset request so a group of Dataverse creates, updates and deletes all succeed or all roll back together.",
+    "fullDescription": "A flow that creates an order and its lines with separate actions can fail halfway and leave an order with missing lines. The Dataverse connector's changeset scope sends its actions as one transaction. If any action fails, none of them is saved.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Changeset",
+      "Transaction",
+      "Batch",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow fails on the third of five related writes. The first two are already saved, and someone has to clean up half-created data by hand.",
+    "whenToUse": [
+      "Creating a parent with its children",
+      "Moving value between rows, where both updates must happen",
+      "Any group of writes that makes no sense partly done"
+    ],
+    "whenNotToUse": [
+      "Long loops with hundreds of rows, which hold locks and can time out",
+      "Steps that need a value generated inside the same changeset, which is not available until it completes"
+    ],
+    "formulaOrCode": "Add: Microsoft Dataverse > Perform a changeset request\n  It is a scope. Inside it you may add only these Dataverse actions:\n    Add a new row | Update a row | Delete a row | Relate rows | Unrelate rows\n  They run together as one transaction when the scope completes.\n\nExample: order with two lines\n  Compose - OrderId        guid()          generate the ID first so the lines can reference it\n  Perform a changeset request\n    Add a new row (Orders)\n      Order (unique identifier field under advanced):  @{outputs('Compose_-_OrderId')}\n      Name:     @{triggerBody()?['orderRef']}\n    Add a new row (Order Lines)\n      Name:     @{triggerBody()?['lines'][0]?['item']}\n      Order:    cnt_orders(@{outputs('Compose_-_OrderId')})\n    Add a new row (Order Lines)\n      Name:     @{triggerBody()?['lines'][1]?['item']}\n      Order:    cnt_orders(@{outputs('Compose_-_OrderId')})\n\nRules\n  Actions inside cannot use each other's outputs (they are sent together). Generate GUIDs up front with guid().\n  No Apply to each, Condition or non-Dataverse actions inside the scope.\n  Outputs of the inner actions are not available afterwards. Read the rows back if you need generated values.\n  If one action fails, the whole changeset fails and nothing is saved.\n  Keep it small: tens of operations, not thousands. A changeset runs within the 2-minute transaction limit.\n\nA variable number of rows\n  The designer needs fixed actions, so for a dynamic list call the Web API $batch endpoint yourself:\n  HTTP with Microsoft Entra ID > Invoke an HTTP request\n    POST /api/data/v9.2/$batch\n    Content-Type: multipart/mixed;boundary=batch_1\n  Body (built with Select + join):\n    --batch_1\n    Content-Type: multipart/mixed;boundary=changeset_1\n\n    --changeset_1\n    Content-Type: application/http\n    Content-Transfer-Encoding: binary\n    Content-ID: 1\n\n    POST /api/data/v9.2/cnt_orders HTTP/1.1\n    Content-Type: application/json\n\n    {\"cnt_name\":\"ORD-1042\"}\n    --changeset_1\n    Content-Type: application/http\n    Content-Transfer-Encoding: binary\n    Content-ID: 2\n\n    POST /api/data/v9.2/cnt_orderlines HTTP/1.1\n    Content-Type: application/json\n\n    {\"cnt_name\":\"Laptop\",\"cnt_Order@odata.bind\":\"$1\"}\n    --changeset_1--\n    --batch_1--\n  \"$1\" refers to the row created by Content-ID 1, so no pre-generated GUID is needed. Up to 1,000 requests per batch.\n\nError handling\n  Put the changeset in Scope - Try. In Scope - Catch, log the error: nothing needs undoing.",
+    "stepByStepInstructions": [
+      "List the writes that must succeed or fail together.",
+      "Generate any IDs the rows share with guid() before the changeset.",
+      "Add Perform a changeset request and place the Dataverse write actions inside.",
+      "Reference the pre-generated IDs for lookups between the new rows.",
+      "Wrap the changeset in a try scope and log failures.",
+      "Force a failure in testing and confirm nothing was saved."
+    ],
+    "commonMistakes": [
+      "Expecting an action inside the changeset to use another's output.",
+      "Placing loops or conditions inside the scope.",
+      "Putting hundreds of operations in one changeset.",
+      "Assuming non-Dataverse steps, such as sending an email, roll back too."
+    ],
+    "troubleshooting": [
+      "If the designer refuses an action inside the scope, only the five Dataverse write actions are allowed.",
+      "If lines fail with a missing parent, set the parent's ID explicitly and reference the same GUID.",
+      "If the changeset times out, split the work into several smaller transactions.",
+      "If you need the autonumber of the new row, get the row by its GUID after the changeset."
+    ],
+    "relatedPatterns": [
+      "create-sharepoint-item-and-child-tasks",
+      "dataverse-set-lookup-odata-bind-power-automate",
+      "power-automate-try-catch-scope-error-handling"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Save several Dataverse rows as one transaction in Power Automate",
+    "seoDescription": "Use Perform a changeset request so a group of Dataverse creates, updates and deletes all succeed or all roll back together.",
+    "primaryKeyword": "Power Automate Dataverse changeset",
+    "secondaryKeywords": [
+      "Changeset",
+      "Transaction",
+      "Batch",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate roll back Dataverse changes if a step fails?",
+        "answer": "Yes, for actions placed inside Perform a changeset request. They are committed together or not at all."
+      },
+      {
+        "question": "Can I use a loop inside a changeset?",
+        "answer": "No. Only Dataverse add, update, delete, relate and unrelate actions are allowed. For a variable number of rows, call the Web API batch endpoint."
+      },
+      {
+        "question": "How do child rows reference a parent created in the same changeset?",
+        "answer": "Generate the parent's GUID beforehand with guid(), set it on the parent and use it in each child's lookup."
+      }
+    ]
+  },
+  {
+    "id": "pat-1566",
+    "slug": "dataverse-notes-attachments-power-automate",
+    "title": "Read and create Dataverse note attachments in Power Automate",
+    "shortDescription": "List the notes on a row, get each attachment's content, email or copy the files, and attach a new file as a note from a flow.",
+    "fullDescription": "Files added through the timeline in a model-driven app are stored as Notes (the annotation table). Each note holds a file name, a type and the content in base64, linked to its parent through the Regarding lookup. Flows can read these to send or archive files, and create them to attach generated documents.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Notes",
+      "Attachments",
+      "Annotations",
+      "Files"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Users attach evidence to a request in the app, and the approval email needs those files, but the flow cannot find them on the request row.",
+    "whenToUse": [
+      "Emailing files attached to a row",
+      "Copying attachments to SharePoint for retention",
+      "Attaching a generated PDF or received email attachment to a row"
+    ],
+    "whenNotToUse": [
+      "Very large files in bulk, since content is loaded into flow memory",
+      "Tables where attachments are disabled, which need a file column or SharePoint instead"
+    ],
+    "formulaOrCode": "List the notes for a row\n  List rows > Table: Notes\n    Filter rows:    _objectid_value eq @{triggerOutputs()?['body/cnt_servicerequestid']} and isdocument eq true\n    Select columns: annotationid,subject,filename,mimetype,filesize,createdon\n    Sort by:        createdon desc\n  Do not select documentbody in the list: it is large. Fetch it per note.\n\nGet one attachment's content\n  Get a row by ID > Table: Notes > Row ID: items('Apply_to_each')?['annotationid']\n    Select columns: filename,mimetype,documentbody\n  documentbody is base64 text.\n\nEmail all attachments\n  Initialize variable varAttachments (Array)\n  Apply to each note:\n    Get a row by ID (as above)\n    Append to array variable:\n      {\n        \"Name\": \"@{outputs('Get_note')?['body/filename']}\",\n        \"ContentBytes\": { \"$content-type\": \"@{outputs('Get_note')?['body/mimetype']}\", \"$content\": \"@{outputs('Get_note')?['body/documentbody']}\" }\n      }\n  Send an email (V2) > Attachments: switch to input entire array > @{variables('varAttachments')}\n\nCopy to SharePoint\n  Create file > File Name: filename > File Content: base64ToBinary(outputs('Get_note')?['body/documentbody'])\n\nCreate a note with a file\n  Add a new row > Table: Notes\n    Title (subject):                  Signed form\n    Description (notetext):           Uploaded by the approval flow\n    Is Document:                      Yes\n    File Name:                        signed-form.pdf\n    Mime Type:                        application/pdf\n    Document:                         @{base64(body('Get_file_content'))}        base64 text\n    Regarding (Service Requests):     cnt_servicerequests(@{variables('varRequestId')})\n  The Regarding field is listed once per table that has notes enabled. Fill the one for your table.\n  From an email trigger: Document = items('Apply_to_each')?['contentBytes'] (already base64).\n\nTrigger when a file is attached\n  When a row is added > Table: Notes > Filter rows: isdocument eq true and objecttypecode eq 'cnt_servicerequest'\n  Parent ID: triggerOutputs()?['body/_objectid_value']\n\nActivities\n  Email attachments live in the Attachments (activitymimeattachment) table: filter _objectid_value by the email's ID\n  and read body, filename, mimetype.\n\nSize\n  Maximum file size is an environment setting (Settings > Email > Maximum file size, default 5 MB, up to about 128 MB).\n  Large attachment content may be stored in file storage but is still returned through documentbody.",
+    "stepByStepInstructions": [
+      "Confirm the table has attachments (notes) enabled.",
+      "List notes filtered by the row's ID and isdocument.",
+      "Get each note's document body in a separate action.",
+      "Build an attachment array for email, or create files in SharePoint.",
+      "Create notes with Is Document, file name, mime type and base64 content to attach files.",
+      "Test with several files and a large file."
+    ],
+    "commonMistakes": [
+      "Selecting documentbody in List rows for many notes at once.",
+      "Passing binary content where base64 text is expected, or the reverse.",
+      "Filtering on the parent's name instead of _objectid_value.",
+      "Leaving Is Document off when creating a note with a file."
+    ],
+    "troubleshooting": [
+      "If the attachment arrives corrupt, check whether the target wants base64 text or binary and use base64() or base64ToBinary().",
+      "If no notes are returned, the files were added to a file column or a SharePoint document location, not as notes.",
+      "If the flow runs out of memory or times out, process one note at a time and skip files above a size threshold.",
+      "If Regarding cannot be set, enable attachments on the table or pick the correct Regarding field."
+    ],
+    "relatedPatterns": [
+      "dataverse-file-image-columns-canvas-app",
+      "attach-sharepoint-list-attachments-email-power-automate",
+      "dataverse-filter-rows-odata-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Read and create Dataverse note attachments in Power Automate",
+    "seoDescription": "List the notes on a row, get each attachment's content, email or copy the files, and attach a new file as a note from a flow.",
+    "primaryKeyword": "Power Automate Dataverse notes attachment",
+    "secondaryKeywords": [
+      "Notes",
+      "Attachments",
+      "Annotations",
+      "Files"
+    ],
+    "faqs": [
+      {
+        "question": "Where are Dataverse attachments stored?",
+        "answer": "Files added on the timeline are rows in the Notes table, linked to the parent row by the Regarding lookup, with the content in the documentbody column."
+      },
+      {
+        "question": "How do I get note attachments in Power Automate?",
+        "answer": "List rows from Notes filtered by _objectid_value and isdocument, then get each note by ID and read documentbody."
+      },
+      {
+        "question": "How do I attach a file to a Dataverse row from a flow?",
+        "answer": "Add a new row to Notes with Is Document set to Yes, a file name, a mime type, base64 content and Regarding set to the parent row."
+      }
+    ]
+  },
+  {
+    "id": "pat-1567",
+    "slug": "dataverse-dataflow-import-excel-upsert",
+    "title": "Load Excel and SharePoint data into Dataverse with dataflows",
+    "shortDescription": "Use a Power Query dataflow to import and refresh data in Dataverse tables, with alternate keys for upserts and lookups mapped by business key.",
+    "fullDescription": "Dataflows bring data into Dataverse with Power Query. They read Excel, SharePoint lists, SQL and many other sources, reshape the data and load it into tables on a schedule. With an alternate key on the target table, each refresh updates existing rows instead of duplicating them.",
+    "category": "Dataverse",
+    "subCategory": "Integration",
+    "platform": [
+      "Dataverse",
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Dataflows",
+      "Power Query",
+      "Import",
+      "Migration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Reference data is retyped by hand, or a migration flow loops through thousands of rows for hours and fails partway.",
+    "whenToUse": [
+      "One-off migrations from Excel or SharePoint lists",
+      "Scheduled refresh of reference data from another system",
+      "Loads of thousands to millions of rows"
+    ],
+    "whenNotToUse": [
+      "Event-driven integration that must happen within seconds, which suits flows",
+      "Complex per-row business logic better handled by a plug-in or flow"
+    ],
+    "formulaOrCode": "Create\n  make.powerapps.com > Dataflows > New dataflow > Start from blank > name it\n  Pick a source: Excel workbook (OneDrive or SharePoint URL), SharePoint Online list, SQL Server, Web API, Text/CSV...\n  Transform in Power Query, then Next > Map tables.\n\nPrepare the data in Power Query\n  Remove blank rows, trim text, set column types (date, whole number, decimal).\n  Text.Trim, Text.Upper for keys.        Table.Distinct on the key column to drop duplicates.\n  Choices: map labels to values with a small lookup or a conditional column\n    = if [Priority] = \"High\" then 100000002 else if [Priority] = \"Low\" then 100000000 else 100000001\n  Yes/No: true / false.\n  Dates: change type using locale when the file is day-first.\n\nMap tables\n  Load settings:  Load to existing table (recommended) | Load to new table | Do not load\n  Destination table: Customers\n  Select key:  the alternate key (cnt_ExternalId). With a key, refresh upserts: matching rows update, new rows insert.\n               Without a key every refresh inserts again.\n  \"Delete rows that no longer exist in the query output\": tick only when the query is the full source of truth.\n  Column mapping: auto map, then fix the rest.\n\nLookups\n  The target table's lookup appears as  Account.accountnumber  (table.key column) when the related table has an\n  alternate key. Map your source's account code to it. Dataverse resolves the row by key.\n  Load order matters: parents first (Accounts), then children (Contacts, Requests). Use separate queries in\n  the right order, or separate dataflows refreshed in sequence.\n\nOwner and status\n  Map ownerid by systemuser key columns where offered, or set owners afterwards with a flow.\n  statecode and statuscode can be mapped with their numeric values.\n\nRefresh\n  Refresh manually or automatically (for example daily at 02:00). On-premises sources need a data gateway.\n  Dataflow > ... > Show refresh history > download the log for row-level errors.\n  Trigger a flow when a refresh completes: Dataflows connector > When a dataflow refresh completes.\n\nALM\n  Create the dataflow inside a solution to move it between environments. Connections are re-created per environment.\n\nPerformance and limits\n  Standard dataflows load through the Dataverse API: tens of thousands of rows per hour is typical.\n  Turn off plug-ins and flows on the target tables during a big migration, or expect them to fire per row.\n  For millions of rows, split by date range or use incremental refresh on a modified-date column.",
+    "stepByStepInstructions": [
+      "Create alternate keys on the target tables.",
+      "Create a dataflow and connect to the source.",
+      "Clean and type the data in Power Query.",
+      "Map each query to its table, choose the key and map lookups by key.",
+      "Load parent tables before child tables.",
+      "Run a refresh, read the refresh history and fix row errors.",
+      "Schedule the refresh if the data should stay in step."
+    ],
+    "commonMistakes": [
+      "Loading without a key, so each refresh duplicates every row.",
+      "Mapping choice labels as text.",
+      "Loading children before their parents exist.",
+      "Ticking delete-missing-rows on a partial extract."
+    ],
+    "troubleshooting": [
+      "If rows fail with a lookup error, the parent's key value is missing or differs by spaces or case.",
+      "If dates shift, set the column type with the right locale and check the target column's date behavior.",
+      "If refresh is slow, disable real-time flows and plug-ins on the table for the load.",
+      "If the key cannot be selected, it is not Active yet or the query has duplicate key values."
+    ],
+    "relatedPatterns": [
+      "dataverse-alternate-key-upsert-power-automate",
+      "create-a-sharepoint-to-dataverse-migration-path",
+      "dataverse-duplicate-detection-rules-keys"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Load Excel and SharePoint data into Dataverse with dataflows",
+    "seoDescription": "Use a Power Query dataflow to import and refresh data in Dataverse tables, with alternate keys for upserts and lookups mapped by business key.",
+    "primaryKeyword": "Dataverse dataflow import Excel",
+    "secondaryKeywords": [
+      "Dataflows",
+      "Power Query",
+      "Import",
+      "Migration"
+    ],
+    "faqs": [
+      {
+        "question": "How do I import Excel data into Dataverse?",
+        "answer": "Create a dataflow, connect to the workbook, shape the data in Power Query and map it to the table. Choose an alternate key so later refreshes update rows."
+      },
+      {
+        "question": "Do dataflows update existing rows or create duplicates?",
+        "answer": "They update existing rows when you select a key on the destination table. Without a key, every refresh inserts new rows."
+      },
+      {
+        "question": "How do I map lookup columns in a dataflow?",
+        "answer": "Give the related table an alternate key. The lookup then appears as table.keycolumn in the mapping, and you map your source code to it."
+      }
+    ]
+  },
+  {
+    "id": "pat-1568",
+    "slug": "dataverse-formatted-values-labels-power-automate",
+    "title": "Get choice labels and lookup names from Dataverse in Power Automate",
+    "shortDescription": "Read the label of a choice, the name behind a lookup and the formatted text of dates and currency from the OData annotations on every Dataverse row.",
+    "fullDescription": "A Dataverse row in a flow shows a choice as a number and a lookup as a GUID. The labels are in the same response, as annotations beside each value. Reading them with an expression avoids extra actions and keeps emails and documents readable.",
+    "category": "Dataverse",
+    "subCategory": "Power Automate",
+    "platform": [
+      "Dataverse",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Formatted Values",
+      "Choices",
+      "Lookup",
+      "Expressions"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "The notification email says 'Priority: 100000002' and 'Customer: 0f8fad5b-d9cb...', so the flow adds a Switch for every choice and a Get a row for every lookup.",
+    "whenToUse": [
+      "Emails, Teams messages and documents built from Dataverse rows",
+      "Showing owner, customer or status names",
+      "Avoiding extra lookups inside loops"
+    ],
+    "whenNotToUse": [
+      "Logic that branches on a value, which should compare the number so it survives label changes",
+      "Multi-language scenarios needing a specific language, since the label follows the connection user's language"
+    ],
+    "formulaOrCode": "The annotation name\n  @OData.Community.Display.V1.FormattedValue          appended to the column's property name\n\nChoice label\n  triggerOutputs()?['body/cnt_priority@OData.Community.Display.V1.FormattedValue']                High\n  Value: triggerOutputs()?['body/cnt_priority']                                                    100000002\n\nStatus and status reason\n  triggerOutputs()?['body/statecode@OData.Community.Display.V1.FormattedValue']                   Active\n  triggerOutputs()?['body/statuscode@OData.Community.Display.V1.FormattedValue']                  In Progress\n\nLookup name (note the _value form)\n  triggerOutputs()?['body/_cnt_account_value@OData.Community.Display.V1.FormattedValue']          Contoso Ltd\n  triggerOutputs()?['body/_ownerid_value@OData.Community.Display.V1.FormattedValue']              Dana Lee\n  GUID: triggerOutputs()?['body/_cnt_account_value']\n  Which table a polymorphic lookup points at:\n  triggerOutputs()?['body/_ownerid_value@Microsoft.Dynamics.CRM.lookuplogicalname']               systemuser | team\n\nYes/No, dates, numbers, currency\n  ...['body/cnt_isurgent@OData.Community.Display.V1.FormattedValue']                              Yes\n  ...['body/cnt_duedate@OData.Community.Display.V1.FormattedValue']                               09/03/2026 (user format)\n  ...['body/cnt_amount@OData.Community.Display.V1.FormattedValue']                                £1,250.00\n\nMulti-select choice\n  ...['body/cnt_systems@OData.Community.Display.V1.FormattedValue']                               CRM; Finance\n  Values: ...['body/cnt_systems']                                                                 100000000,100000002\n\nInside a loop over List rows\n  items('Apply_to_each')?['cnt_priority@OData.Community.Display.V1.FormattedValue']\nIn a Select action (Map, text mode)\n  item()?['_cnt_account_value@OData.Community.Display.V1.FormattedValue']\n\nFrom Get a row by ID\n  outputs('Get_request')?['body/cnt_priority@OData.Community.Display.V1.FormattedValue']\n\nIn the designer\n  Dynamic content does not list formatted values for every column. Type the expression in the expression editor.\n  Trick: add the plain dynamic value, switch to code view (or peek code) to copy the property name, then append\n  the annotation.\n\nIf annotations are missing\n  They are returned by the Dataverse connector by default. With raw HTTP calls add the header\n  Prefer: odata.include-annotations=\"*\"\n\nAll labels of a choice (for a mapping table)\n  GET /api/data/v9.2/EntityDefinitions(LogicalName='cnt_servicerequest')/Attributes(LogicalName='cnt_priority')\n      /Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=OptionSet($select=Options)",
+    "stepByStepInstructions": [
+      "Find the column's logical name, and for lookups its _name_value form.",
+      "Append @OData.Community.Display.V1.FormattedValue to the property path.",
+      "Enter it in the expression editor.",
+      "Use the label for display and keep the numeric value for conditions.",
+      "Wrap in coalesce() for columns that may be empty.",
+      "Remove Switch and Get a row actions that only fetched labels."
+    ],
+    "commonMistakes": [
+      "Building a Switch to turn choice numbers into labels.",
+      "Branching on labels, which break when someone renames an option.",
+      "Forgetting _value when asking for a lookup's formatted value.",
+      "Expecting the label in a language other than the connection user's."
+    ],
+    "troubleshooting": [
+      "If the expression returns null, check the exact property name in the action's raw outputs.",
+      "If a lookup's name is blank, the lookup is empty on that row.",
+      "If the label is in the wrong language, change the connection user's Dataverse language or map values yourself.",
+      "If an HTTP call returns no annotations, add the Prefer header."
+    ],
+    "relatedPatterns": [
+      "dataverse-filter-rows-odata-power-automate",
+      "dataverse-expand-related-rows-power-automate",
+      "power-automate-email-html-table"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Get choice labels and lookup names from Dataverse in Power Automate",
+    "seoDescription": "Read the label of a choice, the name behind a lookup and the formatted text of dates and currency from the OData annotations on every Dataverse row.",
+    "primaryKeyword": "Power Automate Dataverse choice label",
+    "secondaryKeywords": [
+      "Formatted Values",
+      "Choices",
+      "Lookup",
+      "Expressions"
+    ],
+    "faqs": [
+      {
+        "question": "How do I get the text of a Dataverse choice in Power Automate?",
+        "answer": "Use the formatted value annotation: body/columnname@OData.Community.Display.V1.FormattedValue."
+      },
+      {
+        "question": "How do I get the name of a lookup without another action?",
+        "answer": "Read body/_lookupname_value@OData.Community.Display.V1.FormattedValue from the same row."
+      },
+      {
+        "question": "Should conditions use the label or the value?",
+        "answer": "Use the numeric value. Labels can be renamed or translated."
+      }
+    ]
+  },
+  {
+    "id": "pat-1569",
+    "slug": "dataverse-current-user-row-canvas-app",
+    "title": "Get the current user's Dataverse row, team and business unit in a canvas app",
+    "shortDescription": "Find the signed-in user's row in the Users table once, then use it to filter 'my' rows, set owners and read their business unit, manager and teams.",
+    "fullDescription": "User() gives a name and email. Dataverse works with the user's row in the Users table. Looking that row up once at start gives the app a record it can compare with Owner and other user lookups in delegable filters, and a way to read the user's business unit, manager and team memberships.",
+    "category": "Dataverse",
+    "subCategory": "Power Apps",
+    "platform": [
+      "Dataverse",
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Current User",
+      "Users Table",
+      "Business Unit",
+      "Named Formulas"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "Filters for 'my requests' compare emails through lookups and show delegation warnings, or the app cannot tell which business unit the user belongs to.",
+    "whenToUse": [
+      "'My rows' galleries and counts",
+      "Defaulting owner or requester lookups to the current user",
+      "Tailoring the app by business unit, manager or team"
+    ],
+    "whenNotToUse": [
+      "Security decisions enforced only in the app, which belong in roles and ownership",
+      "Guest or external users without a row in the environment's Users table"
+    ],
+    "formulaOrCode": "// App.Formulas: evaluated once, when first used\nnfMe = LookUp(Users, 'Primary Email' = Lower(User().Email));\n// Alternative that does not depend on email matching (object ID from Entra):\n// nfMe = LookUp(Users, 'Azure AD Object ID' = GUID(User().EntraObjectId));\n\nnfMyBusinessUnit = nfMe.'Business Unit';\nnfMyManager      = nfMe.Manager;\nnfMyTeams        = nfMe.'Teams (teammembership_association)';\n\nMy rows (delegable: compares a lookup with a record)\n  Filter('Service Requests', Owner = nfMe)\n  Filter('Service Requests', 'Requested By' = nfMe && Status = 'Status (Service Requests)'.Active)\n  Filter('Service Requests', 'Created By' = nfMe)\n  CountRows(Filter('Service Requests', Owner = nfMe))\n\nDefault a user lookup on a new row\n  Patch('Service Requests', Defaults('Service Requests'), { Subject: txtSubject.Text, 'Requested By': nfMe })\n  // Form data card for the lookup: DefaultSelectedItems\n  If(frmRequest.Mode = FormMode.New, [nfMe], [Parent.Default])\n\nBusiness unit\n  lblBu.Text : nfMyBusinessUnit.Name\n  // Rows owned by anyone in my business unit\n  Filter('Service Requests', 'Owning Business Unit' = nfMyBusinessUnit)\n\nManager and direct reports\n  lblManager.Text : nfMyManager.'Full Name'\n  Filter(Users, Manager = nfMe)\n\nTeams\n  // Am I in the team?\n  nfIsTier2 = !IsBlank(LookUp(nfMyTeams, 'Team Name' = \"Support Tier 2\"));\n  // Rows owned by one of my teams (small team lists)\n  Filter('Service Requests', Owner = LookUp(Teams, 'Team Name' = \"Support Tier 2\"))\n\nViews that already mean \"mine\"\n  Filter('Service Requests', 'Service Requests (Views)'.'My Open Requests')\n  A view with the condition \"Owner equals current user\" is evaluated on the server for whoever runs it.\n\nUser picker for assigning work\n  // cmbAssignee.Items\n  Filter(Users, 'Is Disabled' = false, StartsWith('Full Name', cmbAssignee.SearchText))\n  Patch('Service Requests', ThisItem, { Owner: cmbAssignee.Selected })\n\nNotes\n  Named formulas need the Users table added as a data source.\n  User().EntraObjectId is available in current Power Apps versions. If it is not, use the email match.",
+    "stepByStepInstructions": [
+      "Add the Users table as a data source.",
+      "Define a named formula that looks up the current user's row.",
+      "Filter galleries by comparing owner or user lookups with that record.",
+      "Use the record to default lookups on new rows.",
+      "Read business unit, manager and teams from the record as needed.",
+      "Test with a user whose email differs in case from their sign-in name."
+    ],
+    "commonMistakes": [
+      "Comparing Owner.'Primary Email' with User().Email inside Filter.",
+      "Looking the user up in every formula instead of once.",
+      "Assuming email always matches. Guests and renamed accounts can differ.",
+      "Using the result for security instead of roles."
+    ],
+    "troubleshooting": [
+      "If nfMe is blank, the user has no enabled row in this environment or the email differs. Use the Entra object ID match.",
+      "If the filter shows a delegation warning, compare the lookup with the record, not with text.",
+      "If team checks are slow, load nfMyTeams once and test against it locally.",
+      "If the Users table is not listed, search for Users in the Dataverse tables list. Its logical name is systemuser."
+    ],
+    "relatedPatterns": [
+      "check-dataverse-security-role-in-canvas-app",
+      "use-named-formulas-for-app-constants",
+      "dataverse-views-in-canvas-app-filter"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Get the current user's Dataverse row, team and business unit in a canvas app",
+    "seoDescription": "Find the signed-in user's row in the Users table once, then use it to filter 'my' rows, set owners and read their business unit, manager and teams.",
+    "primaryKeyword": "Power Apps current user Dataverse systemuser",
+    "secondaryKeywords": [
+      "Current User",
+      "Users Table",
+      "Business Unit",
+      "Named Formulas"
+    ],
+    "faqs": [
+      {
+        "question": "How do I get the current user's Dataverse record in Power Apps?",
+        "answer": "Look it up in the Users table by email or Entra object ID: LookUp(Users, 'Azure AD Object ID' = GUID(User().EntraObjectId))."
+      },
+      {
+        "question": "How do I filter Dataverse rows to the current user?",
+        "answer": "Compare the owner or user lookup with the current user's record, for example Filter(Table, Owner = nfMe). This delegates."
+      },
+      {
+        "question": "How do I get the user's business unit?",
+        "answer": "Read the Business Unit lookup from the user's row: nfMe.'Business Unit'.Name."
+      }
+    ]
   }
 ]
