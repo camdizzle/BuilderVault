@@ -12706,5 +12706,1243 @@
         "answer": "Keep it in its own small solution so a failed deployment of the main solution cannot disable the check."
       }
     ]
+  },
+  {
+    "id": "pat-1590",
+    "slug": "managed-environments-sharing-limits-weekly-digest",
+    "title": "Turn on Managed Environments and set sharing limits",
+    "shortDescription": "Enable Managed Environments on an environment, cap how widely canvas apps and flows can be shared, and switch on the weekly usage digest and solution checker enforcement.",
+    "fullDescription": "Managed Environments is a set of admin controls applied per environment. It adds sharing limits, a weekly digest of app and flow usage, solution checker enforcement on import, maker welcome content and access to pipelines as a target. Each user of a managed environment needs a premium licence, so it is turned on deliberately, not everywhere.",
+    "category": "Power Platform Admin",
+    "subCategory": "Managed Environments",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Managed Environments",
+      "Sharing Limits",
+      "Governance",
+      "Admin Center"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A canvas app in production is shared with Everyone by its maker, and admins only find out when a support call arrives from a department that was never meant to use it.",
+    "whenToUse": [
+      "Production and test environments under release control",
+      "Environments where sharing needs a ceiling",
+      "Organisations that want weekly usage figures without building reports"
+    ],
+    "whenNotToUse": [
+      "Environments used by people on Microsoft 365 seeded licences only, who would lose access to apps",
+      "Treating it as a replacement for DLP policies and security roles"
+    ],
+    "formulaOrCode": "Enable\n  Power Platform admin center > Manage > Environments > select the environment > Enable Managed Environments\n  PowerShell:\n    Install-Module Microsoft.PowerApps.Administration.PowerShell\n    Add-PowerAppsAccount\n    $gov = [pscustomobject]@{ protectionLevel = \"Standard\" }\n    Set-AdminPowerAppEnvironmentGovernanceConfiguration -EnvironmentName <environment id> -UpdatedGovernanceConfiguration $gov\n\nLicensing check before enabling\n  Every active user of apps, flows and Copilot Studio agents in a managed environment needs a standalone\n  premium licence (Power Apps Premium, per app, Power Automate Premium, or Dynamics 365).\n  Users on Microsoft 365 licences alone get a licence prompt.\n\nSettings (Edit Managed Environments)\n  Limit sharing\n    Canvas apps:      Exclude sharing with security groups        On for personal-productivity environments\n                      Limit total individuals who can be shared to: 20\n    Solution-aware cloud flows:  Don't allow sharing / limit to a number\n    Copilot Studio agents:       limit editors and viewers\n    Applies to new shares. Existing shares stay until removed.\n  Solution checker enforcement\n    None | Warn | Block          Block stops imports with critical issues. Start at Warn.\n    Exclude specific rules if one produces accepted findings.\n  Usage insights\n    Include insights for this environment in the weekly email digest: On\n    Recipients: tenant and environment admins by default. Add others under Tenant settings > Weekly digest.\n  Maker welcome content\n    A short message and a \"Learn more\" link shown when a maker first opens Power Apps in the environment.\n    Example: \"This is Production. Changes arrive through pipelines only. Build in your Developer environment.\"\n  Data policies\n    Shows the DLP policies applied to this environment.\n\nSuggested values by environment type\n                      Sharing limit        Checker     Digest\n  Developer/personal  No groups, max 5     None        Off\n  Shared Dev          No limit             Warn        On\n  Test                No limit             Warn        Off\n  Production          Groups allowed       Block       On\n\nWhat sharing limits do not cover\n  Model-driven apps (controlled by security roles), non-solution flows' run-only sharing, and SharePoint\n  permissions behind an app.\n\nRelated controls unlocked\n  Power Platform pipelines targets, environment groups and rules, IP firewall and IP cookie binding,\n  customer-managed keys, extended backup retention, Block unmanaged customizations.\n\nTurn off\n  Edit Managed Environments > disable. Remove dependent settings first (pipelines targets, IP firewall).",
+    "stepByStepInstructions": [
+      "Confirm users of the environment hold premium licences.",
+      "Enable Managed Environments on the environment.",
+      "Set sharing limits appropriate to the environment's purpose.",
+      "Set solution checker enforcement to Warn, then Block once imports are clean.",
+      "Turn on the weekly digest and add recipients.",
+      "Write maker welcome content that states the environment's rules."
+    ],
+    "commonMistakes": [
+      "Enabling on the default environment without checking licences.",
+      "Expecting sharing limits to remove existing shares.",
+      "Going straight to Block and stopping a release.",
+      "Assuming it restricts model-driven app access."
+    ],
+    "troubleshooting": [
+      "If users see a licence prompt after enabling, assign premium licences or disable the setting.",
+      "If an import is blocked, read the solution checker results on the import and fix or exclude the rule.",
+      "If the digest does not arrive, check recipients and that insights are enabled for the environment.",
+      "If a maker cannot share with a group, the group exclusion is on. Share with individuals or relax the rule."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "dlp-policy-connector-groups",
+      "solution-checker-quality-gate-pac-cli"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Turn on Managed Environments and set sharing limits",
+    "seoDescription": "Enable Managed Environments on an environment, cap how widely canvas apps and flows can be shared, and switch on the weekly usage digest and solution checker enforcement.",
+    "primaryKeyword": "Power Platform Managed Environments sharing limits",
+    "secondaryKeywords": [
+      "Managed Environments",
+      "Sharing Limits",
+      "Governance",
+      "Admin Center"
+    ],
+    "faqs": [
+      {
+        "question": "What are Managed Environments in Power Platform?",
+        "answer": "A per-environment set of governance features including sharing limits, usage insights, solution checker enforcement and pipelines."
+      },
+      {
+        "question": "Do Managed Environments need extra licences?",
+        "answer": "Users active in a managed environment need standalone premium licences. Microsoft 365 seeded rights are not enough."
+      },
+      {
+        "question": "Can I limit who a canvas app is shared with?",
+        "answer": "Yes. Sharing limits can block sharing with security groups and cap the number of individuals."
+      }
+    ]
+  },
+  {
+    "id": "pat-1591",
+    "slug": "environment-security-group-restrict-access",
+    "title": "Restrict who can enter an environment with a security group",
+    "shortDescription": "Attach a Microsoft Entra security group to an environment so only its members are added as users, and understand what that does and does not control.",
+    "fullDescription": "Without a security group, every licensed user in the tenant can be added to a Dataverse environment and appears in its user list. Associating a group limits environment membership to that group. It is the first gate. Security roles then decide what members can do.",
+    "category": "Power Platform Admin",
+    "subCategory": "Environment access",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Security Groups",
+      "Environment Access",
+      "Entra ID",
+      "Admin Center"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A production environment lists thousands of enabled users who have nothing to do with the app, and any of them could be given a role by mistake or reach data through a shared app.",
+    "whenToUse": [
+      "Production, test and sandbox environments with a defined audience",
+      "Separating departments or projects by environment",
+      "Keeping user lists short and reviewable"
+    ],
+    "whenNotToUse": [
+      "The default environment, which cannot be restricted by a security group",
+      "Using group membership as the only control, with broad security roles inside"
+    ],
+    "formulaOrCode": "Create the group\n  Microsoft Entra admin center > Groups > New group\n    Type: Security        Name: PP-RequestHub-Prod-Users        Membership: Assigned (or Dynamic)\n  Nested groups are not evaluated: members must be direct members.\n  Microsoft 365 groups also work. One group per environment.\n\nAssociate it\n  Power Platform admin center > Environments > select > Edit (Details) > Security group > choose the group > Save\n  New environment: choose the group in the creation dialog.\n  Clearing the field later removes the restriction.\n\nWhat changes\n  Members with a licence: added to the environment as enabled users (on first access or by sync).\n  Non-members already in the environment: disabled. Their records and ownership remain.\n  Removing someone from the group disables them in the environment.\n  Tenant-level admins (Power Platform admin, Dynamics 365 admin) can still enter regardless.\n  Service principals (application users) are not governed by the group.\n\nWhat it does not do\n  Give any permission. Members still need a security role to see or do anything.\n  Restrict canvas apps that use only non-Dataverse connectors from being shared, although only environment\n  users can open apps in the environment.\n  Apply to the default environment.\n\nSpeed up access for a new member\n  Environment > Settings > Users + permissions > Users > Add user > search > Add        forces the sync\n  Flow: Power Platform for Admins > Force Sync user (environment, user object id)\n  PowerShell: Add-AdminPowerAppsSyncUser -EnvironmentName <id> -PrincipalObjectId <user object id>\n\nAssign roles by team instead of per user\n  Settings > Teams > Create team\n    Team type: Microsoft Entra ID Security Group        Group: PP-RequestHub-Prod-Users\n    Membership type: Members\n  Manage security roles on the team: Basic User + Request Hub User.\n  Members inherit the roles when they sign in. With \"Member's privilege inheritance: Direct User\" set on\n  the role, they can own rows personally.\n\nSuggested groups per environment\n  PP-<App>-<Env>-Users        environment access + user role through the group team\n  PP-<App>-<Env>-Admins       second group team with the admin app role\n  Makers in Dev: PP-<App>-Dev-Makers with Environment Maker.\n  The environment's security group must contain all of these people, so either nest by membership rules\n  (dynamic group) or make the Users group the superset.\n\nReview\n  Entra access reviews on the group every quarter. Removing a member removes environment access at next sync.",
+    "stepByStepInstructions": [
+      "Create a security group for the environment's intended users.",
+      "Associate the group with the environment in the admin center.",
+      "Create a group team linked to the same group and give it security roles.",
+      "Add members to the group and force a sync for anyone who needs access immediately.",
+      "Check the user list for people disabled by the change.",
+      "Review group membership on a schedule."
+    ],
+    "commonMistakes": [
+      "Using nested groups and wondering why members get no access.",
+      "Assuming group membership grants permissions.",
+      "Applying a group to an environment in use without warning existing users.",
+      "Assigning roles one user at a time."
+    ],
+    "troubleshooting": [
+      "If a member cannot get in, check they are a direct member, licensed and synced.",
+      "If a user became disabled, they are not in the group. Add them or accept the removal.",
+      "If an app shows no data, the user has environment access but no security role.",
+      "If the option is missing, the environment is the default one or has no Dataverse database."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "dataverse-team-ownership-access-teams",
+      "create-a-security-role-matrix"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Restrict who can enter an environment with a security group",
+    "seoDescription": "Attach a Microsoft Entra security group to an environment so only its members are added as users, and understand what that does and does not control.",
+    "primaryKeyword": "Power Platform environment security group",
+    "secondaryKeywords": [
+      "Security Groups",
+      "Environment Access",
+      "Entra ID",
+      "Admin Center"
+    ],
+    "faqs": [
+      {
+        "question": "How do I restrict access to a Power Platform environment?",
+        "answer": "Associate a Microsoft Entra security group with the environment. Only its members are enabled as users."
+      },
+      {
+        "question": "Does adding someone to the group give them access to data?",
+        "answer": "No. They also need a security role, assigned directly or through a team."
+      },
+      {
+        "question": "Can I put a security group on the default environment?",
+        "answer": "No. The default environment always includes every licensed user in the tenant."
+      }
+    ]
+  },
+  {
+    "id": "pat-1592",
+    "slug": "default-environment-governance-routing",
+    "title": "Bring the default environment under control",
+    "shortDescription": "Rename the default environment, restrict its connectors, route new makers to personal developer environments and move important apps out of it.",
+    "fullDescription": "Every tenant has a default environment that all licensed users can build in and that cannot be deleted or restricted by a security group. Left alone it fills with experiments, business-critical apps and abandoned flows side by side. A few settings turn it into a clearly labelled personal productivity space and send real projects elsewhere.",
+    "category": "Power Platform Admin",
+    "subCategory": "Environment strategy",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Default Environment",
+      "Environment Routing",
+      "DLP",
+      "Governance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "Half a day",
+    "problemStatement": "The default environment holds hundreds of apps from every department, some critical, most unowned, all sharing one Dataverse database and one set of connectors.",
+    "whenToUse": [
+      "Any tenant where makers build in the default environment",
+      "Starting a governance programme",
+      "Before a licensing or capacity review"
+    ],
+    "whenNotToUse": [
+      "Blocking the default environment entirely, which pushes makers to unmanaged shadow tools",
+      "Moving apps without telling their owners and users"
+    ],
+    "formulaOrCode": "1. Rename it\n   Admin center > Environments > the default environment > Edit > Name: \"Personal Productivity (default)\"\n   The label \"(default)\" stays. The name tells makers what it is for.\n\n2. Apply a strict DLP policy scoped to it\n   Policy: \"Default environment\"        Scope: Add multiple environments > only the default\n   Business: SharePoint, Office 365 Outlook, Office 365 Users, Teams, OneDrive for Business, Approvals,\n             Excel Online (Business), Planner, Notifications, Forms\n   Blocked:  HTTP, HTTP with Microsoft Entra ID, custom connectors (pattern rule *), social and consumer\n             connectors, SQL Server and other premium data sources\n   Non-business: the remainder\n   Exclude the default environment from the broader tenant policy so the two do not conflict in unexpected ways.\n\n3. Route makers to their own environments\n   Admin center > Manage > Tenant settings > Environment routing: On\n     Applies to: all makers, or a security group for a phased start\n     Environment group: assign new developer environments to a group with your rules\n   Effect: a maker opening make.powerapps.com lands in a personal Developer environment that is created for\n   them, instead of the default. Developer environments created by routing are Managed Environments\n   and do not count against the tenant's Dataverse capacity.\n\n4. Limit who is an admin and who can create\n   Tenant settings > Developer environment assignments: Everyone\n   Tenant settings > Production environment assignments: Only specific admins\n   Tenant settings > Trial environment assignments: Only specific admins\n   Default environment > Settings > Users + permissions: review holders of System Administrator.\n   Everyone has Environment Maker in the default environment. This cannot be removed from the tenant as a\n   whole, but sharing limits can be applied if it is a Managed Environment.\n\n5. Limit sharing (if you enable Managed Environments on the default)\n   Exclude sharing with security groups: On        Limit individuals: 10 to 20\n   Check licensing first: users of apps in a managed environment need premium licences.\n\n6. Find what matters\n   Inventory: Get-AdminPowerApp -EnvironmentName <default id> | select DisplayName, Owner, LastModifiedTime\n              Get-AdminFlow -EnvironmentName <default id>\n   Flag apps shared with more than 20 users or with a group, apps using premium connectors, flows running\n   daily under a named individual, and anything whose owner has left.\n\n7. Move the important ones\n   Add the app, its flows, connection references and environment variables to a solution in the default\n   environment > export > import to a dedicated environment > re-share > tell users the new link >\n   after two weeks remove the original.\n   SharePoint-form customisations cannot move. They stay tied to their list.\n\n8. Clean up the remainder\n   Contact owners of items unused for 6 months (the CoE Starter Kit has an inactivity process). Delete after\n   a notice period. Deleted canvas apps can be restored for a limited time with Get-AdminDeletedPowerAppsList\n   and Get-AdminRecoverDeletedPowerApp.\n\n9. Welcome message\n   Managed Environments > maker welcome content, or a pinned Teams post: what the default environment is for,\n   where to request a project environment, and the support route.",
+    "stepByStepInstructions": [
+      "Rename the default environment to state its purpose.",
+      "Scope a restrictive DLP policy to it.",
+      "Turn on environment routing so new makers get developer environments.",
+      "Restrict creation of production and trial environments to admins.",
+      "Inventory apps and flows and identify the widely used ones.",
+      "Move important solutions to dedicated environments and retire abandoned items with notice."
+    ],
+    "commonMistakes": [
+      "Leaving HTTP and custom connectors open in the default environment.",
+      "Moving an app without re-sharing or communicating the new link.",
+      "Deleting unowned items without a notice period.",
+      "Enabling Managed Environments on the default without a licence check."
+    ],
+    "troubleshooting": [
+      "If a flow is suspended after the DLP change, move it to a project environment where its connectors are allowed.",
+      "If makers cannot find their apps, they were routed to a developer environment. Show them the environment picker.",
+      "If an app will not export, add it to a solution first and include its dependencies.",
+      "If routing is not happening, check the setting's target group and that developer environment creation is allowed."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "dlp-policy-connector-groups",
+      "find-orphaned-apps-and-flows-powershell"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Bring the default environment under control",
+    "seoDescription": "Rename the default environment, restrict its connectors, route new makers to personal developer environments and move important apps out of it.",
+    "primaryKeyword": "Power Platform default environment governance",
+    "secondaryKeywords": [
+      "Default Environment",
+      "Environment Routing",
+      "DLP",
+      "Governance"
+    ],
+    "faqs": [
+      {
+        "question": "Can I delete or disable the default environment?",
+        "answer": "No. It always exists and all licensed users can build in it. You can rename it, restrict connectors and route makers elsewhere."
+      },
+      {
+        "question": "What is environment routing?",
+        "answer": "A tenant setting that sends makers to their own developer environment instead of the default when they open the maker portal."
+      },
+      {
+        "question": "Should production apps live in the default environment?",
+        "answer": "No. Move them to dedicated environments with their own access, DLP policy and release process."
+      }
+    ]
+  },
+  {
+    "id": "pat-1593",
+    "slug": "tenant-isolation-cross-tenant-connections",
+    "title": "Block cross-tenant connections with tenant isolation",
+    "shortDescription": "Stop apps and flows in your tenant connecting to other tenants with Entra-based connectors, and the reverse, with an allow-list for approved partners.",
+    "fullDescription": "A maker can sign in to a connector with an account from another organisation and move data between tenants in a flow. DLP policies do not stop this, because the connector is the same. Tenant isolation blocks connections that authenticate against a different Microsoft Entra tenant, in both directions, with exceptions you list.",
+    "category": "Power Platform Admin",
+    "subCategory": "Data protection",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Tenant Isolation",
+      "Data Exfiltration",
+      "Connectors",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow copies files from the company SharePoint to a SharePoint site in a personal or partner tenant, using a second connection signed in with an outside account.",
+    "whenToUse": [
+      "Tenants handling regulated or confidential data",
+      "Organisations with a small, known set of partner tenants",
+      "Closing the gap DLP policies leave open"
+    ],
+    "whenNotToUse": [
+      "Tenants whose apps legitimately connect to many external tenants, without building the allow-list first",
+      "Expecting it to cover connectors that do not use Microsoft Entra authentication"
+    ],
+    "formulaOrCode": "Where\n  Power Platform admin center > Security > Identity and access > Tenant isolation\n  (older navigation: Policies > Tenant isolation)\n\nDirections\n  Inbound    connections created in ANOTHER tenant that sign in to YOUR tenant's data\n  Outbound   connections created in YOUR tenant that sign in to another tenant\n\nTurn on\n  Tenant isolation: On       With no rules, both directions are blocked for Entra-based connectors.\n\nAllow-list rules (New tenant rule)\n  Direction: Inbound | Outbound | Inbound and Outbound\n  Tenant: domain or tenant ID, for example fabrikam.com or 3f2a...     * means all tenants\n  Examples:\n    Partner you send data to:              Outbound    fabrikam.com\n    Parent company reading your data:      Inbound     contoso-group.com\n    Two-way with a subsidiary:             Inbound and Outbound    3f2a1c9e-....\n\nWhat is covered\n  Connectors that authenticate with Microsoft Entra ID: SharePoint, Dataverse, Office 365 Outlook, OneDrive\n  for Business, Teams, Azure AD-secured custom connectors, SQL Server with Entra sign-in, and similar.\nWhat is not covered\n  Connectors using API keys, basic authentication or non-Entra OAuth (for example many third-party SaaS\n  connectors). Control those with DLP policies.\n  The HTTP connector to arbitrary endpoints. Block or restrict it with DLP and endpoint filtering.\n  Guests accessing your apps: a B2B guest signs in to YOUR tenant, so that is not a cross-tenant connection.\n\nBefore turning it on: find existing cross-tenant connections\n  Admin center > Tenant isolation page offers a report of impacted connections where available.\n  PowerShell:\n    Get-AdminPowerAppConnection | Select-Object DisplayName, ConnectorName, EnvironmentName,\n        @{n='Account';e={$_.Statuses.target}}, @{n='CreatedBy';e={$_.CreatedBy.userPrincipalName}} |\n      Where-Object { $_.CreatedBy -and $_.DisplayName -notlike \"*@contoso.com\" }\n    The connection display name is usually the signed-in account. Names outside your domains indicate\n    cross-tenant use.\n  CoE Starter Kit inventory: connection identities table lists accounts used per connector.\n\nRoll-out\n  1. Report and contact the owners of cross-tenant connections.\n  2. Add rules for approved partner tenants.\n  3. Turn isolation on. Existing blocked connections fail at their next run with an authorisation error.\n  4. Publish the request route for a new partner tenant (who approves, how long it takes).\n\nWhat users see\n  Creating or using a blocked connection fails with a message that the tenant isolation policy does not allow\n  the connection (error code TenantIsolationPolicyViolation or similar).\n\nEntra tenant restrictions\n  Tenant isolation is specific to Power Platform connectors. Entra cross-tenant access settings and tenant\n  restrictions cover sign-ins more broadly. Use both for defence in depth.",
+    "stepByStepInstructions": [
+      "List existing connections that sign in to other tenants.",
+      "Agree which partner tenants are approved and in which direction.",
+      "Add allow-list rules for those tenants.",
+      "Tell affected makers the date and the request route.",
+      "Turn tenant isolation on.",
+      "Watch for failed flows in the first week and review new requests."
+    ],
+    "commonMistakes": [
+      "Turning it on without an inventory and breaking partner integrations.",
+      "Using a wildcard rule that defeats the control.",
+      "Assuming it blocks API-key connectors or HTTP calls.",
+      "Confusing guest access with cross-tenant connections."
+    ],
+    "troubleshooting": [
+      "If a legitimate flow fails, add an outbound rule for that tenant or redesign the integration.",
+      "If a partner's flow can no longer read your data, they need an inbound rule on your side.",
+      "If data still leaves through a non-Entra connector, block or classify it in DLP.",
+      "If the error persists after adding a rule, recreate the connection."
+    ],
+    "relatedPatterns": [
+      "dlp-policy-connector-groups",
+      "create-a-connector-review-process",
+      "create-a-tenant-settings-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Block cross-tenant connections with tenant isolation",
+    "seoDescription": "Stop apps and flows in your tenant connecting to other tenants with Entra-based connectors, and the reverse, with an allow-list for approved partners.",
+    "primaryKeyword": "Power Platform tenant isolation",
+    "secondaryKeywords": [
+      "Tenant Isolation",
+      "Data Exfiltration",
+      "Connectors",
+      "Security"
+    ],
+    "faqs": [
+      {
+        "question": "What does tenant isolation do in Power Platform?",
+        "answer": "It blocks connections that authenticate to a different Microsoft Entra tenant, inbound or outbound, except for tenants on an allow-list."
+      },
+      {
+        "question": "Is tenant isolation the same as a DLP policy?",
+        "answer": "No. DLP controls which connectors can be combined. Tenant isolation controls which tenants Entra-based connections can sign in to."
+      },
+      {
+        "question": "Does it affect guest users?",
+        "answer": "No. Guests sign in to your tenant, so their access is not a cross-tenant connection."
+      }
+    ]
+  },
+  {
+    "id": "pat-1594",
+    "slug": "power-platform-admin-roles-least-privilege",
+    "title": "Assign Power Platform admin roles with least privilege",
+    "shortDescription": "Which role does what, from tenant-level Power Platform Administrator down to Environment Maker, and how to grant admin access just in time instead of permanently.",
+    "fullDescription": "Power Platform has tenant-wide admin roles in Microsoft Entra and per-environment roles in Dataverse. Too many permanent administrators is the commonest finding in a security review. Mapping each duty to the smallest role, and activating the powerful ones only when needed, cuts that risk without slowing anyone down.",
+    "category": "Power Platform Admin",
+    "subCategory": "Administration",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Admin Roles",
+      "Least Privilege",
+      "Entra ID",
+      "Security"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Twelve people hold Global Administrator because they once needed to create an environment, and makers are System Administrators in production because it was the quickest fix for a permissions error.",
+    "whenToUse": [
+      "Setting up or reviewing platform administration",
+      "Preparing for an audit",
+      "Separating platform admins from app owners"
+    ],
+    "whenNotToUse": [
+      "Giving makers System Administrator in production to solve an access problem",
+      "Using Global Administrator for day-to-day platform work"
+    ],
+    "formulaOrCode": "Tenant-level roles (Microsoft Entra ID)\n  Global Administrator            everything in the tenant. Not needed for Power Platform work.\n  Power Platform Administrator    all environments, DLP policies, tenant settings, capacity, licences view.\n                                  Gets System Administrator in every environment without a security group check.\n  Dynamics 365 Administrator      similar reach, but only environments whose security group they belong to\n                                  (or that have none).\n  Fabric Administrator            Power BI and Fabric settings. Separate from the above.\n  Billing / Licence Administrator buy and assign licences. No environment access.\n\nEnvironment-level roles (Dataverse security roles)\n  System Administrator            full control of one environment, including users, roles and data.\n  System Customizer               customise tables, forms and apps. Sees only own rows by default.\n  Environment Maker               create apps, flows, connections and custom connectors. No data access.\n  Basic User                      run apps and own-row access on standard tables.\n  Delegated / custom roles        app-specific access for users.\n  Environments without Dataverse have two roles only: Environment Admin and Environment Maker.\n\nWho gets what\n  Platform team (2-4 people)      Power Platform Administrator, eligible through PIM, activated when needed\n  Environment owner of a project  System Administrator in THEIR Dev and Test. Not in Production.\n  Makers                          Environment Maker + System Customizer in Dev\n  Release pipeline                service principal as application user with System Administrator in targets\n  Support                         a custom support role in Production with read access and specific fixes\n  End users                       Basic User + the app's role, through a group team\n  Break-glass                     two cloud-only Global Administrator accounts, monitored, not used daily\n\nJust-in-time elevation\n  Entra Privileged Identity Management:\n    Roles > Power Platform Administrator > Add assignments > Eligible (not Active)\n    Settings: activation up to 8 hours, require justification and MFA, optionally approval\n    Activate: My roles > Activate > reason > the role applies within minutes\n  Inside an environment: tenant admins can self-elevate to System Administrator when required\n    Admin center > Environment > Membership > Add me\n    This is logged. With it, admins do not need a standing System Administrator role everywhere.\n\nReview commands\n  Entra role holders:\n    Connect-MgGraph -Scopes \"RoleManagement.Read.Directory\"\n    Get-MgDirectoryRole | Where-Object DisplayName -in \"Power Platform Administrator\",\"Dynamics 365 Administrator\",\"Global Administrator\" |\n      ForEach-Object { $r = $_; Get-MgDirectoryRoleMember -DirectoryRoleId $r.Id |\n        Select-Object @{n='Role';e={$r.DisplayName}}, @{n='User';e={$_.AdditionalProperties.userPrincipalName}} }\n  System Administrators in one environment (Web API):\n    GET /api/data/v9.2/systemusers?$select=fullname,domainname&$filter=isdisabled eq false and\n        systemuserroles_association/any(r:r/name eq 'System Administrator')\n\nRules of thumb\n  No named person is a permanent System Administrator in Production.\n  Admin accounts are separate from daily accounts where policy requires it.\n  Every admin assignment has an owner and a review date.",
+    "stepByStepInstructions": [
+      "List current holders of tenant and environment admin roles.",
+      "Map each person's actual duties to the smallest sufficient role.",
+      "Move tenant admin roles to eligible assignments with just-in-time activation.",
+      "Remove makers' System Administrator role from production.",
+      "Use a service principal for deployments.",
+      "Review role holders every quarter."
+    ],
+    "commonMistakes": [
+      "Using Global Administrator for Power Platform tasks.",
+      "Leaving System Administrator on makers in production after go-live.",
+      "Assigning admin roles directly with no expiry or review.",
+      "No break-glass account plan."
+    ],
+    "troubleshooting": [
+      "If an admin cannot see an environment, they hold Dynamics 365 Administrator and are outside its security group.",
+      "If an activated role does not seem to apply, sign out and in again, then wait a few minutes.",
+      "If support needs occasional production access, create a narrow custom role instead of System Administrator.",
+      "If nobody can administer an environment, a Power Platform Administrator can add themselves through Membership."
+    ],
+    "relatedPatterns": [
+      "create-a-security-role-matrix",
+      "service-principal-application-user-deployments",
+      "environment-security-group-restrict-access"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Assign Power Platform admin roles with least privilege",
+    "seoDescription": "Which role does what, from tenant-level Power Platform Administrator down to Environment Maker, and how to grant admin access just in time instead of permanently.",
+    "primaryKeyword": "Power Platform administrator roles",
+    "secondaryKeywords": [
+      "Admin Roles",
+      "Least Privilege",
+      "Entra ID",
+      "Security"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between Power Platform Administrator and System Administrator?",
+        "answer": "Power Platform Administrator is a tenant-wide Entra role over all environments. System Administrator is a Dataverse role inside one environment."
+      },
+      {
+        "question": "Do I need Global Administrator to manage Power Platform?",
+        "answer": "No. Power Platform Administrator covers environments, policies and tenant settings."
+      },
+      {
+        "question": "Can admin roles be temporary?",
+        "answer": "Yes. With Privileged Identity Management, people are eligible for a role and activate it for a limited time when needed."
+      }
+    ]
+  },
+  {
+    "id": "pat-1595",
+    "slug": "dataverse-storage-capacity-reduce",
+    "title": "Find what is using Dataverse storage and reduce it",
+    "shortDescription": "Read the capacity report, identify the tables that consume database, file and log storage, and clear them safely with bulk delete jobs and retention settings.",
+    "fullDescription": "Dataverse capacity is split into database, file and log storage, pooled across the tenant. When it runs out, new environments cannot be created and admin operations such as copy and restore are blocked. Most overuse comes from a handful of system tables: audit logs, system jobs, email attachments and flow run history.",
+    "category": "Power Platform Admin",
+    "subCategory": "Capacity",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Capacity",
+      "Storage",
+      "Bulk Delete",
+      "Admin Center"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "The admin center shows the tenant over its database capacity. Nobody knows which environment or table is responsible, and environment copies are now blocked.",
+    "whenToUse": [
+      "Capacity warnings or overage in the admin center",
+      "Routine housekeeping of long-lived environments",
+      "Before buying more capacity"
+    ],
+    "whenNotToUse": [
+      "Deleting business data to save space without the owner's agreement",
+      "Bulk deleting audit data that a retention policy requires you to keep"
+    ],
+    "formulaOrCode": "See the numbers\n  Power Platform admin center > Licensing > Capacity add-ons / Dataverse > Summary\n    Database, File, Log: used versus entitled, with the top environments\n  Dataverse tab > select an environment > Details: usage by table, per storage type, with a trend chart\n  Download all tables for a spreadsheet view.\n\nUsual suspects and what to do\n  Log storage\n    AuditBase                 Admin center > Environment > Settings > Audit and logs > Audit settings >\n                              retention period (for example 90 or 365 days), then\n                              Audit log management > Delete logs (by table, by date, or all before a date)\n    Plug-in trace log         Settings > Customization > set Plug-in trace log to Off when not debugging.\n                              Bulk delete existing rows.\n  Database storage\n    AsyncOperationBase        completed system jobs. Bulk delete: System Jobs where Status Reason = Succeeded\n                              and Completed On older than 30 days. Schedule it to recur daily.\n    WorkflowLogBase           classic workflow history. Bulk delete Process Sessions older than 30 days.\n    FlowRun (flow run history in Dataverse)   controlled by the flow run retention setting:\n                              default 28 days. Lower it per environment through the Organization table's\n                              FlowRunTimeToLiveInSeconds if you do not need 28 days.\n    ActivityPointerBase, EmailBase   old emails and activities. Bulk delete by date and status after agreement.\n    DuplicateRecordBase, ImportJob, BulkDeleteOperation   remove old jobs and their results.\n    Your own tables           archive closed rows: export to a data lake or SharePoint, or use Dataverse\n                              long term retention (retention policies move rows to cheaper storage).\n  File storage\n    Attachment / ActivityMimeAttachment   email attachments. Bulk delete emails with attachments over a size\n                              and age, or move files to SharePoint or Azure Blob.\n    Annotation (Notes)        notes with large files. Query: Notes where File Size (Bytes) > 1048576.\n    WebResourceBase, RibbonClientMetadataBase   solution content. Remove unused solutions.\n    Canvas app files, image and file columns   review large uploads.\n\nCreate a recurring bulk delete job\n  Admin center > Environment > Settings > Data management > Bulk deletion > New\n    Look for: System Jobs\n    Status Reason equals Succeeded       Completed On older than X days: 30\n    Name: Delete succeeded system jobs over 30 days\n    Run this job after every: 1 day        Send an email when finished: optional\n  One job per table. Review results under Bulk deletion > Completed.\n\nFind large rows with a query (Web API)\n  GET /api/data/v9.2/annotations?$select=subject,filename,filesize,createdon&$filter=filesize gt 5000000&$orderby=filesize desc&$top=50\n\nReduce environments\n  Delete unused sandboxes and expired trials: each Dataverse environment uses at least 1 GB of database capacity.\n  Developer and Teams environments are counted separately from the pooled entitlement.\n\nAfter deleting\n  Storage figures refresh within about 24 to 48 hours. Capacity is released after the platform's cleanup.\n\nMonitor\n  Monthly: export the capacity summary. Alert when any storage type passes 85 percent.\n  Tenant settings can restrict environment creation to admins while capacity is tight.",
+    "stepByStepInstructions": [
+      "Open the capacity summary and identify which storage type is over.",
+      "Open the heaviest environment and list its largest tables.",
+      "Set audit retention and delete old audit logs where policy allows.",
+      "Create recurring bulk delete jobs for system jobs and other housekeeping tables.",
+      "Agree archiving or deletion rules for large business tables with their owners.",
+      "Check the figures again after two days and schedule a monthly review."
+    ],
+    "commonMistakes": [
+      "Buying capacity before removing system job and audit build-up.",
+      "Leaving plug-in trace logging on in production.",
+      "One-off clean-ups with no recurring job.",
+      "Deleting audit history required for compliance."
+    ],
+    "troubleshooting": [
+      "If figures do not drop, wait for the report to refresh. It can lag by a day or two.",
+      "If a bulk delete job fails on some rows, check dependencies and the job's failure details.",
+      "If file storage stays high, look at attachments and notes, not database tables.",
+      "If log storage grows quickly, review which tables and columns are audited and whether read auditing is on."
+    ],
+    "relatedPatterns": [
+      "dataverse-bulk-delete-jobs",
+      "dataverse-auditing-enable-read-history",
+      "create-a-capacity-monitoring-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Find what is using Dataverse storage and reduce it",
+    "seoDescription": "Read the capacity report, identify the tables that consume database, file and log storage, and clear them safely with bulk delete jobs and retention settings.",
+    "primaryKeyword": "Dataverse storage capacity reduce",
+    "secondaryKeywords": [
+      "Capacity",
+      "Storage",
+      "Bulk Delete",
+      "Admin Center"
+    ],
+    "faqs": [
+      {
+        "question": "How do I see what is using Dataverse storage?",
+        "answer": "Open Capacity in the Power Platform admin center, select an environment and view usage by table for database, file and log storage."
+      },
+      {
+        "question": "How do I free up Dataverse database storage?",
+        "answer": "Delete completed system jobs and old workflow history with recurring bulk delete jobs, then archive closed business rows."
+      },
+      {
+        "question": "How do I reduce log storage?",
+        "answer": "Set an audit retention period, delete old audit logs and turn off plug-in trace logging."
+      }
+    ]
+  },
+  {
+    "id": "pat-1596",
+    "slug": "environment-backup-restore-copy",
+    "title": "Back up, restore and copy Power Platform environments",
+    "shortDescription": "Use system and manual backups, restore to a point in time, and copy production to a sandbox for testing, with the clean-up steps that keep the copy from emailing real users.",
+    "fullDescription": "Dataverse environments are backed up continuously by the platform. Admins can add labelled manual backups before risky changes, restore a sandbox to a moment in time, and copy one environment over another. A restored or copied environment starts in administration mode with flows off, and needs deliberate steps before it is used.",
+    "category": "Power Platform Admin",
+    "subCategory": "Environment operations",
+    "platform": [
+      "Power Platform",
+      "Dataverse"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Backup",
+      "Restore",
+      "Environment Copy",
+      "Disaster Recovery"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A bulk update goes wrong in production, or testers need realistic data, and nobody is sure what restore options exist or what a restored copy will do when its flows wake up.",
+    "whenToUse": [
+      "Before a major release or data migration",
+      "Recovering from accidental data loss",
+      "Refreshing a test environment with production data"
+    ],
+    "whenNotToUse": [
+      "Using restore to undo a single record change, where audit history is quicker",
+      "Copying production data into environments with weaker access controls"
+    ],
+    "formulaOrCode": "What is backed up automatically\n  System backups: continuous. Production environments with Dataverse: restorable for 7 days by default.\n    Managed Environments can extend retention up to 28 days:\n    Set-AdminPowerAppEnvironmentBackupRetentionPeriod -EnvironmentName <id> -NewBackupRetentionPeriodInDays 28\n  Sandbox and other types: 7 days.\n  Not included: SharePoint data, flows' external systems, connections' credentials.\n\nManual backup (a named restore point)\n  Admin center > Environments > select > Backups > Create\n    Label: \"Before 1.5.0.0 release 2026-11-20\"        Notes: who and why\n  Kept for the same retention period as system backups. It does not consume storage capacity.\n\nRestore\n  Environments > select > Backups > Restore or manage\n    System: choose a date and time.   Manual: choose the labelled backup.\n    Target: a SANDBOX environment. The target is overwritten.\n  Production cannot be restored over directly. To recover production:\n    Option A (preferred): restore to a sandbox, then extract and re-import the lost data.\n    Option B: change Production to Sandbox type (Edit > Type), restore over it, switch the type back.\n  Requires 1 GB of spare capacity and that the tenant is not over capacity.\n\nCopy\n  Environments > select the source > Copy\n    Copy over: Everything (data, users, customisations) | Customizations and schemas only\n    Select tables: with \"Everything\" you can pick a subset of tables where offered\n    Target: a sandbox in the same region. It is overwritten.\n    Edit details: name, URL, security group. Audit logs: copying them is optional.\n\nState of a restored or copied environment\n  Administration mode: On             only System Administrators and Customizers can sign in\n  Background operations: Off          no flows, workflows, async plug-ins, server-side sync\n  Cloud flows: turned off             they stay off until someone turns them on\n  Connection references keep their links, but connections may need re-authentication.\n  Environment variables' current values are those of the source: they still point at PRODUCTION systems.\n\nChecklist before letting users in (copy of production to test)\n  1. Environment variables: change values to test endpoints, test SharePoint sites and test mailboxes.\n  2. Connection references: point at test connections.\n  3. Flows: review each before turning it on. Leave outbound notification flows off, or route to a test address.\n  4. Email: Settings > Email > Mailboxes: disable or re-point server-side synchronisation.\n  5. Integrations: disable service endpoints, webhooks and plug-in steps that call live systems.\n  6. Data: mask or delete personal data if testers should not see it (bulk update, or copy schema only and\n     load sample data).\n  7. Security group and roles: confirm only testers have access.\n  8. Turn off administration mode: Environments > select > Edit > Administration mode.\n\nDeleted environments\n  Environments > Recover deleted environments: available for a limited period after deletion (7 days by default).\n\nEnvironments without Dataverse\n  No backup or restore. Export apps and flows as packages or use solutions with source control.\n\nGood practice\n  Manual backup before every production release. A restore drill once a year into a sandbox.\n  Source control for solutions: a backup restores data and customisations together, but Git tells you what changed.",
+    "stepByStepInstructions": [
+      "Take a labelled manual backup before any risky production change.",
+      "Decide whether you need a restore to a point in time or a copy of the current state.",
+      "Restore or copy into a sandbox target.",
+      "Re-point environment variables, connections and integrations away from production.",
+      "Review flows and mailboxes before enabling background operations.",
+      "Turn off administration mode and confirm access is limited to the right people."
+    ],
+    "commonMistakes": [
+      "Turning flows on in a copy that still points at production systems.",
+      "Expecting to restore directly over production.",
+      "Assuming backups cover SharePoint or other connected data.",
+      "Copying personal data into a broadly accessible test environment."
+    ],
+    "troubleshooting": [
+      "If restore is unavailable, the tenant is over capacity or the target is a production type.",
+      "If users cannot sign in after a copy, administration mode is still on.",
+      "If emails went out from the copy, disable mailboxes and notification flows before disabling admin mode next time.",
+      "If the backup you need has expired, check whether a longer retention on Managed Environments is appropriate."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "create-a-rollback-decision-checklist",
+      "dataverse-storage-capacity-reduce"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Back up, restore and copy Power Platform environments",
+    "seoDescription": "Use system and manual backups, restore to a point in time, and copy production to a sandbox for testing, with the clean-up steps that keep the copy from emailing real users.",
+    "primaryKeyword": "Power Platform environment backup restore",
+    "secondaryKeywords": [
+      "Backup",
+      "Restore",
+      "Environment Copy",
+      "Disaster Recovery"
+    ],
+    "faqs": [
+      {
+        "question": "How long are Power Platform backups kept?",
+        "answer": "System backups are kept for 7 days. Managed production environments can extend this to as much as 28 days."
+      },
+      {
+        "question": "Can I restore a production environment?",
+        "answer": "Restore targets must be sandboxes. Restore to a sandbox and recover the data, or temporarily change the environment type."
+      },
+      {
+        "question": "What happens to flows when I copy an environment?",
+        "answer": "They are turned off in the copy, and the environment starts in administration mode with background operations disabled."
+      }
+    ]
+  },
+  {
+    "id": "pat-1597",
+    "slug": "welcome-email-new-makers-admin-connector",
+    "title": "Welcome new makers automatically with an admin flow",
+    "shortDescription": "A scheduled flow that finds people who created their first app or flow, sends them the rules and resources, and records them in a makers list.",
+    "fullDescription": "Most makers never read a governance site before building. The moment after their first app is the best time to reach them. A daily flow using the admin connectors lists new apps and flows, works out who is new, and sends a short welcome with the things they need to know: where to build, what is blocked, and how to get help.",
+    "category": "Power Platform Admin",
+    "subCategory": "Maker onboarding",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Maker Onboarding",
+      "Admin Connectors",
+      "Governance",
+      "Communication"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Makers discover the DLP policy only when a flow is suspended, and discover the support channel only after an app has become critical.",
+    "whenToUse": [
+      "Tenants with a steady stream of new makers",
+      "Sharing governance rules at the right moment",
+      "Building a makers contact list without the full CoE Starter Kit"
+    ],
+    "whenNotToUse": [
+      "Tenants already running the CoE Starter Kit's welcome email, which does the same",
+      "Long emails that read as a policy document"
+    ],
+    "formulaOrCode": "Lists\n  Makers (SharePoint or Dataverse): Title (email), DisplayName, FirstSeen (date), FirstItemType, FirstItemName,\n          Environment, WelcomeSent (yes/no)\n\nFlow: Welcome new makers\n  Trigger: Recurrence, daily 07:00\n  Run as: a service account with the Power Platform Administrator role (admin connectors return all environments)\n\n  1. Power Platform for Admins > List Environments as Admin\n  2. Apply to each environment (concurrency 5)\n       Power Apps for Admins > Get Apps as Admin        Environment: current\n       Filter array: createdTime ge addDays(utcNow(), -1)\n         @greaterOrEquals(item()?['properties/createdTime'], addDays(utcNow(), -1))\n       Append to varNew (array) for each:\n         { \"email\": properties/owner/email, \"name\": properties/owner/displayName, \"type\": \"app\",\n           \"item\": properties/displayName, \"env\": environment display name }\n       Power Automate Management > List Flows as Admin   Environment: current\n       Filter array on properties/createdTime the same way. The creator is properties/creator/userId (object id):\n         Office 365 Users > Get user profile (V2) with that id for email and name. Append with type \"flow\".\n  3. Distinct makers\n       Select: email from varNew > union(body('Select'), body('Select'))\n  4. Apply to each distinct email\n       Get items: Makers, Filter Query: Title eq '<email>', Top 1\n       Condition: length(...) equals 0\n         Yes: Create item in Makers (FirstSeen = utcNow(), details from the first matching entry)\n              Send an email (V2) from a shared mailbox, then Update item WelcomeSent = Yes\n         No:  skip\n\nEmail (short, with links)\n  Subject: Welcome to Power Platform at Contoso\n  Hi @{name},\n  You created your first @{type}, \"@{item}\". A few things worth knowing:\n    Where to build: personal ideas in your Developer environment. Team solutions: request a project environment.\n    Connectors: the default environment allows Microsoft 365 connectors. Others need a project environment.\n    Sharing: apps shared with more than 20 people need a named backup owner.\n    Help: Teams channel \"Power Platform Makers\", office hours Thursdays 14:00.\n    Training: three short modules to start with.\n  Reply to this message if you need anything.\n\nAlternative trigger without polling\n  Office 365 Management Activity (audit log) events for CreatePowerApp and CreateFlow, through a custom\n  connector or Microsoft Sentinel. More timely, more set-up.\n\nExtras\n  Add new makers to the Makers Teams team:  Office 365 Groups > Add member to group\n  Monthly: count of new makers by department (Get user profile > department) for the governance report.\n  Guest makers: flag accounts whose email contains #EXT# for review.\n\nLicensing and limits\n  Admin connectors are standard connectors. Each \"as Admin\" call pages results: turn on Pagination\n  (threshold 5000) on Get Apps as Admin and List Flows as Admin in large environments.",
+    "stepByStepInstructions": [
+      "Create a Makers list to record who has been welcomed.",
+      "Build a daily flow under an admin service account that lists apps and flows created in the last day.",
+      "Resolve each creator to an email address and remove duplicates.",
+      "Check each against the Makers list and add those who are new.",
+      "Send a short welcome email from a shared mailbox.",
+      "Review the Makers list monthly for trends and follow-up."
+    ],
+    "commonMistakes": [
+      "Sending a welcome for every new app instead of once per maker.",
+      "Running the flow under a personal admin account.",
+      "Writing an email longer than a screen.",
+      "Not enabling pagination, so busy environments are only partly read."
+    ],
+    "troubleshooting": [
+      "If makers are welcomed twice, the lookup on the Makers list is failing. Check the email comparison and casing.",
+      "If the flow sees only one environment, the connection lacks a tenant admin role.",
+      "If creator details are empty for flows, resolve the creator's object ID with Office 365 Users.",
+      "If the run is slow, limit processing to environments that had changes or raise concurrency."
+    ],
+    "relatedPatterns": [
+      "create-a-maker-activity-review",
+      "export-power-platform-inventory-powershell",
+      "default-environment-governance-routing"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Welcome new makers automatically with an admin flow",
+    "seoDescription": "A scheduled flow that finds people who created their first app or flow, sends them the rules and resources, and records them in a makers list.",
+    "primaryKeyword": "Power Platform new maker welcome email",
+    "secondaryKeywords": [
+      "Maker Onboarding",
+      "Admin Connectors",
+      "Governance",
+      "Communication"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find new Power Platform makers?",
+        "answer": "List apps and flows as an admin, filter by creation date and compare the creators with a list of makers you have already recorded."
+      },
+      {
+        "question": "Does the CoE Starter Kit do this?",
+        "answer": "Yes, it includes a welcome email process. This flow is a lighter option when the kit is not installed."
+      },
+      {
+        "question": "Which connectors list all apps and flows?",
+        "answer": "Power Apps for Admins, Power Automate Management and Power Platform for Admins, run by an account with an admin role."
+      }
+    ]
+  },
+  {
+    "id": "pat-1598",
+    "slug": "dlp-policy-audit-export-powershell",
+    "title": "Export and audit DLP policies with PowerShell",
+    "shortDescription": "List every data policy, the environments it covers and each connector's classification into a CSV, and check which policies apply to a given environment.",
+    "fullDescription": "DLP policies stack: an environment can be covered by several, and the most restrictive result wins. The admin center shows one policy at a time, which makes it hard to answer what is actually allowed in an environment. A script that exports every policy with its scope and connector groups gives a single view to review and keep as evidence.",
+    "category": "Power Platform Admin",
+    "subCategory": "Data policies",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "DLP",
+      "PowerShell",
+      "Audit",
+      "Connectors"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A maker asks why a connector is blocked in one environment but not another, and working it out means opening five policies in turn.",
+    "whenToUse": [
+      "Quarterly governance reviews and audits",
+      "Troubleshooting why a connector is blocked",
+      "Keeping a history of policy changes"
+    ],
+    "whenNotToUse": [
+      "Editing policies in bulk by script without a tested rollback copy",
+      "Sharing the export widely, since it describes your controls"
+    ],
+    "formulaOrCode": "# Requires: Install-Module Microsoft.PowerApps.Administration.PowerShell\nAdd-PowerAppsAccount\n\n# 1. Policies and their scope\n$policies = (Get-DlpPolicy).value\n$scope = foreach ($p in $policies) {\n    [pscustomobject]@{\n        Policy       = $p.displayName\n        PolicyId     = $p.name\n        Scope        = $p.environmentType          # AllEnvironments | OnlyEnvironments | ExceptEnvironments\n        Environments = ($p.environments.name -join \"; \")\n        Created      = $p.createdTime\n        Modified     = $p.lastModifiedTime\n        ModifiedBy   = $p.lastModifiedBy.displayName\n    }\n}\n$scope | Export-Csv .\\dlp-policies.csv -NoTypeInformation\n\n# 2. Connector classification per policy\n$rows = foreach ($p in $policies) {\n    foreach ($g in $p.connectorGroups) {           # classification: Confidential (Business) | General (Non-business) | Blocked\n        foreach ($c in $g.connectors) {\n            [pscustomobject]@{\n                Policy     = $p.displayName\n                Group      = switch ($g.classification) { \"Confidential\" {\"Business\"} \"General\" {\"Non-business\"} default {$g.classification} }\n                Connector  = $c.name\n                ConnectorId= $c.id\n            }\n        }\n    }\n    [pscustomobject]@{ Policy = $p.displayName; Group = \"(default for new connectors)\"; Connector = $p.defaultConnectorsClassification; ConnectorId = \"\" }\n}\n$rows | Export-Csv .\\dlp-connectors.csv -NoTypeInformation\n\n# 3. Which policies apply to one environment\n$envId = \"<environment id>\"\n$applies = $policies | Where-Object {\n    $_.environmentType -eq \"AllEnvironments\" -or\n    ($_.environmentType -eq \"OnlyEnvironments\"   -and $_.environments.name -contains $envId) -or\n    ($_.environmentType -eq \"ExceptEnvironments\" -and $_.environments.name -notcontains $envId)\n}\n$applies | Select-Object displayName, environmentType\n\n# 4. Effective result for one connector in that environment\n$connector = \"shared_sql\"\nforeach ($p in $applies) {\n    $g = $p.connectorGroups | Where-Object { $_.connectors.id -like \"*/$connector\" }\n    \"{0}: {1}\" -f $p.displayName, ($(if ($g) { $g.classification } else { $p.defaultConnectorsClassification }))\n}\n# Blocked in any policy = blocked. Otherwise two connectors can be used together only if every policy puts\n# them in the same group.\n\n# 5. Keep a dated backup of full policy definitions\n$stamp = Get-Date -Format \"yyyyMMdd\"\n$policies | ConvertTo-Json -Depth 20 | Out-File \".\\dlp-backup-$stamp.json\"\n\n# 6. Custom connector URL patterns and endpoint/action rules\nGet-PowerAppDlpPolicyConnectorConfigurations -TenantId <tenant id> -PolicyName <policy id>\nGet-PowerAppPolicyUrlPatterns -TenantId <tenant id> -PolicyName <policy id>\n\nReview points\n  Any policy with defaultConnectorsClassification = General while Business holds your data connectors is fine.\n  A default of Confidential means every new connector joins your business data group automatically.\n  Environments covered by no policy: compare the environment list with every policy's scope.\n  HTTP, HTTP with Microsoft Entra ID and custom connectors: confirm where they are allowed and why.\n\nSchedule\n  Run monthly from an automation account or pipeline with a service principal, commit the CSV and JSON to a\n  private repository, and review the diff.",
+    "stepByStepInstructions": [
+      "Install the admin PowerShell module and sign in as a Power Platform administrator.",
+      "Export each policy's scope and environments.",
+      "Export connector classifications for every policy.",
+      "Work out which policies apply to each important environment.",
+      "Save a dated JSON backup of all policy definitions.",
+      "Review the output for unprotected environments and risky defaults."
+    ],
+    "commonMistakes": [
+      "Reviewing policies one by one in the portal and missing overlaps.",
+      "Forgetting the default group for new connectors.",
+      "Assuming the least restrictive policy wins.",
+      "No backup before changing a policy."
+    ],
+    "troubleshooting": [
+      "If Get-DlpPolicy returns nothing, the account lacks a tenant admin role.",
+      "If an environment appears unprotected, check for a tenant-wide policy with exceptions.",
+      "If the connector name is unclear, match on the id, which ends with the connector's internal name.",
+      "If a change broke flows, restore the previous definition from the dated JSON with Set-DlpPolicy."
+    ],
+    "relatedPatterns": [
+      "dlp-policy-connector-groups",
+      "create-a-connector-review-process",
+      "export-power-platform-inventory-powershell"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Export and audit DLP policies with PowerShell",
+    "seoDescription": "List every data policy, the environments it covers and each connector's classification into a CSV, and check which policies apply to a given environment.",
+    "primaryKeyword": "Power Platform DLP policy PowerShell export",
+    "secondaryKeywords": [
+      "DLP",
+      "PowerShell",
+      "Audit",
+      "Connectors"
+    ],
+    "faqs": [
+      {
+        "question": "How do I list all DLP policies in Power Platform?",
+        "answer": "Run Get-DlpPolicy from the Microsoft.PowerApps.Administration.PowerShell module as a tenant admin."
+      },
+      {
+        "question": "What happens when several DLP policies cover one environment?",
+        "answer": "All of them apply. A connector blocked in any policy is blocked, and connectors must share a group in every policy to be used together."
+      },
+      {
+        "question": "Can I back up DLP policies?",
+        "answer": "Yes. Export the policy objects to JSON on a schedule and keep them in a private repository."
+      }
+    ]
+  },
+  {
+    "id": "pat-1599",
+    "slug": "dlp-connector-endpoint-filtering-action-control",
+    "title": "Allow a connector but restrict its endpoints and actions",
+    "shortDescription": "Go beyond block or allow: permit HTTP, SQL Server or custom connectors only for approved URLs and servers, and switch off individual connector actions.",
+    "fullDescription": "Blocking the HTTP connector stops legitimate integrations. Allowing it opens every address on the internet. DLP policies have finer controls: endpoint filtering limits a connector to listed hosts, connector action control disables specific actions and triggers, and custom connector URL patterns classify custom connectors by their base address.",
+    "category": "Power Platform Admin",
+    "subCategory": "Data policies",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "DLP",
+      "Endpoint Filtering",
+      "Connector Actions",
+      "HTTP Connector"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A project needs the HTTP connector for one internal API, so it is moved to Business for the whole environment, and now any flow can post data to any URL.",
+    "whenToUse": [
+      "Allowing HTTP, SQL Server, Dataverse or Azure Blob for specific targets only",
+      "Disabling risky actions such as delete or send-as while keeping the connector",
+      "Governing custom connectors by host name"
+    ],
+    "whenNotToUse": [
+      "Long allow-lists maintained by hand with no owner",
+      "Treating endpoint filtering as a network firewall. It applies to Power Platform connectors only"
+    ],
+    "formulaOrCode": "Where\n  Power Platform admin center > Security > Data and privacy > Data policies > open a policy > Connectors\n  Select a connector > ... > Configure connector\n    Connector actions        Connector endpoints\n\n1. Endpoint filtering\n   Supported on, among others: HTTP, HTTP with Microsoft Entra ID, HTTP Webhook, SQL Server, Azure Blob\n   Storage, SMTP, Dataverse (environment URLs), Azure Key Vault. The list grows. Check the connector's menu.\n   Rules are evaluated top to bottom. First match wins. The last rule is the default.\n\n   HTTP example\n     Order  Endpoint                              Action\n     1      https://api.contoso.com/*             Allow\n     2      https://contoso.azure-api.net/*       Allow\n     3      https://*.logic.azure.com/*           Allow       (only if child Logic Apps are approved)\n     4      *                                     Deny\n   SQL Server example (format: server,database)\n     1      contoso-sql.database.windows.net,RequestHub      Allow\n     2      contoso-sql.database.windows.net,*               Allow\n     3      *                                                Deny\n   Azure Blob example:  https://contosoprod.blob.core.windows.net/*   Allow, then * Deny\n   Dataverse example:   https://contoso.crm.dynamics.com   Allow, then * Deny   (stops connecting to other orgs)\n\n   Behaviour: flows calling a denied endpoint fail at run time, or at save when the value is static.\n   Dynamic values (a URL built from a variable) are evaluated at run time.\n\n2. Connector action control\n   Configure connector > Connector actions: a toggle per action and trigger, plus\n   \"Default connector action settings\": Allow or Deny for actions added to the connector later.\n   Examples\n     Office 365 Outlook      Deny: Send an email from a shared mailbox (V2) if send-as must be controlled\n     SharePoint              Deny: Send an HTTP request to SharePoint, where REST calls are not permitted\n     Microsoft Teams         Deny: Post as flow bot to a user where notifications are centralised\n     Dataverse               Deny: Perform an unbound action in maker environments\n   Set the default to Deny for high-risk connectors so new actions need a review.\n   Works for connectors classified Business or Non-business. Blocked connectors need no action control.\n\n3. Custom connector URL patterns\n   Data policies > open policy > Custom connectors\n     Order  Pattern                               Group\n     1      https://api.contoso.com*              Business\n     2      https://*.contoso.com*                Business\n     3      https://partner.fabrikam.com/api*     Non-business\n     4      *                                     Blocked\n   A custom connector is classified by matching its host URL. The final * rule sets the default.\n\nPowerShell (keep policies as code)\n  Get-PowerAppDlpPolicyConnectorConfigurations -TenantId $tenant -PolicyName $policyId\n  New-PowerAppDlpPolicyConnectorConfigurations -TenantId $tenant -PolicyName $policyId -NewDlpPolicyConnectorConfigurations $config\n  $config.connectorActionConfigurations: connectorId, defaultConnectorActionRuleBehavior, actionRules[{actionId, behavior}]\n  $config.endpointConfigurations:        connectorId, endpointRules[{order, endpoint, behavior}]\n  Get-PowerAppPolicyUrlPatterns / New-PowerAppPolicyUrlPatterns for custom connector patterns.\n\nRequest process\n  Makers request a new endpoint with: URL, owner of the target system, data classification, environment.\n  Approver adds the narrowest pattern that works. Review the list every six months and remove unused entries.\n\nTest\n  In a sandbox covered by the policy: a flow calling an allowed URL succeeds. A call to https://example.org\n  fails with a message that the endpoint is blocked by the data policy.",
+    "stepByStepInstructions": [
+      "Identify connectors that are needed but too open, starting with HTTP and custom connectors.",
+      "Add endpoint rules allowing the approved hosts and denying everything else.",
+      "Disable connector actions that are not permitted and set the default for new actions.",
+      "Add custom connector URL patterns ending in a blocked default.",
+      "Test allowed and denied calls in a sandbox covered by the policy.",
+      "Set up a request and review process for new endpoints."
+    ],
+    "commonMistakes": [
+      "Moving HTTP to Business with no endpoint rules.",
+      "Putting the deny-all rule above the allow rules.",
+      "Forgetting dynamic URLs are checked only at run time.",
+      "Allow-lists nobody owns or reviews."
+    ],
+    "troubleshooting": [
+      "If an approved call is denied, check rule order and the exact host, including scheme and trailing path.",
+      "If a flow saves but fails when run, its URL is dynamic and resolves to a denied endpoint.",
+      "If a custom connector is blocked, its host matches no pattern above the default.",
+      "If an action still appears in the designer, the policy change may take time to apply. Save again after an hour."
+    ],
+    "relatedPatterns": [
+      "dlp-policy-connector-groups",
+      "dlp-policy-audit-export-powershell",
+      "tenant-isolation-cross-tenant-connections"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Allow a connector but restrict its endpoints and actions",
+    "seoDescription": "Go beyond block or allow: permit HTTP, SQL Server or custom connectors only for approved URLs and servers, and switch off individual connector actions.",
+    "primaryKeyword": "Power Platform DLP endpoint filtering connector action control",
+    "secondaryKeywords": [
+      "DLP",
+      "Endpoint Filtering",
+      "Connector Actions",
+      "HTTP Connector"
+    ],
+    "faqs": [
+      {
+        "question": "Can I allow the HTTP connector for only some URLs?",
+        "answer": "Yes. Endpoint filtering in a DLP policy lets you list allowed URL patterns and deny everything else."
+      },
+      {
+        "question": "Can I block one action of a connector?",
+        "answer": "Yes. Connector action control in a DLP policy turns individual actions and triggers on or off."
+      },
+      {
+        "question": "How are custom connectors classified in DLP?",
+        "answer": "By URL patterns matched against the connector's host, with a final rule that sets the default group."
+      }
+    ]
+  },
+  {
+    "id": "pat-1600",
+    "slug": "power-platform-activity-audit-logs-purview",
+    "title": "Search Power Platform activity in the Microsoft Purview audit log",
+    "shortDescription": "Find who created, edited, shared or deleted an app, flow, connection or DLP policy using the unified audit log, in the portal and with PowerShell.",
+    "fullDescription": "Maker and admin activity across Power Apps, Power Automate, connectors and data policies is written to the Microsoft 365 unified audit log. It answers questions the admin center cannot: who shared an app with Everyone, who deleted a flow, who changed a DLP policy and when. Dataverse row-level auditing is separate and lives inside each environment.",
+    "category": "Power Platform Admin",
+    "subCategory": "Monitoring",
+    "platform": [
+      "Power Platform"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Audit Log",
+      "Microsoft Purview",
+      "Monitoring",
+      "Compliance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A production flow has been deleted and a DLP policy changed. The admin center shows the current state but not who did it or when.",
+    "whenToUse": [
+      "Investigating a change or deletion",
+      "Evidence for audits and security reviews",
+      "Alerting on sensitive actions such as sharing with Everyone"
+    ],
+    "whenNotToUse": [
+      "Looking for changes to Dataverse rows, which are in Dataverse auditing instead",
+      "Expecting events older than your licence's retention period"
+    ],
+    "formulaOrCode": "Portal\n  Microsoft Purview portal > Audit > New search\n    Date and time range: start and end (UTC)\n    Activities - friendly names: type \"PowerApp\", \"flow\" or \"DLP\" and select\n    Record types: PowerAppsApp, PowerAppsPlan, MicrosoftFlow, PowerPlatformAdminDlp,\n                  PowerPlatformAdminEnvironment, PowerAppsResource, PowerPlatformAdministratorActivity\n    Users: optional          File, folder or site: leave empty\n  Search runs as a job. Open it for results. Export > Download all results (CSV with an AuditData JSON column).\n\nOperations worth knowing\n  Power Apps      CreatePowerApp, UpdatePowerApp, PublishPowerApp, DeletePowerApp, LaunchPowerApp,\n                  PowerAppPermissionEdited (sharing changes), DeletePowerAppPermission, RestorePowerApp\n  Power Automate  CreateFlow, EditFlow, DeleteFlow, PutPermissions (sharing), DeletePermissions,\n                  StartAPaidTrial, plus run-only user changes\n  Connections     CreateConnection, DeleteConnection (PowerAppsResource / connector events)\n  DLP             CreateDlpPolicy, UpdateDlpPolicy, DeleteDlpPolicy\n  Environments    environment create, delete, copy, restore, property and lifecycle changes\n  Admin           tenant setting changes, Managed Environments settings, role elevation\n\nPowerShell (Exchange Online module)\n  Install-Module ExchangeOnlineManagement\n  Connect-ExchangeOnline\n  $start = (Get-Date).AddDays(-7); $end = Get-Date\n\n  # Who deleted flows in the last week\n  Search-UnifiedAuditLog -StartDate $start -EndDate $end -RecordType MicrosoftFlow -Operations DeleteFlow -ResultSize 5000 |\n    ForEach-Object { $d = $_.AuditData | ConvertFrom-Json\n      [pscustomobject]@{ When = $_.CreationDate; Who = $_.UserIds; Operation = $_.Operations;\n                         Flow = $d.FlowDetailsUrl; Environment = $d.EnvironmentName } }\n\n  # App sharing changes, flagging tenant-wide shares\n  Search-UnifiedAuditLog -StartDate $start -EndDate $end -RecordType PowerAppsApp -Operations PowerAppPermissionEdited -ResultSize 5000 |\n    ForEach-Object { $d = $_.AuditData | ConvertFrom-Json\n      [pscustomobject]@{ When = $_.CreationDate; Who = $_.UserIds; App = $d.AppName;\n                         Target = ($d.AdditionalInfo | Out-String) } } |\n    Where-Object { $_.Target -match \"Tenant|Everyone\" }\n\n  # DLP policy changes\n  Search-UnifiedAuditLog -StartDate $start -EndDate $end -RecordType PowerPlatformAdminDlp -ResultSize 1000 |\n    Select-Object CreationDate, UserIds, Operations, AuditData\n\n  More than 5000 results: page with -SessionId \"pp\" -SessionCommand ReturnLargeSet, repeating until empty.\n\nRequirements\n  Auditing is on by default for Microsoft 365 organisations. Check: Get-AdminAuditLogConfig | fl UnifiedAuditLogIngestionEnabled\n  Permissions: Audit Logs or View-Only Audit Logs role (Purview role groups: Audit Reader, Audit Manager).\n  Retention: 180 days as standard. One year or longer with Audit (Premium) licences and retention policies.\n  Events appear within about 60 to 90 minutes, sometimes longer.\n\nAlerting\n  Purview > Audit > search, then create an alert policy on the activity (Microsoft Defender portal >\n  Policies > Alert policy > activity \"PowerAppPermissionEdited\"), or forward audit data to Microsoft Sentinel\n  with the Microsoft 365 / Power Platform connectors and write analytic rules.\n  Scheduled flow alternative: Office 365 Management Activity API (Audit.General content type) through an app\n  registration, filtered to the operations above, posting to a Teams channel.\n\nDataverse activity\n  Row create, update, delete and read auditing is configured per environment and table, and viewed in the\n  environment's audit summary. With \"Read logs\" auditing enabled, user access events also flow to Purview\n  under the Dynamics 365 / CRM record type.\n\nKeep evidence\n  Export results for an investigation promptly and store them with the incident record, since standard\n  retention is limited.",
+    "stepByStepInstructions": [
+      "Confirm unified audit logging is enabled and you hold an audit reader role.",
+      "Search by record type and operation for the time range in question.",
+      "Open or export results and read the AuditData details.",
+      "Use PowerShell for repeatable searches and larger result sets.",
+      "Create alerts for sensitive operations such as tenant-wide sharing or policy changes.",
+      "Export and file results for investigations before retention expires."
+    ],
+    "commonMistakes": [
+      "Searching the Purview log for Dataverse row changes.",
+      "Searching in local time when the log uses UTC.",
+      "Expecting events within minutes of the action.",
+      "Relying on 180-day retention for annual audit evidence."
+    ],
+    "troubleshooting": [
+      "If a search returns nothing, widen the time range and remove the user filter.",
+      "If you cannot open Audit, ask for the Audit Reader role group in Purview.",
+      "If results stop at 5000, page with a session ID and ReturnLargeSet.",
+      "If you need older events, check whether Audit (Premium) retention policies exist for those record types."
+    ],
+    "relatedPatterns": [
+      "dataverse-auditing-enable-read-history",
+      "create-a-maker-activity-review",
+      "dlp-policy-audit-export-powershell"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Search Power Platform activity in the Microsoft Purview audit log",
+    "seoDescription": "Find who created, edited, shared or deleted an app, flow, connection or DLP policy using the unified audit log, in the portal and with PowerShell.",
+    "primaryKeyword": "Power Platform audit log Purview",
+    "secondaryKeywords": [
+      "Audit Log",
+      "Microsoft Purview",
+      "Monitoring",
+      "Compliance"
+    ],
+    "faqs": [
+      {
+        "question": "Where are Power Apps and Power Automate activities logged?",
+        "answer": "In the Microsoft 365 unified audit log, searchable in the Microsoft Purview portal and with Search-UnifiedAuditLog."
+      },
+      {
+        "question": "Can I see who deleted a flow?",
+        "answer": "Yes. Search for the DeleteFlow operation in the audit log for the relevant dates."
+      },
+      {
+        "question": "How long are the logs kept?",
+        "answer": "180 days as standard, and longer with Audit (Premium) licensing and a retention policy."
+      }
+    ]
+  },
+  {
+    "id": "pat-1601",
+    "slug": "power-platform-request-limits-monitor",
+    "title": "Understand and monitor Power Platform request limits",
+    "shortDescription": "What counts as a Power Platform request, the daily allowance per licence, how throttling shows up in flows and apps, and how to see who is close to the limit.",
+    "fullDescription": "Every connector action, Dataverse call and flow action counts as a Power Platform request against the licence of the user or flow owner. Limits are generous for normal use, but high-volume flows under one service account reach them. Throttled flows slow down or fail with 429 responses. Knowing the allowances and how to read the usage reports avoids surprises.",
+    "category": "Power Platform Admin",
+    "subCategory": "Capacity",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Request Limits",
+      "Throttling",
+      "Licensing",
+      "Performance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A nightly flow that updates fifty thousand rows starts taking ten hours and showing retry warnings, and nobody knows whether it is a bug or a limit.",
+    "whenToUse": [
+      "High-volume flows and integrations",
+      "Choosing which account or licence a flow should run under",
+      "Explaining slow or throttled flows"
+    ],
+    "whenNotToUse": [
+      "Splitting work across many user accounts just to dodge limits, which breaches licence terms",
+      "Treating published limits as guaranteed throughput"
+    ],
+    "formulaOrCode": "Daily allowances (per 24 hours, per user or flow; check current licensing documentation for exact figures)\n  Paid licensed users: Power Apps Premium, Power Automate Premium, Dynamics 365 (except Team Member)    40,000\n  Microsoft 365 licences, Power Apps per app, Dynamics 365 Team Member                                   6,000\n  Power Automate Process (per flow) licence                                                            250,000 per flow\n  Non-licensed users: application users, service principals (pooled at tenant level)                  500,000 base\n                                                                                                       plus accrual per licence\n  Copilot Studio and others have their own allowances.\n  A transition period currently applies with more generous enforcement. Reports show usage against the stated limits.\n\nWhat counts\n  Power Automate: every action run, including each iteration's actions inside Apply to each, plus trigger checks\n  that fire. Scopes, conditions and variable actions count.\n  Power Apps: each connector call and Dataverse request (Patch, Filter that goes to the server, and so on).\n  Dataverse API: each request, including each operation inside a batch.\n\nWhose allowance\n  Automated and scheduled flows: the flow OWNER (primary owner). Instant flows: the user who runs them.\n  Flows with a Process licence: the flow's own allowance.\n  Flows owned by a service principal: the non-licensed tenant pool, or a Process licence.\n\nSigns of throttling\n  Flow run: actions show \"retried\" with status 429 and a Retry-After header. Run duration grows.\n  Flow details: a banner \"Your flow is being throttled\" or performance profile messages.\n  Dataverse service protection (separate, per user per 5 minutes): 6,000 requests, 20 minutes of execution time,\n  52 concurrent requests. Error codes 0x80072322, 0x80072321, 0x80072326.\n  Connector limits (separate again): for example SharePoint 600 calls per minute per connection.\n\nSee usage\n  Power Platform admin center > Licensing > Capacity add-ons > Power Platform requests (or Reports):\n    Licensed user report, Non-licensed user report, Per flow licensed flows report\n    Download: per day and per user or flow, with entitled quantity and consumed quantity.\n  Power Automate portal > flow > Analytics > Actions: actions per day for one flow.\n  Estimate: actions per run x runs per day. A loop of 50,000 items with 3 actions inside = 150,000+ requests.\n\nReduce requests\n  Filter at the source with OData filters and trigger conditions so fewer runs start.\n  Replace Apply to each with Select and Filter array for data shaping.\n  Batch writes: Dataverse changesets or SharePoint $batch send many operations in one action\n  (Dataverse still counts each operation, connectors count one action).\n  Avoid polling triggers with short intervals. Prefer event triggers.\n  Move bulk data movement to dataflows or Azure Data Factory, which are not counted the same way.\n  Spread scheduled loads across the day rather than one burst.\n\nIncrease the allowance\n  Assign a Process licence to a high-volume flow.\n  Buy Power Platform request capacity add-ons (assigned to users or flows in the admin center).\n  Move ownership to a properly licensed service account with a Premium licence.\n\nHandle 429 gracefully\n  Leave the default retry policy on (exponential, honours Retry-After). For custom HTTP calls, set\n  Retry Policy: Exponential, count 4 to 8, minimum interval PT10S.\n  Lower Apply to each concurrency if parallel calls trigger connector limits.",
+    "stepByStepInstructions": [
+      "Work out which licence and owner each high-volume flow runs under.",
+      "Estimate daily requests as actions per run multiplied by runs.",
+      "Download the request usage reports from the admin center.",
+      "Check throttled flows for 429 retries and long durations.",
+      "Redesign loops and triggers to cut actions.",
+      "Assign Process licences or add-on capacity where volume is justified."
+    ],
+    "commonMistakes": [
+      "Counting runs instead of actions.",
+      "Running every high-volume flow under one user's allowance.",
+      "Confusing Dataverse service protection limits with daily request limits.",
+      "Removing the retry policy to make failures visible, which turns slow flows into failed ones."
+    ],
+    "troubleshooting": [
+      "If a flow slows after growth in data, count its actions per run and compare with the owner's allowance.",
+      "If only Dataverse actions are throttled in bursts, reduce concurrency. That is service protection.",
+      "If only one connector is throttled, check that connector's own limits.",
+      "If the report shows a service principal over the pool, assign a Process licence to its flows."
+    ],
+    "relatedPatterns": [
+      "apply-to-each-concurrency-variables-power-automate",
+      "filter-array-instead-of-apply-to-each",
+      "dataverse-changeset-transaction-power-automate"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Understand and monitor Power Platform request limits",
+    "seoDescription": "What counts as a Power Platform request, the daily allowance per licence, how throttling shows up in flows and apps, and how to see who is close to the limit.",
+    "primaryKeyword": "Power Platform request limits",
+    "secondaryKeywords": [
+      "Request Limits",
+      "Throttling",
+      "Licensing",
+      "Performance"
+    ],
+    "faqs": [
+      {
+        "question": "What is a Power Platform request?",
+        "answer": "Any action a flow runs, or any connector or Dataverse call an app makes. Each counts toward a daily allowance tied to the licence."
+      },
+      {
+        "question": "Whose limit does a scheduled flow use?",
+        "answer": "The flow owner's, unless the flow has its own Process licence."
+      },
+      {
+        "question": "What happens when the limit is reached?",
+        "answer": "Flows are slowed with 429 responses and retries. Sustained overuse can lead to the flow being turned off after notification."
+      }
+    ]
+  },
+  {
+    "id": "pat-1602",
+    "slug": "reassign-apps-flows-when-maker-leaves",
+    "title": "Reassign apps, flows and connections when a maker leaves",
+    "shortDescription": "An offboarding routine: inventory what the leaver owns, add new owners to apps and flows, replace their connections and deal with Dataverse row ownership.",
+    "fullDescription": "When a maker's account is disabled, their flows stop as soon as connection tokens expire, and their apps can no longer be edited. The fix is simple before they leave and awkward afterwards. A short routine run at notice time keeps everything working and leaves nothing ownerless.",
+    "category": "Power Platform Admin",
+    "subCategory": "Lifecycle",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Offboarding",
+      "Ownership",
+      "Orphaned Resources",
+      "PowerShell"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A departed employee's flow fails three weeks after they left, because its SharePoint connection belonged to their now-disabled account, and nobody has rights to edit it.",
+    "whenToUse": [
+      "Employee departures and role changes",
+      "Contractor engagements ending",
+      "Clearing existing orphaned apps and flows"
+    ],
+    "whenNotToUse": [
+      "Keeping the leaver's account enabled as a workaround",
+      "Reassigning everything to one administrator personally instead of a team or service account"
+    ],
+    "formulaOrCode": "1. Inventory (PowerShell, as Power Platform admin)\n  $upn = \"leaver@contoso.com\"\n  $user = Get-UsersOrGroupsFromGraph -SearchString $upn | Select-Object -First 1      # ObjectId\n  $id = $user.ObjectId\n  $apps  = Get-AdminPowerApp -Owner $id\n  $flows = Get-AdminFlow -CreatedBy $id\n  $conns = Get-AdminPowerAppConnection -CreatedBy $id\n  $apps  | Select-Object DisplayName, EnvironmentName, AppName, LastModifiedTime | Export-Csv apps.csv -NoTypeInformation\n  $flows | Select-Object DisplayName, EnvironmentName, FlowName, Enabled | Export-Csv flows.csv -NoTypeInformation\n  $conns | Select-Object DisplayName, ConnectorName, EnvironmentName | Export-Csv connections.csv -NoTypeInformation\n  Also: flows where they are a co-owner, custom connectors they created, gateways they administer,\n  Dataverse rows they own, and Power BI workspaces.\n\n2. Decide per item with the leaver and their manager: Keep (new owner), Retire, or Personal (delete).\n\n3. Canvas apps: set a new owner\n  Set-AdminPowerAppOwner -AppName <app id> -EnvironmentName <env id> -AppOwner <new owner object id>\n  The previous owner becomes a co-owner. Remove them afterwards:\n  Remove-AdminPowerAppRoleAssignment -AppName <app id> -EnvironmentName <env id> -RoleId <role assignment id>\n  Add a second co-owner or a security group as co-owner so the app never has a single owner again.\n\n4. Cloud flows\n  Non-solution flows: the creator cannot be changed. Add owners:\n    Set-AdminFlowOwnerRole -EnvironmentName <env id> -FlowName <flow id> -PrincipalType User -PrincipalObjectId <new id> -RoleName CanEdit\n  Solution flows: change the primary owner\n    Flow details > Edit > Owner, or  PATCH /api/data/v9.2/workflows(<id>) { \"ownerid@odata.bind\": \"/systemusers(<new user id>)\" }\n  Then, as the new owner, open each flow and replace connections:\n    Flow details > Connections (or connection references) > switch each to the new owner's or the service\n    account's connection > Save > run a test.\n  Licensing: premium flows need the NEW owner to hold the right licence.\n\n5. Connections and connection references\n  Connections cannot be transferred. Create new ones under the service account, then update each connection\n  reference (solution > Connection references > Edit > pick the new connection).\n  Delete the leaver's connections once nothing uses them:\n    Remove-AdminPowerAppConnection -EnvironmentName <env id> -ConnectorName <name> -ConnectionName <id>\n\n6. Dataverse rows\n  Environment > Settings > Users > select the user > Reassign records > assign to another user or team.\n  Bulk and silent. Check business rules that depend on owner.\n  The user record is disabled automatically once the account is disabled or unlicensed.\n\n7. Other items\n  Custom connectors: Share with the new owner as \"Can edit\". In solutions, ownership follows the Dataverse row.\n  On-premises data gateways: add another admin before the leaver goes (Power Platform admin center > Data > Gateways).\n  Approvals in progress assigned to the leaver: reassign from the approvals centre or cancel and restart.\n  Teams and SharePoint sites the flows use: confirm the new owner has access.\n  Power BI: transfer dataset ownership (Take over) and workspace admin.\n\n8. After the account is disabled\n  Orphaned items can still be recovered by an admin with the same commands. Flows whose owner is missing appear\n  in the admin center with no owner. Assign one and repair connections.\n\nPrevent it\n  Production flows and apps owned by a service account or team from the start, deployed through solutions.\n  Add the routine to the HR leaver checklist with ten working days' notice.",
+    "stepByStepInstructions": [
+      "List the apps, flows, connections and other resources the leaver owns.",
+      "Agree with their manager what to keep, retire or delete.",
+      "Assign new owners to apps and flows, preferably a service account plus a named backup.",
+      "Recreate connections under the new owner and update connection references.",
+      "Reassign Dataverse rows, gateways, connectors and in-progress approvals.",
+      "Test each kept flow and app, then remove the leaver's access."
+    ],
+    "commonMistakes": [
+      "Waiting until the account is disabled.",
+      "Adding a new owner but leaving the leaver's connections in use.",
+      "Reassigning to a single admin who becomes the next single point of failure.",
+      "Forgetting gateways and custom connectors."
+    ],
+    "troubleshooting": [
+      "If a flow fails after the handover, a connection still belongs to the leaver. Replace it.",
+      "If the new owner cannot turn on a premium flow, they need a suitable licence.",
+      "If an app cannot be edited, set a new owner as admin with Set-AdminPowerAppOwner.",
+      "If rows are still owned by the disabled user, run Reassign records from their user record."
+    ],
+    "relatedPatterns": [
+      "find-orphaned-apps-and-flows-powershell",
+      "create-a-flow-ownership-transfer-checklist",
+      "govern-power-automate-service-account-ownership"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Reassign apps, flows and connections when a maker leaves",
+    "seoDescription": "An offboarding routine: inventory what the leaver owns, add new owners to apps and flows, replace their connections and deal with Dataverse row ownership.",
+    "primaryKeyword": "reassign Power Apps flows owner leaves",
+    "secondaryKeywords": [
+      "Offboarding",
+      "Ownership",
+      "Orphaned Resources",
+      "PowerShell"
+    ],
+    "faqs": [
+      {
+        "question": "What happens to flows when the owner leaves?",
+        "answer": "They keep running until the owner's connections stop authenticating, then fail. Without another owner, nobody can repair them except an admin."
+      },
+      {
+        "question": "Can I change the owner of a Power Apps canvas app?",
+        "answer": "Yes. An admin can run Set-AdminPowerAppOwner to assign a new owner."
+      },
+      {
+        "question": "Can connections be transferred to another user?",
+        "answer": "No. Create new connections under the new owner and switch flows and connection references to them."
+      }
+    ]
+  },
+  {
+    "id": "pat-1603",
+    "slug": "quarantine-canvas-app-powershell",
+    "title": "Quarantine a risky canvas app without deleting it",
+    "shortDescription": "Block users from opening a canvas app while its owner fixes a compliance problem, using admin PowerShell, and release it when resolved.",
+    "fullDescription": "Sometimes an app has to be stopped immediately: it exposes data too widely, uses a connector that is about to be blocked, or has no owner. Deleting it destroys work. Quarantine keeps the app and its sharing in place but prevents users from launching it. Makers can still open it in Studio to fix the issue.",
+    "category": "Power Platform Admin",
+    "subCategory": "Compliance",
+    "platform": [
+      "Power Platform",
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Quarantine",
+      "Compliance",
+      "PowerShell",
+      "Canvas Apps"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "An app shared with the whole organisation shows salary data from a list with broken permissions. It must stop now, but the team needs it back once fixed.",
+    "whenToUse": [
+      "Apps that breach policy and need urgent containment",
+      "Unowned apps awaiting a decision",
+      "A step in a compliance process before deletion"
+    ],
+    "whenNotToUse": [
+      "Routine nudges to makers, where an email is enough",
+      "Model-driven apps and flows, which need other controls"
+    ],
+    "formulaOrCode": "# Requires the admin module and a Power Platform admin (or environment admin) sign-in\nInstall-Module Microsoft.PowerApps.Administration.PowerShell\nAdd-PowerAppsAccount\n\n# Find the app\nGet-AdminPowerApp \"Salary Review\" | Select-Object DisplayName, AppName, EnvironmentName, Owner\n$envId = \"<environment id>\"\n$appId = \"<app id (AppName)>\"\n\n# Check current state\nGet-AppQuarantineState -EnvironmentName $envId -AppName $appId\n#   QuarantineStatus : Unquarantined\n\n# Quarantine\nSet-AppAsQuarantined -EnvironmentName $envId -AppName $appId\n\n# Release when fixed\nSet-AppAsUnquarantined -EnvironmentName $envId -AppName $appId\n\nWhat users experience\n  Launching the app (web, mobile, Teams) shows a message that the app has been quarantined by an administrator.\n  Owners and co-owners can still open it in Power Apps Studio to edit, save and publish.\n  Sharing, connections and data are untouched.\n\nContainment checklist for a data exposure\n  1. Quarantine the app (seconds).\n  2. Fix the source: SharePoint list permissions, Dataverse roles or the app's filter. The app was only a window.\n     If the data source itself is over-shared, users can still reach it directly.\n  3. Turn off related flows if they send the data onwards.\n  4. Tell the owner and the users, with a named contact.\n  5. Review who opened the app: Purview audit log, operation LaunchPowerApp, for the exposure period.\n  6. Release after review by a second person.\n\nOther containment tools\n  Remove broad sharing but keep the app available to its core team:\n    Get-AdminPowerAppRoleAssignment -AppName $appId -EnvironmentName $envId\n    Remove-AdminPowerAppRoleAssignment -AppName $appId -EnvironmentName $envId -RoleId <id of the Everyone/tenant share>\n  Require conditional access for one app (Entra authentication context):\n    Set-AdminPowerAppConditionalAccessAuthenticationContextIds -EnvironmentName $envId -AppName $appId -AuthenticationContextIds <id>\n  Flows: Disable-AdminFlow -EnvironmentName $envId -FlowName <flow id>\n  Delete, recoverable for a limited time:\n    Remove-AdminPowerApp -AppName $appId -EnvironmentName $envId\n    Get-AdminDeletedPowerAppsList -EnvironmentName $envId\n    Get-AdminRecoverDeletedPowerApp -AppName $appId -EnvironmentName $envId\n\nBulk: quarantine apps whose owner has left\n  Get-AdminPowerApp -EnvironmentName $envId | Where-Object { -not $_.Owner.displayName } |\n    ForEach-Object { Set-AppAsQuarantined -EnvironmentName $envId -AppName $_.AppName }\n  Announce first, and keep a list of what was quarantined and why.\n\nRecord\n  Log each quarantine: app, environment, reason, who decided, date, release date. The CoE Starter Kit's\n  compliance process can drive this with maker notifications.",
+    "stepByStepInstructions": [
+      "Identify the app's ID and environment.",
+      "Quarantine it with Set-AppAsQuarantined.",
+      "Fix the underlying data access problem, not just the app.",
+      "Inform the owner and users with the reason and a contact.",
+      "Review audit logs for use during the exposure.",
+      "Release the app after a second person confirms the fix."
+    ],
+    "commonMistakes": [
+      "Deleting the app and losing the work.",
+      "Quarantining the app but leaving the over-shared data source open.",
+      "No communication, so users raise support tickets.",
+      "Forgetting to release or follow up."
+    ],
+    "troubleshooting": [
+      "If users can still open the app, confirm the state with Get-AppQuarantineState and that you targeted the right environment.",
+      "If the cmdlets are missing, update the administration module.",
+      "If the owner cannot edit the app, check they are still an owner. Quarantine does not remove edit access.",
+      "If the data is still exposed, fix permissions at the source."
+    ],
+    "relatedPatterns": [
+      "find-orphaned-apps-and-flows-powershell",
+      "power-platform-activity-audit-logs-purview",
+      "create-a-production-support-guide"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Quarantine a risky canvas app without deleting it",
+    "seoDescription": "Block users from opening a canvas app while its owner fixes a compliance problem, using admin PowerShell, and release it when resolved.",
+    "primaryKeyword": "Power Apps quarantine app",
+    "secondaryKeywords": [
+      "Quarantine",
+      "Compliance",
+      "PowerShell",
+      "Canvas Apps"
+    ],
+    "faqs": [
+      {
+        "question": "How do I disable a Power Apps canvas app without deleting it?",
+        "answer": "Run Set-AppAsQuarantined as an admin. Users cannot launch it, but owners can still edit it."
+      },
+      {
+        "question": "Does quarantine remove sharing?",
+        "answer": "No. Sharing and connections stay as they are and apply again when the app is released."
+      },
+      {
+        "question": "Can deleted canvas apps be recovered?",
+        "answer": "For a limited time, with Get-AdminDeletedPowerAppsList and Get-AdminRecoverDeletedPowerApp."
+      }
+    ]
+  },
+  {
+    "id": "pat-1604",
+    "slug": "environment-request-provisioning-flow",
+    "title": "Provision environments from an approved request",
+    "shortDescription": "A request list, an approval and a flow that creates the environment with the right type, region, security group and DLP policy, then records it.",
+    "fullDescription": "Restricting environment creation to admins prevents sprawl but creates a queue. A request process removes the bottleneck: makers fill in a short form, an approver checks capacity and purpose, and a flow creates the environment with standard settings. Every environment then has an owner, a purpose and an expiry on record.",
+    "category": "Power Platform Admin",
+    "subCategory": "Environment strategy",
+    "platform": [
+      "Power Platform",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Environment Provisioning",
+      "Approvals",
+      "Admin Connectors",
+      "Governance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "Half a day",
+    "problemStatement": "Environment creation is locked down, so requests arrive by chat and email. Each is built by hand with different settings, and nobody tracks why an environment exists.",
+    "whenToUse": [
+      "Tenants that restrict environment creation to admins",
+      "Standardising naming, security groups and policies",
+      "Tracking owners, purpose and review dates"
+    ],
+    "whenNotToUse": [
+      "Tiny tenants where an admin creates two environments a year",
+      "Skipping the capacity check and approving everything automatically"
+    ],
+    "formulaOrCode": "Request list: Environment Requests (SharePoint or Dataverse)\n  Title (project name), Purpose (multi-line), EnvType (Sandbox | Production | Developer),\n  Region (choice), NeedsDataverse (yes/no), Language, Currency, Owner (person), BackupOwner (person),\n  DataClassification (Public | Internal | Confidential), ExpectedUsers (number), ReviewDate (date),\n  Status (Submitted | Approved | Rejected | Provisioning | Ready | Failed), EnvironmentId, EnvironmentUrl\n\nNaming standard\n  <Dept>-<Project>-<Stage>      for example  FIN-RequestHub-Test        URL: contoso-fin-requesthub-test\n\nFlow: Provision environment\n  Trigger: SharePoint > When an item is created (Environment Requests)\n  1. Capacity check\n       Power Platform for Admins > List Environments as Admin > count, or read a capacity figure kept in a\n       settings list. If NeedsDataverse and free database capacity is under 1 GB: set Status Rejected with the\n       reason and stop.\n  2. Approval: Start and wait for an approval (platform team). Details: purpose, type, owner, classification.\n       Rejected: update Status, email the requester with comments, Terminate.\n  3. Security group\n       Office 365 Groups / Microsoft Entra ID > Create group: \"PP-<Title>-<Stage>-Users\" (security)\n       Add Owner and BackupOwner as members.\n  4. Create the environment\n       Power Platform for Admins > Create Environment\n         Location: Region        Display name: per naming standard        Environment SKU: EnvType\n       Then, if NeedsDataverse:\n       Power Platform for Admins > Create Database (Create CDS Database)\n         Environment: id from the previous step        Base language: 1033        Currency: USD\n         (security group can be set through the environment's properties after creation)\n     PowerShell or CLI alternative inside an Azure Automation runbook:\n       pac admin create --name \"FIN-RequestHub-Test\" --type Sandbox --region unitedstates --currency USD\n           --language 1033 --domain contoso-fin-requesthub-test --security-group-id <group id>\n  5. Wait until ready\n       Do until: Get Environment as Admin > properties/provisioningState equals Succeeded  (delay 1 minute, limit 30)\n  6. Apply policy\n       Add the environment to the right DLP policy by classification:\n       Power Platform for Admins > Get DLP Policy V2 > append the environment > Update DLP Policy V2\n       Optionally enable Managed Environments and add to an environment group so rules apply automatically.\n  7. Grant the owner access\n       Force Sync user, then assign System Administrator (Sandbox) or Environment Maker (per your standard)\n       through the Dataverse connector: Relate rows systemuser <> role, or add them to a group team.\n  8. Record and notify\n       Update the request: Status Ready, EnvironmentId, EnvironmentUrl\n       Email owner and backup: URL, rules for the environment, review date, how to request changes.\n  Error path: Scope with run-after on failure > Status Failed, post details to the platform team channel.\n\nLifecycle\n  Scheduled flow monthly: requests where ReviewDate is within 30 days > ask the owner to confirm the\n  environment is still needed. No reply after two reminders: escalate to the backup owner, then schedule\n  deletion with notice. Sandboxes for projects default to a 12-month review date.\n\nTenant settings to pair with this\n  Production and Trial environment assignments: only specific admins. Developer: everyone (with routing).\n\nWithout building it yourself\n  The CoE Starter Kit includes an environment request management process with similar steps.",
+    "stepByStepInstructions": [
+      "Restrict production and trial environment creation to admins in tenant settings.",
+      "Create a request list capturing purpose, type, owner, classification and review date.",
+      "Build a flow that checks capacity and asks the platform team to approve.",
+      "Create the security group and environment with standard naming and settings.",
+      "Add the environment to the right DLP policy and grant the owner access.",
+      "Record the result and schedule periodic reviews of each environment."
+    ],
+    "commonMistakes": [
+      "Creating environments with no recorded owner or purpose.",
+      "Skipping the security group, leaving the environment open to all licensed users.",
+      "Forgetting to add the new environment to a DLP policy.",
+      "No review date, so project sandboxes live forever."
+    ],
+    "troubleshooting": [
+      "If creation fails, check capacity, that the domain name is unique and that the region supports the type.",
+      "If the database step times out, poll the provisioning state for longer before continuing.",
+      "If the owner cannot sign in, they are not in the security group or have not been synced.",
+      "If the environment has no policy, check the DLP update step and tenant-wide policy scope."
+    ],
+    "relatedPatterns": [
+      "power-platform-environment-strategy",
+      "environment-security-group-restrict-access",
+      "create-an-environment-inventory"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Provision environments from an approved request",
+    "seoDescription": "A request list, an approval and a flow that creates the environment with the right type, region, security group and DLP policy, then records it.",
+    "primaryKeyword": "Power Platform environment request process",
+    "secondaryKeywords": [
+      "Environment Provisioning",
+      "Approvals",
+      "Admin Connectors",
+      "Governance"
+    ],
+    "faqs": [
+      {
+        "question": "How do I control who can create Power Platform environments?",
+        "answer": "Tenant settings in the admin center can limit production, sandbox and trial environment creation to specific admins."
+      },
+      {
+        "question": "Can a flow create an environment?",
+        "answer": "Yes. The Power Platform for Admins connector has actions to create an environment and its Dataverse database."
+      },
+      {
+        "question": "What should an environment request capture?",
+        "answer": "Purpose, type, region, owner and backup owner, data classification, expected users and a review date."
+      }
+    ]
   }
 ]
