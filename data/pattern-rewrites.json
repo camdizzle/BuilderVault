@@ -595,5 +595,1326 @@
       "If the template feels too long for small flows, keep sections 1, 2, 7 and 9 as the minimum."
     ],
     "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-request-amount": {
+    "shortDescription": "Send small requests to the manager and larger ones to more senior approvers, using thresholds kept in a list.",
+    "fullDescription": "Amount-based routing is the most common approval rule. This pattern reads the thresholds from a small list, picks the highest tier the amount reaches, and runs the approval stages in order up to that tier.",
+    "problemStatement": "Spending limits are written into flow conditions, so a change in policy means a developer has to edit and retest the flow.",
+    "whenToUse": [
+      "Purchase, expense or discount approvals with spending limits",
+      "Limits that finance changes from time to time",
+      "Two or more approval tiers"
+    ],
+    "whenNotToUse": [
+      "A single approver for every amount",
+      "Rules that depend on more than amount, which need a fuller rules list"
+    ],
+    "formulaOrCode": "List: Approval Tiers\n  Title (tier name) | MinAmount (Number, indexed) | Approver (Person) | Order (Number)\n  Manager   |     0 | (blank: use requester's manager) | 1\n  Director  |  5000 | director@contoso.com            | 2\n  CFO       | 25000 | cfo@contoso.com                 | 3\n\nGet items (Approval Tiers)\n  Filter Query : MinAmount le @{coalesce(triggerBody()?['Amount'], 0)}\n  Order By     : Order asc\n\nApply to each tier (Concurrency: off, so stages run in order)\n  Compose_Approver\n    coalesce(\n      items('Apply_to_each')?['Approver']?['Email'],\n      outputs('Get_manager_(V2)')?['body/mail']\n    )\n  Start and wait for an approval\n    Title       : @{items('Apply_to_each')?['Title']} approval: @{triggerBody()?['Title']} (@{formatNumber(triggerBody()?['Amount'], 'N2')})\n    Assigned to : @{outputs('Compose_Approver')}\n  Condition: outcome is equal to Reject\n    Yes: Update item Status = Rejected, RejectedAt = tier name\n         Terminate (Succeeded)\n\nAfter the loop: Update item Status = Approved",
+    "stepByStepInstructions": [
+      "Create the Approval Tiers list with a minimum amount and approver per tier.",
+      "Query the tiers whose minimum is at or below the request amount, in order.",
+      "Loop through them one at a time, starting an approval for each.",
+      "Stop at the first rejection and record which tier rejected.",
+      "Mark the request approved when the loop completes."
+    ],
+    "commonMistakes": [
+      "Turning on loop concurrency, which sends all tiers at once.",
+      "Comparing a currency column as text.",
+      "Hard-coding thresholds in conditions."
+    ],
+    "troubleshooting": [
+      "If no tier is returned, the amount is empty or below every minimum. Keep a tier with a minimum of zero.",
+      "If a higher tier is skipped, check the Order values and that the filter uses le, not lt.",
+      "If the manager tier fails, the requester has no manager set. Add a fallback approver."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-department-code": {
+    "shortDescription": "Find the approver for a request from the requester's department, using a department list.",
+    "fullDescription": "Departments change heads more often than flows should change. This pattern reads the requester's department from their profile or from the item, looks up that department's approver in a list, and falls back to a default.",
+    "problemStatement": "The flow sends approvals to whoever was head of department when it was built, and updates lag behind every reorganization.",
+    "whenToUse": [
+      "Approvals owned by department heads or cost-centre owners",
+      "Organizations where department is set on user profiles",
+      "More than a few departments"
+    ],
+    "whenNotToUse": [
+      "Approval by direct line manager, where Get manager is enough",
+      "Departments that are not recorded anywhere reliable"
+    ],
+    "formulaOrCode": "List: Departments\n  Title (department code, indexed) | DepartmentName | Approver (Person) | Deputy (Person)\n\nGet user profile (V2)\n  User (UPN) : @{triggerBody()?['Author']?['Email']}\n\nCompose_DeptCode   (item value wins over the profile)\n  coalesce(triggerBody()?['DepartmentCode'], outputs('Get_user_profile_(V2)')?['body/department'], '')\n\nGet items (Departments)\n  Filter Query : Title eq '@{replace(outputs('Compose_DeptCode'), '''', '''''')}'\n  Top Count    : 1\n\nCompose_Approver\n  coalesce(\n    first(body('Get_items')?['value'])?['Approver']?['Email'],\n    'approvals@contoso.com'\n  )\n\nCompose_FinalApprover   (never route to the requester)\n  if(\n    equals(toLower(outputs('Compose_Approver')), toLower(triggerBody()?['Author']?['Email'])),\n    coalesce(first(body('Get_items')?['value'])?['Deputy']?['Email'], 'approvals@contoso.com'),\n    outputs('Compose_Approver')\n  )\n\nStart and wait for an approval\n  Assigned to : @{outputs('Compose_FinalApprover')}",
+    "stepByStepInstructions": [
+      "Create the Departments list keyed by department code.",
+      "Read the department from the item, falling back to the requester's profile.",
+      "Look up the department's approver and fall back to a shared approvals mailbox.",
+      "Swap to the deputy when the approver is the requester.",
+      "Start the approval with the final address."
+    ],
+    "commonMistakes": [
+      "Relying on the profile's department text matching the list exactly without checking.",
+      "Letting a head of department approve their own request.",
+      "No fallback for an unknown department."
+    ],
+    "troubleshooting": [
+      "If the lookup misses, output the department value and compare it with the list. Profile values often carry extra text such as a location.",
+      "If Get user profile fails for guests, use the item's department column for them.",
+      "If approvals reach the shared mailbox often, add the missing departments to the list."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-project-phase": {
+    "shortDescription": "Change who approves as a project moves from initiation to delivery to closure.",
+    "fullDescription": "Different phases need different sign-off. This pattern stores the approver role for each phase in a list and resolves that role to a person from the project record, so the flow needs no change when phases or roles are adjusted.",
+    "problemStatement": "Every phase gate has its own flow with its own hard-coded approver, and they drift apart over time.",
+    "whenToUse": [
+      "Stage-gate processes",
+      "Projects where sponsor, manager and owner are recorded per project",
+      "Approver depends on phase, not on amount"
+    ],
+    "whenNotToUse": [
+      "Processes with one phase",
+      "Projects that do not record their roles as people columns"
+    ],
+    "formulaOrCode": "List: Phase Approvals\n  Title (phase, indexed)  | ApproverRole (Choice: Sponsor, ProjectManager, PMO, BusinessOwner)\n  Initiation  | Sponsor\n  Planning    | PMO\n  Delivery    | ProjectManager\n  Closure     | BusinessOwner\n\nProjects list people columns: Sponsor, ProjectManager, BusinessOwner\n\nGet item (Projects)   Id: @{triggerBody()?['ProjectId']}\n\nGet items (Phase Approvals)\n  Filter Query : Title eq '@{body('Get_item')?['Phase']?['Value']}'\n  Top Count    : 1\n\nCompose_Role\n  coalesce(first(body('Get_items')?['value'])?['ApproverRole']?['Value'], 'PMO')\n\nCompose_Approver\n  if(equals(outputs('Compose_Role'), 'Sponsor'),        body('Get_item')?['Sponsor']?['Email'],\n  if(equals(outputs('Compose_Role'), 'ProjectManager'), body('Get_item')?['ProjectManager']?['Email'],\n  if(equals(outputs('Compose_Role'), 'BusinessOwner'),  body('Get_item')?['BusinessOwner']?['Email'],\n     'pmo@contoso.com')))\n\nStart and wait for an approval\n  Title       : @{body('Get_item')?['Phase']?['Value']} gate: @{body('Get_item')?['Title']}\n  Assigned to : @{coalesce(outputs('Compose_Approver'), 'pmo@contoso.com')}",
+    "stepByStepInstructions": [
+      "Record sponsor, project manager and business owner as people columns on the project.",
+      "Create the Phase Approvals list mapping each phase to a role.",
+      "Read the project, look up the role for its current phase, and resolve the role to a person.",
+      "Fall back to the PMO mailbox when the role is empty.",
+      "Start the approval and write the result to the project's gate history."
+    ],
+    "commonMistakes": [
+      "Mapping phases straight to named people instead of roles.",
+      "Phase names in the list that differ from the choice values.",
+      "No fallback when a project has no sponsor recorded."
+    ],
+    "troubleshooting": [
+      "If the role lookup returns nothing, compare the phase text with the list Title.",
+      "If the approver is empty, the project's person column for that role is blank. The coalesce routes it to the PMO.",
+      "If a new role is added, extend the Compose_Approver expression with one more branch."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-risk-severity": {
+    "shortDescription": "Escalate approval to more senior people as the risk rating rises, and require everyone to approve at the top level.",
+    "fullDescription": "Low risks can be accepted by the owner, while high and critical risks need wider sign-off. This pattern maps severity to an approval type and a set of approvers, including a calculated severity from likelihood and impact.",
+    "problemStatement": "All risks go to the same approver, so trivial ones cause delays and serious ones get no more scrutiny than the rest.",
+    "whenToUse": [
+      "Risk acceptance, change approval or exception requests",
+      "A defined severity scale",
+      "Higher severities needing more than one approver"
+    ],
+    "whenNotToUse": [
+      "A single approval level",
+      "Severity that is not recorded or calculated consistently"
+    ],
+    "formulaOrCode": "Compose_Score\n  mul(int(triggerBody()?['Likelihood']), int(triggerBody()?['Impact']))      (1 to 25)\n\nCompose_Severity\n  if(greaterOrEquals(outputs('Compose_Score'), 15), 'Critical',\n  if(greaterOrEquals(outputs('Compose_Score'), 10), 'High',\n  if(greaterOrEquals(outputs('Compose_Score'), 5),  'Medium', 'Low')))\n\nUpdate item   Severity = @{outputs('Compose_Severity')}\n\nSwitch on outputs('Compose_Severity')\n\n  Case Low\n    Update item Status = Accepted by owner        (no approval)\n\n  Case Medium\n    Start and wait for an approval\n      Type        : Approve/Reject - First to respond\n      Assigned to : @{triggerBody()?['RiskOwner']?['Email']}\n\n  Case High\n    Start and wait for an approval\n      Type        : Approve/Reject - First to respond\n      Assigned to : riskmanager@contoso.com\n\n  Case Critical\n    Start and wait for an approval\n      Type        : Approve/Reject - Everyone must approve\n      Assigned to : riskmanager@contoso.com;ciso@contoso.com;coo@contoso.com\n\nAfter the Switch\n  Update item\n    Status : @{if(equals(outputs('Compose_Severity'), 'Low'), 'Accepted', 'Decided')}",
+    "stepByStepInstructions": [
+      "Agree the scale and the thresholds for each severity.",
+      "Calculate the score and severity in Compose actions and store the severity on the item.",
+      "Switch on severity and start the approval type each level needs.",
+      "Use everyone-must-approve for the top level, with addresses separated by semicolons.",
+      "Record the decision and who made it."
+    ],
+    "commonMistakes": [
+      "Letting the requester choose the severity freely with no calculation.",
+      "Using first-to-respond for critical risks.",
+      "Leaving thresholds undocumented."
+    ],
+    "troubleshooting": [
+      "If int() fails, likelihood or impact is empty. Make both required or wrap them in coalesce.",
+      "If an everyone-must-approve approval never finishes, one approver has not responded. Add a timeout and reminder.",
+      "If severities look wrong, output the score and check the threshold order from highest to lowest."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-site-location": {
+    "shortDescription": "Send a request to the approver for its site, with a regional fallback when a site has none.",
+    "fullDescription": "Multi-site organizations need local approvers. This pattern keeps site approvers in a list with a region column, tries the site first, then the region, then a central mailbox.",
+    "problemStatement": "Requests from a new or small site stall because the flow has no approver for it, and nobody notices until the requester chases.",
+    "whenToUse": [
+      "Facilities, access or purchasing requests handled per site",
+      "Sites grouped into regions",
+      "Sites that open and close over time"
+    ],
+    "whenNotToUse": [
+      "A single location",
+      "Approvals by line manager regardless of site"
+    ],
+    "formulaOrCode": "List: Site Approvers\n  Title (site code, indexed) | Region (Choice, indexed) | Approver (Person) | IsRegionalLead (Yes/No)\n\nGet items \"Site\"\n  Filter Query : Title eq '@{triggerBody()?['SiteCode']}'\n  Top Count    : 1\n\nGet items \"Region\"\n  Filter Query : Region eq '@{triggerBody()?['Region']?['Value']}' and IsRegionalLead eq 1\n  Top Count    : 1\n\nCompose_Approver\n  coalesce(\n    first(body('Site')?['value'])?['Approver']?['Email'],\n    first(body('Region')?['value'])?['Approver']?['Email'],\n    'facilities@contoso.com'\n  )\n\nCompose_RouteUsed   (for reporting gaps)\n  if(not(empty(first(body('Site')?['value'])?['Approver']?['Email'])), 'Site',\n  if(not(empty(first(body('Region')?['value'])?['Approver']?['Email'])), 'Region', 'Central'))\n\nUpdate item   RoutedVia = @{outputs('Compose_RouteUsed')}\n\nStart and wait for an approval\n  Title       : @{triggerBody()?['SiteCode']}: @{triggerBody()?['Title']}\n  Assigned to : @{outputs('Compose_Approver')}",
+    "stepByStepInstructions": [
+      "Create the Site Approvers list with site code, region and approver.",
+      "Look up the site, then the regional lead.",
+      "Pick the first approver found, ending with a central mailbox.",
+      "Record which route was used on the item.",
+      "Review items routed centrally each month and fill the gaps in the list."
+    ],
+    "commonMistakes": [
+      "No fallback, so unknown sites fail.",
+      "Site codes typed by hand on the form instead of chosen from a list.",
+      "Never reviewing how often the fallback is used."
+    ],
+    "troubleshooting": [
+      "If the site lookup misses, check for leading zeros or different capitals in the code.",
+      "If the wrong region lead is chosen, more than one row is marked as lead for that region.",
+      "If the central mailbox receives most requests, the list is out of date."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-vendor-category": {
+    "shortDescription": "Add the right specialist reviews to a vendor request based on what the vendor will supply.",
+    "fullDescription": "A software vendor needs a security review and a contractor needs an insurance check. This pattern stores the required reviews per category and starts only those approvals, in parallel.",
+    "problemStatement": "Every vendor request goes through every review, which wastes specialist time, or reviews are chosen by hand and sometimes skipped.",
+    "whenToUse": [
+      "Vendor, supplier or contract intake",
+      "Different categories needing different specialist checks",
+      "Reviews that can run at the same time"
+    ],
+    "whenNotToUse": [
+      "One standard review for all vendors",
+      "Categories that overlap so much that every review always applies"
+    ],
+    "formulaOrCode": "List: Category Reviews\n  Title (vendor category, indexed) | ReviewName | ReviewerEmail | Required (Yes/No)\n  Software   | Security review   | security@contoso.com\n  Software   | Data protection   | privacy@contoso.com\n  Contractor | Insurance check   | risk@contoso.com\n  Any        | Finance setup     | finance@contoso.com\n\nGet items (Category Reviews)\n  Filter Query : (Title eq '@{triggerBody()?['VendorCategory']?['Value']}' or Title eq 'Any') and Required eq 1\n\nApply to each review   (Concurrency: On, 10, so reviews run together)\n  Start and wait for an approval\n    Title       : @{items('Apply_to_each')?['ReviewName']}: @{triggerBody()?['Title']}\n    Assigned to : @{items('Apply_to_each')?['ReviewerEmail']}\n  Create item (Vendor Review Results)\n    RequestId : @{triggerBody()?['ID']}\n    Review    : @{items('Apply_to_each')?['ReviewName']}\n    Outcome   : @{outputs('Start_and_wait_for_an_approval')?['body/outcome']}\n    Comments  : @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']}\n\nAfter the loop\n  Get items (Vendor Review Results)\n    Filter Query : RequestId eq @{triggerBody()?['ID']} and Outcome eq 'Reject'\n  Update item\n    Status : @{if(greater(length(body('Get_items_2')?['value']), 0), 'Rejected', 'Approved')}",
+    "stepByStepInstructions": [
+      "List each category's reviews in the Category Reviews list, with an Any row for reviews everyone needs.",
+      "Query the reviews for the request's category.",
+      "Loop over them with concurrency on, starting one approval per review.",
+      "Write each outcome to a results list.",
+      "After the loop, reject the request if any review was rejected."
+    ],
+    "commonMistakes": [
+      "Using variables inside the parallel loop to collect outcomes.",
+      "Forgetting the reviews that apply to every category.",
+      "Running specialist reviews one after another."
+    ],
+    "troubleshooting": [
+      "If no reviews start, the category text does not match the list. Compare the values.",
+      "If the overall status is wrong, check the results list for that request. Each review should have one row.",
+      "If the loop seems stuck, one reviewer has not responded. Add a timeout to the approval action."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-document-type": {
+    "shortDescription": "Route a document for approval based on its type or content type, and publish it when approved.",
+    "fullDescription": "Policies, contracts and procedures each have their own approver. This pattern triggers on a library, reads the document type, finds its approver, runs the approval with a link to the file, and sets the approval status.",
+    "problemStatement": "Documents sit in draft because authors do not know who approves which type, or they email the file around and lose track of versions.",
+    "whenToUse": [
+      "Controlled document libraries",
+      "Different owners for different document types",
+      "Approval recorded on the file itself"
+    ],
+    "whenNotToUse": [
+      "Libraries using built-in content approval that already meets the need",
+      "Ad hoc files with no type"
+    ],
+    "formulaOrCode": "Library columns\n  DocType (Choice: Policy, Procedure, Contract, Form) | ApprovalStatus (Choice: Draft, In review, Approved, Rejected)\n  ApprovedBy (Person) | ApprovedOn (Date)\n\nList: Document Approvers\n  Title (DocType, indexed) | Approver (Person)\n\nTrigger: When a file is created or modified (properties only)\n  Trigger condition: @equals(triggerBody()?['ApprovalStatus']?['Value'], 'In review')\n\nGet items (Document Approvers)\n  Filter Query : Title eq '@{triggerBody()?['DocType']?['Value']}'\n  Top Count    : 1\n\nStart and wait for an approval\n  Title        : Review @{triggerBody()?['DocType']?['Value']}: @{triggerBody()?['{Name}']}\n  Assigned to  : @{coalesce(first(body('Get_items')?['value'])?['Approver']?['Email'], 'documentcontrol@contoso.com')}\n  Item link    : @{triggerBody()?['{Link}']}\n  Details      : Version @{triggerBody()?['{VersionNumber}']} by @{triggerBody()?['Editor']?['DisplayName']}\n\nUpdate file properties\n  ApprovalStatus : @{if(equals(outputs('Start_and_wait_for_an_approval')?['body/outcome'], 'Approve'), 'Approved', 'Rejected')}\n  ApprovedBy     : @{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['responder']?['email']}\n  ApprovedOn     : @{utcNow()}",
+    "stepByStepInstructions": [
+      "Add document type and approval status columns to the library.",
+      "Create the Document Approvers list.",
+      "Trigger only when the status is set to In review.",
+      "Look up the approver for the type and start the approval with a link to the file.",
+      "Write the outcome, approver and date to the file's properties."
+    ],
+    "commonMistakes": [
+      "Triggering on every modification instead of on the status change.",
+      "Approving a link to the library rather than to the specific file.",
+      "Not recording which version was approved."
+    ],
+    "troubleshooting": [
+      "If the flow runs again after its own update, the trigger condition already stops it because the status is no longer In review. Check the condition text if it loops.",
+      "If the file is checked out, the property update fails. Require check-in before review.",
+      "If the version shown is not the one reviewed, store the version number in a column at approval time."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-budget-owner": {
+    "shortDescription": "Find the approver from the cost centre a request is charged to, and check the remaining budget first.",
+    "fullDescription": "The person who should approve spending is the owner of the budget it comes from. This pattern looks up the cost centre, compares the request with the remaining budget, and routes to the budget owner or escalates when the budget would be exceeded.",
+    "problemStatement": "Line managers approve spending against budgets they do not own, and overspends are only found at month end.",
+    "whenToUse": [
+      "Purchase requests charged to cost centres or projects",
+      "Budget owners who differ from line managers",
+      "A budget figure that is kept up to date somewhere"
+    ],
+    "whenNotToUse": [
+      "Organizations without cost-centre ownership",
+      "Budgets held only in a finance system the flow cannot read"
+    ],
+    "formulaOrCode": "List: Cost Centres\n  Title (code, indexed) | Owner (Person) | AnnualBudget (Currency) | Committed (Currency) | FinancePartner (Person)\n\nGet items (Cost Centres)\n  Filter Query : Title eq '@{triggerBody()?['CostCentre']}'\n  Top Count    : 1\n\nCondition: length(body('Get_items')?['value']) is equal to 0\n  Yes: Update item Status = Needs attention, FlowMessage = Unknown cost centre\n       Terminate (Failed, \"UnknownCostCentre\")\n\nCompose_Remaining\n  sub(\n    float(coalesce(first(body('Get_items')?['value'])?['AnnualBudget'], 0)),\n    float(coalesce(first(body('Get_items')?['value'])?['Committed'], 0))\n  )\n\nCompose_OverBudget\n  greater(float(triggerBody()?['Amount']), outputs('Compose_Remaining'))\n\nCondition: outputs('Compose_OverBudget') is equal to true\n  No : Start and wait for an approval (First to respond)\n         Assigned to : budget owner\n         Details     : Remaining budget: @{formatNumber(outputs('Compose_Remaining'), 'N2')}\n  Yes: Start and wait for an approval (Everyone must approve)\n         Assigned to : budget owner;finance partner\n         Details     : **This request exceeds the remaining budget of\n                       @{formatNumber(outputs('Compose_Remaining'), 'N2')}.**\n\nOn approval: Update item (Cost Centres)  Committed = Committed + Amount",
+    "stepByStepInstructions": [
+      "Keep a Cost Centres list with owner, budget and committed spend.",
+      "Look up the request's cost centre and stop clearly when it is unknown.",
+      "Calculate the remaining budget and whether the request exceeds it.",
+      "Route to the owner, adding the finance partner when the budget would be exceeded.",
+      "Add the amount to committed spend when the request is approved."
+    ],
+    "commonMistakes": [
+      "Routing to the line manager when someone else owns the budget.",
+      "Not updating committed spend, so the remaining figure is always the full budget.",
+      "Trying to set the approval type with an expression. Use a Condition with two approval actions."
+    ],
+    "troubleshooting": [
+      "If remaining budget is wrong, two approvals updated Committed at the same time. Re-read the row just before updating it.",
+      "If float() fails, a currency column is empty. Keep the coalesce defaults.",
+      "If the owner is the requester, route to the finance partner instead."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-change-impact": {
+    "shortDescription": "Classify a change as standard, normal or major from a few questions and route it accordingly.",
+    "fullDescription": "Change requests should not all go to a review board. This pattern scores impact from yes/no answers, auto-approves standard changes, sends normal ones to the service owner, and sends major ones to a board with everyone required to approve.",
+    "problemStatement": "Low-risk routine changes wait a week for the change board, while the board's agenda is too full to examine the risky ones properly.",
+    "whenToUse": [
+      "IT or process change management",
+      "A change form with clear risk questions",
+      "A pre-approved list of standard changes"
+    ],
+    "whenNotToUse": [
+      "Emergency changes, which need their own fast path",
+      "Teams without an agreed definition of impact"
+    ],
+    "formulaOrCode": "Form columns (Yes/No): AffectsProduction | CausesDowntime | AffectsMoreThanOneTeam | HasRollbackPlan | IsStandardChange\n\nCompose_Score\n  add(\n    if(triggerBody()?['AffectsProduction'], 2, 0),\n    add(\n      if(triggerBody()?['CausesDowntime'], 3, 0),\n      add(\n        if(triggerBody()?['AffectsMoreThanOneTeam'], 2, 0),\n        if(triggerBody()?['HasRollbackPlan'], 0, 2)\n      )\n    )\n  )\n\nCompose_Impact\n  if(and(triggerBody()?['IsStandardChange'], less(outputs('Compose_Score'), 3)), 'Standard',\n  if(greaterOrEquals(outputs('Compose_Score'), 5), 'Major', 'Normal'))\n\nUpdate item   Impact = @{outputs('Compose_Impact')}, ImpactScore = @{outputs('Compose_Score')}\n\nSwitch on outputs('Compose_Impact')\n  Standard : Update item Status = Approved, ApprovalNote = Pre-approved standard change\n  Normal   : Approval (first to respond) -> service owner\n  Major    : Approval (everyone must approve) -> change board members\n             Details include downtime window and rollback plan\n\nAny rejection: Status = Rejected with comments. Otherwise Status = Approved, then notify the requester and the service desk.",
+    "stepByStepInstructions": [
+      "Add the yes/no impact questions to the change form.",
+      "Score the answers and classify the change in two Compose actions.",
+      "Store the impact and score on the item so the decision can be explained.",
+      "Switch on impact: approve standard changes, route normal and major ones.",
+      "Notify the requester and service desk of the outcome."
+    ],
+    "commonMistakes": [
+      "Letting requesters pick the impact level directly.",
+      "Auto-approving anything marked standard without a score check.",
+      "Not storing the score, so nobody can see why a change was classified as it was."
+    ],
+    "troubleshooting": [
+      "If every change scores as major, check that a missing rollback plan is not being counted twice.",
+      "If yes/no values arrive as text, compare with equals(..., true) inside the if.",
+      "If the board approval stalls, set a timeout matched to the board's meeting cycle."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "route-approvals-by-support-team": {
+    "shortDescription": "Assign a request to the right support team's queue and ask that team's lead to approve.",
+    "fullDescription": "Service requests need both an owner team and an approver. This pattern maps the request's service to a team, sets the team on the item so it appears in that team's view, posts to the team's channel, and asks the lead for approval when the service requires one.",
+    "problemStatement": "Requests land in one shared queue, and a coordinator spends the day forwarding them to the right team.",
+    "whenToUse": [
+      "Service desks with several fulfilment teams",
+      "Services that map cleanly to a team",
+      "Some services needing approval and others not"
+    ],
+    "whenNotToUse": [
+      "One team handling everything",
+      "Requests that need triage by a person before they can be assigned"
+    ],
+    "formulaOrCode": "List: Services\n  Title (service, indexed) | Team (Choice) | TeamLead (Person) | NeedsApproval (Yes/No)\n  TeamsGroupId | TeamsChannelId\n\nGet items (Services)\n  Filter Query : Title eq '@{triggerBody()?['Service']?['Value']}'\n  Top Count    : 1\n\nCompose_Service\n  first(body('Get_items')?['value'])\n\nUpdate item\n  AssignedTeam : @{coalesce(outputs('Compose_Service')?['Team']?['Value'], 'Triage')}\n  Status       : @{if(equals(outputs('Compose_Service')?['NeedsApproval'], true), 'Awaiting approval', 'Queued')}\n\nCondition: outputs('Compose_Service')?['NeedsApproval'] is equal to true\n  Yes:\n    Start and wait for an approval\n      Assigned to : @{outputs('Compose_Service')?['TeamLead']?['Email']}\n    Update item Status = @{if(equals(outputs('Start_and_wait_for_an_approval')?['body/outcome'], 'Approve'), 'Queued', 'Rejected')}\n\nCondition: Status is Queued\n  Post message in a chat or channel\n    Team    : @{outputs('Compose_Service')?['TeamsGroupId']}\n    Channel : @{outputs('Compose_Service')?['TeamsChannelId']}\n    Message : New request: @{triggerBody()?['Title']} from @{triggerBody()?['Author']?['DisplayName']}\n              @{triggerBody()?['{Link}']}",
+    "stepByStepInstructions": [
+      "Create the Services list with team, lead and approval flag.",
+      "Look up the request's service and set the team on the item.",
+      "Start an approval only when the service needs one.",
+      "Post queued requests to the team's channel using IDs stored in the list.",
+      "Create a view per team filtered by AssignedTeam."
+    ],
+    "commonMistakes": [
+      "Approving everything, including services that need no approval.",
+      "Hard-coding Teams channel IDs in the flow.",
+      "No triage route for unmapped services."
+    ],
+    "troubleshooting": [
+      "If the Teams post fails, the stored group or channel ID is wrong. Copy them from the channel's link.",
+      "If requests end up in Triage, the service is missing from the list.",
+      "If the lead is away, add a deputy column and a timeout that reassigns."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-reminder-emails-for-pending-approvals": {
+    "shortDescription": "Remind approvers about approvals that are still waiting, without changing the original approval flow.",
+    "fullDescription": "A separate scheduled flow reads requests that have been awaiting approval for too long and reminds each approver once a day with all of their pending items. It relies on the approval flow stamping the approver and request date on the item.",
+    "problemStatement": "Approvals sit unanswered for days, and the only reminder is the requester chasing by chat.",
+    "whenToUse": [
+      "Approvals that regularly wait more than a day or two",
+      "Flows where the approver is recorded on the item",
+      "Reminders that should group all pending items per approver"
+    ],
+    "whenNotToUse": [
+      "Approvals with a built-in timeout and escalation already in the same flow",
+      "Items with no recorded approver"
+    ],
+    "formulaOrCode": "In the approval flow, before Start and wait for an approval:\n  Update item\n    Status            : Awaiting approval\n    PendingApprover   : <approver email>\n    ApprovalRequested : @{utcNow()}\n\nReminder flow\nTrigger: Recurrence (weekdays 09:00)\n\nGet items\n  Filter Query : Status eq 'Awaiting approval' and ApprovalRequested lt '@{addDays(utcNow(), -2)}'\n\nSelect_Approvers (text mode)   @toLower(item()?['PendingApprover']?['Email'])\nCompose_Distinct               union(body('Select_Approvers'), body('Select_Approvers'))\n\nApply to each approver\n  Filter array   @equals(toLower(item()?['PendingApprover']?['Email']), items('Apply_to_each'))\n  Select\n    Request   -> item()?['Title']\n    Requester -> item()?['Author']?['DisplayName']\n    Waiting   -> concat(string(div(sub(ticks(utcNow()), ticks(item()?['ApprovalRequested'])), 864000000000)), ' days')\n  Create HTML table\n  Send an email (V2)\n    To      : @{items('Apply_to_each')}\n    Subject : @{length(body('Filter_array'))} approvals are waiting for you\n    Body    : @{body('Create_HTML_table')}\n              <p>Respond in the <a href=\"https://teams.microsoft.com/l/app/7c316234-ded0-4f95-8a83-8453d0876592\">Approvals app in Teams</a> or from the original email.</p>",
+    "stepByStepInstructions": [
+      "Stamp the approver and request time on the item in the approval flow.",
+      "Build a scheduled flow that reads items waiting longer than your limit.",
+      "Group by approver with Select, union and Filter array.",
+      "Send each approver one email listing their pending items and how long each has waited.",
+      "Clear the pending columns in the approval flow when a decision is made."
+    ],
+    "commonMistakes": [
+      "Building the reminder as a delay loop inside the approval flow, which is hard to change.",
+      "One reminder email per item.",
+      "Not clearing the pending marker after the decision."
+    ],
+    "troubleshooting": [
+      "If people are reminded about approvals they already answered, the approval flow is not updating the status after the response.",
+      "If no reminders go out, check the date filter format and that ApprovalRequested is indexed on large lists.",
+      "If the Teams link does not open the Approvals app, link to the item instead."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-escalation-emails-for-rejected-requests": {
+    "shortDescription": "Tell the requester why a request was rejected, and give them one clear way to appeal or resubmit.",
+    "fullDescription": "A rejection with no reason generates follow-up work. This pattern sends the approver's comments to the requester, offers resubmit and appeal links, and escalates to a second reviewer only when an appeal is raised.",
+    "problemStatement": "Requesters get a bare rejection, reply to the wrong person asking why, and submit the same request again unchanged.",
+    "whenToUse": [
+      "Any approval where rejection needs explaining",
+      "Processes with a right of appeal",
+      "Requests that are often fixed and resubmitted"
+    ],
+    "whenNotToUse": [
+      "Final decisions with no appeal",
+      "Rejections that must be delivered by a person"
+    ],
+    "formulaOrCode": "After the approval, in the Rejected branch:\n\nCompose_Reason\n  coalesce(first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments'], 'No reason was given.')\n\nUpdate item\n  Status       : Rejected\n  DecisionNote : @{outputs('Compose_Reason')}\n  RejectedBy   : <responder email>\n\nSend email with options\n  To      : @{triggerBody()?['Author']?['Email']}\n  Subject : Your request was not approved: @{triggerBody()?['Title']}\n  Options : Edit and resubmit, Appeal this decision, Accept\n  Body    : <p>@{first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['responder']?['displayName']} did not approve this request.</p>\n            <p><b>Reason:</b> @{outputs('Compose_Reason')}</p>\n  (Settings: Timeout P14D)\n\nSwitch on body('Send_email_with_options')?['SelectedOption']\n  Edit and resubmit\n    Update item Status = Draft\n    Send an email with the edit link: @{triggerBody()?['{Link}']}\n  Appeal this decision\n    Update item Status = Under appeal\n    Start and wait for an approval\n      Assigned to : appeals@contoso.com\n      Details     : Original decision by <approver>: @{outputs('Compose_Reason')}\n    Update item Status = Approved on appeal | Rejected on appeal\n  Accept (or timeout)\n    Update item Status = Closed",
+    "stepByStepInstructions": [
+      "Capture the approver's comments and store them on the item.",
+      "Email the requester the reason with three options.",
+      "Reset the item to draft when they choose to edit and resubmit.",
+      "Route appeals to a second reviewer with the original reason attached.",
+      "Close the item when the requester accepts or does not respond in time."
+    ],
+    "commonMistakes": [
+      "Sending a rejection with no reason.",
+      "Routing appeals back to the same approver.",
+      "Leaving rejected items open forever."
+    ],
+    "troubleshooting": [
+      "If the reason is empty, approvers are not required to comment. Ask for comments in the approval details.",
+      "If the options email times out, handle it with run-after on the next step so the item is still closed.",
+      "If resubmission restarts the wrong flow, trigger the approval on a status of Submitted only."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-digest-emails-for-overdue-actions": {
+    "shortDescription": "Email each person a daily list of their overdue actions, sorted by how late they are.",
+    "fullDescription": "A scheduled flow finds open actions past their due date, groups them by owner, and sends each owner one email with a table showing days overdue. Managers receive a single roll-up.",
+    "problemStatement": "Overdue actions are only discussed in meetings, because nobody gets a prompt on the day an action becomes late.",
+    "whenToUse": [
+      "Action logs, task lists and audit findings",
+      "Owners with several open actions",
+      "Daily or weekly nudges"
+    ],
+    "whenNotToUse": [
+      "Tasks already in Planner or To Do, which send their own reminders",
+      "Lists without due dates"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (weekdays 08:30)\n\nCompose_Today    formatDateTime(utcNow(), 'yyyy-MM-dd')\n\nGet items (Actions)\n  Filter Query : Status ne 'Complete' and DueDate lt '@{outputs('Compose_Today')}'\n  Order By     : DueDate asc\n  Top Count    : 5000\n\nCondition: length(body('Get_items')?['value']) is greater than 0\n\nSelect_Owners (text mode)   @toLower(item()?['Owner']?['Email'])\nCompose_Distinct            union(body('Select_Owners'), body('Select_Owners'))\n\nApply to each owner\n  Filter array   @equals(toLower(item()?['Owner']?['Email']), items('Apply_to_each'))\n  Select\n    Action      -> item()?['Title']\n    Due         -> formatDateTime(item()?['DueDate'], 'dd MMM yyyy')\n    DaysOverdue -> div(sub(ticks(utcNow()), ticks(item()?['DueDate'])), 864000000000)\n  Create HTML table\n  Send an email (V2)\n    To      : @{items('Apply_to_each')}\n    Subject : @{length(body('Filter_array'))} of your actions are overdue\n    Body    : @{body('Create_HTML_table')}<p>Update them in the <a href=\"<view url>\">action log</a>.</p>\n\nRoll-up for the manager (after the loop)\n  Select: Owner -> item()?['Owner']?['DisplayName'], Action, Due\n  Create HTML table -> Send an email to the manager\n    Subject : @{length(body('Get_items')?['value'])} overdue actions across the team",
+    "stepByStepInstructions": [
+      "Add a weekday Recurrence trigger.",
+      "Query open actions with a due date before today.",
+      "Skip the run when nothing is overdue.",
+      "Group by owner and send each owner one table with days overdue.",
+      "Send the manager a single roll-up of all overdue actions."
+    ],
+    "commonMistakes": [
+      "Comparing DueDate with utcNow() including time, so actions due today count as overdue.",
+      "Sending an empty digest when nothing is late.",
+      "Emailing owners and the manager per action."
+    ],
+    "troubleshooting": [
+      "If actions due today appear, compare with the date only as shown.",
+      "If an owner gets two emails, their address appears with different capitals. Keep toLower.",
+      "If actions without an owner break the send, filter out empty addresses and include those actions in the manager's roll-up."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-teams-cards-for-new-high-priority-issues": {
+    "shortDescription": "Post an adaptive card to a channel when a high-priority issue is logged, with buttons to open or take it.",
+    "fullDescription": "A card stands out more than a text message and can carry actions. This pattern posts a card for new high-priority issues, lets someone take ownership from the card, and updates the list with the new owner.",
+    "problemStatement": "Urgent issues are logged in a list that nobody is watching, and the first person hears about them an hour later.",
+    "whenToUse": [
+      "Incident, defect or safety issue logs",
+      "A team channel that is monitored",
+      "Issues that need an owner quickly"
+    ],
+    "whenNotToUse": [
+      "Every issue regardless of priority, which trains people to ignore the channel",
+      "Out-of-hours paging, which needs a proper on-call tool"
+    ],
+    "formulaOrCode": "Trigger: When an item is created (Issues)\n  Trigger condition: @equals(triggerBody()?['Priority']?['Value'], 'High')\n\nPost adaptive card and wait for a response   (Flow bot, Channel)\n{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"text\": \"High priority issue\", \"weight\": \"Bolder\", \"color\": \"Attention\", \"size\": \"Medium\" },\n    { \"type\": \"TextBlock\", \"text\": \"@{triggerBody()?['Title']}\", \"wrap\": true, \"weight\": \"Bolder\" },\n    { \"type\": \"TextBlock\", \"text\": \"@{coalesce(triggerBody()?['Description'], '')}\", \"wrap\": true, \"maxLines\": 4 },\n    { \"type\": \"FactSet\", \"facts\": [\n      { \"title\": \"Reported by\", \"value\": \"@{triggerBody()?['Author']?['DisplayName']}\" },\n      { \"title\": \"Area\", \"value\": \"@{coalesce(triggerBody()?['Area']?['Value'], 'Not set')}\" }\n    ] }\n  ],\n  \"actions\": [\n    { \"type\": \"Action.Submit\", \"title\": \"I'll take it\", \"id\": \"take\" },\n    { \"type\": \"Action.OpenUrl\", \"title\": \"Open issue\", \"url\": \"@{triggerBody()?['{Link}']}\" }\n  ]\n}\n  Update message : Taken by the person who responded. Open the issue for details.\n  Settings > Timeout : PT2H\n\nUpdate item (run after: is successful)\n  AssignedTo Claims : @{body('Post_adaptive_card_and_wait_for_a_response')?['responder']?['userPrincipalName']}\n  Status            : In progress\n\nEscalate (run after: has timed out)\n  Post message in a chat or channel: Nobody has taken \"@{triggerBody()?['Title']}\" after two hours.\n  Send an email to the team lead (Importance: High)",
+    "stepByStepInstructions": [
+      "Add a trigger condition so the flow starts only for high-priority issues.",
+      "Post the card to the team channel with a take button and an open link.",
+      "Assign the issue to whoever presses the button.",
+      "Set a timeout on the card.",
+      "Escalate to the team lead when nobody responds in time."
+    ],
+    "commonMistakes": [
+      "Posting a card for every issue.",
+      "No timeout, so untaken issues are never escalated.",
+      "Putting long descriptions in the card without wrap and a line limit."
+    ],
+    "troubleshooting": [
+      "If the card fails to post, a quote or line break in the description broke the JSON. Replace quotes with an apostrophe in a Compose first.",
+      "If the assignment fails, the responder's UPN differs from their SharePoint login. Use their email if it is returned.",
+      "If two people press the button, only the first response resumes the flow. The card then shows the update message."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-sponsor-updates-after-gate-approval": {
+    "shortDescription": "Send the project sponsor a short, consistent summary each time a stage gate is approved.",
+    "fullDescription": "When a gate decision is recorded, this flow gathers the facts a sponsor cares about, namely what was approved, the conditions, the next gate date and the open risks, and sends one formatted email.",
+    "problemStatement": "Sponsors learn about gate decisions informally, sometimes late and with different details from different people.",
+    "whenToUse": [
+      "Projects with formal stage gates",
+      "Sponsors who are not day-to-day in the project tools",
+      "Gate decisions recorded in a list"
+    ],
+    "whenNotToUse": [
+      "Projects without gates",
+      "Sponsors who prefer a dashboard to email"
+    ],
+    "formulaOrCode": "Trigger: When an item is created or modified (Gate Decisions)\n  Trigger condition:\n    @and(equals(triggerBody()?['Decision']?['Value'], 'Approved'),\n         not(equals(triggerBody()?['SponsorNotified'], true)))\n\nGet item (Projects)   Id: @{triggerBody()?['ProjectId']}\n\nGet items (Risks)\n  Filter Query : ProjectId eq @{triggerBody()?['ProjectId']} and Status eq 'Open' and Severity eq 'High'\n  Top Count    : 5\n\nSelect -> Risk: item()?['Title'], Owner: item()?['Owner']?['DisplayName']\nCreate HTML table\n\nSend an email (V2)\n  To      : @{body('Get_item')?['Sponsor']?['Email']}\n  CC      : @{body('Get_item')?['ProjectManager']?['Email']}\n  Subject : @{body('Get_item')?['Title']}: @{triggerBody()?['Gate']?['Value']} gate approved\n  Body    :\n    <p><b>@{triggerBody()?['Gate']?['Value']}</b> was approved on\n       @{formatDateTime(triggerBody()?['DecisionDate'], 'd MMMM yyyy')}.</p>\n    <p><b>Conditions:</b> @{coalesce(triggerBody()?['Conditions'], 'None')}</p>\n    <p><b>Next gate:</b> @{coalesce(body('Get_item')?['NextGate']?['Value'], 'To be confirmed')}\n       @{if(empty(body('Get_item')?['NextGateDate']), '', concat(' on ', formatDateTime(body('Get_item')?['NextGateDate'], 'd MMMM yyyy')))}</p>\n    <p><b>Open high risks (@{length(body('Get_items')?['value'])}):</b></p>\n    @{if(equals(length(body('Get_items')?['value']), 0), '<p>None.</p>', body('Create_HTML_table'))}\n\nUpdate item   SponsorNotified = Yes",
+    "stepByStepInstructions": [
+      "Add a SponsorNotified yes/no column to the gate decisions list.",
+      "Trigger only for approved decisions that have not been announced.",
+      "Read the project for the sponsor, manager and next gate.",
+      "Add the open high risks as a short table.",
+      "Send the email and mark the decision as notified."
+    ],
+    "commonMistakes": [
+      "Sending the update again on every later edit of the decision.",
+      "Leaving out conditions attached to the approval.",
+      "Using a different layout for each gate."
+    ],
+    "troubleshooting": [
+      "If the email repeats, the final update is failing or the marker column name in the trigger condition is wrong.",
+      "If dates show as the previous day, format date-only columns from their date part.",
+      "If the sponsor is blank, send to the project manager and flag the missing sponsor."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-requester-confirmation-after-submission": {
+    "shortDescription": "Acknowledge a new request straight away with a reference number, what happens next and a link to track it.",
+    "fullDescription": "A confirmation removes the most common follow-up question. This pattern generates a readable reference from the item ID, writes it back, and emails the requester with the expected response time for their request type.",
+    "problemStatement": "People submit a form, hear nothing, and then email or submit again to check it arrived.",
+    "whenToUse": [
+      "Any request intake",
+      "Processes with a target response time",
+      "Requests people need to quote later"
+    ],
+    "whenNotToUse": [
+      "Forms that already show a confirmation and send a receipt",
+      "High-volume automated submissions"
+    ],
+    "formulaOrCode": "Trigger: When an item is created (Requests)\n\nCompose_Reference\n  concat('REQ-', formatDateTime(utcNow(), 'yy'), '-', formatNumber(triggerBody()?['ID'], '00000'))\n\nCompose_ResponseTime\n  if(equals(triggerBody()?['Priority']?['Value'], 'High'), 'one working day',\n  if(equals(triggerBody()?['RequestType']?['Value'], 'Access'), 'two working days',\n     'five working days'))\n\nUpdate item\n  Reference : @{outputs('Compose_Reference')}\n\nSend an email (V2)\n  To      : @{triggerBody()?['Author']?['Email']}\n  Subject : We have your request [@{outputs('Compose_Reference')}]\n  Body    :\n    <p>Hi @{first(split(triggerBody()?['Author']?['DisplayName'], ' '))},</p>\n    <p>Thanks, we received your request <b>@{triggerBody()?['Title']}</b>.</p>\n    <p><b>Reference:</b> @{outputs('Compose_Reference')}<br>\n       <b>What happens next:</b> we aim to respond within @{outputs('Compose_ResponseTime')}.</p>\n    <p><a href=\"@{triggerBody()?['{Link}']}\">Track or update your request</a></p>\n  From (Send as) : requests@contoso.com      (shared mailbox, optional)\n\nTrigger condition on any \"modified\" flow for this list, so the Reference update does not start it:\n  @not(empty(triggerBody()?['Reference']))",
+    "stepByStepInstructions": [
+      "Add a Reference text column to the list.",
+      "Build the reference from the year and the padded item ID.",
+      "Write it back to the item.",
+      "Email the requester with the reference, the expected response time and a tracking link.",
+      "Send from a shared mailbox so replies reach the team."
+    ],
+    "commonMistakes": [
+      "Promising a response time the team does not meet.",
+      "Sending from the flow owner's personal mailbox.",
+      "Using the raw item ID as the only reference."
+    ],
+    "troubleshooting": [
+      "If the reference update starts another flow, add a trigger condition to that flow.",
+      "If the requester cannot open the link, they lack access to the list. Link to an app or a page they can see.",
+      "If the greeting shows a surname first, the display name is in Last, First format. Use the full name instead."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-pmo-summary-after-status-change": {
+    "shortDescription": "Notify the PMO when a project's status changes, showing the old value, the new value and the reason.",
+    "fullDescription": "A change of status is only useful news with context. This pattern keeps the previous status on the item, triggers when it differs from the current one, and sends a short message with both values, the reason and who made the change.",
+    "problemStatement": "The PMO finds out a project went on hold when the weekly report is compiled, days after the decision.",
+    "whenToUse": [
+      "Project or programme registers",
+      "Status changes that others need to act on",
+      "A reason field captured with the change"
+    ],
+    "whenNotToUse": [
+      "Statuses that change many times a day",
+      "Lists where version history comparison is preferred"
+    ],
+    "formulaOrCode": "Columns: Status (Choice) | PreviousStatus (Single line, hidden) | StatusReason (Multiple lines)\n\nTrigger: When an item is created or modified (Projects)\n  Trigger condition:\n    @not(equals(triggerBody()?['Status']?['Value'], coalesce(triggerBody()?['PreviousStatus'], '')))\n\nCompose_Old   coalesce(triggerBody()?['PreviousStatus'], 'New')\nCompose_New   triggerBody()?['Status']?['Value']\n\nPost message in a chat or channel (PMO channel)\n  <b>@{triggerBody()?['Title']}</b>: @{outputs('Compose_Old')} to <b>@{outputs('Compose_New')}</b><br>\n  Changed by @{triggerBody()?['Editor']?['DisplayName']} on @{convertFromUtc(triggerBody()?['Modified'], 'GMT Standard Time', 'd MMM HH:mm')}<br>\n  Reason: @{coalesce(triggerBody()?['StatusReason'], 'Not given')}<br>\n  <a href=\"@{triggerBody()?['{Link}']}\">Open project</a>\n\nCondition: outputs('Compose_New') is one of On Hold, Cancelled, Red\n  Yes: Send an email (V2) to pmo@contoso.com, Importance High\n\nUpdate item\n  PreviousStatus : @{outputs('Compose_New')}\n\nFor a daily roll-up instead\n  Create item in a \"Status Changes\" list at this point (Project, Old, New, Reason, ChangedBy),\n  then summarize that list with a scheduled flow.",
+    "stepByStepInstructions": [
+      "Add a hidden PreviousStatus column.",
+      "Trigger only when the current status differs from the stored previous one.",
+      "Post the old and new values, the editor and the reason to the PMO channel.",
+      "Email the PMO as well for statuses that need action.",
+      "Copy the new status into PreviousStatus as the last step."
+    ],
+    "commonMistakes": [
+      "Triggering on every edit and reporting no real change.",
+      "Updating PreviousStatus first, which loses the old value.",
+      "Not capturing a reason."
+    ],
+    "troubleshooting": [
+      "If the flow runs twice, the second run is its own update. The trigger condition stops it once both columns match.",
+      "If the old value is always New, the final update is failing. Check permissions.",
+      "If you need a daily summary, write each change to a log list and summarize that."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-owner-notifications-for-reassigned-work": {
+    "shortDescription": "Tell the new owner when work is reassigned to them, and let the previous owner know it has moved.",
+    "fullDescription": "Reassignment is invisible unless someone announces it. This pattern stores the last notified owner, triggers when the assignee changes, and notifies both people with the context the new owner needs.",
+    "problemStatement": "Work is reassigned in a list, the new owner never notices, and the item sits untouched until someone asks about it.",
+    "whenToUse": [
+      "Task, ticket or request lists with an assignee",
+      "Teams that reassign work often",
+      "Items that carry notes the new owner should read"
+    ],
+    "whenNotToUse": [
+      "Lists where SharePoint's own assignment alerts are enough",
+      "Bulk reassignments, where a single summary is better"
+    ],
+    "formulaOrCode": "Columns: AssignedTo (Person) | LastNotifiedOwner (Single line, hidden) | HandoverNote (Multiple lines)\n\nTrigger: When an item is created or modified\n  Trigger condition:\n    @and(\n      not(empty(triggerBody()?['AssignedTo']?['Email'])),\n      not(equals(toLower(triggerBody()?['AssignedTo']?['Email']), toLower(coalesce(triggerBody()?['LastNotifiedOwner'], ''))))\n    )\n\nCompose_Previous   coalesce(triggerBody()?['LastNotifiedOwner'], '')\n\nPost message in a chat or channel (Chat with Flow bot)\n  Recipient : @{triggerBody()?['AssignedTo']?['Email']}\n  Message   : <b>@{triggerBody()?['Title']}</b> has been assigned to you by @{triggerBody()?['Editor']?['DisplayName']}.<br>\n              Due: @{if(empty(triggerBody()?['DueDate']), 'not set', formatDateTime(triggerBody()?['DueDate'], 'd MMM yyyy'))}<br>\n              Handover note: @{coalesce(triggerBody()?['HandoverNote'], 'None')}<br>\n              <a href=\"@{triggerBody()?['{Link}']}\">Open item</a>\n\nCondition: not(empty(outputs('Compose_Previous')))\n  Yes: Send an email (V2)\n    To      : @{outputs('Compose_Previous')}\n    Subject : @{triggerBody()?['Title']} has moved to @{triggerBody()?['AssignedTo']?['DisplayName']}\n\nUpdate item\n  LastNotifiedOwner : @{triggerBody()?['AssignedTo']?['Email']}",
+    "stepByStepInstructions": [
+      "Add a hidden LastNotifiedOwner text column.",
+      "Trigger only when the assignee's email differs from the stored value.",
+      "Message the new owner with the due date, handover note and link.",
+      "Email the previous owner when there was one.",
+      "Store the new owner's email as the last step."
+    ],
+    "commonMistakes": [
+      "Notifying on every edit instead of on reassignment.",
+      "Not telling the previous owner, who keeps working on it.",
+      "Comparing display names, which are not unique."
+    ],
+    "troubleshooting": [
+      "If the new owner is notified repeatedly, the final update is not saving.",
+      "If people assign work to themselves, skip the notification when the editor and the assignee are the same person.",
+      "If the Teams message fails, the user has not installed the Flow bot. Fall back to email."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-weekly-queue-summary-to-team-leads": {
+    "shortDescription": "Give each team lead a Monday summary of their queue: new, open, overdue and oldest items.",
+    "fullDescription": "A weekly flow reads each team's open requests, calculates a few counts and the age of the oldest item, and sends the lead a compact email. Teams and their leads come from a list, so adding a team needs no flow change.",
+    "problemStatement": "Leads only look at the queue when something goes wrong, and nobody can say whether the backlog is growing.",
+    "whenToUse": [
+      "Shared request queues split by team",
+      "Leads who want a regular snapshot",
+      "Lists with created and due dates"
+    ],
+    "whenNotToUse": [
+      "Teams that already work from a live dashboard",
+      "Queues too large to read in one query"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (weekly, Monday 07:30)\n\nGet items (Teams list: Title = team, Lead = person)\n\nApply to each team\n  Get items (Requests)\n    Filter Query : AssignedTeam eq '@{items('Apply_to_each')?['Title']}' and Status ne 'Closed'\n    Order By     : Created asc\n    Top Count    : 5000\n\n  Filter_New      @greaterOrEquals(item()?['Created'], addDays(utcNow(), -7))\n  Filter_Overdue  @and(not(empty(item()?['DueDate'])), less(item()?['DueDate'], utcNow()))\n  Filter_Unowned  @empty(item()?['AssignedTo']?['Email'])\n\n  Compose_OldestDays\n    if(equals(length(body('Get_items_Requests')?['value']), 0), 0,\n       div(sub(ticks(utcNow()), ticks(first(body('Get_items_Requests')?['value'])?['Created'])), 864000000000))\n\n  Select (top 5 oldest)\n    From : @{take(body('Get_items_Requests')?['value'], 5)}\n    Map  : Request -> item()?['Title'], Opened -> formatDateTime(item()?['Created'], 'd MMM'), Owner -> coalesce(item()?['AssignedTo']?['DisplayName'], 'Unassigned')\n  Create HTML table\n\n  Send an email (V2)\n    To      : @{items('Apply_to_each')?['Lead']?['Email']}\n    Subject : @{items('Apply_to_each')?['Title']} queue: @{length(body('Get_items_Requests')?['value'])} open, @{length(body('Filter_Overdue'))} overdue\n    Body    : <p>Open: <b>@{length(body('Get_items_Requests')?['value'])}</b> |\n                 New this week: <b>@{length(body('Filter_New'))}</b> |\n                 Overdue: <b>@{length(body('Filter_Overdue'))}</b> |\n                 Unassigned: <b>@{length(body('Filter_Unowned'))}</b> |\n                 Oldest: <b>@{outputs('Compose_OldestDays')} days</b></p>\n              <p>Five oldest:</p>@{body('Create_HTML_table')}",
+    "stepByStepInstructions": [
+      "Keep a list of teams with their leads.",
+      "Loop over the teams and read each team's open requests, oldest first.",
+      "Use Filter array for the new, overdue and unassigned counts.",
+      "Work out the age of the oldest item and build a table of the five oldest.",
+      "Send one email per lead with the counts in the subject."
+    ],
+    "commonMistakes": [
+      "Counting with loops and variables.",
+      "Sending the full queue as a table.",
+      "Hard-coding leads in the flow."
+    ],
+    "troubleshooting": [
+      "If a team has no open items, the oldest calculation would fail on an empty list. Keep the length check.",
+      "If the loop is slow, turn on concurrency. It uses no variables.",
+      "If counts look low, the query stopped at 100 rows. Set Top Count."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "send-exception-alerts-for-missing-metadata": {
+    "shortDescription": "Find documents or items with required metadata missing and ask the right person to complete them.",
+    "fullDescription": "Required columns are often left blank when files are uploaded in bulk or synced. This scheduled flow finds those items, groups them by the person who created them, and sends each a list with direct edit links.",
+    "problemStatement": "Views, retention labels and searches silently miss files because key metadata was never filled in.",
+    "whenToUse": [
+      "Libraries where uploads can bypass required fields",
+      "Metadata that drives retention, search or routing",
+      "Regular housekeeping"
+    ],
+    "whenNotToUse": [
+      "Columns that can be enforced as required with no way round",
+      "Metadata that can be set automatically by default values or flows"
+    ],
+    "formulaOrCode": "Trigger: Recurrence (weekly, Tuesday 09:00)\n\nGet files (properties only)\n  Filter Query : (DocType eq null or Owner eq null or ReviewDate eq null) and Created ge '@{addDays(utcNow(), -90)}'\n  Top Count    : 2000\n\nCondition: length(body('Get_files')?['value']) is greater than 0\n\nSelect_Creators (text mode)   @toLower(item()?['Author']?['Email'])\nCompose_Distinct              union(body('Select_Creators'), body('Select_Creators'))\n\nApply to each creator\n  Filter array   @equals(toLower(item()?['Author']?['Email']), items('Apply_to_each'))\n  Select\n    File    -> concat('<a href=\"', item()?['{Link}'], '\">', item()?['{FilenameWithExtension}'], '</a>')\n    Missing -> trim(concat(\n                 if(empty(item()?['DocType']?['Value']), 'Document type, ', ''),\n                 if(empty(item()?['Owner']?['Email']), 'Owner, ', ''),\n                 if(empty(item()?['ReviewDate']), 'Review date', '')))\n  Create HTML table\n  Compose_Table\n    replace(replace(body('Create_HTML_table'), '&lt;', '<'), '&gt;', '>')     (restore the links)\n  Send an email (V2)\n    To      : @{items('Apply_to_each')}\n    Subject : @{length(body('Filter_array'))} of your files need details completed\n    Body    : <p>Please open each file's details pane and fill in the missing fields.</p>@{replace(outputs('Compose_Table'), '&quot;', '\"')}\n\nRoll-up to the library owner: count by creator.",
+    "stepByStepInstructions": [
+      "List the columns that must be filled.",
+      "Query for files where any of them is empty, limited to a recent period.",
+      "Group the results by the person who uploaded them.",
+      "Send each person a table naming the missing fields with a link to each file.",
+      "Send the library owner a roll-up so repeat gaps are visible."
+    ],
+    "commonMistakes": [
+      "Alerting on every upload in real time, before people have had a chance to fill in details.",
+      "Not saying which fields are missing.",
+      "Sending the alert to the library owner only."
+    ],
+    "troubleshooting": [
+      "If links show as text, the HTML table escaped them. Keep the replace step that restores angle brackets and quotes.",
+      "If the null filter is rejected for a column type, filter on the columns that support it and check the rest with Filter array.",
+      "If uploaders have left, send those files to the library owner instead."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-child-tasks-after-approval": {
+    "shortDescription": "Create a set of follow-up tasks from a template list once a request is approved, each linked to the parent.",
+    "fullDescription": "Approval is usually the start of the work, not the end. This pattern reads task templates for the request type and creates one child task per template, with an owner, a due date offset and a link back to the parent request.",
+    "problemStatement": "After approval, someone creates the same five fulfilment tasks by hand each time, and one is occasionally forgotten.",
+    "whenToUse": [
+      "Requests that always lead to the same set of tasks",
+      "Task lists that vary by request type",
+      "Work tracked in a SharePoint tasks list"
+    ],
+    "whenNotToUse": [
+      "One-step fulfilment",
+      "Tasks that need planning by a person before they can be defined"
+    ],
+    "formulaOrCode": "List: Task Templates\n  Title | RequestType (Choice, indexed) | OwnerRole (Choice: Requester, Manager, IT, Facilities)\n  DueInDays (Number) | Order (Number)\n\nList: Request Tasks\n  Title | RequestId (Number, indexed) | AssignedTo (Person) | DueDate | Status (Choice) | Order\n\nTrigger: When an item is created or modified (Requests)\n  Trigger condition:\n    @and(equals(triggerBody()?['Status']?['Value'], 'Approved'),\n         not(equals(triggerBody()?['TasksCreated'], true)))\n\nGet items (Task Templates)\n  Filter Query : RequestType eq '@{triggerBody()?['RequestType']?['Value']}'\n  Order By     : Order asc\n\nApply to each template\n  Compose_Owner\n    if(equals(items('Apply_to_each')?['OwnerRole']?['Value'], 'Requester'), triggerBody()?['Author']?['Email'],\n    if(equals(items('Apply_to_each')?['OwnerRole']?['Value'], 'Manager'),   triggerBody()?['Manager']?['Email'],\n    if(equals(items('Apply_to_each')?['OwnerRole']?['Value'], 'IT'),        'itsupport@contoso.com',\n       'facilities@contoso.com')))\n  Create item (Request Tasks)\n    Title      : @{items('Apply_to_each')?['Title']}\n    RequestId  : @{triggerBody()?['ID']}\n    AssignedTo : @{outputs('Compose_Owner')}\n    DueDate    : @{addDays(utcNow(), int(coalesce(items('Apply_to_each')?['DueInDays'], 5)), 'yyyy-MM-dd')}\n    Status     : Not started\n    Order      : @{items('Apply_to_each')?['Order']}\n\nUpdate item (Requests)\n  TasksCreated : Yes\n  Status       : In fulfilment",
+    "stepByStepInstructions": [
+      "Create the template list and the child task list, with RequestId indexed.",
+      "Add a TasksCreated yes/no column to the request list.",
+      "Trigger when status becomes Approved and tasks have not been created.",
+      "Create one task per template, resolving the owner role to a person.",
+      "Mark the request so the tasks are never created twice."
+    ],
+    "commonMistakes": [
+      "No guard column, so every later edit of an approved request creates another set of tasks.",
+      "Hard-coding the tasks as actions in the flow.",
+      "Not linking tasks to the parent with an indexed ID."
+    ],
+    "troubleshooting": [
+      "If tasks are duplicated, the trigger fired twice before the guard was set. Turn on trigger concurrency with a limit of 1.",
+      "If no tasks appear, the request type has no templates. Add a default set.",
+      "If the owner is blank, the role maps to an empty person field. Fall back to a team mailbox."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-planner-checklist-items-from-sharepoint": {
+    "shortDescription": "Create a Planner task with a checklist built from SharePoint items or a multi-line column.",
+    "fullDescription": "Planner tasks can carry a checklist, but it has to be set with Update task details after the task is created. This pattern creates the task, then adds checklist entries from a list of steps.",
+    "problemStatement": "A Planner task is created for each request, but the steps inside it have to be typed in by hand every time.",
+    "whenToUse": [
+      "Repeatable work tracked in Planner",
+      "Steps stored in a SharePoint list or a multi-line text column",
+      "Up to 20 checklist entries per task"
+    ],
+    "whenNotToUse": [
+      "More than 20 steps, which is Planner's checklist limit",
+      "Steps that need their own owner and due date. Create separate tasks."
+    ],
+    "formulaOrCode": "Get items (Checklist Steps)\n  Filter Query : RequestType eq '@{triggerBody()?['RequestType']?['Value']}'\n  Order By     : Order asc\n  Top Count    : 20\n\nCreate a task (Planner)\n  Group / Plan / Bucket : choose\n  Title                 : @{triggerBody()?['Title']}\n  Due Date Time         : @{addDays(utcNow(), 7)}\n  Assigned User Ids     : @{triggerBody()?['AssignedTo']?['Email']}\n\nSelect_Checklist\n  From : @{body('Get_items')?['value']}\n  Map  : id        -> guid()\n         title     -> item()?['Title']\n         isChecked -> false\n\nUpdate task details\n  Task Id     : @{outputs('Create_a_task')?['body/id']}\n  Description : Request @{triggerBody()?['ID']}: @{triggerBody()?['{Link}']}\n  Checklist   : switch the field to \"input entire array\" and pass @{body('Select_Checklist')}\n  References  : Alias \"Open request\", Resource link @{triggerBody()?['{Link}']}, Type Other\n\nSteps kept in a multi-line column instead of a list\n  From : @{split(triggerBody()?['Steps'], decodeUriComponent('%0A'))}\n  Map  : id -> guid(), title -> trim(item()), isChecked -> false\n  (add a Filter array first to drop empty lines)\n\nUpdate item (Requests)\n  PlannerTaskId : @{outputs('Create_a_task')?['body/id']}",
+    "stepByStepInstructions": [
+      "Store the checklist steps in a list or a multi-line column.",
+      "Create the Planner task first and keep its ID.",
+      "Build the checklist array with Select, giving each entry a new GUID.",
+      "Call Update task details and pass the whole array to the checklist field.",
+      "Save the Planner task ID on the SharePoint item so later flows can update the task."
+    ],
+    "commonMistakes": [
+      "Looking for a checklist field on Create a task. It is only on Update task details.",
+      "Passing more than 20 entries.",
+      "Reusing the same id for every entry."
+    ],
+    "troubleshooting": [
+      "If the checklist field only shows individual entries, use the small toggle on the right of the field to switch to the whole array.",
+      "If Update task details returns 409 or 412, it ran too soon after creation. Add a short Delay or a retry policy.",
+      "If entries appear in reverse order, sort the source descending. Planner shows the newest entry first."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-folders-after-project-approval": {
+    "shortDescription": "Create a standard folder structure in a document library when a project is approved.",
+    "fullDescription": "When a project is approved, this flow creates a project folder and a fixed set of subfolders, then writes the folder link back to the project record. Folder names are cleaned so invalid characters never fail the run.",
+    "problemStatement": "Every project manager builds their own folder structure, so documents are hard to find across projects.",
+    "whenToUse": [
+      "Projects, cases or clients that each need the same folders",
+      "Libraries organized by folder",
+      "A structure agreed in advance"
+    ],
+    "whenNotToUse": [
+      "Libraries organized by metadata, where folders add little",
+      "Structures deeper than two or three levels, which hit path length limits"
+    ],
+    "formulaOrCode": "Trigger: When an item is created or modified (Projects)\n  Trigger condition:\n    @and(equals(triggerBody()?['Status']?['Value'], 'Approved'), empty(triggerBody()?['FolderUrl']))\n\nCompose_SafeName   (remove characters SharePoint does not allow, limit length)\n  take(\n    trim(replace(replace(replace(replace(replace(replace(replace(replace(replace(\n      concat(triggerBody()?['ProjectCode'], ' ', triggerBody()?['Title']),\n      '\"', ''), '*', ''), ':', ''), '<', ''), '>', ''), '?', ''), '/', '-'), '\\', '-'), '|', '-')),\n    80)\n\nCompose_Subfolders\n  createArray('01 Initiation', '02 Planning', '03 Delivery', '04 Reports', '05 Closure')\n\nApply to each: outputs('Compose_Subfolders')\n  Create new folder\n    List or Library : Project Documents\n    Folder Path     : @{outputs('Compose_SafeName')}/@{items('Apply_to_each')}\n  (creating a subfolder also creates the parent folder if it is missing)\n\nUpdate item (Projects)\n  FolderUrl : https://contoso.sharepoint.com/sites/pmo/Project%20Documents/@{encodeUriComponent(outputs('Compose_SafeName'))}\n\nOptional: copy starter documents\n  Copy file: /Templates/Project Plan.docx -> /Project Documents/@{outputs('Compose_SafeName')}/02 Planning",
+    "stepByStepInstructions": [
+      "Agree the standard subfolders.",
+      "Trigger when a project is approved and has no folder link yet.",
+      "Build a safe folder name from the project code and title.",
+      "Create each subfolder, which also creates the parent.",
+      "Write the folder link back to the project."
+    ],
+    "commonMistakes": [
+      "Using the raw title as a folder name, which fails on characters such as slash or colon.",
+      "No guard, so folders are created again on each edit.",
+      "Very long names that push file paths past the 400 character limit."
+    ],
+    "troubleshooting": [
+      "If Create new folder fails with an invalid name, a character slipped through. Add it to the replace chain. Names also cannot end with a full stop.",
+      "If the folder already exists, the action succeeds and returns the existing folder, so reruns are safe.",
+      "If the link does not open, encode spaces in the URL as shown."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-document-set-metadata-after-intake": {
+    "shortDescription": "Create a document set for a new case and fill its shared metadata from the intake item.",
+    "fullDescription": "A document set groups related files and passes its metadata to every file inside. The standard connector has no document set action, so this pattern creates one with a REST call and then sets its columns.",
+    "problemStatement": "Case files are uploaded loose into a library and each one has to be tagged by hand with the same client and case number.",
+    "whenToUse": [
+      "Cases, contracts or projects with several related documents",
+      "Metadata that should be shared by all files in the set",
+      "Libraries with the document set feature enabled"
+    ],
+    "whenNotToUse": [
+      "Sites where document sets are not enabled",
+      "Simple folders with no shared metadata"
+    ],
+    "formulaOrCode": "Prerequisite: library \"Case Files\" has the Document Set content type added,\nwith CaseNumber, Client and CaseType set as shared columns.\n\n1. Get the content type ID (once; store it in an environment variable)\n   Send an HTTP request to SharePoint\n     Method : GET\n     Uri    : _api/web/lists/getbytitle('Case Files')/contenttypes?$select=Name,StringId&$filter=Name eq 'Document Set'\n\n2. Create the document set\n   Send an HTTP request to SharePoint\n     Method  : POST\n     Uri     : _vti_bin/listdata.svc/CaseFiles\n     Headers : Accept: application/json;odata=verbose\n               Content-Type: application/json;odata=verbose\n               Slug: /sites/legal/Case Files/@{triggerBody()?['CaseNumber']}|0x0120D520...   (server-relative path | content type ID)\n     Body    :\n     {\n       \"Title\": \"@{triggerBody()?['CaseNumber']}\",\n       \"Path\": \"/sites/legal/Case Files\"\n     }\n\n3. Set the shared metadata\n   Update file properties\n     Id         : @{body('Create_document_set')?['d']?['Id']}\n     CaseNumber : @{triggerBody()?['CaseNumber']}\n     Client     : @{triggerBody()?['Client']}\n     CaseType   : @{triggerBody()?['CaseType']?['Value']}\n\n4. Write the link back to the intake item\n   Update item\n     CaseFilesUrl : https://contoso.sharepoint.com/sites/legal/Case%20Files/@{encodeUriComponent(triggerBody()?['CaseNumber'])}",
+    "stepByStepInstructions": [
+      "Enable document sets on the site and add the content type to the library.",
+      "Mark the columns to share in the document set's settings.",
+      "Read the content type ID once and store it.",
+      "Create the set with the REST call, passing the path and content type ID in the Slug header.",
+      "Set the shared columns and write the link back to the intake item."
+    ],
+    "commonMistakes": [
+      "Using the library's display name in the listdata.svc URL. It needs the name without spaces.",
+      "Forgetting to mark columns as shared, so files do not inherit them.",
+      "Hard-coding the content type ID, which differs per library."
+    ],
+    "troubleshooting": [
+      "If the create call returns 400, check the Slug header. The path and content type ID are separated by a vertical bar.",
+      "If files do not inherit metadata, the columns are not set as shared columns on the document set content type.",
+      "If the document set name contains invalid characters, clean the case number before using it."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-audit-rows-for-status-changes": {
+    "shortDescription": "Write a row to a history list every time an item's status changes, with old value, new value, who and when.",
+    "fullDescription": "Version history shows changes but cannot be reported on. This pattern logs each status change to a separate list, which makes it possible to measure how long items spend in each status.",
+    "problemStatement": "Nobody can answer how long requests wait at each stage, because the list only stores the current status.",
+    "whenToUse": [
+      "Processes measured on turnaround time",
+      "Audits of who changed a status",
+      "Any list with a status column worth tracking"
+    ],
+    "whenNotToUse": [
+      "Lists where version history alone meets the need",
+      "Very high change volumes"
+    ],
+    "formulaOrCode": "List: Status History\n  Title | ItemId (Number, indexed) | FromStatus | ToStatus | ChangedBy (Person) | ChangedOn (Date and time)\n  HoursInPrevious (Number)\n\nSource list hidden columns: PreviousStatus (text), StatusChangedOn (date and time)\n\nTrigger: When an item is created or modified\n  Trigger condition:\n    @not(equals(triggerBody()?['Status']?['Value'], coalesce(triggerBody()?['PreviousStatus'], '')))\n\nCompose_Hours\n  if(empty(triggerBody()?['StatusChangedOn']), 0,\n     div(sub(ticks(triggerBody()?['Modified']), ticks(triggerBody()?['StatusChangedOn'])), 36000000000))\n\nCreate item (Status History)\n  Title           : @{triggerBody()?['Title']}\n  ItemId          : @{triggerBody()?['ID']}\n  FromStatus      : @{coalesce(triggerBody()?['PreviousStatus'], '(new)')}\n  ToStatus        : @{triggerBody()?['Status']?['Value']}\n  ChangedBy       : @{triggerBody()?['Editor']?['Email']}\n  ChangedOn       : @{triggerBody()?['Modified']}\n  HoursInPrevious : @{outputs('Compose_Hours')}\n\nUpdate item (source)\n  PreviousStatus  : @{triggerBody()?['Status']?['Value']}\n  StatusChangedOn : @{triggerBody()?['Modified']}\n\nReport: average HoursInPrevious grouped by FromStatus shows where requests wait.",
+    "stepByStepInstructions": [
+      "Create the Status History list and index ItemId.",
+      "Add hidden PreviousStatus and StatusChangedOn columns to the source list.",
+      "Trigger only when the status differs from the stored previous value.",
+      "Create the history row, including hours spent in the previous status.",
+      "Update the hidden columns last."
+    ],
+    "commonMistakes": [
+      "Logging every edit instead of status changes only.",
+      "Updating the hidden columns before writing the history row.",
+      "Recording the flow account instead of the editor."
+    ],
+    "troubleshooting": [
+      "If two rows appear per change, the flow's own update retriggered it. The trigger condition should stop that, so check its expression.",
+      "If ChangedBy shows the flow owner, use the Editor from the trigger, not the connection's account.",
+      "If hours look too large, StatusChangedOn was empty for older items. Backfill it with Created."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-renewal-reminders-from-contract-dates": {
+    "shortDescription": "Remind contract owners at set intervals before a renewal or notice deadline.",
+    "fullDescription": "A daily flow finds contracts whose renewal date is exactly 90, 60 or 30 days away and reminds the owner, accounting for the notice period so the reminder arrives while there is still time to act.",
+    "problemStatement": "Contracts renew automatically because nobody noticed the notice deadline had passed.",
+    "whenToUse": [
+      "Contract, licence, certificate or lease registers",
+      "Deadlines with a notice period",
+      "Several reminder points before a date"
+    ],
+    "whenNotToUse": [
+      "Dates managed in a contract management system with its own alerts",
+      "Registers without a reliable end date"
+    ],
+    "formulaOrCode": "Columns: EndDate (Date) | NoticeDays (Number) | Owner (Person) | AutoRenews (Yes/No) | Status (Choice)\n\nTrigger: Recurrence (daily 07:00)\n\nCompose_Offsets   createArray(90, 60, 30, 7)\n\nApply to each offset\n  Compose_Target   addDays(utcNow(), items('Apply_to_each'), 'yyyy-MM-dd')\n\n  Get items (Contracts)\n    Filter Query : Status eq 'Active' and EndDate ge '@{outputs('Compose_Target')}T00:00:00Z' and EndDate le '@{outputs('Compose_Target')}T23:59:59Z'\n\n  Apply to each contract\n    Compose_NoticeBy\n      addDays(items('Apply_to_each_2')?['EndDate'], mul(-1, int(coalesce(items('Apply_to_each_2')?['NoticeDays'], 0))), 'd MMMM yyyy')\n\n    Send an email (V2)\n      To         : @{items('Apply_to_each_2')?['Owner']?['Email']}\n      Importance : @{if(lessOrEquals(items('Apply_to_each'), 30), 'High', 'Normal')}\n      Subject    : @{items('Apply_to_each_2')?['Title']} ends in @{items('Apply_to_each')} days\n      Body       : <p>Ends on <b>@{formatDateTime(items('Apply_to_each_2')?['EndDate'], 'd MMMM yyyy')}</b>.</p>\n                   <p>@{if(equals(items('Apply_to_each_2')?['AutoRenews'], true),\n                        concat('This contract renews automatically. Notice must be given by <b>', outputs('Compose_NoticeBy'), '</b>.'),\n                        'This contract does not renew automatically.')}</p>\n                   <p><a href=\"@{items('Apply_to_each_2')?['{Link}']}\">Open the contract record</a></p>\n\n    Create item (Reminder Log): ContractId, Offset, SentOn",
+    "stepByStepInstructions": [
+      "Record end date, notice days, owner and whether the contract renews automatically.",
+      "Run daily and loop over the reminder offsets.",
+      "For each offset, query contracts ending on exactly that date.",
+      "Email the owner with the end date and the last date to give notice.",
+      "Log each reminder so you can show it was sent."
+    ],
+    "commonMistakes": [
+      "Reminding based on the end date alone and ignoring the notice period.",
+      "Using a range such as within 30 days, which reminds every day.",
+      "Emailing an owner who has left. Add a fallback to a team mailbox."
+    ],
+    "troubleshooting": [
+      "If a reminder is skipped, the flow did not run that day. Add a weekly catch-up for contracts ending within 30 days with no log entry.",
+      "If no contracts match, check the date range format in the filter query.",
+      "If the notice date is after today already, flag it in the subject as urgent."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-recurring-review-tasks-for-policies": {
+    "shortDescription": "Create a review task for each policy when its review date comes round, then roll the date forward.",
+    "fullDescription": "Policies need review on a cycle. This scheduled flow finds policies due for review in the coming month, creates a task for the owner, and when the review is completed sets the next review date from the policy's own interval.",
+    "problemStatement": "Policy reviews depend on someone remembering, and audits find documents years past their review date.",
+    "whenToUse": [
+      "Policies, procedures, risk assessments or certificates reviewed on a cycle",
+      "Each document having its own interval",
+      "Owners recorded per document"
+    ],
+    "whenNotToUse": [
+      "One-off reviews",
+      "Documents with no owner"
+    ],
+    "formulaOrCode": "Columns (Policies): Owner (Person) | NextReviewDate (Date, indexed) | ReviewMonths (Number)\n                    ReviewStatus (Choice: Current, Review due, Under review) | LastReviewedOn (Date)\n\nFlow 1: create tasks\nTrigger: Recurrence (monthly, day 1)\n\nGet items (Policies)\n  Filter Query : ReviewStatus eq 'Current' and NextReviewDate le '@{addDays(utcNow(), 30, 'yyyy-MM-dd')}'\n\nApply to each policy\n  Create a task (Planner)\n    Title         : Review: @{items('Apply_to_each')?['Title']}\n    Due Date Time : @{items('Apply_to_each')?['NextReviewDate']}\n    Assigned      : @{items('Apply_to_each')?['Owner']?['Email']}\n  Update task details\n    Description : Review, update if needed, then set ReviewStatus to Current on the policy.\n                  @{items('Apply_to_each')?['{Link}']}\n  Update item (Policies)\n    ReviewStatus : Review due\n    ReviewTaskId : @{outputs('Create_a_task')?['body/id']}\n\nFlow 2: roll forward when the review is done\nTrigger: When an item is created or modified (Policies)\n  Trigger condition:\n    @and(equals(triggerBody()?['ReviewStatus']?['Value'], 'Current'), not(empty(triggerBody()?['ReviewTaskId'])))\n\nUpdate item\n  LastReviewedOn : @{utcNow()}\n  NextReviewDate : @{addToTime(utcNow(), int(coalesce(triggerBody()?['ReviewMonths'], 12)), 'Month', 'yyyy-MM-dd')}\n  ReviewTaskId   : (clear with the null expression)\n\nUpdate a task (Planner)   Progress: Completed",
+    "stepByStepInstructions": [
+      "Add next review date, interval and review status columns.",
+      "Run monthly and find policies due within 30 days that are still marked current.",
+      "Create a task for each owner and mark the policy as review due.",
+      "When the owner sets the status back to current, record the review date and calculate the next one.",
+      "Complete the Planner task."
+    ],
+    "commonMistakes": [
+      "Creating a new task every month for a policy that is still awaiting review.",
+      "A single review interval for every document.",
+      "Not recording when the review actually happened."
+    ],
+    "troubleshooting": [
+      "If tasks are duplicated, the status filter is missing. Only policies marked current should get a task.",
+      "If the next date is wrong, check that the interval column holds months, not years.",
+      "If the owner has left, assign to the document controller and flag the policy."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-onboarding-tasks-for-new-vendors": {
+    "shortDescription": "Start a checklist of setup tasks across teams when a vendor is approved, and track completion on the vendor record.",
+    "fullDescription": "After approval, a vendor still needs a finance record, system access, a contract on file and a contact introduction. This pattern creates those tasks for the right teams, and a second flow updates the vendor's progress as tasks are completed.",
+    "problemStatement": "A vendor is approved but cannot be paid or start work for weeks, because the setup steps are spread across teams with no shared view.",
+    "whenToUse": [
+      "Vendor, supplier or partner setup involving several teams",
+      "A known list of setup steps",
+      "Progress that needs to be visible to the requester"
+    ],
+    "whenNotToUse": [
+      "Vendors set up entirely in a procurement system",
+      "Single-step onboarding"
+    ],
+    "formulaOrCode": "List: Vendor Tasks\n  Title | VendorId (Number, indexed) | Team (Choice) | AssignedTo (Person) | DueDate | Status (Choice: Open, Done)\n\nFlow 1: create tasks\nTrigger: Vendor Requests, Status changes to Approved (trigger condition with a TasksCreated guard)\n\nCompose_Tasks\n  createArray(\n    json('{\"t\":\"Create supplier record in finance system\",\"team\":\"Finance\",\"to\":\"finance@contoso.com\",\"days\":3}'),\n    json('{\"t\":\"Collect bank details and tax form\",\"team\":\"Finance\",\"to\":\"finance@contoso.com\",\"days\":5}'),\n    json('{\"t\":\"File signed contract\",\"team\":\"Legal\",\"to\":\"legal@contoso.com\",\"days\":5}'),\n    json('{\"t\":\"Issue system access\",\"team\":\"IT\",\"to\":\"itsupport@contoso.com\",\"days\":7}'),\n    json('{\"t\":\"Introduce vendor contact to the business owner\",\"team\":\"Procurement\",\"to\":\"procurement@contoso.com\",\"days\":7}')\n  )\n\nApply to each task\n  Condition: skip \"Issue system access\" when triggerBody()?['NeedsSystemAccess'] is false\n  Create item (Vendor Tasks)\n    Title : @{items('Apply_to_each')?['t']}     VendorId : @{triggerBody()?['ID']}\n    Team  : @{items('Apply_to_each')?['team']}  AssignedTo : @{items('Apply_to_each')?['to']}\n    DueDate : @{addDays(utcNow(), items('Apply_to_each')?['days'], 'yyyy-MM-dd')}\n\nUpdate item (Vendor Requests)  TasksCreated = Yes, OnboardingStatus = In progress\n\nFlow 2: track completion\nTrigger: When an item is modified (Vendor Tasks), trigger condition Status eq Done\n\nGet items (Vendor Tasks)   Filter Query: VendorId eq @{triggerBody()?['VendorId']}\nFilter array (open)        @equals(item()?['Status']?['Value'], 'Open')\n\nUpdate item (Vendor Requests, Id = VendorId)\n  OnboardingProgress : @{sub(length(body('Get_items')?['value']), length(body('Filter_array')))} of @{length(body('Get_items')?['value'])}\n  OnboardingStatus   : @{if(equals(length(body('Filter_array')), 0), 'Complete', 'In progress')}\n\nCondition: all done -> email the requester that the vendor is ready to use",
+    "stepByStepInstructions": [
+      "Create the Vendor Tasks list linked to the vendor by ID.",
+      "When a vendor is approved, create the standard tasks, skipping any that do not apply.",
+      "Show the tasks to each team in a view filtered by team and status.",
+      "When a task is marked done, recount and update progress on the vendor record.",
+      "Tell the requester when every task is complete."
+    ],
+    "commonMistakes": [
+      "Creating tasks with no link back to the vendor.",
+      "Leaving the requester with no view of progress.",
+      "Creating every task even when some do not apply."
+    ],
+    "troubleshooting": [
+      "If progress does not update, the second flow's trigger condition is not matching the Done value.",
+      "If tasks are created twice, add the guard column to the first flow's trigger condition.",
+      "If the task set changes often, move it from the Compose into a template list."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-closeout-reminders-for-completed-projects": {
+    "shortDescription": "Chase the closeout steps that are often skipped once a project is marked complete.",
+    "fullDescription": "When a project is completed, this flow sets a closeout due date and a scheduled flow reminds the project manager about outstanding closeout items, such as lessons learned, the final report and archiving, until all are ticked.",
+    "problemStatement": "Projects are marked complete, the team moves on, and lessons learned and archiving never happen.",
+    "whenToUse": [
+      "Project registers with a defined closeout checklist",
+      "PMOs that audit closeout",
+      "Closeout tracked as yes/no columns on the project"
+    ],
+    "whenNotToUse": [
+      "Projects with no formal closeout",
+      "Closeout handled as tasks in a project tool"
+    ],
+    "formulaOrCode": "Columns (Projects): Status | CompletedOn | CloseoutDue | ProjectManager\n  Closeout checks (Yes/No): LessonsLearnedDone | FinalReportDone | DocumentsArchived | BenefitsOwnerAgreed\n\nFlow 1: start closeout\nTrigger: Projects modified, trigger condition\n  @and(equals(triggerBody()?['Status']?['Value'], 'Complete'), empty(triggerBody()?['CloseoutDue']))\nUpdate item\n  CompletedOn : @{utcNow()}\n  CloseoutDue : @{addDays(utcNow(), 30, 'yyyy-MM-dd')}\n\nFlow 2: weekly reminders\nTrigger: Recurrence (weekly, Monday)\n\nGet items (Projects)\n  Filter Query : Status eq 'Complete' and (LessonsLearnedDone eq 0 or FinalReportDone eq 0 or DocumentsArchived eq 0 or BenefitsOwnerAgreed eq 0)\n\nApply to each project\n  Compose_Outstanding\n    concat(\n      if(equals(items('Apply_to_each')?['LessonsLearnedDone'], true), '', '<li>Lessons learned session</li>'),\n      if(equals(items('Apply_to_each')?['FinalReportDone'], true), '', '<li>Final report</li>'),\n      if(equals(items('Apply_to_each')?['DocumentsArchived'], true), '', '<li>Archive project documents</li>'),\n      if(equals(items('Apply_to_each')?['BenefitsOwnerAgreed'], true), '', '<li>Agree a benefits owner</li>')\n    )\n  Compose_Overdue   less(items('Apply_to_each')?['CloseoutDue'], utcNow())\n\n  Send an email (V2)\n    To      : @{items('Apply_to_each')?['ProjectManager']?['Email']}\n    CC      : @{if(outputs('Compose_Overdue'), 'pmo@contoso.com', '')}\n    Subject : @{if(outputs('Compose_Overdue'), 'Overdue: ', '')}Closeout for @{items('Apply_to_each')?['Title']}\n    Body    : <p>Still to do before this project can be closed:</p><ul>@{outputs('Compose_Outstanding')}</ul>\n              <p>Due @{formatDateTime(items('Apply_to_each')?['CloseoutDue'], 'd MMMM yyyy')}.\n                 <a href=\"@{items('Apply_to_each')?['{Link}']}\">Update the project record</a></p>\n\nFlow 3 (optional): when all four are Yes, set Status = Closed.",
+    "stepByStepInstructions": [
+      "Add the closeout check columns and a closeout due date to the project list.",
+      "Set the due date when the project is marked complete.",
+      "Run weekly and find completed projects with any check still unticked.",
+      "Email the project manager the outstanding items, copying the PMO once overdue.",
+      "Close the project when every check is ticked."
+    ],
+    "commonMistakes": [
+      "Treating complete and closed as the same status.",
+      "Reminding with a generic message that does not say what is outstanding.",
+      "No escalation when closeout is overdue."
+    ],
+    "troubleshooting": [
+      "If the yes/no filter is rejected, compare with 0 and 1 rather than true and false in the filter query.",
+      "If the project manager has moved on, send to the PMO.",
+      "If reminders continue after closeout, check that the final status is excluded by the query."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-risk-review-tasks-for-red-projects": {
+    "shortDescription": "Open a risk review task for the PMO when a project turns red, and prevent duplicates while one is open.",
+    "fullDescription": "A red status should trigger a structured response. This pattern creates a single review task with the project's open high risks attached, assigns it to the PMO, and does not create another until that review is closed.",
+    "problemStatement": "Red projects are noted in reports, but no one is assigned to examine why or to agree a recovery plan.",
+    "whenToUse": [
+      "Portfolios with a health or RAG status",
+      "A PMO or risk function that reviews troubled projects",
+      "Risks recorded in a list linked to projects"
+    ],
+    "whenNotToUse": [
+      "Health indicators that flip between amber and red daily",
+      "Teams with no capacity to carry out reviews"
+    ],
+    "formulaOrCode": "Columns (Projects): Health (Choice) | OpenReviewId (Number)\n\nList: Risk Reviews\n  Title | ProjectId (Number, indexed) | AssignedTo | DueDate | Status (Open, Closed) | Findings | TopRisks (Multiple lines, rich text)\n\nTrigger: When an item is created or modified (Projects)\n  Trigger condition:\n    @and(equals(triggerBody()?['Health']?['Value'], 'Red'), empty(triggerBody()?['OpenReviewId']))\n\nGet items (Risks)\n  Filter Query : ProjectId eq @{triggerBody()?['ID']} and Status eq 'Open'\n  Order By     : Score desc\n  Top Count    : 5\n\nSelect -> Risk: item()?['Title'], Score: item()?['Score'], Owner: item()?['Owner']?['DisplayName']\nCreate HTML table\n\nCreate item (Risk Reviews)\n  Title      : Risk review: @{triggerBody()?['Title']}\n  ProjectId  : @{triggerBody()?['ID']}\n  AssignedTo : pmo-risk@contoso.com\n  DueDate    : @{addDays(utcNow(), 5, 'yyyy-MM-dd')}\n  Status     : Open\n  TopRisks   : @{body('Create_HTML_table')}\n\nUpdate item (Projects)\n  OpenReviewId : @{outputs('Create_item')?['body/ID']}\n\nPost message to the PMO channel with links to the project and the review\n\nSecond flow: when a Risk Review is set to Closed\n  Update item (Projects, Id = ProjectId)   OpenReviewId = null",
+    "stepByStepInstructions": [
+      "Add an OpenReviewId column to projects and create the Risk Reviews list.",
+      "Trigger when health is red and no review is open.",
+      "Attach the project's top open risks to the review.",
+      "Store the review's ID on the project to block duplicates.",
+      "Clear the ID when the review is closed, so a later red status opens a new review."
+    ],
+    "commonMistakes": [
+      "Creating a review on every edit of a red project.",
+      "Opening a review with no information about the current risks.",
+      "Never clearing the guard, so later red periods are missed."
+    ],
+    "troubleshooting": [
+      "If duplicates appear, two edits arrived together. Set trigger concurrency to 1.",
+      "If the risks table is empty, the project has no open risks recorded, which is itself worth noting in the review.",
+      "If the guard is never cleared, check the second flow's trigger condition on the Closed value."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-form-response-json-into-sharepoint-rows": {
+    "shortDescription": "Turn a Microsoft Forms response, including multi-select answers, into clean SharePoint columns.",
+    "fullDescription": "Forms returns answers keyed by question ID, and multi-select answers arrive as a JSON array in a string. This pattern reads the response, converts each answer type correctly, and creates the list item.",
+    "problemStatement": "Choice answers arrive as text like [\"A\",\"B\"] and fail to save to a choices column, and dates and numbers arrive as strings.",
+    "whenToUse": [
+      "Forms used as the front end to a SharePoint list",
+      "Forms with multi-select, date or number questions",
+      "Responses that need routing after they are saved"
+    ],
+    "whenNotToUse": [
+      "Simple forms where every answer is single-line text",
+      "Forms that need file uploads handled, which is a separate pattern"
+    ],
+    "formulaOrCode": "Trigger: When a new response is submitted (Forms)\nGet response details\n  Response Id : @{triggerBody()?['resourceData']?['responseId']}\n\nSingle-line and choice (single) answers: use the dynamic value directly.\n\nMulti-select answer -> array\n  Compose_Topics\n    json(coalesce(outputs('Get_response_details')?['body/r3f2a...'], '[]'))\n\n  For a SharePoint multi-choice column, switch the field to \"input entire array\" and pass:\n  Select\n    From : @{outputs('Compose_Topics')}\n    Map  : Value -> item()\n\n  As readable text\n    join(outputs('Compose_Topics'), ', ')\n\nNumber answer\n  float(coalesce(outputs('Get_response_details')?['body/r91bc...'], '0'))\n\nDate answer (arrives as yyyy-MM-dd)\n  if(empty(outputs('Get_response_details')?['body/r77de...']), null,\n     outputs('Get_response_details')?['body/r77de...'])\n\nResponder\n  Email : outputs('Get_response_details')?['body/responder']\n  Time  : outputs('Get_response_details')?['body/submitDate']\n\nCreate item (Requests)\n  Title         : <short answer>\n  Topics        : @{body('Select')}              (whole array)\n  Quantity      : <number expression>\n  NeededBy      : <date expression>\n  RequesterEmail: <responder>\n\nRanking and Likert answers arrive as JSON too. Parse with json() and read by index or question key.",
+    "stepByStepInstructions": [
+      "Add the Forms trigger and Get response details.",
+      "Use single-value answers directly from dynamic content.",
+      "Convert multi-select answers with json() and reshape them with Select for a multi-choice column.",
+      "Convert numbers with float() and guard optional dates.",
+      "Create the list item and continue with any routing."
+    ],
+    "commonMistakes": [
+      "Passing the multi-select string straight into a choices column.",
+      "Assuming anonymous forms return a responder email.",
+      "Renaming a question and expecting its ID to change. IDs stay the same, but deleted and re-added questions get new ones."
+    ],
+    "troubleshooting": [
+      "If json() fails, the question was left blank. Keep the coalesce to an empty array.",
+      "If the choices column rejects the value, each entry must be an object with a Value property, and the text must match a choice exactly.",
+      "If the responder is 'anonymous', the form does not record names. Add an email question."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-adaptive-card-responses-into-decisions": {
+    "shortDescription": "Read the inputs and button from an adaptive card response and turn them into a decision on the item.",
+    "fullDescription": "A submitted card returns a data object with every input ID, plus the button that was pressed. This pattern maps those values to a decision, validates required comments, and writes the result to SharePoint.",
+    "problemStatement": "Makers post a card successfully but cannot work out where the response values are or how to tell which button was pressed.",
+    "whenToUse": [
+      "Cards posted with Post adaptive card and wait for a response",
+      "Cards with several inputs and buttons",
+      "Decisions that must be written back to a record"
+    ],
+    "whenNotToUse": [
+      "Cards with only an open link button, which return nothing",
+      "Cards sent by a bot framework rather than a flow"
+    ],
+    "formulaOrCode": "Card inputs and actions (ids matter)\n  { \"type\": \"Input.ChoiceSet\", \"id\": \"decision\", \"choices\": [\n      { \"title\": \"Approve\", \"value\": \"Approved\" },\n      { \"title\": \"Reject\", \"value\": \"Rejected\" },\n      { \"title\": \"Need more information\", \"value\": \"MoreInfo\" } ] }\n  { \"type\": \"Input.Text\", \"id\": \"comments\", \"isMultiline\": true }\n  { \"type\": \"Input.Date\", \"id\": \"reviewBy\" }\n  { \"type\": \"Input.Toggle\", \"id\": \"urgent\", \"valueOn\": \"true\", \"valueOff\": \"false\" }\n  \"actions\": [ { \"type\": \"Action.Submit\", \"title\": \"Submit\", \"id\": \"submit\" },\n               { \"type\": \"Action.Submit\", \"title\": \"Skip\", \"id\": \"skip\", \"data\": { \"decision\": \"Skipped\" } } ]\n\nResponse shape\n  body('Post_adaptive_card_and_wait_for_a_response')\n    .data.decision | .data.comments | .data.reviewBy | .data.urgent\n    .submitActionId\n    .responder.displayName | .responder.email | .responder.userPrincipalName\n    .responseTime\n\nCompose_Data       body('Post_adaptive_card_and_wait_for_a_response')?['data']\nCompose_Decision   coalesce(outputs('Compose_Data')?['decision'], 'NoSelection')\nCompose_Comments   trim(coalesce(outputs('Compose_Data')?['comments'], ''))\nCompose_Urgent     equals(outputs('Compose_Data')?['urgent'], 'true')\n\nValidate: a rejection needs a reason\n  Condition: and(equals(outputs('Compose_Decision'), 'Rejected'), empty(outputs('Compose_Comments')))\n    Yes: post a follow-up message asking for a reason, then post the card again\n\nUpdate item\n  Status       : @{outputs('Compose_Decision')}\n  DecisionNote : @{outputs('Compose_Comments')}\n  DecidedBy    : @{body('Post_adaptive_card_and_wait_for_a_response')?['responder']?['email']}\n  DecidedOn    : @{body('Post_adaptive_card_and_wait_for_a_response')?['responseTime']}\n  ReviewBy     : @{if(empty(outputs('Compose_Data')?['reviewBy']), null, outputs('Compose_Data')?['reviewBy'])}",
+    "stepByStepInstructions": [
+      "Give every input on the card a unique id.",
+      "After the wait action, read the data object and each input by its id.",
+      "Use submitActionId, or a data value on the button, to tell which button was pressed.",
+      "Validate anything the card could not enforce, such as a reason for rejection.",
+      "Write the decision, comments, responder and time to the item."
+    ],
+    "commonMistakes": [
+      "Expecting toggle values as true or false. They arrive as text.",
+      "Reading inputs that were left empty without a default.",
+      "Duplicate input ids, where one value overwrites another."
+    ],
+    "troubleshooting": [
+      "If a value is null, check the id spelling and case against the card JSON.",
+      "If you cannot tell which button was pressed, add an id to each Action.Submit and read submitActionId.",
+      "If required inputs are skipped, add isRequired and an errorMessage to the input, and still validate in the flow."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-email-recipients-from-a-security-list": {
+    "shortDescription": "Build a recipient list for a notification from a SharePoint list of roles and people.",
+    "fullDescription": "Keeping notification recipients in a list lets the business change them without editing flows. This pattern reads the people for a role, handles multi-person columns, removes duplicates and inactive entries, and returns a string for the To field.",
+    "problemStatement": "Recipient addresses are typed into email actions across many flows, and every staffing change means finding and editing them all.",
+    "whenToUse": [
+      "Notifications to role-based groups such as approvers or duty managers",
+      "Recipients that change regularly",
+      "Several flows that notify the same roles"
+    ],
+    "whenNotToUse": [
+      "Groups that already exist as a mail-enabled group. Send to the group address.",
+      "A single fixed mailbox"
+    ],
+    "formulaOrCode": "List: Notification Roles\n  Title (role, indexed) | Members (Person, allow multiple) | ExtraEmails (Single line, optional)\n  Active (Yes/No) | Region (Choice, optional)\n\nGet items (Notification Roles)\n  Filter Query : Title eq 'Duty Manager' and Active eq 1\n\nMembers is a multi-person column, so each row holds an array of people\n  Initialize variable varEmails (Array) = []\n  Apply to each row: body('Get_items')?['value']\n    Apply to each member: items('Apply_to_each')?['Members']\n      Append to array variable varEmails : toLower(items('Apply_to_each_2')?['Email'])\n\nExtraEmails (text like \"a@x.com; b@x.com\")\n  split(replace(coalesce(first(body('Get_items')?['value'])?['ExtraEmails'], ''), ' ', ''), ';')\n\nCompose_All        union(variables('varEmails'), outputs('Compose_Extra'))\nFilter array       @and(not(empty(item())), contains(item(), '@'))\nCompose_To         join(body('Filter_array'), ';')\n\nCondition: empty(outputs('Compose_To'))\n  Yes: send to a fallback mailbox and flag that the role has no members\n\nReuse: put this in a child flow that takes Role and returns Recipients.",
+    "stepByStepInstructions": [
+      "Create the Notification Roles list with a multi-person Members column.",
+      "Read the active rows for the role you need.",
+      "Collect member emails, plus any extra addresses stored as text.",
+      "Remove duplicates and blanks, then join with semicolons.",
+      "Wrap the logic in a child flow so every flow uses the same recipients."
+    ],
+    "commonMistakes": [
+      "Reading a multi-person column as if it were a single person.",
+      "No fallback when a role has no members.",
+      "Copying the lookup into every flow instead of sharing it."
+    ],
+    "troubleshooting": [
+      "If the To field receives objects, you passed the people array instead of their emails.",
+      "If external addresses are needed, they cannot go in a person column. Use the ExtraEmails text column.",
+      "If a member has no email, such as a disabled account, the blank is removed by the filter. Review the role's members."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-csv-text-into-sharepoint-actions": {
+    "shortDescription": "Read a CSV file's content in a flow and create or update a SharePoint item for each row.",
+    "fullDescription": "Power Automate has no built-in CSV parser. This pattern splits the text into lines and columns with expressions, skips the header and empty lines, converts types, and upserts each row by a key column.",
+    "problemStatement": "A system drops a CSV export into a folder or mailbox each day, and someone copies the rows into a SharePoint list by hand.",
+    "whenToUse": [
+      "Simple CSV files with a fixed column order",
+      "Daily imports of up to a few thousand rows",
+      "Files arriving in SharePoint, OneDrive or email"
+    ],
+    "whenNotToUse": [
+      "CSV with quoted fields containing commas or line breaks, which needs a proper parser such as an Office Script or Azure Function",
+      "Very large files"
+    ],
+    "formulaOrCode": "Trigger: When a file is created in a folder (SharePoint)  ->  Get file content\n\nCompose_Text\n  replace(base64ToString(body('Get_file_content')?['$content']), decodeUriComponent('%EF%BB%BF'), '')\n\nCompose_Lines\n  split(replace(outputs('Compose_Text'), decodeUriComponent('%0D'), ''), decodeUriComponent('%0A'))\n\nFilter_array_Rows   (drop the header and blank lines)\n  From      : @{skip(outputs('Compose_Lines'), 1)}\n  Condition : @not(empty(trim(item())))\n\nSelect_Rows\n  From : @{body('Filter_array_Rows')}\n  Map  : Code   -> trim(split(item(), ',')[0])\n         Name   -> trim(split(item(), ',')[1])\n         Qty    -> int(coalesce(trim(split(item(), ',')[2]), '0'))\n         Date   -> trim(split(item(), ',')[3])\n\nApply to each: body('Select_Rows')   (Concurrency: 10)\n  Get items (Products)\n    Filter Query : Code eq '@{items('Apply_to_each')?['Code']}'\n    Top Count    : 1\n  Condition: length(body('Get_items')?['value']) is greater than 0\n    Yes: Update item  Id = first(body('Get_items')?['value'])?['ID'], Name, Qty, Date\n    No : Create item  Code, Name, Qty, Date\n\nAfter the loop\n  Move file to /Imports/Processed\n  Send a summary: @{length(body('Select_Rows'))} rows imported from @{triggerBody()?['{Name}']}",
+    "stepByStepInstructions": [
+      "Read the file content and convert it to text, removing the byte order mark.",
+      "Split into lines, removing carriage returns.",
+      "Skip the header and blank lines with Filter array.",
+      "Split each line into columns with Select and convert types.",
+      "For each row, look up the key and update or create the item.",
+      "Move the processed file and send a summary."
+    ],
+    "commonMistakes": [
+      "Splitting on commas when fields may contain commas inside quotes.",
+      "Forgetting the header row or a trailing blank line.",
+      "Creating duplicates by not checking for an existing key."
+    ],
+    "troubleshooting": [
+      "If the first column name or value has odd characters, the byte order mark was not removed.",
+      "If int() fails, a number column is empty or has thousands separators. Clean it with replace first.",
+      "If rows are misaligned, a field contains a comma. Ask for a different delimiter such as a tab or pipe, and split on that."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "parse-approval-comments-into-audit-notes": {
+    "shortDescription": "Collect every approver's response and comment into one readable note on the item.",
+    "fullDescription": "An approval with several approvers returns an array of responses. This pattern formats them as dated lines with name, outcome and comment, and appends them to a notes column so the history builds up across stages.",
+    "problemStatement": "Approver comments are visible in the approval email and then lost, and the item shows only a final status.",
+    "whenToUse": [
+      "Approvals with more than one approver or stage",
+      "Comments that requesters and auditors need to see",
+      "A simple history on the item itself"
+    ],
+    "whenNotToUse": [
+      "Formal audit trails that need one row per decision, which belong in a history list",
+      "Approvals where comments are confidential"
+    ],
+    "formulaOrCode": "After \"Start and wait for an approval\" (action name: Approval)\n\nSelect_Lines   (text mode)\n  From : @{outputs('Approval')?['body/responses']}\n  Map  : @concat(\n           formatDateTime(item()?['responseDate'], 'dd MMM yyyy HH:mm'), ' - ',\n           item()?['responder']?['displayName'], ': ',\n           item()?['approverResponse'],\n           if(empty(item()?['comments']), '', concat(' - \"', item()?['comments'], '\"'))\n         )\n\nCompose_StageNote\n  concat(\n    '[', 'Manager approval', '] ',\n    join(body('Select_Lines'), decodeUriComponent('%0A'))\n  )\n\nGet item   (re-read so earlier notes are current)\n\nUpdate item\n  ApprovalNotes : @{concat(\n                     coalesce(body('Get_item')?['ApprovalNotes'], ''),\n                     if(empty(body('Get_item')?['ApprovalNotes']), '', decodeUriComponent('%0A')),\n                     outputs('Compose_StageNote')\n                   )}\n  LastOutcome   : @{outputs('Approval')?['body/outcome']}\n\nResult in the column\n  [Manager approval] 20 Nov 2026 09:14 - Jane Doe: Approve - \"Budget confirmed\"\n  [Finance approval] 20 Nov 2026 11:02 - Sam Lee: Approve\n\nAlternative: set the notes column to \"Append changes to existing text\" and write only the new stage note.",
+    "stepByStepInstructions": [
+      "Add a plain multi-line ApprovalNotes column.",
+      "Format each response as one line with Select in text mode.",
+      "Join the lines and prefix them with the stage name.",
+      "Re-read the item and append the new note to what is already stored.",
+      "Repeat after each approval stage."
+    ],
+    "commonMistakes": [
+      "Reading only the first response when several people approved.",
+      "Overwriting earlier notes instead of appending.",
+      "Using a rich text column, which stores HTML and breaks line handling."
+    ],
+    "troubleshooting": [
+      "If line breaks do not show, the column is rich text or the view shows one line. Use plain text and the item form.",
+      "If times look wrong, they are UTC. Convert with convertFromUtc inside the Select.",
+      "If quotation marks in comments cause problems downstream, replace them in the Select."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "handle-missing-manager-lookup-gracefully": {
+    "shortDescription": "Keep a flow running when Get manager finds nothing, and route to a sensible fallback.",
+    "fullDescription": "Get manager fails outright when a user has no manager in the directory. This pattern catches that failure with run-after settings, picks a fallback approver, and records that a fallback was used so the directory can be fixed.",
+    "problemStatement": "An approval flow fails for executives, contractors and new starters because they have no manager set, and their requests go nowhere.",
+    "whenToUse": [
+      "Any flow that uses Get manager (V2)",
+      "Organizations with incomplete directory data",
+      "Requests from guests or service accounts"
+    ],
+    "whenNotToUse": [
+      "Processes where a missing manager should stop the request for manual review",
+      "Approvers that come from a list instead of the directory"
+    ],
+    "formulaOrCode": "Get manager (V2)\n  User (UPN) : @{triggerBody()?['Author']?['Email']}\n\nCompose_Manager   (Configure run after: is successful, has failed)\n  coalesce(outputs('Get_manager_(V2)')?['body/mail'], '')\n\nCompose_Approver\n  if(\n    or(\n      empty(outputs('Compose_Manager')),\n      equals(toLower(outputs('Compose_Manager')), toLower(triggerBody()?['Author']?['Email']))\n    ),\n    'approvals-fallback@contoso.com',\n    outputs('Compose_Manager')\n  )\n\nCompose_UsedFallback\n  equals(outputs('Compose_Approver'), 'approvals-fallback@contoso.com')\n\nUpdate item\n  Approver      : @{outputs('Compose_Approver')}\n  RoutingNote   : @{if(outputs('Compose_UsedFallback'), 'No manager found in the directory. Sent to the fallback approver.', '')}\n\nCondition: outputs('Compose_UsedFallback') is true\n  Yes: Create item (Directory Gaps)  User = requester, FoundOn = utcNow()\n\nStart and wait for an approval\n  Assigned to : @{outputs('Compose_Approver')}\n\nWhy the run-after matters\n  Without it, a 404 from Get manager skips every later action and the run fails.\n  With it, the flow continues and the empty result is handled by coalesce.",
+    "stepByStepInstructions": [
+      "Add Get manager (V2) for the requester.",
+      "On the next action, open Configure run after and tick both is successful and has failed.",
+      "Read the manager's mail with coalesce so a failure becomes an empty value.",
+      "Choose a fallback approver when the value is empty or equals the requester.",
+      "Record that a fallback was used and log the gap for the directory team."
+    ],
+    "commonMistakes": [
+      "Leaving the default run-after, so a missing manager fails the flow.",
+      "Falling back to the requester.",
+      "Using a fallback silently, so the directory is never corrected."
+    ],
+    "troubleshooting": [
+      "If the run still shows as failed, a later action also depends on Get manager directly. Point it at the Compose instead.",
+      "If the manager's mail is empty but a manager exists, the manager has no mailbox. Use userPrincipalName as a second choice.",
+      "If guests fail differently, check for '#EXT#' in the requester's UPN and route guests straight to the fallback."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "handle-empty-attachment-arrays-gracefully": {
+    "shortDescription": "Send emails and run loops safely whether an item has many attachments or none.",
+    "fullDescription": "Attachment handling has three failure points: an item with no attachments, an email action that rejects an empty or badly shaped array, and a variable-based loop that breaks under concurrency. This pattern covers all three.",
+    "problemStatement": "A flow that emails list attachments works for most items and fails, or sends a broken email, for items with no attachments.",
+    "whenToUse": [
+      "Emails that include SharePoint list attachments",
+      "Flows where attachments are optional",
+      "Processes that require at least one attachment"
+    ],
+    "whenNotToUse": [
+      "Files in a document library, which are read with Get file content instead",
+      "Very large attachments that exceed email size limits"
+    ],
+    "formulaOrCode": "Get attachments\n  Id : @{triggerBody()?['ID']}\n\nCompose_Count   length(body('Get_attachments'))\n\nA. Attachments are required\n   Condition: outputs('Compose_Count') is equal to 0\n     Yes: Update item Status = Needs attachment\n          Email the requester\n          Terminate (Cancelled)\n\nB. Attachments are optional\n   Initialize variable varFiles (Array) = []          (top level, before any loop)\n\n   Apply to each: body('Get_attachments')             (runs zero times when empty; Concurrency off)\n     Get attachment content\n       File Identifier : @{items('Apply_to_each')?['Id']}\n     Append to array variable varFiles\n       {\n         \"Name\": \"@{items('Apply_to_each')?['DisplayName']}\",\n         \"ContentBytes\": @{body('Get_attachment_content')}\n       }\n\n   Send an email (V2)\n     Attachments : switch to \"input entire array\" -> @{variables('varFiles')}\n     Body        : @{if(equals(outputs('Compose_Count'), 0),\n                        '<p>No files were attached to this request.</p>',\n                        concat('<p>', outputs('Compose_Count'), ' file(s) attached.</p>'))}\n\nC. Size guard (Outlook limit is about 25 MB in total)\n   Filter array on body('Get_attachments'): @lessOrEquals(item()?['Size'], 10000000)\n   For anything larger, include a link instead:\n     @{triggerBody()?['{Link}']}",
+    "stepByStepInstructions": [
+      "Get the attachments and count them.",
+      "If attachments are required, stop early with a clear message when there are none.",
+      "If optional, build an array of name and content objects in a loop that simply does not run when the list is empty.",
+      "Pass the whole array to the email action's attachments field.",
+      "Say in the email body whether files are attached, and link to large files instead of attaching them."
+    ],
+    "commonMistakes": [
+      "Wrapping ContentBytes in quotes, which turns the file object into text and corrupts the attachment.",
+      "Turning on loop concurrency while appending to a variable.",
+      "Assuming every item has at least one attachment."
+    ],
+    "troubleshooting": [
+      "If attached files will not open, check the ContentBytes value is the content object, not a quoted string.",
+      "If the email action fails on the attachments field, switch it to the whole-array input and pass the variable.",
+      "If the email is rejected for size, apply the size filter and send links for the rest."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "handle-failed-planner-task-creation": {
+    "shortDescription": "Catch Planner errors such as a full plan or a non-member assignee, and keep the process moving.",
+    "fullDescription": "Create a task fails for reasons that have nothing to do with the flow's logic: the assignee is not in the group, the plan has hit a limit, or Planner is briefly unavailable. This pattern retries what is worth retrying and falls back to an unassigned task or an email.",
+    "problemStatement": "A fulfilment flow stops halfway because one Planner task could not be created, and the remaining steps never run.",
+    "whenToUse": [
+      "Flows that create Planner tasks for other people",
+      "Plans shared by many flows",
+      "Assignees who may not be members of the plan's group"
+    ],
+    "whenNotToUse": [
+      "Flows where the task is the only purpose and failure should stop everything",
+      "Tasks created in other tools"
+    ],
+    "formulaOrCode": "Scope \"Try create\"\n  Create a task\n    Assigned User Ids : @{triggerBody()?['AssignedTo']?['Email']}\n    (Settings > Retry Policy: Exponential, Count 4, Interval PT10S)\n\nScope \"Fallback\" (run after Try create: has failed, has timed out)\n  Filter array\n    From      : @{result('Try_create')}\n    Condition : @equals(item()?['status'], 'Failed')\n  Compose_Error\n    coalesce(first(body('Filter_array'))?['error']?['message'], first(body('Filter_array'))?['outputs']?['body']?['message'], 'Unknown Planner error')\n\n  Scope \"Retry unassigned\"\n    Create a task          (same title and bucket, no assignee)\n    Update task details\n      Description : Could not assign to @{triggerBody()?['AssignedTo']?['DisplayName']}: @{outputs('Compose_Error')}\n\n  Scope \"Email instead\" (run after Retry unassigned: has failed, has timed out)\n    Send an email (V2)\n      To      : @{triggerBody()?['AssignedTo']?['Email']}\n      CC      : plan-owner@contoso.com\n      Subject : Task for you: @{triggerBody()?['Title']}\n      Body    : Planner could not create this task (@{outputs('Compose_Error')}). Details: @{triggerBody()?['{Link}']}\n\nUpdate item (run after the scopes: is successful, is skipped, has failed)\n  PlannerTaskId : @{coalesce(outputs('Create_a_task')?['body/id'], outputs('Create_a_task_2')?['body/id'], '')}\n  TaskNote      : @{if(empty(outputs('Create_a_task')?['body/id']), 'Task created by fallback route', '')}\n\nCommon causes\n  403 : assignee is not a member of the Microsoft 365 group that owns the plan\n  403 with a limit message : plan or bucket has reached its task limit\n  429 / 5xx : throttling or a temporary outage (the retry policy handles these)",
+    "stepByStepInstructions": [
+      "Wrap Create a task in a scope and set a retry policy on it.",
+      "Add a fallback scope that runs when the first scope fails and reads the error.",
+      "Try again without an assignee and note the reason in the task.",
+      "If that also fails, email the person and the plan owner.",
+      "Record on the item which route was used, and let the rest of the flow continue."
+    ],
+    "commonMistakes": [
+      "Letting one failed task stop the whole process.",
+      "Retrying a 403 repeatedly, which will never succeed.",
+      "Not telling anyone that a fallback was used."
+    ],
+    "troubleshooting": [
+      "If the error is about membership, add the person to the group or assign to someone who is a member.",
+      "If the plan is full, archive completed tasks or use a new plan per period.",
+      "If later actions are skipped, check their run-after settings include is skipped and has failed for the scopes above."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "handle-duplicate-flow-trigger-runs": {
+    "shortDescription": "Stop a flow from processing the same item twice when the trigger fires more than once.",
+    "fullDescription": "SharePoint and other triggers can fire twice for one logical event, for example when a form saves in two steps or attachments are added after creation. This pattern combines a trigger condition, concurrency control and a processed marker so the work happens once.",
+    "problemStatement": "Requesters receive two confirmation emails, two approvals are started, or two sets of tasks are created for one submission.",
+    "whenToUse": [
+      "Flows that send notifications, start approvals or create records",
+      "Items saved by apps or forms that write more than once",
+      "Triggers on created or modified"
+    ],
+    "whenNotToUse": [
+      "Flows whose actions are harmless to repeat",
+      "Cases where the duplicate is a real second event"
+    ],
+    "formulaOrCode": "1. Trigger condition: only start when there is work to do\n   Trigger > Settings > Trigger Conditions\n     @and(\n       equals(triggerBody()?['Status']?['Value'], 'Submitted'),\n       empty(triggerBody()?['ProcessedOn'])\n     )\n\n2. Concurrency: process one run at a time\n   Trigger > Settings > Concurrency Control: On, Degree of Parallelism: 1\n\n3. Re-check inside the run, then claim the item first\n   Get item   (current values, not the trigger's snapshot)\n   Condition: not(empty(body('Get_item')?['ProcessedOn']))\n     Yes: Terminate (Cancelled)\n   Update item\n     ProcessedOn : @{utcNow()}\n     ProcessedRun: @{workflow()?['run']?['name']}\n\n4. Do the real work (approval, email, child records)\n\n5. If the work fails, release the claim in the catch scope\n   Update item   ProcessedOn = null\n\nWhy duplicates happen\n  - Power Apps forms that Patch, then Patch again (for example to set a reference number)\n  - Attachments saved after the item is created\n  - \"When an item is created or modified\" catching the flow's own update\n  - Trigger retries after a transient failure\n\nOther sources\n  Email triggers : keep the message Id in a list and skip Ids already seen\n  HTTP triggers  : have the caller send an idempotency key and store it",
+    "stepByStepInstructions": [
+      "Add a ProcessedOn date column to the list.",
+      "Add a trigger condition so the flow starts only for unprocessed items in the right status.",
+      "Set trigger concurrency to 1.",
+      "At the start of the run, re-read the item and stop if it has been claimed.",
+      "Set the marker before doing the work, and clear it again if the work fails."
+    ],
+    "commonMistakes": [
+      "Relying on a trigger condition alone. Two runs can both pass it before either updates the item.",
+      "Setting the processed marker at the end of the flow instead of the start.",
+      "Using Created equals Modified to detect new items, which is unreliable."
+    ],
+    "troubleshooting": [
+      "If duplicates continue, check that concurrency is set on the trigger and not only on a loop.",
+      "If the flow never runs, the trigger condition is always false. Test the expression with a known item in a Compose.",
+      "If items are stuck as claimed after a failure, the catch scope is not clearing the marker."
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "handle-cancelled-approvals-with-cleanup": {
+    "shortDescription": "Withdraw a pending approval when the request is cancelled, and tidy up what the flow already created.",
+    "fullDescription": "A waiting approval keeps waiting after the request is cancelled, and the approver may still act on it. This pattern runs the approval in parallel with a watcher for cancellation, cancels the approval, and reverses earlier steps.",
+    "problemStatement": "A requester cancels their request, but the approver still gets reminders and approves it a week later, which sets off fulfilment for something nobody wants.",
+    "whenToUse": [
+      "Requests that can be withdrawn while awaiting approval",
+      "Flows that create tasks, bookings or records before approval completes",
+      "Long-running approvals"
+    ],
+    "whenNotToUse": [
+      "Approvals that complete within minutes",
+      "Processes where a submitted request can never be withdrawn"
+    ],
+    "formulaOrCode": "Use \"Create an approval\" + \"Wait for an approval\" instead of the combined action,\nso the approval's ID is available while it is pending.\n\nCreate an approval\n  Assigned to : approver\nUpdate item\n  ApprovalId  : @{outputs('Create_an_approval')?['body/name']}\n  Status      : Awaiting approval\n\nParallel branch A\n  Wait for an approval   Approval ID: @{outputs('Create_an_approval')?['body/name']}\n  Get item (current status)\n  Condition: status is Cancelled -> Terminate (Cancelled)\n  Otherwise continue with the Approved / Rejected logic\n\nParallel branch B: watch for cancellation\n  Do until  variables('varStop') is true      (Limit: Count 400, Timeout P29D)\n    Delay 15 minutes\n    Get item\n    Condition: Status is Cancelled\n      Yes: No Approvals connector action cancels an approval.\n           Approvals are stored as rows in Dataverse, so use:\n           Dataverse - Update a row\n             Table : Approvals\n             Row ID: @{outputs('Create_an_approval')?['body/name']}\n             Status: Cancelled\n           Set varStop = true\n    Condition: Status is not Awaiting approval -> Set varStop = true\n\nCleanup scope (after cancellation)\n  - Delete or close child tasks created earlier (filter by RequestId)\n  - Remove any calendar hold or booking\n  - Email the approver: \"This request was withdrawn. No action is needed.\"\n  - Email the requester a confirmation\n  - Update item: ApprovalId = null, CancelledOn = utcNow()\n\nSimpler option when Dataverse access is not available\n  Leave the approval open, and after \"Wait for an approval\" always re-read the item.\n  If it is Cancelled, ignore the outcome and tell the approver it was withdrawn.",
+    "stepByStepInstructions": [
+      "Split the approval into Create an approval and Wait for an approval so you hold its ID.",
+      "Store the approval ID on the item.",
+      "After the wait, always re-read the item and ignore the outcome if it was cancelled.",
+      "Where you can update the Approvals table in Dataverse, cancel the approval as soon as the request is withdrawn.",
+      "Reverse earlier steps and tell both the approver and the requester."
+    ],
+    "commonMistakes": [
+      "Acting on an approval outcome without checking whether the request is still wanted.",
+      "Leaving child tasks and bookings in place after cancellation.",
+      "Not telling the approver the request was withdrawn."
+    ],
+    "troubleshooting": [
+      "If the approval still shows as pending for the approver, it was not cancelled in Dataverse. The re-check after the wait still protects the process.",
+      "If the watcher loop ends early, raise its count and timeout limits. Flow runs last 30 days at most.",
+      "If cancelling the row fails, the flow's connection lacks rights on the Approvals table. Use the simpler option."
+    ],
+    "updatedAt": "2026-11-20"
   }
 }
