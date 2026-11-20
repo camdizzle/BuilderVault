@@ -8,6 +8,7 @@ import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { ColumnFormattingBuilder } from "@/components/tools/column-formatting-builder";
+import { DelegationChecker } from "@/components/tools/delegation-checker";
 import {
   findDelegationHints,
   formatPowerFxFormula,
@@ -26,6 +27,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
   if (slug === "sharepoint-column-formatting-builder") return <ColumnFormattingBuilder />;
+  if (slug === "power-apps-delegation-checker") return <DelegationChecker />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
   if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
   if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
