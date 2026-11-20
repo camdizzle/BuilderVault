@@ -505,6 +505,78 @@ Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stay
   item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
 Set(gblColorSurface, RGBA(255, 255, 255, 1));
 Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["standardize-a-canvas-app-theme", "build-a-reusable-command-bar-component"] }),
+  item({
+    slug: "sharepoint-column-formatting-builder",
+    kind: "tool",
+    title: "SharePoint Column Formatting JSON Builder",
+    eyebrow: "Free tool",
+    description: "Build SharePoint list column formatting JSON without writing it by hand. Create status pills, due date highlights, progress bars, email links for people, and a button that opens the item in a Power Apps app.",
+    keywords: ["SharePoint column formatting JSON", "SharePoint JSON formatting", "SharePoint status pill JSON", "SharePoint progress bar column", "open Power Apps from SharePoint list"],
+    audience: "Makers who use SharePoint lists behind Power Apps and Power Automate and want the list itself to be easy to scan.",
+    summaryBullets: [
+      "Five layouts that cover the most common list needs: status, due date, progress, person, and an app button.",
+      "Status pills take your own values and colors, with a grey fallback for anything else.",
+      "Due date highlights turn red when overdue and amber a set number of days before.",
+      "Progress bars work with 0 to 100 numbers and with percentage columns stored as 0 to 1.",
+      "The Power Apps button passes the item ID to your app as a URL parameter."
+    ],
+    examples: [
+      {
+        title: "Status pill",
+        problem: "Color a choice column so approvers can scan the list.",
+        code: `{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "elmType": "div",
+  "txtContent": "@currentField",
+  "style": {
+    "display": "=if(@currentField == '', 'none', 'inline-block')",
+    "padding": "2px 10px",
+    "border-radius": "12px",
+    "font-weight": "600",
+    "background-color": "=if(@currentField == 'Approved', '#dff6dd', if(@currentField == 'Rejected', '#fde7e9', '#edebe9'))",
+    "color": "=if(@currentField == 'Approved', '#0b5a08', if(@currentField == 'Rejected', '#a4262c', '#323130'))"
+  }
+}`,
+        expectedResult: "Approved shows as a green pill, Rejected as red, and everything else as grey.",
+        commonMistakes: ["Typing a value with different capital letters than the choice.", "Pasting the JSON into Format view instead of Format this column."]
+      },
+      {
+        title: "Open the item in a Power Apps app",
+        problem: "Give list users a button that opens the right record in your canvas app.",
+        code: `// App.StartScreen or the screen's OnVisible
+Set(
+    varItem,
+    LookUp(Requests, ID = Value(Param("ID")))
+)`,
+        expectedResult: "The button adds ?ID=42 (or &ID=42) to the app link, and the app loads that item.",
+        commonMistakes: ["Forgetting Value(), so a text parameter is compared with a number column.", "Using the Studio edit link instead of the app's Web link."]
+      }
+    ],
+    relatedPatterns: ["sharepoint-json-status-pill-formatting", "format-sharepoint-hyperlink-field-json", "sharepoint-list-schema-for-project-intake"],
+    relatedTools: ["power-fx-formatter", "sharepoint-internal-name-helper", "power-apps-color-token-generator"],
+    faqs: [
+      {
+        question: "Where do I paste the JSON?",
+        answer: "In the list, select the column header, then Column settings, then Format this column. Choose Advanced mode, paste the JSON, and save."
+      },
+      {
+        question: "Does column formatting change my data?",
+        answer: "No. It only changes how the column is shown in list views. The stored values, Power Apps, and Power Automate are not affected, and you can remove the format at any time."
+      },
+      {
+        question: "SharePoint already has a format designer. Why use this?",
+        answer: "The built-in designer handles simple background colors for choice and date columns. This builder adds layouts it doesn't offer, such as progress bars, mailto links, and a button that opens a Power Apps app, and gives you JSON you can reuse across lists."
+      },
+      {
+        question: "How close is the preview?",
+        answer: "It shows the layout and colors, not an exact copy of SharePoint. Fonts, spacing, and dark themes differ, so check the result in your list."
+      },
+      {
+        question: "Is my data sent anywhere?",
+        answer: "No. The JSON is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
