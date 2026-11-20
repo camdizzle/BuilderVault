@@ -1,3 +1,5 @@
+import { resourceAdditions } from "./resource-additions.ts";
+
 export type ResourceKind = "cookbook" | "standard" | "cheat-sheet" | "tool";
 
 export type ResourceExample = {
@@ -27,7 +29,13 @@ export type ResourceItem = {
 
 function item(input: Omit<ResourceItem, "path">): ResourceItem {
   const parent = input.kind === "cheat-sheet" ? "cheat-sheets" : input.kind === "cookbook" ? "cookbooks" : input.kind === "standard" ? "standards" : "tools";
-  return { ...input, path: `/${parent}/${input.slug}` };
+  const extra = resourceAdditions[input.slug];
+  return {
+    ...input,
+    examples: [...input.examples, ...(extra?.examples ?? [])],
+    faqs: input.faqs ?? extra?.faqs,
+    path: `/${parent}/${input.slug}`
+  };
 }
 
 const patchSnippet = `IfError(
@@ -301,7 +309,7 @@ With(
       }
     ]
   }),
-  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
+  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Type a column name to see the internal name SharePoint will give it.", "Spaces and symbols are shown with their _x0020_ style encoding.", "Get a clean name to create the column with, then rename the display name afterwards.", "Use the internal name in flow filter queries, trigger outputs and column formatting JSON."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
 Avoid first creating: Request Status
 Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["sharepoint-internal-name-safe-column-design", "sharepoint-list-schema-for-project-intake"] }),
   item({
@@ -430,7 +438,7 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       }
     ]
   }),
-  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
+  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "Pick a common Power Automate expression for dates, null checks, arrays or conditions, fill in your own values and copy the result into a flow.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Choose a template for dates, blank values, arrays or conditions.", "Replace the sample values with your own trigger or action outputs.", "Copy the finished expression into the expression editor.", "Each template notes what its inputs mean and where it is typically used."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
 Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"] }),
   item({
@@ -571,7 +579,7 @@ DateDiff(dpStart.SelectedDate, dpEnd.SelectedDate, TimeUnit.Days)`,
       }
     ]
   }),
-  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
+  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Enter your publisher prefix and a table name to get display, plural, schema and logical names.", "Column and relationship names follow the same prefix and casing.", "Schema names are permanent, so settle them before creating the table.", "Copy the names into your data model notes or straight into the maker portal."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
 Table display name: Service Request
 Schema name: bv_ServiceRequest
 Primary column: bv_RequestName
@@ -703,7 +711,7 @@ If(varIsAdmin, AdminScreen, HomeScreen)`,
       }
     ]
   }),
-  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
+  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Swap the sample text for dynamic content once the card is in your flow."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
 ] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "adaptive-card-fact-set-from-sharepoint-items"] }),
@@ -847,7 +855,7 @@ colRequests    Collection`,
       }
     ]
   }),
-  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
+  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide to get RGBA and ColorValue formulas.", "Copy the set as named formulas or as Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "Check text and background pairs for contrast before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
 Set(gblColorSurface, RGBA(255, 255, 255, 1));
 Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
   item({
@@ -993,7 +1001,7 @@ Filter(
       }
     ]
   }),
-  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
+  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
 - Connection references rebound

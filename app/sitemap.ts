@@ -12,7 +12,7 @@ import { pmoLifecycleStages } from "@/lib/pmo-toolkit";
 const lastChanged = {
   library: new Date("2026-11-20"),
   resources: new Date("2026-11-20"),
-  examples: new Date("2026-05-14"),
+  examples: new Date("2026-11-20"),
   pmo: new Date("2026-05-14"),
   company: new Date("2026-05-14")
 };
@@ -21,6 +21,7 @@ const companyRoutes = new Set(["/about", "/contact", "/services", "/privacy", "/
 function lastChangedFor(route: string) {
   if (route === "/pmo") return lastChanged.library;
   if (route.startsWith("/pmo/")) return lastChanged.pmo;
+  if (route === "/downloads" || route === "/examples") return lastChanged.examples;
   if (companyRoutes.has(route)) return lastChanged.company;
   return lastChanged.library;
 }

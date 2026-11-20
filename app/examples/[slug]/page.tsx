@@ -49,9 +49,21 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
     ...(authorStructuredData() ? { author: authorStructuredData() } : {})
   };
 
+  const faqs = guide.faqs ?? [];
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer }
+    }))
+  };
+
   return (
     <article style={{ padding: "54px 0" }}>
       <script dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} type="application/ld+json" />
+      {faqs.length > 0 ? <script dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }} type="application/ld+json" /> : null}
       <div className="container" style={{ display: "grid", gap: 30 }}>
         <nav aria-label="Breadcrumb" className="badge-row">
           <Link href="/examples" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Examples</Link>
@@ -71,34 +83,38 @@ export default async function ExampleGuidePage({ params }: { params: Promise<{ s
               <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>{guide.intro}</p>
             </section>
             <section style={{ display: "grid", gap: 12 }}>
-              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Implementation steps</h2>
+              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>How to approach it</h2>
               <ul style={{ color: "#415049", lineHeight: 1.75, margin: 0, paddingLeft: 20 }}>
                 {guide.steps.map((step) => <li key={step}>{step}</li>)}
               </ul>
             </section>
             <section style={{ display: "grid", gap: 12 }}>
-              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Starter example</h2>
+              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Start with this</h2>
               <CopyCodeBlock code={guide.code} />
             </section>
-            <section style={{ display: "grid", gap: 12 }}>
-              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>FAQ</h2>
-              <div style={{ display: "grid", gap: 14 }}>
-                <div>
-                  <h3 style={{ fontSize: "1rem", margin: "0 0 6px" }}>Can I copy this example directly?</h3>
-                  <p style={{ color: "#415049", lineHeight: 1.65, margin: 0 }}>Use it as a starting point, then adjust data source names, column names, permissions, and validation for your tenant.</p>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: "1rem", margin: "0 0 6px" }}>Should this be tested before production?</h3>
-                  <p style={{ color: "#415049", lineHeight: 1.65, margin: 0 }}>Yes. Test with realistic records, non-admin users, edge cases, and expected data volume before release.</p>
-                </div>
-              </div>
-            </section>
-
+            {(guide.sections ?? []).map((section) => (
+              <section key={section.heading} style={{ display: "grid", gap: 12 }}>
+                <h2 className="section-title" style={{ fontSize: "1.5rem" }}>{section.heading}</h2>
+                <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>{section.body}</p>
+                <CopyCodeBlock code={section.code} />
+              </section>
+            ))}
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Common mistakes</h2>
               <ul style={{ color: "#415049", lineHeight: 1.75, margin: 0, paddingLeft: 20 }}>
                 {guide.mistakes.map((mistake) => <li key={mistake}>{mistake}</li>)}
               </ul>
+            </section>
+            <section style={{ display: "grid", gap: 12 }}>
+              <h2 className="section-title" style={{ fontSize: "1.8rem" }}>FAQ</h2>
+              <div style={{ display: "grid", gap: 14 }}>
+                {faqs.map((faq) => (
+                  <div key={faq.question}>
+                    <h3 style={{ fontSize: "1rem", margin: "0 0 6px" }}>{faq.question}</h3>
+                    <p style={{ color: "#415049", lineHeight: 1.65, margin: 0 }}>{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
             </section>
           </div>
           <aside style={{ display: "grid", gap: 18, alignSelf: "start" }}>

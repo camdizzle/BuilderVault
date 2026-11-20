@@ -5,7 +5,7 @@ import { downloadPacks } from "@/lib/downloads";
 
 export const metadata = {
   title: "Free Power Platform Downloads",
-  description: "Free downloadable Power Platform packs: Power Fx review checklists, copy-ready snippets, and naming conventions for Power Apps teams.",
+  description: "Free downloadable Power Platform packs: checklists, templates and copy-ready snippets for Power Fx, Power Automate, SharePoint lists, Dataverse security, releases and handoff.",
   alternates: { canonical: "/downloads" }
 };
 

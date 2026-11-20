@@ -5,7 +5,7 @@ import { cookbooks, cheatSheets, tools } from "@/lib/resources";
 
 export const metadata = {
   title: "Power Platform Examples | BuilderVault",
-  description: "Focused Power Apps, Power Automate, SharePoint, Dataverse, and ALM example pages for common maker searches."
+  description: "Worked examples for Power Apps Patch and collections, Power Automate expressions and trigger conditions, SharePoint list schemas, Dataverse security roles and ALM."
 };
 
 export default function ExamplesPage() {
@@ -16,8 +16,8 @@ export default function ExamplesPage() {
       <div className="container" style={{ display: "grid", gap: 34 }}>
         <div style={{ maxWidth: 940 }}>
           <div className="eyebrow">Power Platform examples</div>
-          <h1 className="page-title">Focused examples for high-intent builder searches.</h1>
-          <p className="lead">These pages answer specific search questions with starter code, implementation steps, common mistakes, and links into the BuilderVault pattern library.</p>
+          <h1 className="page-title">Worked examples you can copy and adapt.</h1>
+          <p className="lead">Each page collects the variations of one task, with copy-ready code, a short explanation of each, the common mistakes and answers to the questions that come up most.</p>
         </div>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {exampleGuides.map((guide) => (
