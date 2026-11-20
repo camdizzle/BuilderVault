@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
+import { ColumnFormattingBuilder } from "@/components/tools/column-formatting-builder";
 import {
   findDelegationHints,
   formatPowerFxFormula,
@@ -17,6 +18,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
+  if (slug === "sharepoint-column-formatting-builder") return <ColumnFormattingBuilder />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
   if (slug === "dataverse-table-naming-helper") return <DataverseNamingHelper />;
   if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
