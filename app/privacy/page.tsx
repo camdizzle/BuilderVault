@@ -49,8 +49,11 @@ export default function PrivacyPage() {
           We use Google Tag Manager to load Google measurement tags, including Google
           Analytics, so we can understand which pages and tools are useful. These
           tags may set cookies and collect information such as pages visited,
-          approximate location, and device type. You can opt out with Google&apos;s
-          Analytics opt-out browser add-on or by blocking cookies in your browser.
+          approximate location, and device type. These cookies are only set if you
+          choose Accept on the cookie banner. You can change your choice at any time
+          with the Cookie settings link at the bottom of every page. If you reject,
+          Google may still receive cookieless, non-identifying signals that a page
+          was viewed.
         </p>
       ) : null}
       {analyticsConfig.gaMeasurementId ? (

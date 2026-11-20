@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { CookieSettingsButton } from "@/components/analytics/cookie-consent";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -27,17 +29,20 @@ export function SiteFooter() {
         <FooterGroup title="Learn" links={[["/patterns", "Patterns"], ["/resources", "Resources"], ["/examples", "Examples"], ["/cookbooks", "Cookbooks"], ["/downloads", "Free downloads"], ["/pmo", "PMO Toolkit"]]} />
         <FooterGroup title="Tools" links={[["/tools/power-fx-formatter", "Power Fx Formatter"], ["/tools/sharepoint-internal-name-helper", "Internal Name Helper"], ["/tools/power-automate-expression-builder", "Expression Builder"], ["/tools/solution-layering-checklist-generator", "ALM Checklist"]]} />
         <FooterGroup title="Company" links={[["/about", "About"], ["/services", "Get help"], ["/contact", "Contact"], ["/pricing", "Free access"]]} />
-        <FooterGroup title="Legal" links={[["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]} />
+        <FooterGroup title="Legal" links={[["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]}>
+          <CookieSettingsButton />
+        </FooterGroup>
       </div>
     </footer>
   );
 }
 
-function FooterGroup({ links, title }: { links: string[][]; title: string }) {
+function FooterGroup({ children, links, title }: { children?: ReactNode; links: string[][]; title: string }) {
   return (
     <nav aria-label={title} style={{ display: "grid", gap: 8, alignSelf: "start" }}>
       <strong style={{ color: "var(--foreground)" }}>{title}</strong>
       {links.map(([href, label]) => <Link href={href} key={href}>{label}</Link>)}
+      {children}
     </nav>
   );
 }
