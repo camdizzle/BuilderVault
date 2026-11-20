@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FilterQueryBuilder } from "@/components/tools/filter-query-builder";
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
@@ -14,6 +15,7 @@ import {
 
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
+  if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;

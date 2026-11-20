@@ -304,6 +304,69 @@ With(
   item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
 Avoid first creating: Request Status
 Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "document-a-sharepoint-column-internal-name-map"] }),
+  item({
+    slug: "odata-filter-query-builder",
+    kind: "tool",
+    title: "Filter Query Builder for SharePoint and Dataverse",
+    eyebrow: "Free tool",
+    description: "Build the OData Filter Query for SharePoint Get items or Dataverse List rows in Power Automate. Pick columns, types, and operators, and get correctly quoted text, dates, yes/no, choice, lookup, and person filters.",
+    keywords: ["Power Automate filter query", "SharePoint Get items filter", "Dataverse List rows filter", "OData filter builder", "ODATA filter query examples"],
+    audience: "Flow builders who want Get items or List rows to return only the rows they need, instead of filtering a large list inside the flow.",
+    summaryBullets: [
+      "Builds filters for SharePoint Get items and Dataverse List rows, which use different syntax.",
+      "Quotes text and dates the way each connector expects, and doubles single quotes inside values.",
+      "Handles yes/no (1 and 0 in SharePoint, true and false in Dataverse), choice, lookup, and person columns.",
+      "Accepts flow expressions such as @{utcNow()} as values.",
+      "Warns about display names with spaces, uppercase Dataverse names, and values in the wrong format."
+    ],
+    examples: [
+      {
+        title: "SharePoint: approved items that are overdue",
+        problem: "Return only approved requests whose due date has passed, so the flow doesn't loop through the whole list.",
+        code: `Status eq 'Approved' and DueDate lt '@{utcNow()}'`,
+        expectedResult: "Get items returns only the overdue approved rows.",
+        commonMistakes: ["Using the display name, such as Due Date, instead of the internal name DueDate.", "Leaving the quotes off the date in a SharePoint filter."]
+      },
+      {
+        title: "SharePoint: items assigned to the person who started the flow",
+        problem: "Person columns are filtered on the email address of the person, through the EMail sub-field.",
+        code: `AssignedTo/EMail eq '@{toLower(triggerOutputs()?['headers']?['x-ms-user-email'])}'`,
+        expectedResult: "Only items assigned to that person are returned.",
+        commonMistakes: ["Writing Email instead of EMail.", "Comparing against the display name, which isn't unique."]
+      },
+      {
+        title: "Dataverse: active rows created this year",
+        problem: "Dataverse uses logical names, unquoted dates, and number values for choices.",
+        code: `statecode eq 0 and createdon ge 2026-01-01T00:00:00Z`,
+        expectedResult: "List rows returns active rows created on or after January 1.",
+        commonMistakes: ["Filtering a choice by its label instead of its number value.", "Filtering a lookup by name instead of _column_value and the row GUID."]
+      }
+    ],
+    relatedPatterns: ["use-odata-filters-sharepoint-text-fields", "delegation-safe-date-range-filter", "avoid-delegation-warnings-sharepoint-filters"],
+    relatedTools: ["power-fx-formatter", "sharepoint-internal-name-helper", "dataverse-table-naming-helper"],
+    faqs: [
+      {
+        question: "Why does my filter fail with \"column does not exist\"?",
+        answer: "Filter Query uses the internal name, which can differ from the name you see in the list. A column created as Due Date has the internal name Due_x0020_Date. Open the column settings and read the Field= value at the end of the URL, or use the SharePoint Internal Name Helper."
+      },
+      {
+        question: "Is the filter the same for SharePoint and Dataverse?",
+        answer: "No. Both use OData, but SharePoint quotes dates and uses 1 and 0 for yes/no, while Dataverse leaves dates unquoted, uses true and false, filters choices by number, and filters lookups with _name_value and a GUID. Pick the action at the top of the tool and it switches the syntax for you."
+      },
+      {
+        question: "Can I use contains in a SharePoint filter?",
+        answer: "Not with that name. SharePoint uses substringof('text', Column), which this tool writes for you. Dataverse supports contains, startswith, and endswith."
+      },
+      {
+        question: "What about lists with more than 5,000 items?",
+        answer: "SharePoint applies the list view threshold to filters. On large lists, index the columns you filter on, or the query can be rejected."
+      },
+      {
+        question: "Is my data sent anywhere?",
+        answer: "No. The query is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
 Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest"] }),
