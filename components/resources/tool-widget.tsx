@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FilterQueryBuilder } from "@/components/tools/filter-query-builder";
+import { DateFormatTester } from "@/components/tools/date-format-tester";
 import { useMemo, useState } from "react";
 import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-generator";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
@@ -20,6 +21,7 @@ import { PowerFxTableGenerator } from "@/components/tools/power-fx-table-generat
 export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter />;
   if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
+  if (slug === "date-format-tester") return <DateFormatTester />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "parse-json-schema-generator") return <ParseJsonSchemaGenerator />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
