@@ -8,6 +8,7 @@ import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-g
 import { ExcelToPowerFx } from "@/components/tools/excel-to-power-fx";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
+import { NamedFormulasConverter } from "@/components/tools/named-formulas-converter";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { ColumnFormattingBuilder } from "@/components/tools/column-formatting-builder";
 import {
@@ -28,6 +29,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "excel-to-power-fx") return <ExcelToPowerFx />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
+  if (slug === "onstart-to-named-formulas") return <NamedFormulasConverter />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
   if (slug === "sharepoint-column-formatting-builder") return <ColumnFormattingBuilder />;
   if (slug === "solution-layering-checklist-generator") return <SolutionChecklistGenerator />;
