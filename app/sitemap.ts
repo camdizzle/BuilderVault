@@ -6,6 +6,7 @@ import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl } from "@/lib/site";
 import { allResources, resourceGroups } from "@/lib/resources";
 import { exampleGuides } from "@/lib/example-guides";
+import { guidePath, guides } from "@/lib/guides";
 import { pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
 // The date each group of pages last changed. Move a date forward only when that group's content changes.
@@ -71,6 +72,7 @@ const staticRoutes: Array<{
   { route: "/collections", changeFrequency: "weekly", priority: 0.8 },
   { route: "/resources", changeFrequency: "weekly", priority: 0.82 },
   { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
+  { route: "/guides", changeFrequency: "weekly", priority: 0.84 },
   { route: "/downloads", changeFrequency: "monthly", priority: 0.7 },
   ...pmoRoutes.map((route) => ({ route, changeFrequency: "weekly" as const, priority: route === "/pmo" ? 0.86 : 0.64 })),
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
@@ -101,6 +103,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: lastChanged.examples,
       changeFrequency: "monthly" as const,
       priority: 0.78
+    })),
+    ...guides.map((guide) => ({
+      url: absoluteUrl(guidePath(guide)),
+      lastModified: new Date(guide.updated),
+      changeFrequency: "monthly" as const,
+      priority: 0.8
     })),
     ...allResources.map((resource) => ({
       url: absoluteUrl(resource.path),
