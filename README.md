@@ -26,7 +26,7 @@ PMO and status reporting content is intentionally kept out of the core public ex
 - Curated collections for app builds, workflows, Dataverse foundations, admin governance, and delivery handoff
 - Local browser favorites for saved patterns
 - Premium pattern previews with locked advanced sections
-- 1,500 stored static patterns, with 1,253 public Power Platform patterns after PMO content is archived from the main experience
+- 287 written patterns listed in the library. A further 1,010 generated pages stay reachable by URL but are noindexed and unlisted
 - TypeScript pattern model
 - Reusable header, footer, badges, pattern cards, detail sections, and copy code block
 - Plesk-compatible Next.js startup file at server.js

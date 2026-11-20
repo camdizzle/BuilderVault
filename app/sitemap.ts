@@ -8,7 +8,23 @@ import { allResources, resourceGroups } from "@/lib/resources";
 import { exampleGuides } from "@/lib/example-guides";
 import { pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
-const defaultLastModified = new Date("2026-05-14");
+// The date each group of pages last changed. Move a date forward only when that group's content changes.
+const lastChanged = {
+  library: new Date("2026-11-20"),
+  resources: new Date("2026-11-20"),
+  examples: new Date("2026-11-20"),
+  pmo: new Date("2026-05-14"),
+  company: new Date("2026-05-14")
+};
+const companyRoutes = new Set(["/about", "/contact", "/services", "/privacy", "/terms", "/disclaimer", "/downloads", "/examples"]);
+
+function lastChangedFor(route: string) {
+  if (route === "/pmo") return lastChanged.library;
+  if (route.startsWith("/pmo/")) return lastChanged.pmo;
+  if (route === "/downloads" || route === "/examples") return lastChanged.examples;
+  if (companyRoutes.has(route)) return lastChanged.company;
+  return lastChanged.library;
+}
 
 const pmoRoutes = [
   "/pmo",
@@ -20,17 +36,8 @@ const pmoRoutes = [
   "/pmo/mockups",
   "/pmo/starter-files",
   "/pmo/glossary",
-  "/pmo/uat",
-  "/pmo/release",
-  "/pmo/runbook",
-  "/pmo/cadence",
-  "/pmo/communications",
-  "/pmo/kpis",
-  "/pmo/adoption",
-  "/pmo/backlog",
   "/pmo/demo",
   "/pmo/offer",
-  "/pmo/escalations",
   ...pmoLifecycleStages.map((stage) => `/pmo/${stage.slug}`),
   ...pmoLifecycleStages.map((stage) => `/pmo/packages/${stage.slug}`)
 ];
@@ -85,25 +92,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...staticRoutes.map(({ route, changeFrequency, priority }) => ({
       url: absoluteUrl(route),
-      lastModified: defaultLastModified,
+      lastModified: lastChangedFor(route),
       changeFrequency,
       priority
     })),
     ...exampleGuides.map((guide) => ({
       url: absoluteUrl("/examples/" + guide.slug),
-      lastModified: defaultLastModified,
+      lastModified: lastChanged.examples,
       changeFrequency: "monthly" as const,
       priority: 0.78
     })),
     ...allResources.map((resource) => ({
       url: absoluteUrl(resource.path),
-      lastModified: defaultLastModified,
+      lastModified: lastChanged.resources,
       changeFrequency: "monthly" as const,
       priority: resource.kind === "cookbook" || resource.kind === "cheat-sheet" ? 0.76 : 0.68
     })),
     ...patternCollections.map((collection) => ({
       url: absoluteUrl("/collections/" + collection.slug),
-      lastModified: defaultLastModified,
+      lastModified: lastChanged.library,
       changeFrequency: "weekly" as const,
       priority: 0.72
     })),

@@ -1,5 +1,5 @@
 ﻿import type { Pattern } from "@/types/pattern";
-import { getAllPatterns, getPatternBySlug } from "@/lib/patterns/patterns";
+import { getPublishedPatternBySlug, getPublishedPatterns } from "@/lib/patterns/patterns";
 
 export type PatternCollection = {
   slug: string;
@@ -42,10 +42,7 @@ export const patternCollections: PatternCollection[] = [
       "avoid-delegation-warnings-sharepoint-filters",
       "build-a-queue-dashboard-gallery",
       "build-a-reusable-filter-panel",
-      "optimize-a-screen-performance-review",
-      "validate-a-delegation-review-worksheet",
-      "document-a-delegation-review-worksheet",
-      "troubleshoot-a-delegation-review-worksheet"
+      "power-apps-search-with-multiple-fields"
     ]
   },
   {
@@ -61,13 +58,8 @@ export const patternCollections: PatternCollection[] = [
       "build-a-compact-mobile-request-form",
       "build-a-reusable-filter-panel",
       "build-a-multi-step-intake-wizard",
-      "build-a-request-escalation-screen",
-      "configure-a-role-aware-dashboard",
-      "standardize-a-reusable-app-settings-panel",
-      "create-a-maker-handoff-checklist",
-      "build-a-formula-review-checklist",
-      "optimize-a-screen-performance-review",
-      "troubleshoot-a-reusable-command-bar"
+      "use-named-formulas-for-app-constants",
+      "create-a-reusable-loading-overlay"
     ]
   },
   {
@@ -85,10 +77,7 @@ export const patternCollections: PatternCollection[] = [
       "design-an-it-access-request-list-schema",
       "design-a-training-request-list-schema",
       "design-a-policy-exception-list-schema",
-      "document-sharepoint-list-ownership-and-support",
-      "create-a-site-lifecycle-review",
-      "build-a-content-owner-register",
-      "troubleshoot-a-stale-content-cleanup-process"
+      "document-sharepoint-list-ownership-and-support"
     ]
   },
   {
@@ -105,9 +94,7 @@ export const patternCollections: PatternCollection[] = [
       "route-approvals-by-request-amount",
       "route-approvals-by-risk-severity",
       "send-reminder-emails-for-pending-approvals",
-      "handle-cancelled-approvals-with-cleanup",
-      "build-a-conditional-approval-flow",
-      "create-an-adaptive-card-approval-summary"
+      "handle-cancelled-approvals-with-cleanup"
     ]
   },
   {
@@ -119,11 +106,10 @@ export const patternCollections: PatternCollection[] = [
       "apply-to-each-concurrency-variables-power-automate",
       "power-automate-try-catch-scope-error-handling",
       "power-automate-trigger-condition-status-changed",
-      "create-a-failed-run-triage-process",
-      "build-a-flow-ownership-transfer-checklist",
-      "troubleshoot-a-production-flow-support-model",
-      "create-a-card-retry-and-timeout-path",
-      "validate-a-card-retry-and-timeout-path"
+      "retry-transient-sharepoint-connector-failures",
+      "use-terminate-action-for-controlled-flow-failures",
+      "create-a-flow-run-logging-list",
+      "handle-duplicate-flow-trigger-runs"
     ]
   },
   {
@@ -136,15 +122,7 @@ export const patternCollections: PatternCollection[] = [
       "relate-unrelate-dataverse-many-to-many",
       "check-dataverse-security-role-in-canvas-app",
       "dataverse-environment-variables-canvas-apps-flows",
-      "create-a-dataverse-table-naming-standard",
-      "build-a-request-table-schema",
-      "design-a-lookup-relationship-model",
-      "configure-a-choice-column-strategy",
-      "standardize-a-business-rule-checklist",
-      "validate-a-security-role-matrix",
-      "document-an-environment-variable-register",
-      "optimize-a-solution-aware-data-model",
-      "troubleshoot-a-sharepoint-to-dataverse-migration-path"
+      "solution-publisher-prefix-naming-standard"
     ]
   },
   {
@@ -157,15 +135,7 @@ export const patternCollections: PatternCollection[] = [
       "deployment-settings-file-pac-cli",
       "export-import-managed-solution-pac-cli",
       "power-platform-pipelines-dev-test-prod",
-      "create-a-solution-layering-checklist",
-      "build-an-environment-strategy-guide",
-      "design-a-deployment-readiness-review",
-      "configure-a-connection-reference-inventory",
-      "standardize-an-unmanaged-customizations-cleanup-plan",
-      "validate-a-release-notes-template",
-      "document-a-maker-handoff-package",
-      "optimize-a-managed-solution-promotion-path",
-      "troubleshoot-a-rollback-decision-checklist"
+      "dataverse-environment-variables-canvas-apps-flows"
     ]
   },
   {
@@ -177,15 +147,8 @@ export const patternCollections: PatternCollection[] = [
       "dlp-policy-connector-groups",
       "export-power-platform-inventory-powershell",
       "find-orphaned-apps-and-flows-powershell",
-      "create-an-environment-inventory",
-      "build-a-connector-review-process",
-      "design-a-data-loss-prevention-policy-checklist",
-      "configure-a-maker-activity-review",
-      "standardize-an-orphaned-app-cleanup-process",
-      "validate-a-premium-connector-exception-register",
-      "document-a-tenant-settings-review",
-      "optimize-a-capacity-monitoring-checklist",
-      "troubleshoot-a-center-of-excellence-triage-view"
+      "govern-power-automate-service-account-ownership",
+      "power-automate-document-flow-inventory"
     ]
   },
   {
@@ -197,14 +160,8 @@ export const patternCollections: PatternCollection[] = [
       "power-pages-show-content-by-web-role",
       "power-pages-liquid-fetchxml-list",
       "power-pages-web-api-create-record",
-      "create-a-public-intake-portal-checklist",
-      "build-a-portal-table-permission-model",
-      "design-a-web-role-matrix",
-      "configure-a-basic-form-validation-plan",
-      "standardize-a-portal-content-publishing-workflow",
-      "validate-a-dataverse-backed-contact-experience",
-      "document-a-site-launch-readiness-review",
-      "troubleshoot-an-anonymous-access-risk-checklist"
+      "patch-dataverse-lookup-and-choice-columns",
+      "dataverse-delegation-filter-search-large-tables"
     ]
   },
   {
@@ -216,15 +173,9 @@ export const patternCollections: PatternCollection[] = [
       "mention-a-user-in-teams-adaptive-card",
       "adaptive-card-fact-set-from-sharepoint-items",
       "teams-channel-notification-deep-link-to-app",
-      "create-an-adaptive-card-approval-summary",
-      "build-a-teams-notification-routing-rule",
-      "design-a-channel-based-exception-alert",
-      "configure-a-manager-response-card",
-      "standardize-a-queue-digest-card",
-      "validate-a-decision-capture-card",
-      "document-a-user-mention-notification-pattern",
-      "optimize-a-teams-handoff-message-template",
-      "govern-a-card-schema-versioning-checklist"
+      "send-teams-cards-for-new-high-priority-issues",
+      "parse-adaptive-card-responses-into-decisions",
+      "power-automate-teams-notification-for-high-risk"
     ]
   },
   {
@@ -232,14 +183,14 @@ export const patternCollections: PatternCollection[] = [
     title: "Consultant Delivery Pack",
     shortDescription: "Reusable handoff, release, readiness, ownership, and governance patterns for client delivery teams.",
     patternSlugs: [
-      "create-a-maker-handoff-checklist",
-      "document-a-maker-handoff-package",
-      "build-a-flow-ownership-transfer-checklist",
-      "validate-a-release-notes-template",
-      "design-a-deployment-readiness-review",
-      "configure-a-production-support-ownership-model",
-      "document-a-production-support-ownership-model",
-      "govern-a-managed-solution-promotion-path"
+      "sharepoint-list-template-release-checklist",
+      "power-automate-document-flow-inventory",
+      "create-a-power-automate-flow-documentation-template",
+      "document-sharepoint-list-ownership-and-support",
+      "build-a-sharepoint-launch-readiness-checklist",
+      "govern-power-automate-service-account-ownership",
+      "power-platform-environment-strategy",
+      "design-an-operational-handoff-list"
     ]
   },
   {
@@ -251,10 +202,8 @@ export const patternCollections: PatternCollection[] = [
       "build-a-queue-dashboard-gallery",
       "build-a-multi-step-intake-wizard",
       "design-a-facilities-request-list-schema",
-      "build-a-request-table-schema",
       "send-requester-confirmation-after-submission",
-      "route-approvals-by-request-amount",
-      "create-a-support-intake-queue"
+      "route-approvals-by-request-amount"
     ]
   },
   {
@@ -270,9 +219,7 @@ export const patternCollections: PatternCollection[] = [
       "send-teams-cards-for-new-high-priority-issues",
       "send-requester-confirmation-after-submission",
       "send-weekly-queue-summary-to-team-leads",
-      "build-a-daily-exception-digest",
-      "standardize-a-notification-throttling-pattern",
-      "build-a-teams-notification-routing-rule"
+      "send-a-digest-email-grouped-by-owner"
     ]
   },
   {
@@ -287,9 +234,8 @@ export const patternCollections: PatternCollection[] = [
       "power-apps-empty-state-gallery",
       "build-a-my-requests-view",
       "create-a-sharepoint-view-for-aging-requests",
-      "create-a-dataverse-table-naming-standard",
-      "build-a-connector-review-process",
-      "create-an-adaptive-card-approval-summary"
+      "forall-patch-multiple-records-power-apps",
+      "filter-array-instead-of-apply-to-each"
     ]
   }
 ];
@@ -300,12 +246,12 @@ export function getCollectionBySlug(slug: string) {
 
 export function getCollectionPatterns(collection: PatternCollection): Pattern[] {
   return collection.patternSlugs
-    .map((slug) => getPatternBySlug(slug))
+    .map((slug) => getPublishedPatternBySlug(slug))
     .filter((pattern): pattern is Pattern => Boolean(pattern));
 }
 
 export function getSuggestedCollections() {
-  const allPatterns = getAllPatterns();
+  const allPatterns = getPublishedPatterns();
 
   return patternCollections.map((collection) => ({
     ...collection,

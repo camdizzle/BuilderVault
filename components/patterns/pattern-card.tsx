@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { FavoriteButton } from "@/components/patterns/favorite-button";
 import { Badge } from "@/components/ui/badge";
 import type { Pattern } from "@/types/pattern";
 
@@ -48,7 +47,6 @@ export function PatternCard({ pattern }: PatternCardProps) {
           Saves about {pattern.estimatedTimeSaved}
         </span>
         <div style={{ display: "flex", gap: 8 }}>
-          <FavoriteButton compact patternSlug={pattern.slug} />
           <Link className="button secondary" href={`/patterns/${pattern.slug}`}>
             View
           </Link>

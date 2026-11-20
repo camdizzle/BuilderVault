@@ -4,7 +4,9 @@ import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import { getPublishedPatternBySlug } from "@/lib/patterns/patterns";
 import { getRelatedTools, type ResourceItem } from "@/lib/resources";
+import type { Pattern } from "@/types/pattern";
 import { absoluteUrl } from "@/lib/site";
 
 const parentPathByKind = {
@@ -24,6 +26,9 @@ const parentLabelByKind = {
 export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
   const isTool = resource.kind === "tool";
   const relatedTools = isTool ? getRelatedTools(resource) : [];
+  const relatedPatterns = resource.relatedPatterns
+    .map((slug) => getPublishedPatternBySlug(slug))
+    .filter((pattern): pattern is Pattern => Boolean(pattern));
   const structuredData = isTool
     ? {
         "@context": "https://schema.org",
@@ -130,8 +135,8 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
             <div className="card" style={{ padding: 20 }}>
               <h2 style={{ fontSize: "1.15rem", marginTop: 0 }}>Related patterns</h2>
               <div style={{ display: "grid", gap: 10 }}>
-                {resource.relatedPatterns.map((slug) => (
-                  <Link href={`/patterns/${slug}`} key={slug}>{slug.replaceAll("-", " ")}</Link>
+                {relatedPatterns.map((pattern) => (
+                  <Link href={`/patterns/${pattern.slug}`} key={pattern.slug}>{pattern.title}</Link>
                 ))}
               </div>
             </div>

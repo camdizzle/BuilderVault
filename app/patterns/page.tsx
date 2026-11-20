@@ -1,5 +1,5 @@
 import { PatternLibrary } from "@/components/patterns/pattern-library";
-import { getAllPatterns } from "@/lib/patterns/patterns";
+import { getPublishedPatterns } from "@/lib/patterns/patterns";
 
 export const metadata = {
   title: "Power Platform Patterns | BuilderVault",
@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default function PatternsPage() {
-  const patterns = getAllPatterns();
+  const patterns = getPublishedPatterns();
 
   return (
     <section style={{ padding: "54px 0" }}>

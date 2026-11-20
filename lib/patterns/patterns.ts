@@ -5,6 +5,7 @@ import { expandedPatterns2 } from "@/lib/patterns/expanded-patterns-2";
 import { expandedPatterns3 } from "@/lib/patterns/expanded-patterns-3";
 import { expandedPatterns4 } from "@/lib/patterns/expanded-patterns-4";
 import { expandedPatterns5 } from "@/lib/patterns/expanded-patterns-5";
+import { isPatternIndexable } from "@/lib/patterns/indexing";
 import type { Pattern, PatternDifficulty, PatternPlatform } from "@/types/pattern";
 
 const rewrites = patternRewrites as Record<string, Partial<Pattern>>;
@@ -25,8 +26,20 @@ const allPatterns = [
 
 const corePatterns = allPatterns.filter((pattern) => pattern.category !== "PMO / Project Management");
 
+// Written patterns only. Generated verb x object pages stay reachable by URL but are not listed.
+const publishedPatterns = corePatterns.filter(isPatternIndexable);
+const publishedSlugs = new Set(publishedPatterns.map((pattern) => pattern.slug));
+
 export function getAllPatterns(): Pattern[] {
   return corePatterns;
+}
+
+export function getPublishedPatterns(): Pattern[] {
+  return publishedPatterns;
+}
+
+export function getPublishedPatternBySlug(slug: string): Pattern | undefined {
+  return publishedSlugs.has(slug) ? getPatternBySlug(slug) : undefined;
 }
 
 export function getInternalPatternArchive(): Pattern[] {
@@ -39,7 +52,7 @@ export function getPatternBySlug(slug: string): Pattern | undefined {
 
 export function getRelatedPatterns(pattern: Pattern): Pattern[] {
   return pattern.relatedPatterns
-    .map((slug) => getPatternBySlug(slug))
+    .map((slug) => getPublishedPatternBySlug(slug))
     .filter((related): related is Pattern => Boolean(related))
     .slice(0, 3);
 }
@@ -72,17 +85,17 @@ export function getPatternStats() {
   const difficulties = new Set<PatternDifficulty>();
   const categories = new Set<string>();
 
-  for (const pattern of corePatterns) {
+  for (const pattern of publishedPatterns) {
     pattern.platform.forEach((platform) => platforms.add(platform));
     difficulties.add(pattern.difficulty);
     categories.add(pattern.category);
   }
 
   return {
-    totalPatterns: corePatterns.length,
+    totalPatterns: publishedPatterns.length,
     archivedPatterns: allPatterns.length - corePatterns.length,
-    freePatterns: corePatterns.filter((pattern) => !pattern.isPremium).length,
-    premiumPatterns: corePatterns.filter((pattern) => pattern.isPremium).length,
+    freePatterns: publishedPatterns.filter((pattern) => !pattern.isPremium).length,
+    premiumPatterns: publishedPatterns.filter((pattern) => pattern.isPremium).length,
     platforms: platforms.size,
     difficulties: difficulties.size,
     categories: categories.size

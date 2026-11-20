@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CollectionCard } from "@/components/collections/collection-card";
 import { PatternCard } from "@/components/patterns/pattern-card";
 import { getCollectionBySlug } from "@/lib/patterns/collections";
-import { getAllPatterns } from "@/lib/patterns/patterns";
+import { getPublishedPatterns } from "@/lib/patterns/patterns";
 
 export const metadata = {
   title: "SharePoint patterns for Power Platform backends | BuilderVault",
@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default function TopicPage() {
-  const patterns = getAllPatterns()
+  const patterns = getPublishedPatterns()
     .filter((pattern) => pattern.category === "SharePoint")
     .slice(0, 12);
   const collections = ["sharepoint-backend-starter-kit", "request-management-app-kit", "free-starter-patterns"]

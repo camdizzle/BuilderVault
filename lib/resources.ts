@@ -1,3 +1,5 @@
+import { resourceAdditions } from "./resource-additions.ts";
+
 export type ResourceKind = "cookbook" | "standard" | "cheat-sheet" | "tool";
 
 export type ResourceExample = {
@@ -27,7 +29,13 @@ export type ResourceItem = {
 
 function item(input: Omit<ResourceItem, "path">): ResourceItem {
   const parent = input.kind === "cheat-sheet" ? "cheat-sheets" : input.kind === "cookbook" ? "cookbooks" : input.kind === "standard" ? "standards" : "tools";
-  return { ...input, path: `/${parent}/${input.slug}` };
+  const extra = resourceAdditions[input.slug];
+  return {
+    ...input,
+    examples: [...input.examples, ...(extra?.examples ?? [])],
+    faqs: input.faqs ?? extra?.faqs,
+    path: `/${parent}/${input.slug}`
+  };
 }
 
 const patchSnippet = `IfError(
@@ -106,7 +114,7 @@ export const cookbooks: ResourceItem[] = [
     Patch(Requests, LookUp(Requests, ID = changedRow.ID), { ReviewerNotes: changedRow.ReviewerNotes })
 );`, expectedResult: "Only edited rows are written back, reducing unnecessary updates.", commonMistakes: ["Patching every row", "Losing the source ID", "Treating local data as the source of truth"] }
     ],
-    relatedPatterns: ["build-a-queue-dashboard-gallery", "configure-a-review-queue", "optimize-a-gallery-search-experience"]
+    relatedPatterns: ["build-a-queue-dashboard-gallery", "groupby-sum-count-gallery-power-apps", "calculate-totals-gallery-collection"]
   }),
   item({
     slug: "power-automate-expressions-cookbook",
@@ -121,7 +129,7 @@ export const cookbooks: ResourceItem[] = [
       { title: "Format a due date", problem: "Turn a raw date into a readable email value.", code: `formatDateTime(triggerOutputs()?['body/DueDate'], 'MMM d, yyyy')`, expectedResult: "The email shows a clean date such as May 16, 2026.", commonMistakes: ["Formatting null dates", "Mixing regional formats", "Putting long expressions directly in emails"] },
       { title: "Safe null fallback", problem: "Avoid failed expressions when optional fields are blank.", code: `coalesce(triggerOutputs()?['body/ReviewerNotes'], 'No reviewer notes were entered.')`, expectedResult: "The flow continues with a useful fallback value.", commonMistakes: ["Assuming every field has a value", "Testing only the happy path", "Using empty string checks only"] }
     ],
-    relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest", "standardize-a-flow-error-handling-scope"]
+    relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate", "power-automate-compose-date-formatting"]
   }),
   item({
     slug: "sharepoint-list-schema-cookbook",
@@ -146,7 +154,7 @@ ReviewerNotes: Multiple lines of text`, expectedResult: "The app has clear field
 - DueDate
 - Modified`, expectedResult: "Makers have stable indexed columns for common filters.", commonMistakes: ["Waiting for threshold problems", "Indexing every column", "Using views as security boundaries"] }
     ],
-    relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "create-a-sharepoint-view-for-upcoming-milestones", "standardize-a-document-retention-checklist"]
+    relatedPatterns: ["sharepoint-list-schema-for-project-intake", "create-a-sharepoint-view-for-upcoming-milestones", "sharepoint-internal-name-safe-column-design"]
   })
 ];
 
@@ -156,34 +164,34 @@ Galleries: galRequests, galApprovers
 Forms: frmRequest
 Inputs: txtTitle, cmbPriority, dpDueDate
 Variables: varSaving, varCurrentRequest
-Collections: colReviewQueue, colSelectedApprovers`, expectedResult: "A new maker can infer purpose before opening every control property.", commonMistakes: ["Leaving default names like Button12", "Using different prefixes per maker", "Encoding business rules into cryptic names"] }], relatedPatterns: ["document-a-canvas-app-control-naming-standard", "standardize-a-maker-handoff-checklist"] }),
+Collections: colReviewQueue, colSelectedApprovers`, expectedResult: "A new maker can infer purpose before opening every control property.", commonMistakes: ["Leaving default names like Button12", "Using different prefixes per maker", "Encoding business rules into cryptic names"] }], relatedPatterns: ["use-named-formulas-for-app-constants", "power-apps-componentized-header-pattern"] }),
   item({ slug: "power-automate-naming-standards", kind: "standard", title: "Power Automate Naming Standards", eyebrow: "Standards", description: "Naming guidance for triggers, scopes, actions, variables, Compose steps, and child flows.", keywords: ["Power Automate naming standards", "cloud flow standards", "flow action names"], audience: "Flow builders who need supportable run history and readable troubleshooting.", summaryBullets: ["Name actions by business intent.", "Prefix scopes by stage such as Try, Catch, Finally.", "Use Compose names that describe transformed values.", "Keep flow names searchable by system and outcome."], examples: [{ title: "Readable flow action names", problem: "Make run history understandable without opening every action.", code: `Flow: Requests - Send approval reminder
 Scope: Try - build reminder email
 Compose: Compose - formatted due date
 Condition: Condition - request is still pending
-Scope: Catch - log reminder failure`, expectedResult: "Support owners can scan failed runs quickly.", commonMistakes: ["Leaving action names as Compose 7", "Renaming only the first few actions", "Using vague names such as Process Data"] }], relatedPatterns: ["standardize-a-flow-error-handling-scope", "document-a-production-flow-support-model"] }),
+Scope: Catch - log reminder failure`, expectedResult: "Support owners can scan failed runs quickly.", commonMistakes: ["Leaving action names as Compose 7", "Renaming only the first few actions", "Using vague names such as Process Data"] }], relatedPatterns: ["power-automate-document-flow-inventory", "create-a-power-automate-flow-documentation-template"] }),
   item({ slug: "sharepoint-list-design-standards", kind: "standard", title: "SharePoint List Design Standards", eyebrow: "Standards", description: "Standards for SharePoint lists used as Power Apps and Power Automate data sources.", keywords: ["SharePoint list design", "Power Apps SharePoint standards", "SharePoint list governance"], audience: "Teams using SharePoint as a lightweight app backend.", summaryBullets: ["Choose column types intentionally.", "Create support views before go-live.", "Index high-use filter columns.", "Document list ownership and retention."], examples: [{ title: "Minimum list design notes", problem: "Capture design decisions that affect future maintenance.", code: `List owner: Operations Applications
 Primary app: Request Intake
 Primary flows: Request approval, overdue reminder
 Indexed columns: RequestStatus, AssignedTo, DueDate
-Retention: Archive closed requests after 24 months`, expectedResult: "The list has enough context for future support and migration decisions.", commonMistakes: ["Treating SharePoint like Excel", "Skipping ownership", "Using views as permission controls"] }], relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "govern-a-sharepoint-list-backed-app"] }),
+Retention: Archive closed requests after 24 months`, expectedResult: "The list has enough context for future support and migration decisions.", commonMistakes: ["Treating SharePoint like Excel", "Skipping ownership", "Using views as permission controls"] }], relatedPatterns: ["sharepoint-list-schema-for-project-intake", "govern-sharepoint-list-naming-standards"] }),
   item({ slug: "dataverse-table-design-standards", kind: "standard", title: "Dataverse Table Design Standards", eyebrow: "Standards", description: "Table, column, relationship, choice, and ownership standards for Dataverse-backed business apps.", keywords: ["Dataverse table design", "Dataverse standards", "model-driven app data model"], audience: "Developers designing Dataverse tables before app and flow build-out.", summaryBullets: ["Name tables around business entities.", "Use relationships instead of duplicated text where lifecycle matters.", "Separate security ownership from display labels.", "Plan solution transport from the start."], examples: [{ title: "Table design brief", problem: "Clarify the table before adding columns.", code: `Table: Service Request
 Owner type: User or team
 Primary column: Request Name
 Relationships: Customer, Request Category, Assigned Team
 Choices: Priority, Request Status
-Audit: Enabled for production tables`, expectedResult: "The model supports security, reporting, automation, and future model-driven apps.", commonMistakes: ["Creating one mega table", "Using text where lookup relationships are needed", "Ignoring ownership model"] }], relatedPatterns: ["design-a-dataverse-table-relationship-model", "configure-a-dataverse-security-role"] }),
+Audit: Enabled for production tables`, expectedResult: "The model supports security, reporting, automation, and future model-driven apps.", commonMistakes: ["Creating one mega table", "Using text where lookup relationships are needed", "Ignoring ownership model"] }], relatedPatterns: ["solution-publisher-prefix-naming-standard", "patch-dataverse-lookup-and-choice-columns"] }),
   item({ slug: "environment-variable-standards", kind: "standard", title: "Environment Variable Standards", eyebrow: "Standards", description: "Naming, ownership, and deployment standards for Power Platform environment variables.", keywords: ["Power Platform environment variables", "ALM standards", "solution deployment"], audience: "Teams shipping solutions across dev, test, and production.", summaryBullets: ["Use environment variables for values that change by environment.", "Avoid hiding business rules in variables.", "Document default and production values.", "Review values during deployment checklists."], examples: [{ title: "Environment variable register", problem: "Keep deployment values discoverable.", code: `Name: bv_SupportMailbox
 Type: Text
 Dev value: powerplatform-dev@contoso.com
 Prod value: powerplatform-support@contoso.com
 Used by: Request notification flow
-Owner: Platform team`, expectedResult: "Deployments no longer depend on someone remembering which email address to change.", commonMistakes: ["Hardcoding tenant-specific values", "Creating variables without ownership", "Using unclear schema names"] }], relatedPatterns: ["configure-a-connection-reference-and-environment-variable", "document-a-solution-deployment-checklist"] }),
+Owner: Platform team`, expectedResult: "Deployments no longer depend on someone remembering which email address to change.", commonMistakes: ["Hardcoding tenant-specific values", "Creating variables without ownership", "Using unclear schema names"] }], relatedPatterns: ["dataverse-environment-variables-canvas-apps-flows", "deployment-settings-file-pac-cli"] }),
   item({ slug: "connection-reference-standards", kind: "standard", title: "Connection Reference Standards", eyebrow: "Standards", description: "Standards for connection references used by flows, apps, solutions, and service accounts.", keywords: ["connection references", "Power Platform ALM", "service account connections"], audience: "Admins and developers responsible for production flow ownership.", summaryBullets: ["Prefer durable service ownership for production automation.", "Name references by connector and purpose.", "Document what breaks if a connection expires.", "Review references before managed solution import."], examples: [{ title: "Connection reference naming", problem: "Make references understandable during import.", code: `cr_SharePoint_RequestLists
 cr_Outlook_Notifications
 cr_Dataverse_CoreTables
-cr_Teams_Approvals`, expectedResult: "Admins know which connection to bind without opening each flow.", commonMistakes: ["Using personal maker connections in production", "Leaving generated names", "Not documenting connector licensing"] }], relatedPatterns: ["configure-a-connection-reference-and-environment-variable", "govern-a-production-flow-support-model"] }),
-  item({ slug: "error-handling-standards", kind: "standard", title: "Power Platform Error Handling Standards", eyebrow: "Standards", description: "Shared expectations for canvas app errors, flow failures, retry behavior, logging, and support notifications.", keywords: ["Power Platform error handling", "Power Automate try catch", "Power Apps IfError"], audience: "Teams preparing apps and flows for real users and support owners.", summaryBullets: ["Every production flow should have a failure path.", "Every important save formula should use IfError or Errors.", "User messages should explain what happened and what to do next.", "Support logs should include enough context to reproduce the issue."], examples: [{ title: "Flow error scope model", problem: "Handle failed automation without silent loss.", code: flowScopeSnippet, expectedResult: "Failures become visible and supportable instead of buried in run history.", commonMistakes: ["No run-after configuration", "Emailing raw error JSON to users", "Retrying non-idempotent updates blindly"] }], relatedPatterns: ["standardize-a-flow-error-handling-scope", "build-a-daily-exception-digest"] }),
+cr_Teams_Approvals`, expectedResult: "Admins know which connection to bind without opening each flow.", commonMistakes: ["Using personal maker connections in production", "Leaving generated names", "Not documenting connector licensing"] }], relatedPatterns: ["connection-references-for-solution-flows", "govern-power-automate-service-account-ownership"] }),
+  item({ slug: "error-handling-standards", kind: "standard", title: "Power Platform Error Handling Standards", eyebrow: "Standards", description: "Shared expectations for canvas app errors, flow failures, retry behavior, logging, and support notifications.", keywords: ["Power Platform error handling", "Power Automate try catch", "Power Apps IfError"], audience: "Teams preparing apps and flows for real users and support owners.", summaryBullets: ["Every production flow should have a failure path.", "Every important save formula should use IfError or Errors.", "User messages should explain what happened and what to do next.", "Support logs should include enough context to reproduce the issue."], examples: [{ title: "Flow error scope model", problem: "Handle failed automation without silent loss.", code: flowScopeSnippet, expectedResult: "Failures become visible and supportable instead of buried in run history.", commonMistakes: ["No run-after configuration", "Emailing raw error JSON to users", "Retrying non-idempotent updates blindly"] }], relatedPatterns: ["power-automate-try-catch-scope-error-handling", "power-apps-error-handling-iferror-patch"] }),
   item({ slug: "logging-standards", kind: "standard", title: "Power Platform Logging Standards", eyebrow: "Standards", description: "Practical logging standards for request IDs, flow run links, app errors, and operational support history.", keywords: ["Power Platform logging", "flow run logging", "app support logs"], audience: "Support owners who need evidence when automations fail or users report issues.", summaryBullets: ["Log business identifiers, not just technical errors.", "Capture flow run URLs for support review.", "Separate user notifications from support logs.", "Keep logs searchable by request, user, and date."], examples: [{ title: "Support log columns", problem: "Create a lightweight list or table for operational issues.", code: `RequestId
 SourceSystem
 EventType
@@ -192,7 +200,7 @@ Message
 FlowRunUrl
 UserEmail
 OccurredOn
-ResolvedOn`, expectedResult: "Support can search for failures by request or user without reverse-engineering every flow.", commonMistakes: ["Logging sensitive data", "Only logging failures", "No retention plan"] }], relatedPatterns: ["build-a-flow-run-log", "create-a-support-handoff-dashboard"] })
+ResolvedOn`, expectedResult: "Support can search for failures by request or user without reverse-engineering every flow.", commonMistakes: ["Logging sensitive data", "Only logging failures", "No retention plan"] }], relatedPatterns: ["create-a-flow-run-logging-list", "create-audit-rows-for-status-changes"] })
 ];
 
 export const cheatSheets: ResourceItem[] = [
@@ -201,15 +209,15 @@ export const cheatSheets: ResourceItem[] = [
     Requests,
     RequestStatus.Value = cmbStatus.Selected.Value,
     StartsWith(Title, txtSearch.Text)
-)`, expectedResult: "The gallery filters by selected status and typed title prefix.", commonMistakes: ["Using Search on large SharePoint lists", "Lowercasing the column in the filter", "Ignoring delegation warnings"] }], relatedPatterns: ["optimize-a-gallery-search-experience", "build-a-queue-dashboard-gallery"] }),
-  item({ slug: "power-automate-trigger-conditions-cheat-sheet", kind: "cheat-sheet", title: "Power Automate Trigger Conditions Cheat Sheet", eyebrow: "Cheat sheet", description: "Common trigger condition patterns for status changes, empty checks, approvals, recurrence guards, and noisy list updates.", keywords: ["Power Automate trigger conditions", "flow trigger condition", "SharePoint trigger condition"], audience: "Flow builders trying to reduce unnecessary runs and avoid infinite loops.", summaryBullets: ["Keep trigger conditions small and readable.", "Use them to reduce noise, not to hide complex process logic.", "Document every condition in the flow notes.", "Test create and update events separately."], examples: [{ title: "Only run for submitted requests", problem: "Start a flow only when a SharePoint choice field is Submitted.", code: `@equals(triggerOutputs()?['body/RequestStatus/Value'], 'Submitted')`, expectedResult: "The flow ignores draft and closed updates.", commonMistakes: ["Using the wrong dynamic path", "Forgetting choice /Value", "Adding too many conditions at the trigger"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "prevent-a-flow-infinite-loop"] }),
+)`, expectedResult: "The gallery filters by selected status and typed title prefix.", commonMistakes: ["Using Search on large SharePoint lists", "Lowercasing the column in the filter", "Ignoring delegation warnings"] }], relatedPatterns: ["power-apps-search-with-multiple-fields", "build-a-queue-dashboard-gallery"] }),
+  item({ slug: "power-automate-trigger-conditions-cheat-sheet", kind: "cheat-sheet", title: "Power Automate Trigger Conditions Cheat Sheet", eyebrow: "Cheat sheet", description: "Common trigger condition patterns for status changes, empty checks, approvals, recurrence guards, and noisy list updates.", keywords: ["Power Automate trigger conditions", "flow trigger condition", "SharePoint trigger condition"], audience: "Flow builders trying to reduce unnecessary runs and avoid infinite loops.", summaryBullets: ["Keep trigger conditions small and readable.", "Use them to reduce noise, not to hide complex process logic.", "Document every condition in the flow notes.", "Test create and update events separately."], examples: [{ title: "Only run for submitted requests", problem: "Start a flow only when a SharePoint choice field is Submitted.", code: `@equals(triggerOutputs()?['body/RequestStatus/Value'], 'Submitted')`, expectedResult: "The flow ignores draft and closed updates.", commonMistakes: ["Using the wrong dynamic path", "Forgetting choice /Value", "Adding too many conditions at the trigger"] }], relatedPatterns: ["power-automate-trigger-condition-status-changed", "power-automate-avoid-infinite-update-loop"] }),
   item({ slug: "dataverse-security-roles-cheat-sheet", kind: "cheat-sheet", title: "Dataverse Security Roles Cheat Sheet", eyebrow: "Cheat sheet", description: "Fast guidance for table privileges, ownership, business units, teams, app sharing, and test-user validation.", keywords: ["Dataverse security roles", "model-driven app access", "Power Platform permissions"], audience: "Developers and admins configuring secure access for Dataverse apps.", summaryBullets: ["Confirm table ownership before designing roles.", "Share the app and assign the right security role.", "Test with a real non-admin user.", "Document team-based access separately from record ownership."], examples: [{ title: "Role review checklist", problem: "Validate access before production release.", code: `- Can create own request
 - Can read team requests
 - Cannot delete closed requests
 - Can run related flows
 - Can open model-driven app
-- Can access required environment`, expectedResult: "Security issues are found before users report missing buttons or inaccessible records.", commonMistakes: ["Testing only as system admin", "Sharing the app but not assigning roles", "Ignoring environment access"] }], relatedPatterns: ["configure-a-dataverse-security-role", "share-a-model-driven-app-with-a-security-group"] }),
-  item({ slug: "power-automate-date-formatting-cheat-sheet", kind: "cheat-sheet", title: "Power Automate Date Formatting Cheat Sheet", eyebrow: "Cheat sheet", description: "Date and time expressions for email, SharePoint filters, approvals, time zones, filenames, and scheduled reminders.", keywords: ["Power Automate date formatting", "formatDateTime", "convertTimeZone"], audience: "Flow builders who need date expressions that do not surprise users.", summaryBullets: ["Format dates for users, but store dates as dates.", "Be explicit about time zones.", "Use sortable date formats in filenames.", "Test daylight saving transitions when timing matters."], examples: [{ title: "Sortable filename date", problem: "Add a stable timestamp to exported files.", code: `formatDateTime(utcNow(), 'yyyy-MM-dd-HHmm')`, expectedResult: "Generated filenames sort chronologically.", commonMistakes: ["Using slash characters in filenames", "Mixing local and UTC times", "Formatting too early before comparisons"] }], relatedPatterns: ["build-a-scheduled-reminder-flow", "create-a-monthly-report-export"] }),
+- Can access required environment`, expectedResult: "Security issues are found before users report missing buttons or inaccessible records.", commonMistakes: ["Testing only as system admin", "Sharing the app but not assigning roles", "Ignoring environment access"] }], relatedPatterns: ["check-dataverse-security-role-in-canvas-app", "power-pages-table-permissions-web-roles"] }),
+  item({ slug: "power-automate-date-formatting-cheat-sheet", kind: "cheat-sheet", title: "Power Automate Date Formatting Cheat Sheet", eyebrow: "Cheat sheet", description: "Date and time expressions for email, SharePoint filters, approvals, time zones, filenames, and scheduled reminders.", keywords: ["Power Automate date formatting", "formatDateTime", "convertTimeZone"], audience: "Flow builders who need date expressions that do not surprise users.", summaryBullets: ["Format dates for users, but store dates as dates.", "Be explicit about time zones.", "Use sortable date formats in filenames.", "Test daylight saving transitions when timing matters."], examples: [{ title: "Sortable filename date", problem: "Add a stable timestamp to exported files.", code: `formatDateTime(utcNow(), 'yyyy-MM-dd-HHmm')`, expectedResult: "Generated filenames sort chronologically.", commonMistakes: ["Using slash characters in filenames", "Mixing local and UTC times", "Formatting too early before comparisons"] }], relatedPatterns: ["power-automate-compose-date-formatting", "convert-time-zone-format-date-power-automate"] }),
   item({ slug: "adaptive-card-payload-cheat-sheet", kind: "cheat-sheet", title: "Adaptive Card Payload Cheat Sheet", eyebrow: "Cheat sheet", description: "Reusable Adaptive Card payload ideas for Teams approvals, request summaries, task cards, and action buttons.", keywords: ["Adaptive Cards Teams", "Power Automate adaptive card", "Teams approval card"], audience: "Flow builders sending actionable Teams messages from Power Automate.", summaryBullets: ["Keep cards short and action-oriented.", "Show the business identifier near the top.", "Use facts for scannable metadata.", "Make button actions match the flow branch names."], examples: [{ title: "Request review card skeleton", problem: "Send a clear Teams card for a request approval.", code: `{
   "type": "AdaptiveCard",
   "version": "1.4",
@@ -220,7 +228,7 @@ export const cheatSheets: ResourceItem[] = [
       { "title": "Priority", "value": "@{triggerBody()?['Priority']?['Value']}" }
     ] }
   ]
-}`, expectedResult: "Reviewers receive a structured Teams message with the key request facts.", commonMistakes: ["Overloading the card with every field", "Not testing mobile Teams", "Using action labels that do not match flow logic"] }], relatedPatterns: ["send-an-adaptive-card-approval-to-teams", "build-a-user-mention-notification-pattern"] })
+}`, expectedResult: "Reviewers receive a structured Teams message with the key request facts.", commonMistakes: ["Overloading the card with every field", "Not testing mobile Teams", "Using action labels that do not match flow logic"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "mention-a-user-in-teams-adaptive-card"] })
 ];
 
 export const tools: ResourceItem[] = [
@@ -301,9 +309,9 @@ With(
       }
     ]
   }),
-  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Explain why display names and internal names diverge.", "Provide naming rules for new columns.", "Encourage schema documentation before build.", "Link to SharePoint list schema patterns."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
+  item({ slug: "sharepoint-internal-name-helper", kind: "tool", title: "SharePoint Internal Name Helper", eyebrow: "Free tool", description: "See the internal name SharePoint will create for a column, including _x0020_ encoding for spaces and symbols, and the cleaner name to create it with instead.", keywords: ["SharePoint internal name", "Power Automate SharePoint column", "Power Apps SharePoint columns"], audience: "Builders creating list schemas used by apps and flows.", summaryBullets: ["Type a column name to see the internal name SharePoint will give it.", "Spaces and symbols are shown with their _x0020_ style encoding.", "Get a clean name to create the column with, then rename the display name afterwards.", "Use the internal name in flow filter queries, trigger outputs and column formatting JSON."], examples: [{ title: "Naming rule", problem: "Avoid awkward internal names created by spaces and renamed columns.", code: `Preferred display name: RequestStatus
 Avoid first creating: Request Status
-Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["design-a-sharepoint-list-schema-for-power-apps", "document-a-sharepoint-column-internal-name-map"] }),
+Then renaming to: Status`, expectedResult: "Makers avoid internal names such as Request_x0020_Status in formulas and flow outputs.", commonMistakes: ["Renaming columns after flows are built", "Using punctuation in first column names"] }], relatedPatterns: ["sharepoint-internal-name-safe-column-design", "sharepoint-list-schema-for-project-intake"] }),
   item({
     slug: "odata-filter-query-builder",
     kind: "tool",
@@ -430,9 +438,9 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       }
     ]
   }),
-  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "An interactive helper for assembling common Power Automate expressions for dates, null checks, arrays, and trigger conditions.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Start with common expression templates.", "Explain what each input token means.", "Link templates to cookbook examples.", "Keep generated snippets copy-ready."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
+  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "Pick a common Power Automate expression for dates, null checks, arrays or conditions, fill in your own values and copy the result into a flow.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Choose a template for dates, blank values, arrays or conditions.", "Replace the sample values with your own trigger or action outputs.", "Copy the finished expression into the expression editor.", "Each template notes what its inputs mean and where it is typically used."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
 Null fallback: coalesce(<value>, '<fallback>')
-Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["configure-a-trigger-condition-for-status-changed", "build-a-daily-exception-digest"] }),
+Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"] }),
   item({
     slug: "parse-json-schema-generator",
     kind: "tool",
@@ -571,11 +579,11 @@ DateDiff(dpStart.SelectedDate, dpEnd.SelectedDate, TimeUnit.Days)`,
       }
     ]
   }),
-  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
+  item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Enter your publisher prefix and a table name to get display, plural, schema and logical names.", "Column and relationship names follow the same prefix and casing.", "Schema names are permanent, so settle them before creating the table.", "Copy the names into your data model notes or straight into the maker portal."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
 Table display name: Service Request
 Schema name: bv_ServiceRequest
 Primary column: bv_RequestName
-Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stays consistent across apps, flows, and solutions.", commonMistakes: ["Changing schema names late", "Using generic table names", "Ignoring relationship names"] }], relatedPatterns: ["design-a-dataverse-table-relationship-model", "standardize-a-solution-publisher-prefix"] }),
+Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stays consistent across apps, flows, and solutions.", commonMistakes: ["Changing schema names late", "Using generic table names", "Ignoring relationship names"] }], relatedPatterns: ["solution-publisher-prefix-naming-standard", "patch-dataverse-lookup-and-choice-columns"] }),
   item({
     slug: "trigger-condition-builder",
     kind: "tool",
@@ -703,10 +711,10 @@ If(varIsAdmin, AdminScreen, HomeScreen)`,
       }
     ]
   }),
-  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
+  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Swap the sample text for dynamic content once the card is in your flow."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
-] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["send-an-adaptive-card-approval-to-teams", "build-a-user-mention-notification-pattern"] }),
+] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "adaptive-card-fact-set-from-sharepoint-items"] }),
   item({
     slug: "csv-to-power-fx-table",
     kind: "tool",
@@ -847,9 +855,9 @@ colRequests    Collection`,
       }
     ]
   }),
-  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "An interactive helper for turning brand colors into reusable Power Fx color variables and theme notes.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Define named color variables once.", "Generate RGBA formulas from hex values.", "Document accessible contrast decisions.", "Link theme choices to component patterns."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
+  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide to get RGBA and ColorValue formulas.", "Copy the set as named formulas or as Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "Check text and background pairs for contrast before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
 Set(gblColorSurface, RGBA(255, 255, 255, 1));
-Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["standardize-a-canvas-app-theme", "build-a-reusable-command-bar-component"] }),
+Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
   item({
     slug: "sharepoint-column-formatting-builder",
     kind: "tool",
@@ -993,19 +1001,19 @@ Filter(
       }
     ]
   }),
-  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "An interactive deployment checklist helper for solution layering, managed imports, environment variables, and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Review unmanaged changes before export.", "Confirm environment variables and connection references.", "Capture dependency and rollback notes.", "Link deployment findings to ALM patterns."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
+  item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
 - Connection references rebound
 - Cloud flows turned on
-- Test user smoke test completed`, expectedResult: "Release owners have a repeatable preflight before production import.", commonMistakes: ["Exporting unmanaged changes accidentally", "Forgetting to enable flows", "Skipping test-user validation"] }], relatedPatterns: ["design-a-solution-layering-checklist", "document-a-solution-deployment-checklist"] })
+- Test user smoke test completed`, expectedResult: "Release owners have a repeatable preflight before production import.", commonMistakes: ["Exporting unmanaged changes accidentally", "Forgetting to enable flows", "Skipping test-user validation"] }], relatedPatterns: ["export-import-managed-solution-pac-cli", "power-platform-pipelines-dev-test-prod"] })
 ];
 
 export const resourceGroups = [
   { slug: "cookbooks", title: "Cookbooks", eyebrow: "Copy-ready recipes", description: "Task-based recipes with problem statements, starter code, expected results, and common mistakes.", path: "/cookbooks", items: cookbooks },
   { slug: "standards", title: "Standards", eyebrow: "Team conventions", description: "Opinionated standards for naming, data design, ALM, error handling, and supportability.", path: "/standards", items: standards },
   { slug: "cheat-sheets", title: "Cheat Sheets", eyebrow: "Fast lookup", description: "Short, search-friendly references for common Power Platform formulas, expressions, and setup decisions.", path: "/cheat-sheets", items: cheatSheets },
-  { slug: "tools", title: "Free Tools", eyebrow: "Builder utilities", description: "Static utility pages and planned client-side helpers for formulas, expressions, naming, and deployment checks.", path: "/tools", items: tools }
+  { slug: "tools", title: "Free Tools", eyebrow: "Builder utilities", description: "Browser tools for formulas, expressions, filter queries, naming, and deployment checks. Nothing you paste leaves your browser.", path: "/tools", items: tools }
 ];
 
 export const allResources = [...cookbooks, ...standards, ...cheatSheets, ...tools];
