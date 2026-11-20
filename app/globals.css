@@ -632,3 +632,63 @@ button {
   font-weight: 700;
   padding: 6px 14px;
 }
+
+.cookie-banner {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  bottom: 16px;
+  box-shadow: 0 8px 30px rgba(23, 32, 29, 0.18);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  justify-content: space-between;
+  left: 16px;
+  margin: 0 auto;
+  max-width: 880px;
+  padding: 16px 20px;
+  position: fixed;
+  right: 16px;
+  z-index: 40;
+}
+
+.cookie-banner p {
+  color: #25342e;
+  flex: 1 1 320px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.cookie-banner a {
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.cookie-banner-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cookie-banner-actions .button {
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-width: 104px;
+}
+
+.link-button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  justify-self: start;
+  padding: 0;
+  text-align: left;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}

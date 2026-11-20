@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { AnalyticsScripts, GtmNoScript } from "@/components/analytics/analytics-scripts";
+import { CookieConsentBanner } from "@/components/analytics/cookie-consent";
 import { analyticsConfig } from "@/lib/analytics";
 import { siteUrl } from "@/lib/site";
 
@@ -44,6 +45,7 @@ export default function RootLayout({
         <SiteHeader />
         <main>{children}</main>
         <SiteFooter />
+        <CookieConsentBanner />
         <AnalyticsScripts />
       </body>
     </html>

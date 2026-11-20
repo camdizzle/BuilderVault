@@ -29,6 +29,14 @@ Don't also set `NEXT_PUBLIC_GA_MEASUREMENT_ID` while Tag Manager carries the GA4
 
 Custom events arrive in `dataLayer` in snake case: `formatter_copied`, `code_copied`, `pack_downloaded`, `newsletter_signup`, `services_cta_clicked`, `services_request_started`, `adaptive_card_copied`. To send one to GA4, add a Custom Event trigger with that name and a GA4 Event tag that uses it.
 
+### Cookie consent
+
+A consent banner appears whenever Google tags are on. It uses Google Consent Mode v2: analytics and ad storage start as denied, and switch to granted only when a visitor chooses Accept. The choice is remembered in the browser, and the Cookie settings link in the footer reopens the banner.
+
+Nothing needs changing in Tag Manager. The Google tag has built-in consent checks and follows the banner by itself. If you add other tags later (ads, heatmaps, pixels), open the tag's Advanced Settings > Consent Settings and require `analytics_storage` or `ad_storage`, otherwise that tag fires before consent.
+
+Visitors who reject or ignore the banner are not counted with cookies, so Google Analytics numbers will read lower than real traffic. Search Console is unaffected.
+
 The two options below are alternatives to Tag Manager.
 
 ### Option A: Plausible (recommended)
