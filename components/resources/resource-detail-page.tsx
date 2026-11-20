@@ -4,6 +4,7 @@ import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
+import { errorPath, getErrorsForTool } from "@/lib/errors";
 import { getGuidesForTool, guidePath } from "@/lib/guides";
 import { getPublishedPatternBySlug } from "@/lib/patterns/patterns";
 import { getRelatedTools, type ResourceItem } from "@/lib/resources";
@@ -28,6 +29,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
   const isTool = resource.kind === "tool";
   const relatedTools = isTool ? getRelatedTools(resource) : [];
   const toolGuides = isTool ? getGuidesForTool(resource.slug) : [];
+  const toolErrors = isTool ? getErrorsForTool(resource.slug) : [];
   const relatedPatterns = resource.relatedPatterns
     .map((slug) => getPublishedPatternBySlug(slug))
     .filter((pattern): pattern is Pattern => Boolean(pattern));
@@ -120,6 +122,20 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
                     </div>
                   ))}
                 </div>
+              </section>
+            ) : null}
+
+            {toolErrors.length > 0 ? (
+              <section style={{ display: "grid", gap: 14 }}>
+                <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Errors this tool helps fix</h2>
+                <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>Each page explains one error message, its causes and the fix.</p>
+                <ul style={{ color: "#415049", display: "grid", gap: 8, lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
+                  {toolErrors.map((page) => (
+                    <li key={page.slug}>
+                      <Link href={errorPath(page)} style={{ fontWeight: 800 }}>{page.shortTitle}</Link>
+                    </li>
+                  ))}
+                </ul>
               </section>
             ) : null}
 

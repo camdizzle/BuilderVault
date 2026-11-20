@@ -6,6 +6,7 @@ import { getPatternSeo } from "@/lib/patterns/seo";
 import { absoluteUrl } from "@/lib/site";
 import { allResources, resourceGroups } from "@/lib/resources";
 import { exampleGuides } from "@/lib/example-guides";
+import { errorPages, errorPath } from "@/lib/errors";
 import { guidePath, guides } from "@/lib/guides";
 import { pmoLifecycleStages } from "@/lib/pmo-toolkit";
 
@@ -73,6 +74,7 @@ const staticRoutes: Array<{
   { route: "/resources", changeFrequency: "weekly", priority: 0.82 },
   { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
   { route: "/guides", changeFrequency: "weekly", priority: 0.84 },
+  { route: "/errors", changeFrequency: "weekly", priority: 0.84 },
   { route: "/downloads", changeFrequency: "monthly", priority: 0.7 },
   ...pmoRoutes.map((route) => ({ route, changeFrequency: "weekly" as const, priority: route === "/pmo" ? 0.86 : 0.64 })),
   ...resourceGroups.map((group) => ({ route: group.path, changeFrequency: "weekly" as const, priority: 0.78 })),
@@ -109,6 +111,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(guide.updated),
       changeFrequency: "monthly" as const,
       priority: 0.8
+    })),
+    ...errorPages.map((page) => ({
+      url: absoluteUrl(errorPath(page)),
+      lastModified: new Date(page.updated),
+      changeFrequency: "monthly" as const,
+      priority: 0.78
     })),
     ...allResources.map((resource) => ({
       url: absoluteUrl(resource.path),

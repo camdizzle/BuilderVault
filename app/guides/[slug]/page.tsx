@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = getGuideBySlug(slug);
 
   if (!guide) {
-    return { title: "Power Fx guide | BuilderVault" };
+    return { title: "Guide not found | BuilderVault" };
   }
 
   return {
@@ -53,7 +53,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const relatedPatterns = guide.relatedPatterns
     .map((patternSlug) => getPublishedPatternBySlug(patternSlug))
     .filter((pattern): pattern is Pattern => Boolean(pattern));
-  const otherGuides = guides.filter((other) => other.slug !== guide.slug);
+  const otherGuides = guides.filter((other) => other.slug !== guide.slug && other.eyebrow === guide.eyebrow);
   const author = authorStructuredData();
 
   const articleData = {
@@ -153,7 +153,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </ul>
             </section>
 
-            <NewsletterSignup placement={"guide:" + guide.slug} title="Get new guides and Power Fx tips by email" />
+            <NewsletterSignup placement={"guide:" + guide.slug} title="Get new guides and Power Platform tips by email" />
           </div>
 
           <aside style={{ display: "grid", gap: 18, alignSelf: "start" }}>
