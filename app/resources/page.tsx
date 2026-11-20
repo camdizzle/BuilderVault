@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PlatformIcon, platformLinks } from "@/components/platform/platform-icon";
 import { ResourceCard } from "@/components/resources/resource-card";
+import { GuideCard } from "@/components/guides/guide-card";
+import { guides } from "@/lib/guides";
 import { resourceGroups } from "@/lib/resources";
 
 export const metadata = {
@@ -54,6 +56,19 @@ export default function ResourcesPage() {
                 <span style={{ color: "var(--accent-strong)", fontWeight: 800 }}>{group.items.length} resources</span>
               </Link>
             ))}
+          </div>
+        </section>
+
+        <section style={{ display: "grid", gap: 18 }}>
+          <div style={{ alignItems: "end", display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "space-between" }}>
+            <div>
+              <div className="eyebrow">Step by step</div>
+              <h2 className="section-title">How-to guides</h2>
+            </div>
+            <Link className="button secondary" href="/guides">View all</Link>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {guides.slice(0, 4).map((guide) => <GuideCard guide={guide} key={guide.slug} />)}
           </div>
         </section>
 
