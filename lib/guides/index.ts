@@ -2,6 +2,9 @@ import { commonErrorsGuide, delegationWarningGuide, formatFormulasGuide, missing
 import { excelUsersGuide, nestedIfGuide, separatorsGuide, slowFormulasGuide } from "./formatter-guides-2";
 import { dataverseFilterRowsGuide, filterByDateGuide, getItemsFilterQueryGuide, triggerConditionsGuide, whereToFilterGuide } from "./flow-guides-1";
 import { complexColumnsGuide, expressionsExplainedGuide, internalNamesGuide, parseJsonGuide, troubleshootFailedRunGuide } from "./flow-guides-2";
+import { flowLimitsGuide } from "./flow-limits-guide";
+import { outlookQuickStartGuide, sharePointQuickStartGuide, teamsQuickStartGuide } from "./connector-guides-1";
+import { dataverseQuickStartGuide, excelQuickStartGuide, formsQuickStartGuide } from "./connector-guides-2";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
@@ -24,7 +27,14 @@ export const guides: Guide[] = [
   expressionsExplainedGuide,
   internalNamesGuide,
   complexColumnsGuide,
-  troubleshootFailedRunGuide
+  troubleshootFailedRunGuide,
+  flowLimitsGuide,
+  sharePointQuickStartGuide,
+  outlookQuickStartGuide,
+  teamsQuickStartGuide,
+  excelQuickStartGuide,
+  formsQuickStartGuide,
+  dataverseQuickStartGuide
 ];
 
 export const guidePath = (guide: Pick<Guide, "slug">) => `/guides/${guide.slug}`;
