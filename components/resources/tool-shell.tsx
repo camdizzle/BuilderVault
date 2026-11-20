@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className={`chip-button ${checked ? "active" : ""}`}>
+    <label className={`chip-button ${checked ? "active" : ""}`} style={{ paddingBottom: 6, paddingTop: 6, whiteSpace: "normal" }}>
       <input checked={checked} onChange={(event) => onChange(event.target.checked)} style={{ marginRight: 8 }} type="checkbox" />
       {label}
     </label>
