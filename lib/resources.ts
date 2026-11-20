@@ -433,6 +433,81 @@ Path 'manager'.`,
       }
     ]
   }),
+  item({
+    slug: "excel-to-power-fx",
+    kind: "tool",
+    title: "Excel Formula to Power Fx Translator",
+    eyebrow: "Free tool",
+    description: "Translate Excel formulas into Power Fx for Power Apps. Renames functions, rewrites VLOOKUP, XLOOKUP, SUMIF, COUNTIF, and DATEDIF, swaps cell references for your controls and columns, and lists what to finish by hand.",
+    keywords: ["Excel to Power Fx", "Excel formula to Power Apps", "VLOOKUP in Power Apps", "SUMIF Power Apps", "convert Excel formula Power Fx"],
+    audience: "Excel users building their first canvas apps, and makers rebuilding a spreadsheet as an app who have a workbook full of formulas to carry over.",
+    summaryBullets: [
+      "Renames more than 60 Excel functions to their Power Fx names, such as IFERROR to IfError and EOMONTH to EOMonth.",
+      "Rewrites lookups (VLOOKUP, HLOOKUP, XLOOKUP) as LookUp, and SUMIF, COUNTIF, and AVERAGEIF as Filter-based formulas.",
+      "Converts DATEDIF and DAYS to DateDiff, IFS to If, and SEARCH to a case-insensitive Find.",
+      "Replaces cell references with the controls, variables, or columns you list.",
+      "Never guesses silently. Anything it can't translate is left as written and listed under Finish by hand."
+    ],
+    examples: [
+      {
+        title: "A lookup",
+        problem: "Excel looks up a value in a range by position. Power Fx looks up a record in a table by column name.",
+        code: `// Excel
+=VLOOKUP(A2, Rates!A:B, 2, FALSE)
+
+// Power Fx
+LookUp(Rates, Region = cmbRegion.Selected.Value, Rate)`,
+        expectedResult: "The tool writes LookUp(YourTable, KeyColumn = ..., ResultColumn). You replace the three names with your table and its columns.",
+        commonMistakes: ["Looking for a column number. Power Fx uses the column's name instead.", "Using LookUp for approximate matches. It only matches exactly."]
+      },
+      {
+        title: "A conditional total",
+        problem: "SUMIF takes ranges. Power Fx filters a table first, then sums a column.",
+        code: `// Excel
+=SUMIF(C:C, "Approved", D:D)
+
+// Power Fx
+Sum(Filter(Requests, Status = "Approved"), Amount)`,
+        expectedResult: "The total of Amount for approved requests.",
+        commonMistakes: ["Running this against a large SharePoint list. Sum isn't delegated there, so only the first rows are added up."]
+      },
+      {
+        title: "Days between two dates",
+        problem: "DATEDIF and DAYS both become DateDiff, which takes the start date first.",
+        code: `// Excel
+=DATEDIF(A2, B2, "d")
+
+// Power Fx
+DateDiff(dpStart.SelectedDate, dpEnd.SelectedDate, TimeUnit.Days)`,
+        expectedResult: "The number of whole days between the two dates.",
+        commonMistakes: ["Keeping the Excel order for DAYS, which takes the end date first."]
+      }
+    ],
+    relatedPatterns: ["calculate-totals-gallery-collection", "avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter"],
+    relatedTools: ["power-fx-formatter", "csv-to-power-fx-table"],
+    faqs: [
+      {
+        question: "Is Power Fx the same as Excel formulas?",
+        answer: "It is based on Excel, and many functions have the same names and arguments. The big difference is data: Excel works with cells and ranges, and Power Fx works with controls, variables, and tables with named columns. That's why lookups and conditional totals need to be rewritten, not just renamed."
+      },
+      {
+        question: "What do I put in the cell references box?",
+        answer: "One line per cell, such as B2 = Value(txtAmount.Text). Use whatever holds that value in your app: a control property, a variable, or a column such as ThisItem.Amount. Cells you don't list are left in the result and named in the notes."
+      },
+      {
+        question: "Which functions aren't translated?",
+        answer: "Functions that depend on the grid, such as OFFSET, INDIRECT, INDEX, and MATCH, have no direct equivalent. The tool leaves them as written and tells you. INDEX with MATCH is usually replaced by a single LookUp."
+      },
+      {
+        question: "My Excel uses semicolons between arguments. Does that work?",
+        answer: "Yes for the input. Semicolons are read as argument separators. The result uses commas. If your Power Apps region uses semicolons, convert it with the semicolon option in the Power Fx Formatter."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The translation runs in your browser, and nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "dataverse-table-naming-helper", kind: "tool", title: "Dataverse Table Naming Helper", eyebrow: "Free tool", description: "Generate consistent Dataverse schema and logical names for tables, columns, and relationships from your publisher prefix, before names are locked in.", keywords: ["Dataverse naming", "Dataverse table design", "solution publisher prefix"], audience: "Developers planning Dataverse data models.", summaryBullets: ["Separate display names from schema strategy.", "Use consistent publisher prefixes.", "Name relationships by business relationship.", "Capture plural and singular names before build."], examples: [{ title: "Naming worksheet", problem: "Design names before tables are created.", code: `Publisher prefix: bv
 Table display name: Service Request
 Schema name: bv_ServiceRequest

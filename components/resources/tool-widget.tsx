@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FilterQueryBuilder } from "@/components/tools/filter-query-builder";
 import { useMemo, useState } from "react";
 import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-generator";
+import { ExcelToPowerFx } from "@/components/tools/excel-to-power-fx";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
@@ -22,6 +23,7 @@ export function ToolWidget({ slug }: { slug: string }) {
   if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "parse-json-schema-generator") return <ParseJsonSchemaGenerator />;
+  if (slug === "excel-to-power-fx") return <ExcelToPowerFx />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
   if (slug === "power-apps-color-token-generator") return <ColorTokenGenerator />;
