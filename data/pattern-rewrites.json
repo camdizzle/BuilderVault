@@ -8445,5 +8445,1461 @@
       }
     ],
     "updatedAt": "2026-11-20"
+  },
+  "create-a-request-escalation-screen": {
+    "shortDescription": "A Power Apps screen that lists requests past their due date or stuck in one status too long, with one-tap escalate, reassign and comment actions.",
+    "fullDescription": "Escalation works when the person responsible sees overdue work in one place and can act on it immediately. This screen filters to requests that are overdue or stalled, shows how long each has waited, and lets a lead escalate, reassign or add a note, writing an audit row each time.",
+    "problemStatement": "Overdue requests are scattered through a general list, leads find out about them from complaints, and escalations happen by email with no record.",
+    "whenToUse": [
+      "Request or ticket apps with due dates or service levels",
+      "Team leads who need a daily view of what is late",
+      "Processes where escalations must be recorded"
+    ],
+    "whenNotToUse": [
+      "Queues small enough to scan in the main gallery",
+      "Escalations that are fully automatic and need no human decision"
+    ],
+    "formulaOrCode": "// Columns used: DueDate (date), Status (choice), AssignedTo (person), StatusChangedOn (date and time),\n// EscalationLevel (number, default 0), EscalatedOn (date and time), EscalatedTo (person)\n\n// Screen.OnVisible: calculate boundaries once so the filter stays delegable\nUpdateContext({\n    locToday: Today(),\n    locStalledBefore: DateAdd(Now(), -5, TimeUnit.Days)\n});\n\n// galEscalations.Items\nWith(\n    { overdue: Filter(Requests, Status.Value <> \"Closed\" && DueDate < locToday),\n      stalled: Filter(Requests, Status.Value = \"Waiting for approval\" && StatusChangedOn < locStalledBefore) },\n    Sort(\n        Switch(tabView.Selected.Value, \"Overdue\", overdue, \"Stalled\", stalled, overdue),\n        DueDate, SortOrder.Ascending\n    )\n)\n\n// Row labels\n// lblDaysLate.Text\nDateDiff(ThisItem.DueDate, locToday, TimeUnit.Days) & \" days overdue\"\n// lblDaysLate.Color\nIf(DateDiff(ThisItem.DueDate, locToday, TimeUnit.Days) > 10, Color.DarkRed, RGBA(161, 98, 7, 1))\n// lblLevel.Text\nIf(ThisItem.EscalationLevel > 0, \"Escalated (level \" & ThisItem.EscalationLevel & \")\", \"Not escalated\")\n\n// Escalate button (in the row or a side panel) > OnSelect\nUpdateContext({ locSaving: true });\nIfError(\n    With(\n        { mgr: Office365Users.ManagerV2(ThisItem.AssignedTo.Email) },\n        Patch(Requests, ThisItem, {\n            EscalationLevel: Coalesce(ThisItem.EscalationLevel, 0) + 1,\n            EscalatedOn: Now(),\n            EscalatedTo: {\n                Claims: \"i:0#.f|membership|\" & Lower(mgr.mail),\n                DisplayName: mgr.displayName,\n                Email: Lower(mgr.mail)\n            }\n        });\n        Patch('Request History', Defaults('Request History'), {\n            Title: \"Escalated\",\n            RequestId: ThisItem.ID,\n            Details: \"Escalated to \" & mgr.displayName & \" by \" & User().FullName & \". \" & txtEscalationNote.Value\n        })\n    );\n    Notify(\"Escalated\", NotificationType.Success),\n    Notify(\"Could not escalate: \" & FirstError.Message, NotificationType.Error)\n);\nUpdateContext({ locSaving: false })\n\n// Reassign > OnSelect\nPatch(Requests, galEscalations.Selected, {\n    AssignedTo: {\n        Claims: \"i:0#.f|membership|\" & Lower(cmbNewOwner.Selected.Mail),\n        DisplayName: cmbNewOwner.Selected.DisplayName,\n        Email: Lower(cmbNewOwner.Selected.Mail)\n    }\n})\n\n// Header counts (use collections or CountRows on small filtered sets)\n// lblOverdueCount.Text : CountRows(Filter(Requests, Status.Value <> \"Closed\" && DueDate < locToday)) & \" overdue\"\n// CountRows is not delegable on SharePoint. For large lists, show \"500+\" when the count hits the row limit,\n// or keep counts in a summary list updated by a flow.\n\n// Who can open the screen\n// App.OnStart : Set(gblIsLead, !IsBlank(LookUp('App Roles', UserEmail = Lower(User().Email) && Role = \"Lead\")))\n// Navigation button Visible : gblIsLead\n\n// A flow on EscalationLevel change sends the notification, so the app stays fast.",
+    "stepByStepInstructions": [
+      "Add the escalation columns and a history list.",
+      "Index DueDate, Status and StatusChangedOn.",
+      "Build the screen with a tab for overdue and one for stalled items.",
+      "Add the days-late label and escalation level to each row.",
+      "Add escalate and reassign actions that patch the item and write a history row.",
+      "Limit the screen to leads with a role check.",
+      "Let a flow notify the escalation target when the level changes."
+    ],
+    "commonMistakes": [
+      "Calculating today's date inside the Filter, which breaks delegation.",
+      "Escalating with an email only, leaving no record on the item.",
+      "Showing the screen to everyone, including the people being escalated about.",
+      "Counting rows on a large list and trusting a number capped at the row limit."
+    ],
+    "troubleshooting": [
+      "If the gallery shows a delegation warning, move date calculations into variables and compare choice values with .Value.",
+      "If escalation fails for some rows, the assignee has no manager in the directory. Fall back to a named team lead.",
+      "If the same request is escalated twice by two leads, check EscalatedOn before patching and refresh the row first.",
+      "If counts look wrong on a big list, they are limited by the data row limit. Use a summary list."
+    ],
+    "relatedPatterns": [
+      "power-automate-approval-timeout-escalation",
+      "create-audit-rows-for-status-changes",
+      "delegation-safe-date-range-filter"
+    ],
+    "faqs": [
+      {
+        "question": "How do I show overdue items in a Power Apps gallery?",
+        "answer": "Store today's date in a variable and filter where the due date is before it and the status is not closed. Keeping the date outside the filter makes it delegable."
+      },
+      {
+        "question": "How do I escalate to someone's manager from Power Apps?",
+        "answer": "Call Office365Users.ManagerV2 with the assignee's email and patch the result into a person column, inside IfError in case no manager is set."
+      },
+      {
+        "question": "Should the app or a flow send the escalation message?",
+        "answer": "A flow. The app records the escalation on the item, and a flow triggered by that change sends the notification, so the user is not kept waiting."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-delegated-approval-screen": {
+    "shortDescription": "Let approvers nominate a delegate for a date range in Power Apps, and show each person the approvals waiting for them directly or on someone's behalf.",
+    "fullDescription": "Approvals stall when approvers are away. A delegation list records who covers for whom and when. The approval screen then shows items assigned to the user and to anyone they are covering, and records who actually decided and on whose behalf.",
+    "problemStatement": "An approver goes on leave, twenty requests wait two weeks, and the workaround is sharing a password or asking an admin to edit records.",
+    "whenToUse": [
+      "Approval apps built on SharePoint or Dataverse status columns",
+      "Organisations where cover during absence is routine",
+      "When auditors need to see who approved on whose behalf"
+    ],
+    "whenNotToUse": [
+      "Approvals run entirely in the Approvals connector, where reassignment already exists",
+      "Approvals that policy says cannot be delegated"
+    ],
+    "formulaOrCode": "// List: Approval Delegations\n//   ApproverEmail (text, indexed)   DelegateEmail (text, indexed)   StartDate (date)   EndDate (date)\n//   Reason (text)   IsActive (Yes/No, default Yes)\n\n// App.OnStart or screen OnVisible: who am I covering today?\nSet(gblMe, Lower(User().Email));\nClearCollect(\n    colCoveringFor,\n    Filter('Approval Delegations',\n        DelegateEmail = gblMe && IsActive && StartDate <= Today() && EndDate >= Today())\n);\n// Emails whose approvals I may act on (mine plus the people I cover)\nClearCollect(colApproverEmails, { Email: gblMe });\nForAll(colCoveringFor As D, Collect(colApproverEmails, { Email: Lower(D.ApproverEmail) }));\n\n// galApprovals.Items\n// \"in\" against a small collection is delegable for SharePoint when the left side is a text column.\n// Store the approver's email in a text column (ApproverEmail) as well as the person column.\nSort(\n    Filter(Requests, Status.Value = \"Waiting for approval\" && ApproverEmail in colApproverEmails.Email),\n    Created, SortOrder.Ascending\n)\n\n// Row badge\n// lblOnBehalf.Text\nIf(Lower(ThisItem.ApproverEmail) <> gblMe, \"On behalf of \" & ThisItem.Approver.DisplayName, \"\")\n\n// Approve > OnSelect\nIfError(\n    Patch(Requests, galApprovals.Selected, {\n        Status: { Value: \"Approved\" },\n        DecisionBy: gblMe,\n        DecisionOnBehalfOf: If(Lower(galApprovals.Selected.ApproverEmail) <> gblMe, galApprovals.Selected.ApproverEmail, Blank()),\n        DecisionOn: Now(),\n        DecisionComments: txtComments.Value\n    });\n    Notify(\"Approved\", NotificationType.Success),\n    Notify(\"Could not save: \" & FirstError.Message, NotificationType.Error)\n)\n\n// Block self-approval when covering\n// btnApprove.DisplayMode\nIf(Lower(galApprovals.Selected.Author.Email) = gblMe, DisplayMode.Disabled, DisplayMode.Edit)\n\n// Set up my delegation (screen \"My cover\")\n// btnSaveDelegation.OnSelect\nIf(\n    dpEnd.SelectedDate < dpStart.SelectedDate, Notify(\"End date must be after the start date.\", NotificationType.Error),\n    Lower(cmbDelegate.Selected.Mail) = gblMe, Notify(\"Choose someone other than yourself.\", NotificationType.Error),\n    Patch('Approval Delegations', Defaults('Approval Delegations'), {\n        Title: User().FullName & \" -> \" & cmbDelegate.Selected.DisplayName,\n        ApproverEmail: gblMe,\n        DelegateEmail: Lower(cmbDelegate.Selected.Mail),\n        StartDate: dpStart.SelectedDate,\n        EndDate: dpEnd.SelectedDate,\n        Reason: txtReason.Value\n    });\n    Notify(\"Cover saved\", NotificationType.Success)\n)\n\n// My current delegations, with a cancel button\n// galMyCover.Items : Filter('Approval Delegations', ApproverEmail = gblMe && IsActive && EndDate >= Today())\n// Cancel           : Patch('Approval Delegations', ThisItem, { IsActive: false })\n\n// Flow side: when a request enters \"Waiting for approval\", look up an active delegation for the\n// approver and notify the delegate as well.",
+    "stepByStepInstructions": [
+      "Create the delegations list with indexed email columns.",
+      "Add ApproverEmail, DecisionBy and DecisionOnBehalfOf text columns to the requests list.",
+      "Load the user's active cover into a collection at start.",
+      "Filter the approvals gallery by the collection of emails.",
+      "Record who decided and on whose behalf when approving or rejecting.",
+      "Build the screen where approvers set and cancel their cover.",
+      "Update the notification flow to include active delegates."
+    ],
+    "commonMistakes": [
+      "Filtering on the person column's email, which is not delegable for an in comparison.",
+      "Not recording that a decision was made on someone's behalf.",
+      "Open-ended delegations with no end date.",
+      "Letting a delegate approve their own request."
+    ],
+    "troubleshooting": [
+      "If the gallery shows a delegation warning, compare a text column with the collection, not Approver.Email.",
+      "If a delegate sees nothing, check the delegation's dates include today and IsActive is Yes.",
+      "If SharePoint permissions block the delegate, the item or list must grant them edit access. Hiding in the app is not security.",
+      "If two people decide the same item, re-read the item's status before patching and stop if it is no longer waiting."
+    ],
+    "relatedPatterns": [
+      "power-automate-get-manager-approval-route",
+      "patch-approval-metadata-from-a-button",
+      "role-based-button-visibility-sharepoint-security-list"
+    ],
+    "faqs": [
+      {
+        "question": "How do I let someone approve on another person's behalf in Power Apps?",
+        "answer": "Keep a delegation list with approver, delegate and dates. Show each user the approvals for their own email and for anyone they are covering, and record both names when a decision is saved."
+      },
+      {
+        "question": "Is hiding items in the app enough to control who can approve?",
+        "answer": "No. The delegate also needs permission on the list or table, and the app should record who acted. Enforce critical rules in the data source or a flow."
+      },
+      {
+        "question": "How do I stop delegations lasting forever?",
+        "answer": "Require an end date, filter on it, and let approvers cancel cover early by marking it inactive."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-role-aware-dashboard": {
+    "shortDescription": "A Power Apps home screen that shows different tiles, counts and actions to requesters, approvers and administrators, driven by a roles list.",
+    "fullDescription": "One home screen can serve every role if it asks one question at start, what can this user do, and then shows only the matching tiles. Roles live in a list or come from group membership, so access changes are data changes instead of app edits.",
+    "problemStatement": "The app has three near-identical home screens, one per role, and every change has to be made three times.",
+    "whenToUse": [
+      "Apps used by requesters, reviewers and administrators",
+      "When navigation and counts should differ by role",
+      "When roles change without republishing the app"
+    ],
+    "whenNotToUse": [
+      "Single-role apps",
+      "Model-driven apps, where security roles and the site map already do this"
+    ],
+    "formulaOrCode": "// List: App Roles    UserEmail (text, indexed)   Role (choice: Requester | Approver | Admin)   IsActive (Yes/No)\n// Everyone is a requester by default. Rows are needed only for extra roles.\n\n// App.Formulas (named formulas: evaluated when first used)\nnfMe        = Lower(User().Email);\nnfMyRoles   = Filter('App Roles', UserEmail = nfMe && IsActive);\nnfIsApprover = \"Approver\" in nfMyRoles.Role.Value || nfIsAdmin;\nnfIsAdmin    = \"Admin\" in nfMyRoles.Role.Value;\n\n// Alternative: Microsoft 365 group membership (Office 365 Groups connector)\n// nfIsAdmin = !IsBlank(LookUp(Office365Groups.ListGroupMembers(\"<group id>\").value, Lower(mail) = nfMe));\n\n// Tiles as data, filtered by role\nnfTiles = Table(\n    { Key: \"new\",      Title: \"New request\",       Icon: Icon.Add,          Screen: scrNewRequest, Roles: [\"Requester\", \"Approver\", \"Admin\"] },\n    { Key: \"mine\",     Title: \"My requests\",       Icon: Icon.DocumentWithContent, Screen: scrMyRequests, Roles: [\"Requester\", \"Approver\", \"Admin\"] },\n    { Key: \"approve\",  Title: \"Waiting for me\",    Icon: Icon.CheckBadge,   Screen: scrApprovals,  Roles: [\"Approver\", \"Admin\"] },\n    { Key: \"team\",     Title: \"Team queue\",        Icon: Icon.People,       Screen: scrTeamQueue,  Roles: [\"Approver\", \"Admin\"] },\n    { Key: \"admin\",    Title: \"Settings\",          Icon: Icon.Settings,     Screen: scrAdmin,      Roles: [\"Admin\"] }\n);\n\n// galTiles.Items\nFilter(\n    nfTiles,\n    \"Requester\" in Roles.Value\n        || (nfIsApprover && \"Approver\" in Roles.Value)\n        || (nfIsAdmin && \"Admin\" in Roles.Value)\n)\n// Tile OnSelect : Navigate(ThisItem.Screen)\n\n// Counts on tiles (load once, in parallel)\n// scrHome.OnVisible\nConcurrent(\n    Set(gblMyOpen,    CountRows(Filter(Requests, Author.Email = nfMe && Status.Value <> \"Closed\"))),\n    If(nfIsApprover, Set(gblWaiting, CountRows(Filter(Requests, ApproverEmail = nfMe && Status.Value = \"Waiting for approval\")))),\n    If(nfIsApprover, Set(gblOverdue, CountRows(Filter(Requests, Status.Value <> \"Closed\" && DueDate < Today()))))\n);\n// lblCount.Text (inside the tile)\nSwitch(ThisItem.Key, \"mine\", gblMyOpen, \"approve\", gblWaiting, \"team\", gblOverdue, Blank())\n// lblCount.Visible : !IsBlank(Self.Text)\n\n// Sections that only some roles see\n// conApproverSummary.Visible : nfIsApprover\n// conAdminLinks.Visible      : nfIsAdmin\n\n// Guard screens too, not just the tiles\n// scrAdmin.OnVisible : If(!nfIsAdmin, Navigate(scrHome))\n\n// Greeting\n// lblHello.Text : \"Hello \" & First(Split(User().FullName, \" \")).Value\n\n// Security note\n// Hiding a tile does not secure the data. Set list permissions or Dataverse roles so that a user\n// who is not an approver cannot edit decision fields even outside the app.",
+    "stepByStepInstructions": [
+      "Create the App Roles list and add rows for approvers and administrators.",
+      "Define named formulas for the user's roles.",
+      "Describe the tiles in a table with the roles allowed to see each.",
+      "Bind a gallery to the filtered tiles and navigate on select.",
+      "Load the counts once in OnVisible with Concurrent.",
+      "Guard restricted screens in their OnVisible.",
+      "Match the app's roles with real permissions on the data source."
+    ],
+    "commonMistakes": [
+      "Building a separate home screen per role.",
+      "Checking roles only on the tile and not on the destination screen.",
+      "Hard-coding email addresses in formulas.",
+      "Treating hidden controls as security."
+    ],
+    "troubleshooting": [
+      "If a new approver still sees the requester view, the roles named formula is cached for the session. Restart the app.",
+      "If counts are capped at 500 or 2,000, CountRows is not delegable on SharePoint. Use a summary list or accept the cap and show a plus sign.",
+      "If the roles filter shows a delegation warning, make sure UserEmail is a text column and nfMe is a simple value.",
+      "If Navigate(ThisItem.Screen) errors, every row in the tile table must reference a real screen."
+    ],
+    "relatedPatterns": [
+      "role-based-button-visibility-sharepoint-security-list",
+      "check-microsoft-365-group-membership-power-apps",
+      "use-named-formulas-for-app-constants"
+    ],
+    "faqs": [
+      {
+        "question": "How do I show different content to different users in Power Apps?",
+        "answer": "Work out the user's roles once, from a roles list or group membership, store them in named formulas or variables, and use them in Visible and Items properties."
+      },
+      {
+        "question": "Where should roles be stored for a canvas app?",
+        "answer": "In a SharePoint list or Dataverse table keyed by email, or in Microsoft 365 or Entra ID groups checked through a connector."
+      },
+      {
+        "question": "Does hiding a screen make it secure?",
+        "answer": "No. Users can still reach the data through the data source. Apply matching permissions on the list or table."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-component-naming-standard": {
+    "shortDescription": "A naming standard for canvas app controls, screens, variables, collections and components that makes formulas readable and apps easy to hand over.",
+    "fullDescription": "Power Apps names every new control Label1, Button3_1 and so on. Formulas that reference those names cannot be read by anyone, including their author a month later. A short prefix-based standard, applied as controls are added, fixes this at almost no cost.",
+    "problemStatement": "A formula reads If(Dropdown2_1.Selected.Value = Label14.Text, ...) and nobody can tell what it does without clicking through every control.",
+    "whenToUse": [
+      "Every canvas app that someone else will ever open",
+      "Teams with more than one maker",
+      "Before a code review or handoff"
+    ],
+    "whenNotToUse": [
+      "Five-minute prototypes that will be deleted",
+      "Controls inside third-party components you cannot rename"
+    ],
+    "formulaOrCode": "Pattern:  <prefix><Purpose>[<Screen or context>]   in camelCase after the prefix\n\nScreens          scr      scrHome, scrRequestForm, scrRequestDetail\nControls\n  Label          lbl      lblRequestTitle\n  Text input     txt      txtTitle\n  Button         btn      btnSubmit\n  Drop down      dd       ddCategory\n  Combo box      cmb      cmbApprover\n  Date picker    dp       dpNeededBy\n  Checkbox       chk      chkUrgent\n  Toggle         tgl      tglShowClosed\n  Radio          rad      radPriority\n  Gallery        gal      galRequests\n  Form           frm      frmRequest\n  Data card      keep the generated name, or  dc<Field>   dcTitle\n  Icon           ico      icoBack\n  Image          img      imgLogo\n  Container      con      conHeader\n  Shape          shp      shpDivider\n  Timer          tmr      tmrAutosave\n  Component      cmp      cmpHeader\n  Slider / Rating  sld / rtg\n  Attachment     att      attFiles\n\nVariables\n  Global (Set)                 gbl      gblCurrentUser, gblIsAdmin\n  Context (UpdateContext)      loc      locShowDialog, locSaving\n  Named formula (App.Formulas) nf       nfIsApprover, nfThemePrimary\n  With / As scope names        short lower-case nouns:  With({ total: ... }),  ForAll(colRows As row, ...)\n\nCollections      col      colRequests, colSelectedItems\nFlows in the app verb + noun, no prefix needed:  SubmitRequest.Run(...)\nData sources     keep the list or table name; rename only to remove \"_1\" duplicates\n\nComponents\n  Component          cmpHeader\n  Input property     PascalCase noun:      ScreenTitle, ShowBackButton\n  Output property    PascalCase:           SelectedValue\n  Event property     On + verb:            OnBack, OnSave\n\nBooleans read as questions:   gblIsAdmin, locHasChanges, locShowConfirm\nRecords in the singular:      gblSelectedRequest         Tables in the plural: colRequests\n\nBefore and after\n  If(Dropdown2_1.Selected.Value = Label14.Text, UpdateContext({ var1: true }))\n  If(ddCategory.Selected.Value = lblDefaultCategory.Text, UpdateContext({ locShowWarning: true }))\n\nRename safely\n  Rename in the tree view (F2 or double-click). Power Apps updates every formula that references the name.\n  Do it as soon as a control is added: a rename later is safe but slower.\n  Use Search in the tree view to find leftovers such as \"Label\" or \"_1\".\n\nCheck an existing app\n  Tree view search for the default names: Label, Button, TextInput, Dropdown, Gallery, Icon, Rectangle.\n  Or paste the app's formulas into a naming linter to list controls that break the standard.\n\nWhat to leave alone\n  Purely decorative shapes that no formula references can keep default names if time is short.\n  Rename everything a formula mentions.",
+    "stepByStepInstructions": [
+      "Agree the prefix table with the team and publish it.",
+      "Rename each control as soon as it is added.",
+      "Prefix variables by scope and collections with col.",
+      "Name booleans as questions and records in the singular.",
+      "Search the tree view for default names before each publish.",
+      "Include a naming check in code review and handoff."
+    ],
+    "commonMistakes": [
+      "Renaming only the controls on the first screen.",
+      "Using the same name for a variable and a control.",
+      "Prefixes without a purpose, such as btn1 and lbl2.",
+      "Different makers using different prefixes in one app."
+    ],
+    "troubleshooting": [
+      "If a rename is refused, the name is already used by another control, variable or data source. Names are unique across the whole app.",
+      "If formulas break after renaming a data source, remove and re-add it, then fix references through the App checker.",
+      "If copied screens create names ending _1, rename them straight away before formulas start depending on them.",
+      "If a global and a context variable share a name, the context variable wins on that screen. Rename one."
+    ],
+    "relatedPatterns": [
+      "use-named-formulas-for-app-constants",
+      "power-apps-componentized-header-pattern",
+      "with-function-readable-power-fx-formulas"
+    ],
+    "faqs": [
+      {
+        "question": "What naming convention should I use for Power Apps controls?",
+        "answer": "A short prefix for the control type followed by its purpose in camelCase, such as btnSubmit, txtTitle and galRequests."
+      },
+      {
+        "question": "Does renaming a control break formulas?",
+        "answer": "No. Renaming in the tree view updates every formula that references it."
+      },
+      {
+        "question": "How should variables be named in Power Apps?",
+        "answer": "Prefix by scope: gbl for global variables, loc for context variables, col for collections and nf for named formulas."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-formula-review-checklist": {
+    "shortDescription": "A checklist for reviewing Power Fx in a canvas app before release: correctness, delegation, error handling, performance and readability.",
+    "fullDescription": "Most canvas app defects are visible in the formulas before a user ever finds them: a Patch with no error handling, a filter that silently stops at 500 rows, a variable set in OnStart that is blank on a deep link. A fifteen-minute review against a fixed list catches the common ones.",
+    "problemStatement": "Apps are published after 'it works on my machine' testing, and the same five formula mistakes reach production in app after app.",
+    "whenToUse": [
+      "Before publishing a new app or a significant change",
+      "Peer review between makers",
+      "Taking over an app from someone else"
+    ],
+    "whenNotToUse": [
+      "Model-driven apps without custom pages, which have little Power Fx to review",
+      "Throwaway prototypes that will never reach users"
+    ],
+    "formulaOrCode": "Where to look first\n  App.OnStart, App.Formulas, App.StartScreen\n  Each screen's OnVisible\n  Every OnSelect that calls Patch, SubmitForm, Remove, a flow or Navigate\n  Gallery Items and any Filter, Search, LookUp, Sort, CountRows, Sum\n  App checker (stethoscope icon): Formulas, Runtime, Accessibility, Performance, Data source tabs\n\nCorrectness\n  [ ] Blank handled: Coalesce(), IsBlank(), or a default for every optional input\n  [ ] Choice, lookup and person values compared and patched in the right shape (.Value, record, Claims)\n  [ ] Text comparisons allow for case and spaces where users type them (Lower, Trim)\n  [ ] Dates compared as dates, with time zones considered for date-and-time columns\n  [ ] No reliance on control state from another screen that may not have loaded\n\nSaving data\n  [ ] Every Patch, Remove, SubmitForm and flow call is inside IfError or has OnFailure handling\n  [ ] Success message and Navigate only run after a successful save\n  [ ] The saved record is captured:  Set(gblSelectedRequest, Patch(...))\n  [ ] Double submission prevented with a saving flag and DisplayMode\n  [ ] ForAll + Patch replaced by a single Patch with a table where possible\n\nDelegation and data volume\n  [ ] No delegation warnings left unexplained (blue underline / yellow triangle)\n  [ ] Filters use delegable operators for the data source; StartsWith instead of Search or in on SharePoint\n  [ ] Date and user values calculated outside the Filter (With or a variable)\n  [ ] Data row limit (Settings) left at 500 while testing so problems show early\n  [ ] Collections of whole tables only for small reference data\n\nPerformance\n  [ ] App.OnStart is short; independent calls wrapped in Concurrent()\n  [ ] Constants and derived values in App.Formulas instead of Set in OnStart\n  [ ] No LookUp or Filter to the data source inside gallery rows (N+1 calls)\n  [ ] Repeated expressions computed once with With()\n  [ ] Fewer than about 500 controls per screen; heavy screens split or use containers\n  [ ] DelayOutput on search boxes\n\nReadability\n  [ ] Controls, variables and collections follow the naming standard\n  [ ] Long formulas formatted, one argument per line\n  [ ] Nested If replaced by Switch or by If with multiple conditions\n  [ ] Magic numbers and repeated text moved to named formulas\n  [ ] Comments (// ...) on anything non-obvious, stating why\n\nVariables\n  [ ] Global variables only for values used on several screens\n  [ ] No variable used before it is set on any entry path (deep link, StartScreen, back navigation)\n  [ ] Unused variables and collections removed (App checker lists them)\n\nSecurity and access\n  [ ] Role checks do not rely on hidden controls alone\n  [ ] No secrets, keys or passwords in formulas\n  [ ] Connections reviewed: nothing unused, nothing premium by accident\n\nAccessibility\n  [ ] AccessibleLabel on icons and images that carry meaning; TabIndex order sensible\n  [ ] Colour is not the only signal; contrast checked\n\nEvidence\n  Monitor (Advanced tools > Monitor): run the main journeys, sort by duration, check for errors and\n  responses returning exactly 500 or 2,000 rows.",
+    "stepByStepInstructions": [
+      "Open the App checker and clear or explain every item.",
+      "Read App.OnStart, App.Formulas and each OnVisible.",
+      "Review every formula that saves data for error handling.",
+      "Check each gallery and data call for delegation.",
+      "Run the main journeys in Monitor and note slow calls.",
+      "Check naming, formatting and comments.",
+      "Record findings and re-check after fixes."
+    ],
+    "commonMistakes": [
+      "Reviewing only what is visible on screen and not behaviour formulas.",
+      "Raising the data row limit to hide a delegation problem.",
+      "Accepting Notify success messages that run even when the save failed.",
+      "Skipping the review for small changes."
+    ],
+    "troubleshooting": [
+      "If the App checker shows hundreds of accessibility items, fix shared components first. One fix clears many.",
+      "If Monitor shows a call returning exactly 2,000 rows, a non-delegable formula is truncating data.",
+      "If a variable is blank on a deep link, it is set on a screen the user skipped. Move it to a named formula.",
+      "If a formula is too long to follow, split it with With() and name the parts."
+    ],
+    "relatedPatterns": [
+      "power-apps-error-handling-iferror-patch",
+      "avoid-delegation-warnings-sharepoint-filters",
+      "with-function-readable-power-fx-formulas"
+    ],
+    "faqs": [
+      {
+        "question": "What should I check when reviewing a Power Apps formula?",
+        "answer": "That blanks are handled, saves have error handling, filters are delegable, start-up and gallery formulas are efficient, and names and formatting make the logic readable."
+      },
+      {
+        "question": "How do I find problems in a canvas app quickly?",
+        "answer": "Start with the App checker, then run the app in Monitor and look for errors, slow calls and responses that stop at the data row limit."
+      },
+      {
+        "question": "Should I raise the data row limit to 2,000?",
+        "answer": "Not as a fix. It hides delegation problems for a while. Keep it low during testing and make the formulas delegable."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-screen-performance-review": {
+    "shortDescription": "Measure and fix a slow canvas app screen: use Monitor to find the slow calls, then apply the handful of changes that usually matter.",
+    "fullDescription": "Slow screens are almost always slow for one of a few reasons: too much work at start, data calls inside gallery rows, non-delegable queries pulling thousands of rows, or too many controls. Monitor shows which. This review measures first, fixes the biggest cost and measures again.",
+    "problemStatement": "Users say the app is slow, the maker guesses at fixes, and nothing improves because the real cost was never measured.",
+    "whenToUse": [
+      "A screen takes more than two or three seconds to become usable",
+      "Before releasing an app to mobile or low-bandwidth users",
+      "When data volumes have grown since the app was built"
+    ],
+    "whenNotToUse": [
+      "Performance problems clearly caused by the network or the data source being down",
+      "Apps still at the prototype stage"
+    ],
+    "formulaOrCode": "1. Measure\n  Power Apps Studio > Advanced tools > Open monitor > Play the app > perform the slow journey\n  Columns to watch: Operation, Result info, Data source, Duration (ms), Response size\n  Sort by Duration. Note the top five. Note any getRows returning exactly 500 or 2,000 rows.\n  Also: Settings > Updates > Debug published app, to monitor the published version with real data.\n  Record: time to first interactive screen, number of network calls, largest call.\n\n2. App start\n  Symptom: long splash before the first screen.\n  [ ] Move constants and lookups to App.Formulas (loaded only when used):\n        nfCategories = Filter(Categories, IsActive);\n  [ ] Use App.StartScreen instead of Navigate in OnStart\n  [ ] Run independent calls together:\n        Concurrent(\n            ClearCollect(colCategories, Filter(Categories, IsActive)),\n            ClearCollect(colDepartments, Departments),\n            Set(gblProfile, Office365Users.MyProfileV2())\n        )\n  [ ] Load screen-specific data in that screen's OnVisible, not at start\n  [ ] Do not collect whole large tables. Query them where they are shown.\n\n3. Galleries\n  Symptom: slow scrolling, many small calls in Monitor (one per row).\n  [ ] No LookUp, Filter, CountRows or connector call inside the row template\n      Slow:  lblCategory.Text = LookUp(Categories, ID = ThisItem.CategoryId).Title\n      Fast:  load colCategories once, then LookUp(colCategories, ID = ThisItem.CategoryId).Title\n             or add the value to the row with AddColumns on a small result set\n  [ ] Items is delegable, and sorted on an indexed column\n  [ ] Row template has few controls (under about ten); images are thumbnails\n  [ ] Keep DelayItemLoading on and LoadingSpinner set for long lists\n  [ ] Avoid nested galleries where a concatenated label would do\n\n4. Data calls\n  [ ] Each data source is queried once per screen for the same data. Reuse a variable or collection.\n  [ ] Explicit column selection is on (Settings > Updates) so only used columns are fetched\n  [ ] SharePoint: filter and sort columns are indexed; fewer than 12 lookup-type columns in the list views used\n  [ ] Dataverse: use views or Filter on indexed columns; avoid in-memory filtering of large sets\n  [ ] Replace repeated Refresh() with patching the local collection after a save\n\n5. Formulas\n  [ ] With() to compute a value once instead of repeating a LookUp three times in one formula\n  [ ] Visible and DisplayMode formulas reference variables, not live data calls\n  [ ] Heavy formulas are not placed in properties that recalculate constantly (for example a timer-driven label)\n\n6. Controls and media\n  [ ] Screen has fewer than about 500 controls; split wizard steps into containers shown one at a time\n      or separate screens\n  [ ] Images compressed; no multi-megabyte media embedded in the app\n  [ ] Hidden controls that are never shown are removed\n\n7. Measure again\n  Repeat the same journey in Monitor. Compare time, call count and largest call with step 1.\n  Keep the before and after figures with the release notes.\n\nTargets to aim for\n  First screen usable in about 3 seconds on office Wi-Fi. A screen change under 1 second.\n  No single data call over 2 seconds. No call returning the row limit by accident.",
+    "stepByStepInstructions": [
+      "Reproduce the slow journey in Monitor and record the figures.",
+      "Fix the largest cost first, usually start-up loading or per-row calls.",
+      "Move constants to named formulas and group start-up calls with Concurrent.",
+      "Remove data calls from gallery rows.",
+      "Check delegation, indexes and column selection.",
+      "Reduce controls and media on heavy screens.",
+      "Measure again and keep the comparison."
+    ],
+    "commonMistakes": [
+      "Optimising formulas that Monitor shows are not the slow part.",
+      "Collecting entire tables at start 'for speed'.",
+      "A LookUp to the data source in every gallery row.",
+      "Testing only on a fast desktop connection with a small test dataset."
+    ],
+    "troubleshooting": [
+      "If Monitor shows nothing, start it before playing the app, and for published apps enable Debug published app.",
+      "If the app is fast for you and slow for users, they have more data or a slower network. Test with production-sized data and network throttling.",
+      "If start is slow even with a small OnStart, check the number of data sources and connectors being initialised, and the size of embedded media.",
+      "If one SharePoint call is slow, the list is large and the filter column is not indexed."
+    ],
+    "relatedPatterns": [
+      "cache-reference-data-on-app-start",
+      "use-named-formulas-for-app-constants",
+      "avoid-delegation-warnings-sharepoint-filters"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find out why my Power App is slow?",
+        "answer": "Open Monitor from Advanced tools, run the slow journey and sort events by duration. It shows each data call, how long it took and how many rows came back."
+      },
+      {
+        "question": "What is the most common cause of slow galleries?",
+        "answer": "A data call such as LookUp inside the row template, which runs once for every row. Load the reference data once and look it up locally."
+      },
+      {
+        "question": "Does Concurrent make an app faster?",
+        "answer": "It runs independent calls at the same time, which shortens start-up when several data sources are loaded. It does not help calls that depend on each other."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-reusable-command-bar": {
+    "shortDescription": "Build one command bar component for a canvas app: buttons defined as a table, role-aware visibility, and a single event that tells the screen which command was pressed.",
+    "fullDescription": "Every screen needs a row of actions such as New, Save, Delete and Refresh. Copying buttons from screen to screen means each copy drifts. A component that takes its buttons as a table and raises one event keeps layout, spacing, disabled states and keyboard access consistent, while each screen decides what the commands do.",
+    "problemStatement": "Each screen has its own hand-placed buttons with different sizes, orders and colours, and adding a new action means editing ten screens.",
+    "whenToUse": [
+      "Apps with more than three or four screens that share actions",
+      "Teams that keep a component library",
+      "When button states (disabled, hidden, busy) must behave the same everywhere"
+    ],
+    "whenNotToUse": [
+      "Single-screen apps, where plain buttons are simpler",
+      "Model-driven apps, which have their own command bar and command designer"
+    ],
+    "formulaOrCode": "// Component: cmpCommandBar   (Components > New component)   Height 48, Width Parent.Width\n// Turn on \"Access app scope\" only if the component needs global variables. It does not need them.\n\n// Custom properties\n//   Commands        Input   Table     the buttons to show\n//   IsBusy          Input   Boolean   disables everything while saving\n//   OnCommand       Event   (behaviour property) with one parameter:  Key (Text)\n//   SelectedKey     Output  Text      last pressed key\n\n// Default value of the Commands property defines its schema\nTable(\n    { Key: \"new\",     Label: \"New\",     Icon: Icon.Add,    Enabled: true, Visible: true, Primary: true },\n    { Key: \"refresh\", Label: \"Refresh\", Icon: Icon.Reload, Enabled: true, Visible: true, Primary: false }\n)\n\n// Inside the component: a horizontal gallery\n// galCommands.Items\nFilter(cmpCommandBar.Commands, Visible)\n// galCommands.TemplateSize : 120      galCommands.TemplatePadding : 4\n\n// Inside the row: a classic button (or modern button) filling the template\n// btnCommand.Text         : ThisItem.Label\n// btnCommand.DisplayMode  : If(cmpCommandBar.IsBusy || !ThisItem.Enabled, DisplayMode.Disabled, DisplayMode.Edit)\n// btnCommand.Fill         : If(ThisItem.Primary, RGBA(0, 120, 212, 1), RGBA(0, 0, 0, 0))\n// btnCommand.Color        : If(ThisItem.Primary, Color.White, RGBA(32, 31, 30, 1))\n// btnCommand.AccessibleLabel : ThisItem.Label\n// btnCommand.OnSelect\nSet(varLastCommandKey, ThisItem.Key);      // component-scoped variable\ncmpCommandBar.OnCommand(ThisItem.Key)\n\n// SelectedKey (output) : varLastCommandKey\n\n// ---- Using it on a screen ----\n// cmpCommandBar_1.Commands\nTable(\n    { Key: \"new\",    Label: \"New\",    Icon: Icon.Add,   Enabled: true,                          Visible: true,      Primary: true },\n    { Key: \"edit\",   Label: \"Edit\",   Icon: Icon.Edit,  Enabled: !IsBlank(galRequests.Selected), Visible: true,      Primary: false },\n    { Key: \"delete\", Label: \"Delete\", Icon: Icon.Trash, Enabled: !IsBlank(galRequests.Selected), Visible: nfIsAdmin, Primary: false },\n    { Key: \"export\", Label: \"Export\", Icon: Icon.Download, Enabled: true,                       Visible: nfIsApprover, Primary: false }\n)\n// cmpCommandBar_1.IsBusy : locSaving\n\n// cmpCommandBar_1.OnCommand     (Key is the event parameter)\nSwitch(\n    Key,\n    \"new\",    NewForm(frmRequest); Navigate(scrRequestForm),\n    \"edit\",   EditForm(frmRequest); Navigate(scrRequestForm),\n    \"delete\", UpdateContext({ locShowConfirmDelete: true }),\n    \"export\", ExportRequests.Run(JSON(colSelected, JSONFormat.IgnoreBinaryData))\n)\n\n// Narrow screens: show icons only\n// btnCommand.Text       : If(cmpCommandBar.Width < 600, \"\", ThisItem.Label)\n// galCommands.TemplateSize : If(cmpCommandBar.Width < 600, 48, 120)\n\n// Share across apps\n// Build the component in a component library (Apps > Component libraries), publish it, and import it into\n// each app. Apps are offered the update when the library is republished.",
+    "stepByStepInstructions": [
+      "Create the component with Commands, IsBusy and OnCommand properties.",
+      "Give Commands a default table so its columns are defined.",
+      "Add a horizontal gallery bound to the visible commands.",
+      "Raise OnCommand with the key from the button.",
+      "Place the component on a screen and pass that screen's commands.",
+      "Handle the keys in a Switch in OnCommand.",
+      "Move the component to a component library when a second app needs it."
+    ],
+    "commonMistakes": [
+      "Putting the actions inside the component, which ties it to one screen.",
+      "Leaving out a default table, so the Commands schema is unknown.",
+      "Hiding admin commands in the bar without protecting the action itself.",
+      "Different key spellings between the table and the Switch."
+    ],
+    "troubleshooting": [
+      "If OnCommand does not appear, the property type must be Event (enable enhanced component properties in Settings if it is missing).",
+      "If Enabled never updates, the Commands table must be a formula on the instance, not a collection built once.",
+      "If icons do not show, the Icon column must hold Icon enumeration values and the row needs an icon control bound to ThisItem.Icon.",
+      "If the bar is cut off on phones, switch to icon-only mode by width or move rarely used commands to an overflow menu."
+    ],
+    "relatedPatterns": [
+      "power-apps-componentized-header-pattern",
+      "use-clear-button-states-for-approvals",
+      "role-based-button-visibility-sharepoint-security-list"
+    ],
+    "faqs": [
+      {
+        "question": "How do I create a reusable toolbar in Power Apps?",
+        "answer": "Build a component that takes a table of commands as an input property and raises an event with the pressed command's key. Each screen passes its own table and handles the event."
+      },
+      {
+        "question": "Can a Power Apps component run actions on the screen?",
+        "answer": "Yes, through an event (behaviour) property. The component raises the event and the screen's formula for that property runs."
+      },
+      {
+        "question": "How do I share a component between apps?",
+        "answer": "Create it in a component library, publish the library and import the component into each app."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-user-acceptance-test-script": {
+    "shortDescription": "A user acceptance test script for a Power Platform app: scenarios by role, numbered steps with expected results, test data, and a sign-off record.",
+    "fullDescription": "Acceptance testing proves the solution does the job for the people who will use it. A script turns that into repeatable scenarios, each tied to a requirement, run by real users in the test environment with realistic data, with results and defects recorded so sign-off means something.",
+    "problemStatement": "UAT is an email saying 'please have a look', testers click around the happy path, and gaps appear in the first week of live use.",
+    "whenToUse": [
+      "Before the first production release of an app or flow",
+      "Before significant changes to a live solution",
+      "When business sign-off is required"
+    ],
+    "whenNotToUse": [
+      "Maker-level functional testing, which happens earlier in dev",
+      "Automated regression checks, which complement this script but do not replace user sign-off"
+    ],
+    "formulaOrCode": "UAT PLAN: <Solution name>   Version <x.y>   Environment: Test   Window: <dates>\nCoordinator: <name>   Sign-off owner: <business owner>   Defects logged in: <list or board>\n\nEntry criteria\n  [ ] Solution deployed to Test as managed, same version intended for production\n  [ ] Test accounts exist for each role, with the same security roles or list permissions as production\n  [ ] Test data loaded (see Test data)   [ ] Flows turned on, connections owned by the service account\n  [ ] Emails and Teams posts go to testers, not to real customers or all staff\n\nRoles under test\n  Requester     tester: <name>      Approver   tester: <name>      Administrator   tester: <name>\n\nTest data\n  3 requests in Draft, 3 Waiting for approval, 2 Approved, 1 Rejected\n  1 request over the approval threshold (for the second-level route)\n  1 user with no manager set (for the fallback route)\n  1 record with the longest realistic text, special characters and an attachment near the size limit\n\nScenario format\n  ID | Requirement | Role | Preconditions | Steps | Expected result | Actual | Pass/Fail | Defect ID\n\nUAT-01  Submit a standard request                       Requirement R1   Role: Requester\n  1. Open the app from the Teams tab.                     > Home screen loads within a few seconds, shows your name.\n  2. Select New request, complete all required fields.    > Submit stays disabled until required fields are valid.\n  3. Attach a 5 MB PDF and submit.                        > Confirmation shows a reference number.\n  4. Open My requests.                                    > New request is listed with status Waiting for approval.\n  5. Check email.                                         > Confirmation email received with a working link.\n\nUAT-02  Validation and errors                           R2   Requester\n  1. Enter an end date before the start date.             > Clear message beside the field, submit blocked.\n  2. Enter an amount of 0 and a negative amount.          > Rejected with a message.\n  3. Turn off the network, select Submit.                 > Error message, entered data is kept.\n\nUAT-03  Approve and reject                              R3   Approver\n  1. Open the approval from the email link.               > The correct request opens.\n  2. Approve with a comment.                              > Status becomes Approved, requester is notified, comment recorded.\n  3. Reject a second request without a comment.           > Blocked until a comment is entered.\n\nUAT-04  Routing rules                                   R4   Requester + Approver\n  1. Submit a request over the threshold.                 > Routed to second-level approver after the first approval.\n  2. Submit as the user with no manager.                  > Routed to the fallback approver.\n\nUAT-05  Permissions                                     R5   Requester\n  1. Try to open another person's request by link.        > Access denied or not found.\n  2. Look for administration screens.                     > Not visible, not reachable.\n\nUAT-06  Reminders and escalation                        R6   Approver\n  1. Leave a request waiting past the reminder interval.  > Reminder received once, not repeated every run.\n\nUAT-07  Administration                                  R7   Administrator\n  1. Change an approval threshold in settings.            > Next request uses the new value without a redeploy.\n  2. Export the request list.                             > File contains all rows and expected columns.\n\nUAT-08  Devices and accessibility                       R8   Any\n  1. Repeat UAT-01 on a phone.                            > Usable without horizontal scrolling.\n  2. Complete the form with keyboard only.                > Every field and button reachable in a sensible order.\n\nDefect severity\n  1 Blocks the process, no workaround     must fix before sign-off\n  2 Wrong result, workaround exists       fix before go-live unless the owner accepts in writing\n  3 Cosmetic or wording                   schedule\n\nExit criteria\n  [ ] All scenarios run   [ ] No open severity 1 or 2 defects   [ ] Fixed defects retested, related scenarios re-run\n  [ ] Accepted exceptions listed with owner\n\nSign-off\n  I confirm version <x.y> was tested against this script and is accepted for production.\n  Name / Role / Date     Known exceptions: <list or none>",
+    "stepByStepInstructions": [
+      "List the requirements and map at least one scenario to each.",
+      "Write scenarios per role with numbered steps and expected results.",
+      "Prepare test accounts and test data in the test environment.",
+      "Brief the testers and agree the test window.",
+      "Run the scenarios, record actual results and log defects.",
+      "Fix, redeploy the solution and retest affected scenarios.",
+      "Collect written sign-off against a specific version."
+    ],
+    "commonMistakes": [
+      "Testing in the development environment with maker permissions.",
+      "Scenarios with no expected result, so pass or fail is opinion.",
+      "Only testing the happy path and never errors, permissions or routing.",
+      "Signing off a version that is then changed before release."
+    ],
+    "troubleshooting": [
+      "If testers cannot open the app, share it and assign the security role or list permission in the test environment.",
+      "If flows do not run during UAT, they are off after import or their connections are not set. Check the solution's flows and connection references.",
+      "If results differ between testers, their roles differ. Record the account used for each scenario.",
+      "If defects keep reappearing, fixes are being made in Test. Fix in Dev and redeploy."
+    ],
+    "relatedPatterns": [
+      "design-a-release-readiness-list",
+      "power-platform-pipelines-dev-test-prod",
+      "sharepoint-list-template-release-checklist"
+    ],
+    "faqs": [
+      {
+        "question": "What should a Power Apps UAT script include?",
+        "answer": "Entry criteria, roles and test accounts, test data, scenarios with steps and expected results mapped to requirements, defect severities, exit criteria and a sign-off record for a named version."
+      },
+      {
+        "question": "Who should run user acceptance tests?",
+        "answer": "People who will use the solution in each role, using test accounts with production-like permissions. Makers should not sign off their own work."
+      },
+      {
+        "question": "Which environment should UAT run in?",
+        "answer": "A separate test environment holding the managed solution that will go to production, with test data and notifications pointed at the testers."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-production-support-guide": {
+    "shortDescription": "A support guide for a live Power Platform solution: who owns it, how it is built, common problems with their fixes, and how to escalate.",
+    "fullDescription": "When the maker is on holiday and the app stops working, the person who picks up the call needs one document that says what the solution is, where its parts live, what usually goes wrong and what they are allowed to do about it. Writing this before go-live is the difference between a ten-minute fix and a two-day outage.",
+    "problemStatement": "Support knowledge lives in one maker's head. When something breaks, nobody knows which flow, which list, which account or who to call.",
+    "whenToUse": [
+      "Every solution that the business depends on",
+      "Handing a solution from a project team to operations",
+      "Solutions run by a service account"
+    ],
+    "whenNotToUse": [
+      "Personal productivity apps with one user",
+      "Proofs of concept that will be rebuilt before release"
+    ],
+    "formulaOrCode": "SUPPORT GUIDE: <Solution name>          Last reviewed: <date>   Review every 6 months and after each release\n\n1. Summary\n  What it does (two sentences):\n  Users: <who, how many>            Business owner: <name>          Criticality: High / Medium / Low\n  Support hours: <hours>            Target response: <for example 4 working hours>\n\n2. Contacts\n  First line (service desk):   <queue>\n  Second line (app support):   <team or names>\n  Maker / technical owner:     <name>      Backup: <name>\n  Business owner:              <name>      Platform admin team: <contact>\n\n3. What it is made of\n  Environment:   <Prod name and URL>        Solution: <name>, managed, version <x.y>\n  Apps:          <name> (canvas / model-driven), link: <URL>\n  Flows:         <name> | trigger | what it does | owner\n  Data:          <SharePoint site and lists / Dataverse tables>\n  Connections:   <connector> | account used | connection reference name\n  Service account: <svc account>  licence: <type>   password and MFA held by: <team, vault>\n  Environment variables: <name> | purpose | current value location\n  Security:      <groups or security roles> | who approves access\n  Dependencies:  <other systems, APIs, gateways>\n\n4. Routine tasks\n  Add a user:            add to group <name> (owner approval required)\n  Change reference data: edit list <name> / settings screen in the app\n  Check health:          Power Automate > Solutions > <solution> > Cloud flows > 28-day run history\n  Licence and capacity:  <where to check>\n\n5. Known problems and fixes\n  Symptom: \"You need permission to access this item\" on opening the app\n    Cause: user not in the access group or missing list permission\n    Fix: add to <group>; allow up to an hour for the change to apply\n  Symptom: requests stuck in \"Waiting for approval\"\n    Cause: approval flow failed or is turned off\n    Fix: open the flow's run history, read the failed action, resubmit the run after fixing the cause\n  Symptom: flow fails with 401 or \"connection is not configured\"\n    Cause: service account password changed or connection expired\n    Fix: sign in again on the connection as the service account (Connections > Fix connection)\n  Symptom: flow fails with 429 or runs slowly\n    Cause: throttling\n    Fix: wait for retry; check for a loop or a bulk import; reduce concurrency\n  Symptom: gallery missing recent or older records\n    Cause: delegation limit or a filter view\n    Fix: report to the maker with an example record\n  Symptom: emails not arriving\n    Cause: sender mailbox, quota or recipient rule\n    Fix: check the run output for the Send email action, then the mailbox's sent items\n\n6. What support may do without asking\n  Resubmit failed runs      Fix a connection as the service account      Add or remove users with owner approval\n  Turn a flow off in an incident (tell the owner)\n\n7. What needs the maker or a change request\n  Editing apps or flows in production (managed solutions should be changed in Dev and redeployed)\n  Changing columns, tables or permissions models      Deleting data\n\n8. Incident steps\n  1. Confirm scope: one user or everyone? Since when? What changed?\n  2. Check Microsoft 365 service health and the environment's status.\n  3. Check flow run history and the app's Monitor session if the user can reproduce.\n  4. Apply a known fix or escalate with: time, user, screenshot, run link, error text.\n  5. Tell the business owner and users what to do meanwhile.\n  6. Record cause and fix in section 5.\n\n9. Recovery\n  Data restore:    SharePoint recycle bin (93 days) / version history; Dataverse environment backup (admin centre)\n  Solution rollback: import the previous managed version (kept at <location>) or redeploy from source control\n  Manual fallback: <how the process runs without the app, form or email address>\n\n10. Change history\n  Date | Version | Change | By",
+    "stepByStepInstructions": [
+      "Fill in ownership, contacts and criticality with the business owner.",
+      "Inventory apps, flows, data, connections and accounts.",
+      "Write the routine tasks support will be asked for.",
+      "Record known problems with cause and fix, starting from test and pilot issues.",
+      "Define what support may change and what needs the maker.",
+      "Add recovery and manual fallback steps.",
+      "Store the guide with the solution and review it after every release and incident."
+    ],
+    "commonMistakes": [
+      "Writing the guide after the first incident.",
+      "Listing people without a backup.",
+      "Leaving out which account each connection uses.",
+      "Letting support edit managed flows directly in production."
+    ],
+    "troubleshooting": [
+      "If nobody knows the owner of a flow, check the solution's flow details and the environment inventory, then record it in the guide.",
+      "If the service account's credentials cannot be found, they were never vaulted. Reset them with the identity team and re-authenticate connections.",
+      "If the guide is out of date, tie its review to the release checklist.",
+      "If support has no access to run history, add the support group as flow co-owners or give them an environment role that can view it."
+    ],
+    "relatedPatterns": [
+      "design-an-operational-handoff-list",
+      "create-a-power-automate-flow-documentation-template",
+      "govern-power-automate-service-account-ownership"
+    ],
+    "faqs": [
+      {
+        "question": "What should a Power Apps support document contain?",
+        "answer": "Ownership and contacts, an inventory of apps, flows, data and connections, routine tasks, known problems with fixes, what support may change, incident steps and recovery options."
+      },
+      {
+        "question": "Who should support a Power Platform solution in production?",
+        "answer": "A named team with a backup, not a single maker. The service desk handles access and known fixes, and the maker or platform team handles changes."
+      },
+      {
+        "question": "How do I roll back a Power Platform release?",
+        "answer": "Keep the previous managed solution version and import it again, or redeploy the earlier build from source control. Data changes need their own restore plan."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-release-notes-panel": {
+    "shortDescription": "Show users what changed in the latest version of a canvas app: a release notes list, a panel that opens once per version, and a link to reopen it.",
+    "fullDescription": "Users notice when a button moves but rarely read the email about it. A small panel inside the app that appears once after each release, lists the changes in plain words and can be reopened from the menu gets the message to people at the moment they need it.",
+    "problemStatement": "A new version is published, users are surprised by changes, and the support desk gets the same three questions for a week.",
+    "whenToUse": [
+      "Apps with regular releases and a broad user base",
+      "Changes that alter how a task is done",
+      "When release communication should be recorded"
+    ],
+    "whenNotToUse": [
+      "Bug-fix releases with nothing visible to users",
+      "Apps with a handful of users who were part of the change"
+    ],
+    "formulaOrCode": "// List: App Release Notes\n//   Title (version, for example 2.4)   ReleaseDate (date)   Summary (text)   Changes (multiple lines, plain text,\n//   one change per line)   AppName (text)   IsPublished (Yes/No)\n// List: App Release Views (who has seen which version)\n//   Title (version)   UserEmail (text, indexed)   AppName (text)   SeenOn (date and time)\n\n// App.Formulas\nnfAppName       = \"Request Hub\";\nnfLatestRelease = First(\n    Sort(Filter('App Release Notes', AppName = nfAppName && IsPublished), ReleaseDate, SortOrder.Descending)\n);\n\n// Home screen OnVisible: show once per user per version\nIf(\n    !IsBlank(nfLatestRelease.Title) &&\n    IsBlank(LookUp('App Release Views',\n        UserEmail = Lower(User().Email) && AppName = nfAppName && Title = nfLatestRelease.Title)),\n    UpdateContext({ locShowReleaseNotes: true })\n)\n\n// Panel: a container over the screen\n// conReleaseNotes.Visible : locShowReleaseNotes\n// lblReleaseTitle.Text    : \"What's new in version \" & nfLatestRelease.Title\n// lblReleaseDate.Text     : Text(nfLatestRelease.ReleaseDate, \"d mmmm yyyy\")\n// lblSummary.Text         : nfLatestRelease.Summary\n\n// galChanges.Items : one row per line of the Changes field\nFilter(Split(nfLatestRelease.Changes, Char(10)), !IsBlank(Trim(Value)))\n// lblChange.Text   : \"•  \" & Trim(ThisItem.Value)\n\n// btnGotIt.OnSelect : record that this user has seen it\nUpdateContext({ locShowReleaseNotes: false });\nIfError(\n    Patch('App Release Views', Defaults('App Release Views'), {\n        Title: nfLatestRelease.Title,\n        UserEmail: Lower(User().Email),\n        AppName: nfAppName,\n        SeenOn: Now()\n    }),\n    Blank()     // not being able to record the view should never block the user\n)\n\n// Reopen from the menu or footer\n// lnkWhatsNew.OnSelect : UpdateContext({ locShowReleaseNotes: true })\n// lblVersion.Text      : \"Version \" & nfLatestRelease.Title\n\n// Earlier versions (optional second tab in the panel)\n// galHistory.Items : Sort(Filter('App Release Notes', AppName = nfAppName && IsPublished), ReleaseDate, SortOrder.Descending)\n\n// Lighter option without the views list: remember on the device\n// OnVisible : LoadData(colSeenRelease, \"seenRelease\", true);\n//             If(First(colSeenRelease).Version <> nfLatestRelease.Title, UpdateContext({ locShowReleaseNotes: true }))\n// Got it    : ClearCollect(colSeenRelease, { Version: nfLatestRelease.Title }); SaveData(colSeenRelease, \"seenRelease\")\n// SaveData works in the mobile player and, with limits, in browsers. The list approach works everywhere\n// and tells you who has read the notes.\n\n// Writing the notes\n// Lead with what the user can now do. One line per change. No ticket numbers.\n// Good:  You can now attach photos from your phone camera.\n// Poor:  Implemented attachment control enhancement (CR-1182).",
+    "stepByStepInstructions": [
+      "Create the release notes list and add an entry for the current version.",
+      "Create the views list with an indexed email column.",
+      "Add named formulas for the app name and latest published release.",
+      "Build the panel and show it when the user has no view record for the latest version.",
+      "Record the view when the user dismisses the panel.",
+      "Add a version label and a link to reopen the notes.",
+      "Publish a notes entry as part of every release."
+    ],
+    "commonMistakes": [
+      "Showing the panel on every launch.",
+      "Writing notes in technical language or ticket references.",
+      "Blocking the app when the view record cannot be saved.",
+      "Publishing the notes entry before the new version is live."
+    ],
+    "troubleshooting": [
+      "If the panel never appears, check that the notes entry is marked published and AppName matches exactly.",
+      "If it appears every time, the Patch to the views list is failing. Check the user's permission to add items.",
+      "If changes show as one long line, the Changes field must be plain text with one change per line.",
+      "If users on shared devices see the wrong state with SaveData, use the list approach, which is per user."
+    ],
+    "relatedPatterns": [
+      "use-a-sharepoint-settings-list-for-app-configuration",
+      "use-app-settings-for-feature-flags",
+      "power-apps-componentized-header-pattern"
+    ],
+    "faqs": [
+      {
+        "question": "How do I show a what's new message in Power Apps?",
+        "answer": "Keep release notes in a list, look up the latest published entry and show a panel when the current user has no record of seeing that version."
+      },
+      {
+        "question": "How do I show a popup only once per user?",
+        "answer": "Write a row with the user's email and the version when they dismiss it, and check for that row before showing the panel."
+      },
+      {
+        "question": "Where should the app version number come from?",
+        "answer": "From the latest published release notes entry, so the label and the notes always agree."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-department-request-site": {
+    "shortDescription": "Set up a SharePoint site where a department takes in requests: a request list with the right columns, views per audience, a form, and a simple notification flow.",
+    "fullDescription": "Most departments start taking requests by email and a spreadsheet. A small SharePoint site replaces both: one list holds every request with status, owner and dates, views show each audience what they need, and a flow acknowledges and routes new items. It is the simplest useful intake system and a good base for a Power App later.",
+    "problemStatement": "Requests arrive by email, chat and corridor conversation. Nobody can say how many are open, who owns them or how long they take.",
+    "whenToUse": [
+      "A team such as HR, facilities, finance or IT that receives regular requests",
+      "Volumes from a few a week to a few hundred a month",
+      "When a ticketing product would be more than the team needs"
+    ],
+    "whenNotToUse": [
+      "Requests containing data that needs record-level security beyond SharePoint's item permissions",
+      "High-volume service desks with service levels, queues and knowledge bases, which need a service management tool"
+    ],
+    "formulaOrCode": "Site\n  Type: Team site (no Microsoft 365 group needed) or Communication site if most visitors only submit\n  Name: <Department> Requests        URL: /sites/<dept>-requests\n  Permissions:\n    Owners   2 named people from the department\n    Members  the team that works requests (Edit)\n    Visitors everyone who may submit: grant \"Contribute\" on the Requests list only, or collect through a form\n\nList: Requests\n  Title                  Single line     \"Short summary\"            required\n  RequestType            Choice          Access | Equipment | Information | Change | Other      required, indexed\n  Details                Multiple lines  plain text\n  Priority               Choice          Low | Normal | High         default Normal\n  Status                 Choice          New | In progress | Waiting on requester | Done | Declined   default New, indexed\n  AssignedTo             Person          single\n  NeededBy               Date\n  RequesterDepartment    Choice or managed metadata\n  ResolutionNotes        Multiple lines  plain text\n  ClosedOn               Date and time\n  (Created By and Created give requester and submission time)\n  Versioning on. Attachments on if evidence is needed.\n\nItem-level visibility (optional)\n  List settings > Advanced settings > Item-level permissions:\n    Read access: items that were created by the user      Edit: items that were created by the user\n  Team members need \"Manage Lists\" or \"Override list behaviors\" permission to see everything.\n  This setting is a convenience, not strong security.\n\nViews\n  My requests        Created By = [Me], sort Created descending                     (default for visitors)\n  New and unassigned Status = New, AssignedTo is empty, sort Created ascending\n  My work            AssignedTo = [Me], Status <> Done and <> Declined\n  Open by type       Status not Done/Declined, group by RequestType\n  Overdue            NeededBy < [Today], Status not Done/Declined\n  Closed this month  Status = Done, ClosedOn >= start of month (filter: ClosedOn >= [Today]-30)\n\nForm\n  List > New > Edit form > Edit columns: show Title, RequestType, Details, NeededBy, Priority only.\n  Hide Status, AssignedTo, ResolutionNotes and ClosedOn from requesters.\n  Conditional field example (Configure layout or column conditional formula):\n    Show NeededBy only for Equipment:   =if([$RequestType] == 'Equipment', 'true', 'false')\n  Or use a Microsoft List form (Forms button on the list) to collect requests without giving list access.\n\nStatus formatting (Column settings > Format this column > Choice pills) for Status and Priority.\n\nFlow: When an item is created (Requests)\n  1. Send an email (V2) to the requester:  \"We received your request: <Title>. Reference: <ID>.\"\n  2. Switch on RequestType: set AssignedTo to the type's owner (keep owners in a small \"Request Owners\" list)\n  3. Post a message in the team's Teams channel with a link to the item\nFlow: When an item is modified, trigger condition on Status = Done\n  @equals(triggerOutputs()?['body/Status/Value'], 'Done')\n  1. Update item: ClosedOn = utcNow()   (guard against loops with the trigger condition)\n  2. Email the requester with ResolutionNotes\n\nHome page\n  Button \"Submit a request\" linking to the new item form:  <site>/Lists/Requests/NewForm.aspx\n  List web part filtered to \"My requests\"      Text web part: what to expect and response times\n\nMeasures to review monthly\n  Requests opened and closed, open by type, average days from Created to ClosedOn, overdue count.",
+    "stepByStepInstructions": [
+      "Create the site and set owners, members and who may submit.",
+      "Build the Requests list with the columns above and index Status and RequestType.",
+      "Create the views for requesters and for the team.",
+      "Trim the new item form to the fields a requester should fill in.",
+      "Add the acknowledgement and routing flow.",
+      "Add the close-out flow with a trigger condition.",
+      "Build a home page with a submit button and a My requests view."
+    ],
+    "commonMistakes": [
+      "Asking requesters to fill in status and owner fields.",
+      "Giving every visitor edit rights to the whole site.",
+      "No view for unassigned items, so new requests sit unseen.",
+      "Free-text request types that cannot be grouped or routed."
+    ],
+    "troubleshooting": [
+      "If requesters cannot submit, they need at least Contribute on the list, or use a list form link.",
+      "If team members cannot see items after turning on item-level permissions, give them a permission level that includes Override list behaviors.",
+      "If the close-out flow runs repeatedly, add the trigger condition so it fires only when Status is Done and ClosedOn is empty.",
+      "If the Overdue view shows a threshold error on a large list, index NeededBy and Status."
+    ],
+    "relatedPatterns": [
+      "sharepoint-list-schema-for-project-intake",
+      "create-a-sharepoint-view-for-unassigned-work",
+      "sharepoint-json-status-pill-formatting"
+    ],
+    "faqs": [
+      {
+        "question": "How do I create a request system in SharePoint?",
+        "answer": "Create a list with type, status, owner and date columns, add views for requesters and the team, simplify the new item form and use a flow to acknowledge and route new items."
+      },
+      {
+        "question": "Can users see only their own requests in a SharePoint list?",
+        "answer": "Yes. Item-level permissions in the list's advanced settings limit reading and editing to items the user created. It is a convenience setting, not strong security."
+      },
+      {
+        "question": "When should I use a Power App for requests?",
+        "answer": "When the form needs logic the list form cannot provide, such as multi-step screens, lookups across lists or role-based layouts. The same list can stay as the data source."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-controlled-document-workspace": {
+    "shortDescription": "A SharePoint library for controlled documents such as policies and procedures: draft and published versions, approval, document numbers, review dates and a read-only published view.",
+    "fullDescription": "Controlled documents have rules: one current approved version, a record of who approved it and when, a review date, and no editing of the published copy. A SharePoint library with major and minor versioning, content approval, required metadata and tight permissions meets these rules without extra software.",
+    "problemStatement": "Policies live in shared folders as 'Final v3 (2).docx'. Staff cannot tell which version is current, and audits ask for approval evidence nobody can find.",
+    "whenToUse": [
+      "Policies, procedures, work instructions and quality documents",
+      "Teams audited against standards such as ISO 9001 or similar",
+      "When staff must only ever see the approved version"
+    ],
+    "whenNotToUse": [
+      "Everyday collaboration files, where this much control slows people down",
+      "Regulated records needing formal retention and disposition, which also need Microsoft Purview"
+    ],
+    "formulaOrCode": "Site\n  Dedicated site, for example /sites/policies. Do not mix with a team's working files.\n  Groups:   Document Controllers (Full control or Edit + Approve)\n            Authors (Contribute)        Approvers (Approve permission level)        All staff (Read)\n\nLibrary: Controlled Documents\n  Library settings > Versioning settings\n    Require content approval for submitted items:     Yes\n    Document version history:                         Create major and minor (draft) versions\n    Keep major versions: 50     Keep drafts for: 5 major versions\n    Draft item security:                              Only users who can approve items (and the author)\n    Require check out:                                Yes\n  Result: readers see only the last approved major version (1.0, 2.0). Drafts (1.1, 1.2) are hidden from them.\n\nColumns (via a \"Controlled Document\" content type so they travel with the template)\n  DocumentNumber     Single line, enforce unique values       for example POL-HR-012\n  DocumentType       Choice     Policy | Procedure | Work instruction | Form | Standard         required\n  OwningDepartment   Managed metadata or choice                                                  required\n  DocumentOwner      Person                                                                      required\n  Approver           Person\n  EffectiveDate      Date\n  NextReviewDate     Date        indexed                                                         required\n  ReviewCycleMonths  Number      default 12\n  Status             Choice     Draft | In review | Approved | Superseded | Withdrawn\n  ChangeSummary      Multiple lines     what changed in this version\n  Supersedes         Single line        number of the document this one replaces\n\nNumbering\n  <TYPE>-<DEPT>-<3 digits>     POL-HR-012, PRO-FIN-004\n  Keep the next number per type and department in a small \"Document Numbers\" list, issued by a flow,\n  so two authors never take the same number.\n\nLifecycle\n  1. Author uploads or creates from the template  > version 0.1, Status Draft\n  2. Author checks in and edits                   > 0.2, 0.3 ...\n  3. Author publishes a major version             > approval status Pending\n  4. Approver approves                            > 1.0 visible to all staff\n  5. Changes start again as 1.1 while readers continue to see 1.0\n  6. Approved revision becomes 2.0\n\nApproval flow (When a file is created or modified, properties only; trigger condition on Pending)\n  @equals(triggerOutputs()?['body/{ModerationStatus}'], 'Pending')\n  1. Start and wait for an approval, assigned to the Approver column, with a link and ChangeSummary\n  2. If approved:  Set content approval status = Approved (needs the ETag from Get file properties)\n                   Update file properties: Status = Approved, EffectiveDate = today,\n                   NextReviewDate = addToTime(utcNow(), ReviewCycleMonths, 'Month')\n  3. If rejected:  Set content approval status = Rejected with the approver's comments; email the author\n\nReview reminder flow (Recurrence, weekly)\n  Get files (properties only), filter query:\n    NextReviewDate le '@{addDays(utcNow(), 60)}' and Status eq 'Approved'\n  Email each DocumentOwner one message listing their documents due for review.\n\nViews\n  Published (default for staff)   Status = Approved, columns: Number, Name, Type, Department, Effective, Next review\n  My drafts                       Created By or Modified By = [Me], Approval Status <> Approved\n  Awaiting approval               Approval Status = Pending\n  Review due                      NextReviewDate <= [Today]+60, Status = Approved\n  Superseded and withdrawn        for controllers only (audience targeting or a separate view)\n\nReader experience\n  Link staff to the Published view or a page with a filtered library web part, never to folders.\n  Turn on \"Open in browser\" so readers do not download copies.\n  Add a header or footer field in the Word template bound to DocumentNumber and version label:\n    Insert > Quick Parts > Document Property > DocumentNumber / Label.\n\nWithdrawing a document\n  Set Status = Withdrawn, then unpublish the major version (or move to an archive library readers cannot see).\n  Keep it. Auditors ask for the version that was in force on a past date.",
+    "stepByStepInstructions": [
+      "Create a dedicated site with controller, author, approver and reader groups.",
+      "Turn on content approval, major and minor versions and required check-out.",
+      "Add the controlled document content type and columns.",
+      "Set up document numbering.",
+      "Build the approval flow that sets approval status and review dates.",
+      "Add the review reminder flow.",
+      "Create the published view and point staff to it."
+    ],
+    "commonMistakes": [
+      "Leaving draft visibility open so readers see unapproved versions.",
+      "Giving authors the Approve permission.",
+      "No review date, so documents are never revisited.",
+      "Deleting superseded documents that auditors later request."
+    ],
+    "troubleshooting": [
+      "If readers see drafts, set Draft item security to only users who can approve items.",
+      "If Set content approval status fails, pass the current ETag from Get file properties and make sure the flow account can approve.",
+      "If the approval flow triggers itself, use the trigger condition on Pending and avoid editing properties while the status is Pending.",
+      "If the document number shows blank in Word, the template must come from the content type so the property is bound."
+    ],
+    "relatedPatterns": [
+      "design-a-document-approval-register",
+      "use-sharepoint-content-types-for-project-artifacts",
+      "govern-sharepoint-list-version-history"
+    ],
+    "faqs": [
+      {
+        "question": "How do I manage controlled documents in SharePoint?",
+        "answer": "Use a library with content approval, major and minor versioning and required check-out, add metadata for number, owner and review date, and restrict who can approve."
+      },
+      {
+        "question": "How do I make sure users only see the approved version?",
+        "answer": "Turn on content approval and set draft item security to approvers and authors only. Readers then see the last approved major version."
+      },
+      {
+        "question": "How do I remind owners to review documents?",
+        "answer": "Store a next review date on each document and run a scheduled flow that emails owners a list of documents due in the next 60 days."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-site-owner-review-process": {
+    "shortDescription": "A recurring review in which every SharePoint site's owners confirm the site is still needed, its owners are right and its sharing is appropriate.",
+    "fullDescription": "Sites outlive their projects and their owners. A scheduled attestation asks each site's owners a few direct questions, records the answers, chases non-responders and escalates sites with no reply. It keeps ownership current and feeds the archive process with sites nobody claims.",
+    "problemStatement": "The tenant has thousands of sites. Many have one owner who has left, external guests nobody remembers inviting, and content nobody will vouch for.",
+    "whenToUse": [
+      "Tenants with self-service site or team creation",
+      "Organisations with external sharing enabled",
+      "As the first step of lifecycle and archive management"
+    ],
+    "whenNotToUse": [
+      "Tenants with a few dozen centrally managed sites, where a manual check is quicker",
+      "Where Microsoft 365 group expiration and access reviews in Entra ID already cover every site in scope"
+    ],
+    "formulaOrCode": "What owners are asked (twice a year, or yearly for low-risk sites)\n  1. Is this site still needed?                    Yes / No, archive it / No, delete it\n  2. Are the listed owners correct?                Yes / No (name the right owners)\n  3. Are the members and guests still appropriate? Yes / I have removed those who no longer need access\n  4. Does the site hold sensitive information?     Yes / No\n  A site needs at least two owners who are current employees.\n\nRegister: list \"Site Reviews\" in an admin site\n  Title (site name)        SiteUrl (hyperlink or text, indexed)      SiteId (text)\n  Owners (person, multi)   Template (text)        Sensitivity (text)        ExternalSharing (text)\n  StorageUsedGB (number)   LastActivity (date)    GuestCount (number)\n  ReviewCycle (text, for example 2026-H2)          ReviewStatus (choice: Not sent | Sent | Confirmed | Changes requested |\n                                                    No response | Archive requested)\n  SentOn (date)   RespondedOn (date)   RespondedBy (person)   Response (multiple lines)   RemindersSent (number)\n\nLoad the register (PnP PowerShell, run by a SharePoint admin)\n  Connect-PnPOnline -Url https://contoso-admin.sharepoint.com -Interactive\n  $sites = Get-PnPTenantSite -Detailed | Where-Object { $_.Template -notlike \"SPSPERS*\" -and $_.Template -ne \"APPCATALOG#0\" }\n  foreach ($s in $sites) {\n      [pscustomobject]@{\n          Title = $s.Title; SiteUrl = $s.Url; Template = $s.Template\n          StorageUsedGB = [math]::Round($s.StorageUsageCurrent / 1024, 2)\n          LastActivity = $s.LastContentModifiedDate; ExternalSharing = $s.SharingCapability\n          Sensitivity = $s.SensitivityLabel; Owner = $s.OwnerLoginName; GroupId = $s.GroupId\n      }\n  } | Export-Csv .\\sites.csv -NoTypeInformation\n  # Group-connected sites: owners come from the group\n  #   Get-PnPMicrosoft365GroupOwner -Identity <GroupId>\n  # Then add or update rows in \"Site Reviews\" (Add-PnPListItem / Set-PnPListItem) with ReviewCycle set.\n\nFlow 1: send review requests (manual or scheduled at the start of the cycle)\n  Get items: ReviewStatus eq 'Not sent' and ReviewCycle eq '2026-H2'\n  Apply to each (concurrency 5):\n    Post adaptive card and wait for a response (Teams) to each owner, or Start and wait for an approval\n    with custom responses \"Still needed\", \"Archive it\", \"Owners need changing\".\n    Card shows: site name and link, current owners, guest count, last activity, storage.\n    Update item: ReviewStatus = Sent, SentOn = utcNow()\n  Simpler option: email a link to the item's edit form with only the response fields shown.\n\nFlow 2: record the response\n  On response: ReviewStatus = Confirmed | Changes requested | Archive requested, RespondedOn, RespondedBy, Response.\n  \"Changes requested\" creates a task for the admin team. \"Archive requested\" feeds the archive process.\n\nFlow 3: reminders and escalation (Recurrence, weekly)\n  Sent more than 14 days ago, no response, RemindersSent < 2    > remind owners, RemindersSent + 1\n  Sent more than 35 days ago, no response                       > ReviewStatus = No response,\n                                                                  notify the owners' managers and the admin team\n  No response after a further 30 days                           > make the site read-only and post a banner\n     Set-PnPTenantSite -Identity <url> -LockState ReadOnly\n     (reverse with -LockState Unlock). Agree this step with the business before the first cycle.\n\nSites with no valid owner\n  Owners all disabled or deleted: assign the last active member's manager or the department head, record the decision.\n\nReport at the end of each cycle\n  Sites reviewed, confirmed, changed, archived, no response; guests removed; storage released.\n\nBuilt-in features to combine with this\n  Microsoft 365 group expiration policy (Entra ID): owners renew the group or it is deleted (soft delete 30 days).\n  Entra access reviews for guests: owners confirm guest access periodically.\n  SharePoint Advanced Management: site lifecycle and ownership policies, where licensed.",
+    "stepByStepInstructions": [
+      "Agree the questions, cycle and what happens to sites with no response.",
+      "Create the Site Reviews register.",
+      "Export sites and owners with PnP PowerShell and load the register.",
+      "Build the flow that sends the review to each site's owners.",
+      "Record responses and create tasks for requested changes.",
+      "Add reminders, escalation and the read-only step.",
+      "Report results and start the next cycle from the same register."
+    ],
+    "commonMistakes": [
+      "Sending a long questionnaire that owners ignore.",
+      "No consequence for not responding.",
+      "Emailing only the primary site collection admin and missing group owners.",
+      "Locking sites without warning or business agreement."
+    ],
+    "troubleshooting": [
+      "If owners are blank for group-connected sites, read owners from the Microsoft 365 group, not the site.",
+      "If Teams cards fail for some owners, the account is disabled or unlicensed. Route those sites to the no-valid-owner path.",
+      "If the flow is throttled sending thousands of cards, send in batches by department over several days.",
+      "If a locked site is needed urgently, unlock it with Set-PnPTenantSite and record who asked."
+    ],
+    "relatedPatterns": [
+      "govern-list-owners-and-backup-owners",
+      "sharepoint-external-sharing-review-pattern",
+      "sharepoint-hub-site-content-ownership"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find out who owns each SharePoint site?",
+        "answer": "Use Get-PnPTenantSite for the site list and, for group-connected sites, read the owners of the Microsoft 365 group. Record them in a register."
+      },
+      {
+        "question": "How often should site owners review their sites?",
+        "answer": "Once or twice a year for most sites, and more often for sites with external guests or sensitive content."
+      },
+      {
+        "question": "What should happen if no owner responds?",
+        "answer": "Remind, escalate to managers, then make the site read-only after a published deadline, and pass it to the archive process if still unclaimed."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-lifecycle-archive-process": {
+    "shortDescription": "Archive SharePoint sites that are finished or unclaimed: criteria, owner notice, a read-only period, then Microsoft 365 Archive or deletion, with a register of every decision.",
+    "fullDescription": "Old sites cost storage, clutter search and keep sharing links alive. An archive process gives each site a clear end: it is identified by agreed criteria, its owners are told, it is made read-only for a period, and then it is archived or deleted in line with retention rules. Every step is recorded and reversible until the final one.",
+    "problemStatement": "Nobody deletes anything because nobody is sure it is safe, so storage grows every year and search returns ten-year-old project files.",
+    "whenToUse": [
+      "Tenants approaching their storage quota",
+      "After projects close or a site review finds unclaimed sites",
+      "When old content is surfacing in search or Copilot answers"
+    ],
+    "whenNotToUse": [
+      "Sites under legal hold or active retention policies that prevent deletion",
+      "Active sites that are simply large, which need clean-up inside the site instead"
+    ],
+    "formulaOrCode": "Criteria (a site is a candidate when any of these is true)\n  Owner requested archive in the site review\n  No content modified and no page views for 12 months (LastContentModifiedDate + usage reports)\n  Project or contract end date passed by 6 months\n  No valid owner after the escalation steps\n\nStages and timings\n  Stage 0  Candidate         added to the register with the reason\n  Stage 1  Notice            owners and members told; 30 days to object\n  Stage 2  Read-only         site locked, banner added; 60 days\n  Stage 3  Archived          moved to Microsoft 365 Archive (cold storage), or kept read-only if Archive is not licensed\n  Stage 4  Deleted           after the retention period for its content, if policy allows; recycle bin 93 days\n\nRegister: \"Site Archive Register\"\n  SiteUrl | Title | Owners | Reason | Stage | NoticeSentOn | LockedOn | ArchivedOn | DeletedOn |\n  RetentionCategory | EarliestDeleteDate | ApprovedBy | Notes | StorageGB\n\nChecks before stage 2\n  [ ] No legal hold or eDiscovery case includes the site (ask compliance)\n  [ ] Retention labels and policies reviewed: note the earliest permitted deletion date\n  [ ] No live flows, Power Apps or Power BI datasets depend on lists or files in the site\n  [ ] No other sites link to it as a hub, or the hub association is removed\n  [ ] Owners have had the chance to move anything still needed\n\nNotice text (stage 1)\n  Subject: <Site name> will be archived on <date>\n  This site has had no activity since <date>. It will become read-only on <date> and be archived on <date>.\n  If it is still needed, reply or select \"Keep this site\" by <date>. Nothing is deleted at this stage.\n\nCommands (PnP PowerShell, SharePoint admin)\n  # Stage 2: read-only\n  Set-PnPTenantSite -Identity $url -LockState ReadOnly\n  # Stop new sharing and hide from search\n  Set-PnPTenantSite -Identity $url -SharingCapability Disabled\n  Connect-PnPOnline -Url $url -Interactive; Set-PnPWeb -NoCrawl:$true     # or Set-PnPSite -NoCrawl in older modules\n\n  # Stage 3: Microsoft 365 Archive (must be enabled for the tenant; billed per GB at a lower rate)\n  Set-PnPTenantSite -Identity $url -LockState Unlock\n  Set-SPOSite -Identity $url -ArchiveState Archived          # SharePoint Online Management Shell\n  # Reactivate:  Set-SPOSite -Identity $url -ArchiveState Active\n  # Reactivation is immediate within 7 days and can take up to 24 hours later; a reactivation fee may apply.\n\n  # Group-connected sites and teams\n  # Archive the team in Teams first (Teams admin centre or Set-TeamArchivedState), which makes the site read-only\n  # for members, then archive the site.\n\n  # Stage 4: delete\n  Remove-PnPTenantSite -Url $url          # goes to the site recycle bin for 93 days\n  # Group-connected: delete the Microsoft 365 group (soft-deleted 30 days, site retained 93)\n  # Restore: Restore-PnPTenantRecycleBinItem -Url $url\n\nBanner for read-only sites\n  The lock already shows \"This site is read-only at the administrator's request.\"\n  Add who to contact in the site's description or a page header before locking.\n\nFlow to drive the stages (Recurrence, daily)\n  Stage = Notice and NoticeSentOn older than 30 days, no objection  > create an admin task \"Lock <site>\"\n  Stage = Read-only and LockedOn older than 60 days                 > task \"Archive <site>\"\n  Stage = Archived and EarliestDeleteDate reached                   > task \"Review for deletion\", needs approval\n  Keep the tenant-level commands with admins; the flow tracks dates and raises tasks.\n\nRequests to bring a site back\n  Record who asked and why, reactivate, set a new owner pair, and put the site back in the review cycle.\n\nReport quarterly\n  Sites archived and deleted, storage released, reactivations, objections.",
+    "stepByStepInstructions": [
+      "Agree criteria, stages and timings with records and compliance teams.",
+      "Create the archive register.",
+      "Identify candidates from the site review and activity reports.",
+      "Run the pre-lock checks, then send notice to owners and members.",
+      "Lock the site read-only and remove it from search and sharing.",
+      "Archive with Microsoft 365 Archive or keep read-only.",
+      "Delete only when retention allows, with approval, and record it."
+    ],
+    "commonMistakes": [
+      "Deleting sites that hold content under a retention policy or hold.",
+      "Archiving a site that a live flow or app still uses.",
+      "Skipping the read-only period, so problems appear only after deletion.",
+      "No route for bringing a site back."
+    ],
+    "troubleshooting": [
+      "If the archive command fails, Microsoft 365 Archive is not enabled or the site is locked. Unlock it first.",
+      "If a site cannot be deleted, a retention policy or hold applies. Leave it archived and record the earliest delete date.",
+      "If users report a broken app after a lock, a flow or app writes to the site. Unlock, move the dependency, then lock again.",
+      "If archived content still appears in search for a while, the index takes time to update after NoCrawl or archiving."
+    ],
+    "relatedPatterns": [
+      "create-a-sharepoint-view-for-archived-records",
+      "build-a-scheduled-stale-item-cleanup-flow",
+      "document-sharepoint-list-ownership-and-support"
+    ],
+    "faqs": [
+      {
+        "question": "How do I archive a SharePoint site?",
+        "answer": "Make it read-only, tell its owners, then use Microsoft 365 Archive to move it to cold storage, or keep it locked if Archive is not available. Record each step."
+      },
+      {
+        "question": "What is the difference between archiving and deleting a site?",
+        "answer": "An archived site is kept in lower-cost storage and can be reactivated. A deleted site stays in the recycle bin for 93 days and is then gone unless retention keeps a copy."
+      },
+      {
+        "question": "Can I delete a site that has a retention policy?",
+        "answer": "Not until the retention period ends. Check policies and holds before any deletion."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-document-retention-checklist": {
+    "shortDescription": "A checklist for applying retention to a SharePoint library: decide what the records are, map them to retention labels, publish and apply the labels, and prove it works.",
+    "fullDescription": "Retention decides how long documents are kept and what happens afterwards. In Microsoft 365 that is done with Purview retention labels and policies, not with flows that delete files. This checklist walks a site owner and a records manager through the decisions and settings for one library, from schedule to evidence.",
+    "problemStatement": "Documents are kept forever because nobody decided otherwise, or deleted by a home-made flow with no record, and neither position survives an audit.",
+    "whenToUse": [
+      "Libraries holding contracts, HR, finance, project or quality records",
+      "Before migrating or archiving content",
+      "When a regulator or auditor asks how long records are kept"
+    ],
+    "whenNotToUse": [
+      "Working files with no retention requirement beyond a tenant-wide default policy",
+      "Tenants without the licences for retention labels, where only basic policies are available"
+    ],
+    "formulaOrCode": "1. Decide (site owner + records manager)\n  [ ] List the record types in the library:  for example Signed contract, Invoice, Meeting notes\n  [ ] For each: retention period, what starts the clock, what happens at the end, and the source of the rule\n\n  Record type       Keep for    Clock starts            At the end              Source\n  Signed contract   7 years     contract end date       disposition review      company policy FIN-07\n  Invoice           7 years     created                 delete automatically    tax law\n  Project minutes   3 years     last modified           delete automatically    project standard\n  Policy document   permanent   n/a                     keep (record)           quality manual\n\n  [ ] Anything that must never be edited after declaration? (mark the label as a record)\n  [ ] Who reviews disposition? (named people, not one person)\n\n2. Create labels (Microsoft Purview portal > Records management or Data lifecycle management > Labels)\n  [ ] One label per row above, named so users understand it:  \"Contract - 7 years after end\"\n  [ ] Retain items for <period>, starting from: created / last modified / labelled / an event\n  [ ] Event-based (contract end): create an event type \"Contract end\"; the library needs an Asset ID or\n      contract number column mapped to the event\n  [ ] End action: delete automatically / start a disposition review / do nothing\n  [ ] Record or regulatory record only where required (regulatory record cannot be removed, even by admins)\n\n3. Publish (Label policies > Publish labels)\n  [ ] Publish to the specific sites or to an adaptive scope, not the whole tenant by default\n  [ ] Allow up to 7 days for labels to appear in the site (usually within a day)\n\n4. Apply in the library\n  [ ] Default label:  Library settings > Apply label to items in this list or library > choose the label\n      (applies to new items; tick the option to apply to existing items if that is intended)\n  [ ] Or by folder or document set: Details pane > Apply label\n  [ ] Or by content type or metadata with an auto-apply policy (E5 or equivalent licence):\n      condition example   ContentType:\"Signed Contract\"   or a sensitive information type\n  [ ] Add the \"Retention label\" and \"Label applied by\" columns to a view\n  [ ] Add the column the retention period depends on (ContractEndDate) and make it required\n\n5. Check\n  [ ] View: group by Retention label; filter for items with no label\n  [ ] Try to delete a labelled item: blocked for records; for non-record labels the copy is kept in the\n      Preservation Hold library until the period ends\n  [ ] Records: confirm the lock icon and that editing is blocked or versioned as designed\n  [ ] Trigger a test event for event-based labels and confirm the expiry date on an item\n  [ ] Content explorer / activity explorer in Purview shows labelled counts for the site\n\n6. Disposition\n  [ ] Disposition reviewers receive the notification and can approve, extend or relabel\n  [ ] Proof of disposition is retained (Purview keeps it for up to 7 years)\n  [ ] A calendar reminder exists for the first expected disposition date\n\n7. Guardrails\n  [ ] No flows or scripts delete documents in this library\n  [ ] Site archive or deletion plans checked against the labels (a labelled site cannot simply be deleted)\n  [ ] Legal holds override retention: confirm with legal before any bulk action\n  [ ] Version history limits reviewed, since versions count toward storage for the whole period\n  [ ] Owners know that moving a file out of the library can change its default label\n\n8. Record the set-up\n  Library | Label | Period | Trigger | End action | Reviewers | Policy name | Date applied | Approved by",
+    "stepByStepInstructions": [
+      "List the record types in the library with period, trigger and end action.",
+      "Create a retention label for each in Microsoft Purview.",
+      "Publish the labels to the site.",
+      "Set a default label on the library or apply labels by folder or content type.",
+      "Add retention columns to a view and find unlabelled items.",
+      "Test deletion, record locking and disposition.",
+      "Record the configuration and who approved it."
+    ],
+    "commonMistakes": [
+      "Using a flow to delete old files in place of retention labels.",
+      "Publishing every label to every site.",
+      "Choosing 'when created' as the trigger for contracts that run for years.",
+      "Marking everything as a regulatory record, which cannot be undone."
+    ],
+    "troubleshooting": [
+      "If labels do not appear in the library, the policy has not finished distributing or the site is not in its scope.",
+      "If a default label did not apply to existing files, re-save the setting with the existing items option, and allow time for processing.",
+      "If users cannot delete a file, it is a record or under hold. That is the label working.",
+      "If storage grows after applying labels, deleted and edited copies are being kept in the Preservation Hold library for the period."
+    ],
+    "relatedPatterns": [
+      "govern-sharepoint-list-version-history",
+      "sharepoint-document-library-metadata-pattern",
+      "use-sharepoint-content-types-for-project-artifacts"
+    ],
+    "faqs": [
+      {
+        "question": "How do I set a retention period on a SharePoint library?",
+        "answer": "Create a retention label in Microsoft Purview, publish it to the site, then set it as the library's default label in library settings."
+      },
+      {
+        "question": "What is the difference between a retention policy and a retention label?",
+        "answer": "A policy applies one rule to whole locations such as all sites. A label applies to individual items or libraries and supports records, event-based periods and disposition review."
+      },
+      {
+        "question": "Should I use Power Automate to delete old documents?",
+        "answer": "No, not for records. Retention labels keep an auditable history and respect holds. A flow that deletes files has neither."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-page-quality-audit": {
+    "shortDescription": "Audit the pages of a SharePoint intranet site against a short quality standard: ownership, freshness, accuracy, links, accessibility and findability.",
+    "fullDescription": "Intranet pages decay quietly. A page audit lists every page with its owner, last modified date and views, scores each against a few objective checks, and gives owners a short list of fixes. Run twice a year, it keeps the site trustworthy and gives search and Copilot better material to work from.",
+    "problemStatement": "The intranet has hundreds of pages. Some are years out of date, some have no owner, and staff have stopped trusting what they find.",
+    "whenToUse": [
+      "Communication sites and intranets with many authors",
+      "Before a redesign, migration or Copilot rollout",
+      "As a regular content governance cycle"
+    ],
+    "whenNotToUse": [
+      "Team sites where pages are incidental to files and lists",
+      "Sites with fewer than twenty pages, where reading them is quicker than auditing"
+    ],
+    "formulaOrCode": "Quality standard (score each: 0 fail, 1 pass)\n  1 Owner        A named, current employee is recorded as content owner\n  2 Fresh        Reviewed or modified within 12 months (6 for policies, how-to and contact pages)\n  3 Accurate     Owner confirms the content is correct and still needed\n  4 Title        Title says what the page is about; no \"Untitled\", \"Copy of\", \"Page 1\"\n  5 Summary      Description filled in (used by search results and page cards)\n  6 Links        No broken links; links have meaningful text that names the destination\n  7 Structure    One H1 (the title), headings in order, short paragraphs\n  8 Accessible   Images have alt text; no text embedded in images; tables have headers\n  9 Findable     Page is in navigation or linked from a parent page; has topic metadata\n  10 Used        Viewed in the last 90 days (if not, ask whether it is needed)\n  8-10 good   5-7 fix within 30 days   0-4 fix or retire\n\nAdd page metadata (Site Pages library > add columns)\n  ContentOwner (Person)   ReviewDate (Date)   PageTopic (managed metadata or choice)   AuditScore (Number)\n  AuditNotes (Multiple lines)   AuditStatus (Choice: Not audited | Pass | Fix needed | Retire)\n  Show them in page details so authors fill them in when publishing.\n\nInventory (PnP PowerShell)\n  Connect-PnPOnline -Url https://contoso.sharepoint.com/sites/intranet -Interactive\n  Get-PnPListItem -List \"Site Pages\" -PageSize 500 |\n    Select-Object @{n=\"Page\";e={$_[\"FileLeafRef\"]}}, @{n=\"Title\";e={$_[\"Title\"]}},\n                  @{n=\"Modified\";e={$_[\"Modified\"]}}, @{n=\"Editor\";e={$_[\"Editor\"].LookupValue}},\n                  @{n=\"Owner\";e={$_[\"ContentOwner\"].LookupValue}}, @{n=\"Description\";e={$_[\"Description\"]}},\n                  @{n=\"Promoted\";e={$_[\"PromotedState\"]}} |\n    Export-Csv .\\pages.csv -NoTypeInformation\n  # PromotedState 2 = news post. Audit news separately: old news is expected, wrong reference pages are not.\n\nUsage\n  Site contents > Site usage for popular pages; per page: Page details > Analytics.\n  For all pages, export from Microsoft 365 usage reports or the audit log (PageViewed events).\n\nViews in the Site Pages library\n  Audit: stale        Modified < [Today]-365, PromotedState = 0\n  Audit: no owner     ContentOwner is empty\n  Audit: no summary   Description is empty\n  Audit: fix needed   AuditStatus = Fix needed, group by ContentOwner\n\nAutomated checks\n  Titles:   filter Title for \"Untitled\", \"Copy\", \"Test\"\n  Links:    Site contents has no built-in link checker for modern pages. Run a crawler against the site's\n            URLs, or use Page diagnostics. Record broken links in AuditNotes.\n  Alt text: open the page in edit mode; the accessibility assistant (Check accessibility in the toolbar) flags\n            images without alt text and heading order problems.\n\nOwner request (one message per owner, from a flow grouping pages by ContentOwner)\n  Subject: <n> intranet pages need your review by <date>\n  For each page: title with link, last modified, views in 90 days, issues found.\n  Ask for one of three actions per page: confirm (set ReviewDate), fix, or retire.\n\nRetiring a page\n  Unpublish or delete (recycle bin 93 days), remove it from navigation, and redirect inbound links by\n  editing the pages that link to it. Search drops it after the next crawl.\n\nSummary after each audit\n  Pages audited, average score, pages with no owner, stale pages, retired pages, and change since last audit.\n\nKeep it going\n  Review reminder flow: weekly, pages where ReviewDate is older than 12 months, one email per owner.\n  Make ContentOwner required for publishing with a page approval flow or column validation.",
+    "stepByStepInstructions": [
+      "Agree the quality checks and scoring.",
+      "Add owner, review date and audit columns to the Site Pages library.",
+      "Export the page inventory and usage.",
+      "Score pages using the views and automated checks.",
+      "Send each owner one list of their pages and required actions.",
+      "Retire unneeded pages and fix navigation.",
+      "Report the results and schedule review reminders."
+    ],
+    "commonMistakes": [
+      "Auditing design details while ignoring whether content is correct.",
+      "No named owner per page, so nobody acts on findings.",
+      "Treating old news posts as stale content.",
+      "Running the audit once and never again."
+    ],
+    "troubleshooting": [
+      "If ContentOwner is empty for most pages, fill it from the last editor as a starting point and ask owners to correct it.",
+      "If the export misses pages, raise the page size and check for folders in the Site Pages library.",
+      "If usage data is missing for a page, it had no views in the period or analytics is delayed by a day or two.",
+      "If retired pages still show in search, wait for the crawl or request reindexing of the library."
+    ],
+    "relatedPatterns": [
+      "create-an-intranet-page-review-workflow",
+      "sharepoint-hub-site-content-ownership",
+      "create-a-sharepoint-view-for-missing-metadata"
+    ],
+    "faqs": [
+      {
+        "question": "How do I audit SharePoint pages?",
+        "answer": "Export the Site Pages library with owner, modified date and usage, score each page against a short checklist, and send owners their pages to confirm, fix or retire."
+      },
+      {
+        "question": "How do I find old pages on a SharePoint site?",
+        "answer": "Create a view of the Site Pages library filtered to pages modified more than a year ago, excluding news posts."
+      },
+      {
+        "question": "How often should intranet content be reviewed?",
+        "answer": "At least yearly for reference pages and every six months for policies, how-to and contact information."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-stale-content-cleanup-process": {
+    "shortDescription": "Find and deal with stale files in a SharePoint library: report what has not been touched, ask owners to keep, archive or delete, and act on the answers safely.",
+    "fullDescription": "Inside active sites, libraries fill with files nobody has opened in years. A clean-up process reports files past an age threshold, groups them by owner or folder, asks for a decision, then moves or deletes with the recycle bin as a safety net. Run on a schedule, it keeps libraries useful without anyone deleting on a hunch.",
+    "problemStatement": "A library has 40,000 files. Most are from finished work, search results are full of them, and nobody will delete anything without being told it is safe.",
+    "whenToUse": [
+      "Active sites with large libraries",
+      "Before a migration, restructure or Copilot rollout",
+      "Storage pressure on specific sites"
+    ],
+    "whenNotToUse": [
+      "Libraries governed by retention labels, where Purview decides what is deleted",
+      "Whole sites that are finished, which should go through site archiving instead"
+    ],
+    "formulaOrCode": "Rules (agree with the site owner first)\n  Stale        = not modified for 24 months (pick 12, 24 or 36 by content type)\n  Exempt       = files with a retention label, templates, anything in folders named \"Reference\" or \"Records\"\n  Decisions    = Keep (reset the clock for 12 months) | Archive (move to an archive library) | Delete\n  No decision  = after 30 days and two reminders, archive (never delete by default)\n\nColumns to add to the library\n  CleanupDecision (Choice: Keep | Archive | Delete)     CleanupDecidedBy (Person)     CleanupDecidedOn (Date)\n  CleanupCycle (Text, for example 2026-11)              KeepUntil (Date)\n\nView: \"Stale files\"\n  Modified < [Today]-730    AND   CleanupDecision is empty   AND   (KeepUntil is empty OR KeepUntil < [Today])\n  Show: Name, Folder path, Modified, Modified By, File size, CleanupDecision      Index Modified.\n  Owners can multi-select in grid view and set CleanupDecision in bulk.\n\nReport (PnP PowerShell) for large libraries\n  Connect-PnPOnline -Url https://contoso.sharepoint.com/sites/projects -Interactive\n  $cutoff = (Get-Date).AddMonths(-24)\n  Get-PnPListItem -List \"Documents\" -PageSize 2000 -Fields FileLeafRef, FileRef, Modified, Editor, File_x0020_Size, FSObjType |\n    Where-Object { $_[\"FSObjType\"] -eq 0 -and $_[\"Modified\"] -lt $cutoff } |\n    Select-Object @{n=\"Name\";e={$_[\"FileLeafRef\"]}}, @{n=\"Path\";e={$_[\"FileRef\"]}},\n                  @{n=\"Modified\";e={$_[\"Modified\"]}}, @{n=\"ModifiedBy\";e={$_[\"Editor\"].Email}},\n                  @{n=\"SizeMB\";e={[math]::Round($_[\"File_x0020_Size\"] / 1MB, 2)}} |\n    Export-Csv .\\stale-files.csv -NoTypeInformation\n  # Summarise by top-level folder and by ModifiedBy to decide who to ask.\n  # Version history can hold more storage than the files: Site settings > Storage metrics shows totals per folder.\n\nFlow 1: ask for decisions (Recurrence, first Monday of each quarter)\n  Get files (properties only): Filter Query  Modified lt '@{addDays(utcNow(), -730)}'   Top count 5000, pagination on\n  Filter array: CleanupDecision empty, no retention label, not in exempt folders\n  Select: Name, Link, Modified, Editor email\n  Group by editor (or by the folder's owner from a small \"Folder Owners\" list):\n    union(body('Select_editors'), body('Select_editors')) gives the distinct list to loop over\n  Send one email per owner with an HTML table (cap at 100 rows and link to the Stale files view for the rest).\n  Update each file: CleanupCycle = formatDateTime(utcNow(), 'yyyy-MM')\n  Files whose last editor has left go to the site owner.\n\nFlow 2: act on decisions (Recurrence, weekly)\n  Keep     > Update file properties: KeepUntil = addToTime(utcNow(), 12, 'Month'); clear CleanupDecision\n  Archive  > Move file (SharePoint \"Move file\" action) to the \"Archive\" library in the same site, same folder path\n             Archive library: read-only for members, excluded from search (Library settings > Advanced > Allow items\n             to appear in search results: No)\n  Delete   > Delete file (goes to the site recycle bin for 93 days). Log name, path, size, decided by, date\n             to a \"Cleanup Log\" list first.\n  Cycle older than 30 days with no decision > treat as Archive\n\nSafety checks in flow 2\n  Skip files modified since the decision was recorded (someone started using them again).\n  Skip checked-out files and files with a retention label (the delete would fail or be held).\n  Process at most a few thousand files per run to stay within connector limits.\n\nAfter each cycle\n  Report files reviewed, kept, archived, deleted, storage released (Storage metrics before and after).\n  Empty the archive library on its own schedule, for example delete items archived more than 3 years ago,\n  if records policy allows.\n\nTell people\n  Announce the cycle on the site's home page: what counts as stale, the decision deadline, and that archived\n  files can be restored on request.",
+    "stepByStepInstructions": [
+      "Agree the stale threshold, exemptions and default action with the site owner.",
+      "Add the clean-up columns and the Stale files view.",
+      "Run the report to see scale and who to ask.",
+      "Send owners their lists and a deadline.",
+      "Run the flow that keeps, archives or deletes according to decisions.",
+      "Log every deletion and report storage released.",
+      "Repeat each quarter or half-year."
+    ],
+    "commonMistakes": [
+      "Deleting by age alone without asking anyone.",
+      "Making deletion the default when nobody answers.",
+      "Ignoring retention labels and checked-out files.",
+      "Forgetting that version history, not current files, may be using the space."
+    ],
+    "troubleshooting": [
+      "If the view hits the list view threshold, index Modified and filter on it first.",
+      "If Move file fails, the destination has a file of the same name or the path is too long. Add a suffix or shorten the folder structure.",
+      "If deletes fail, the file is labelled, on hold or checked out. Skip and report it.",
+      "If storage does not drop after deletion, files are still in the recycle bins or held by retention."
+    ],
+    "relatedPatterns": [
+      "build-a-scheduled-stale-item-cleanup-flow",
+      "soft-delete-sharepoint-items-power-apps",
+      "sharepoint-view-indexing-for-large-lists"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find old files in a SharePoint library?",
+        "answer": "Create a view filtered on Modified earlier than a date offset from today, or export items with PnP PowerShell and filter by modified date."
+      },
+      {
+        "question": "Is it safe to delete old SharePoint files automatically?",
+        "answer": "Only after owners have decided and exemptions are respected. Archive by default, log deletions and rely on the 93-day recycle bin as a safety net."
+      },
+      {
+        "question": "Why is my SharePoint site still full after deleting files?",
+        "answer": "Deleted files count until they leave both recycle bins, and version history or retention holds may be keeping copies."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-metadata-standards-guide": {
+    "shortDescription": "A metadata standard for SharePoint: which columns every library carries, how they are named and typed, where the values come from, and who may change them.",
+    "fullDescription": "Metadata only pays off when it is consistent. A short standard defines a core set of site columns, naming rules, when to use choice, managed metadata or lookup, and how terms are requested and changed. Applied through content types, it makes search, views, retention and automation work the same way on every site.",
+    "problemStatement": "One site has a Department column, another has Dept, a third uses folders. Values include 'HR', 'H.R.' and 'Human Resources', so nothing can be filtered or rolled up across sites.",
+    "whenToUse": [
+      "Tenants with many sites built by different people",
+      "Before a migration, intranet build or search improvement project",
+      "When flows and reports depend on column values"
+    ],
+    "whenNotToUse": [
+      "A single team site with one library, where a few local columns are enough",
+      "Short-lived project sites that will be archived as a whole"
+    ],
+    "formulaOrCode": "1. Core columns (site columns published from the content type hub; every document content type includes them)\n  Display name      Internal name     Type                Values from              Required\n  Document Type     DocumentType      Managed metadata    term set \"Document Types\"   yes\n  Department        Department        Managed metadata    term set \"Departments\"      yes\n  Document Owner    DocumentOwner     Person              directory                   yes\n  Status            DocStatus         Choice              Draft | Final | Superseded  yes, default Draft\n  Review Date       ReviewDate        Date                                           where reviewed\n  Sensitivity       (sensitivity label, applied by Purview, not a custom column)\n  Optional by content type: Project, Customer, Contract Number, Effective Date\n\n2. Naming rules\n  Internal name: create the column with no spaces in PascalCase (DocumentOwner), then rename the display name.\n    The internal name never changes afterwards and is what flows, formulas and search use.\n  Avoid names SharePoint reserves or already uses: Title, Name, Author, Editor, Created, Modified, ID, Status.\n  Display names in sentence case, singular: \"Document owner\", not \"Document_Owners\".\n  One column for one meaning across the tenant. Reuse the site column; do not recreate it per list.\n  Prefix nothing. Group site columns under a group named for the organisation: \"Contoso Columns\".\n\n3. Choosing the column type\n  Choice             fewer than about 15 values, stable, used in one or two lists\n  Managed metadata   shared across sites, hierarchical, needs synonyms, or changes centrally\n  Lookup             values are records with their own columns in the same site (customers, projects)\n  Person             anything that names a user; never free text\n  Yes/No             true binary facts only; a three-state answer is a choice\n  Date               dates; never text such as \"Q3\"\n  Single line text   identifiers and free text; add validation for patterns\n  Avoid: multi-value columns where a single value will do (they cannot be sorted or grouped and limit filters),\n         calculated columns for anything a flow or app must write, and more than 12 lookup, person and\n         managed metadata columns in one view (lookup threshold).\n\n4. Term sets (Term store admin centre)\n  Global term sets: Departments, Document Types, Locations. Owned by a named term set owner.\n  Closed submission policy: only owners add terms. Users request terms through a request list.\n  Each term: a default label, synonyms for common variants (HR, Human Resources), a description.\n  Never delete a term that is in use. Deprecate it so existing items keep the value and new items cannot pick it.\n\n5. Content types\n  Create in the content type hub (SharePoint admin centre > Content services > Content type gallery).\n  Base \"Contoso Document\" carries the core columns. Specific types inherit from it:\n    Contoso Document > Policy, Contract, Project Document, Meeting Record\n  Publish to the hubs or sites that need them. Add to libraries and set the default content type.\n  Site-specific columns are allowed on top; changing core columns locally is not.\n\n6. Defaults that save typing\n  Library settings > Column default value settings: set Department or Project per library or per folder,\n  so files inherit values when uploaded to that location.\n  Document sets for groups of files that share values.\n\n7. Search\n  Managed properties: map crawled properties of core columns to refinable properties\n    ows_taxId_DocumentType > RefinableString00 (alias DocumentType)\n    ows_ReviewDate         > RefinableDate00   (alias ReviewDate)\n  Reindex the library after mapping. Use them in search verticals, filters and the PnP search web parts.\n\n8. Change control\n  Request: who asks, what column or term, why, which sites.\n  Decide: metadata owner within 5 working days. Record decisions in a \"Metadata Decisions\" list.\n  Changes to core columns go through the content type hub and are republished; never edited in a site.\n  Review the standard yearly, and term sets every six months for unused and duplicate terms.\n\n9. Checks\n  View per library: items where a required core column is empty.\n  Quarterly report of columns created locally with names close to core columns (Dept, Doc Type) for consolidation.",
+    "stepByStepInstructions": [
+      "Agree the core columns and who owns the standard.",
+      "Write the naming rules and column type guidance.",
+      "Create the global term sets with owners and synonyms.",
+      "Build the base content type and its children in the content type hub and publish them.",
+      "Set library and folder default values.",
+      "Map the core columns to managed properties for search.",
+      "Set up the change request route and periodic checks."
+    ],
+    "commonMistakes": [
+      "Creating columns with spaces, producing internal names such as Document_x0020_Owner.",
+      "Recreating the same column list by list.",
+      "Free-text columns for departments and people.",
+      "Deleting terms that existing items still use."
+    ],
+    "troubleshooting": [
+      "If a published content type does not appear in a site, publishing can take time. Check the content type's publishing status and the site's content type log.",
+      "If a managed metadata column shows a GUID or is blank in a flow, read the Label property of the column value.",
+      "If search refiners show nothing, the managed property mapping is missing or the library has not been reindexed.",
+      "If a view fails with a lookup threshold message, reduce the lookup, person and managed metadata columns shown to twelve or fewer."
+    ],
+    "relatedPatterns": [
+      "use-managed-metadata-vs-choice-fields",
+      "sharepoint-internal-name-safe-column-design",
+      "sharepoint-choice-taxonomy-governance"
+    ],
+    "faqs": [
+      {
+        "question": "What metadata should every SharePoint document have?",
+        "answer": "A small core set such as document type, department, owner and status, delivered through a shared content type so every library uses the same columns."
+      },
+      {
+        "question": "Should I use choice columns or managed metadata?",
+        "answer": "Use choice for short, stable lists used in one place. Use managed metadata when values are shared across sites, hierarchical or centrally maintained."
+      },
+      {
+        "question": "How do I keep column names consistent across sites?",
+        "answer": "Define site columns once in the content type hub, publish them through content types and require changes to go through a named metadata owner."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-document-routing-automation": {
+    "shortDescription": "A Power Automate flow that routes uploaded documents by their metadata: moves each file to the right library or folder, assigns a reviewer and records where it went.",
+    "fullDescription": "A single drop-off library is easy for users, but someone then has to sort the files. A routing flow reads each new file's type and department, looks up the destination and reviewer in a rules list, moves the file, sets its properties and logs the result. Rules live in data, so adding a route does not mean editing the flow.",
+    "problemStatement": "People upload everything to one library. Files wait for someone to drag them to the right place, and some never get there.",
+    "whenToUse": [
+      "Intake libraries for invoices, contracts, forms or scanned mail",
+      "When destination depends on document type, department or value",
+      "When routing rules change often"
+    ],
+    "whenNotToUse": [
+      "Users can save directly to the right place with default metadata by folder",
+      "Classification needs to read document content, which calls for AI Builder or Syntex models ahead of this flow"
+    ],
+    "formulaOrCode": "Lists\n  Routing Rules:  Title | DocumentType (text) | Department (text, optional) | DestinationSite (URL) |\n                  DestinationLibrary (server-relative path, for example /sites/finance/Invoices) |\n                  DestinationFolder (text, optional, supports {yyyy} and {MM}) | ReviewerEmail | IsActive | Priority (number)\n  Routing Log:    Title (file name) | SourcePath | DestinationPath | RuleUsed | Result | Message | RoutedOn\n\nIntake library \"Inbox\"\n  Required columns: DocumentType (choice), Department (choice). RoutingStatus (choice: Waiting | Routed | Needs attention)\n\nTrigger: SharePoint - When a file is created or modified (properties only), library Inbox\n  Trigger condition (run only when metadata is complete and the file is not yet routed):\n    @and(not(empty(triggerOutputs()?['body/DocumentType/Value'])),\n         not(equals(triggerOutputs()?['body/RoutingStatus/Value'], 'Routed')),\n         not(equals(triggerOutputs()?['body/RoutingStatus/Value'], 'Needs attention')))\n  Settings > Concurrency control: On, degree 1 if file names can clash; otherwise 5\n\nScope: Try\n  1. Get file properties (ID from trigger)            fresh values and check-out state\n  2. Condition: file is checked out?\n       not(empty(outputs('Get_file_properties')?['body/CheckoutUser']))   > Terminate (Cancelled). The next\n       modification (check-in) triggers the flow again.\n  3. Get items (Routing Rules)\n       Filter Query:  DocumentType eq '@{outputs('Get_file_properties')?['body/DocumentType/Value']}' and IsActive eq 1\n       Order By:      Priority asc\n  4. Filter array (department match or rule has no department):\n       @or(empty(item()?['Department']),\n           equals(item()?['Department'], outputs('Get_file_properties')?['body/Department/Value']))\n  5. Compose Rule:     first(body('Filter_array'))\n  6. Condition: empty(outputs('Rule'))  > yes: Update file properties RoutingStatus = Needs attention; notify the\n       intake owner; Terminate (Succeeded)\n  7. Compose Folder:\n       replace(replace(coalesce(outputs('Rule')?['DestinationFolder'], ''),\n               '{yyyy}', formatDateTime(utcNow(), 'yyyy')), '{MM}', formatDateTime(utcNow(), 'MM'))\n  8. Send an HTTP request to SharePoint (destination site): make sure the folder exists\n       POST _api/web/folders/AddUsingPath(decodedurl='@{outputs('Rule')?['DestinationLibrary']}/@{outputs('Folder')}')\n       (returns the folder whether or not it existed; skip when Folder is empty)\n  9. Move file (SharePoint)\n       Current Site: intake site     File to Move: Identifier from Get file properties\n       Destination Site: Rule DestinationSite     Destination Folder: DestinationLibrary/Folder\n       If another file is already there: Move with a new name\n  10. Update file properties at the destination (site and library from the rule; ID from Move file output)\n       Reviewer Claims: i:0#.f|membership|<ReviewerEmail>      ReviewStatus: Waiting for review\n       DocumentType, Department carried across if the destination has those columns\n       (Move keeps metadata only for columns that exist in both libraries with the same internal name.)\n  11. Send an email or Teams message to the reviewer with a link to the moved file\n  12. Create item (Routing Log): Result = Routed, DestinationPath, RuleUsed\n\nScope: Catch   (Configure run after: Try has failed or timed out)\n  1. Filter array on result('Try') where status eq 'Failed'; Compose first message:\n       first(body('Filter_failed'))?['error']?['message']\n  2. Update file properties (Inbox): RoutingStatus = Needs attention   (if the file is still there)\n  3. Create item (Routing Log): Result = Failed, Message\n  4. Notify the intake owner. Terminate (Failed) so the run shows as failed.\n\nDynamic destination note\n  Update file properties needs a fixed library to show its columns at design time. For destinations that vary,\n  use Send an HTTP request to SharePoint with ValidateUpdateListItem:\n    POST _api/web/GetFileByServerRelativePath(decodedurl='<path>')/ListItemAllFields/ValidateUpdateListItem\n    Body: { \"formValues\": [ { \"FieldName\": \"ReviewStatus\", \"FieldValue\": \"Waiting for review\" } ] }\n\nFiles that sit in the Inbox\n  Scheduled flow, daily: files in Inbox older than 2 days with RoutingStatus Waiting or Needs attention,\n  one digest to the intake owner.",
+    "stepByStepInstructions": [
+      "Create the routing rules and routing log lists.",
+      "Add required type and department columns and a routing status to the intake library.",
+      "Add the trigger with a condition so only complete, unrouted files start the flow.",
+      "Look up the matching rule and handle the no-rule case.",
+      "Create the destination folder if needed and move the file.",
+      "Set reviewer and status at the destination and notify the reviewer.",
+      "Log the result and handle failures in a catch scope."
+    ],
+    "commonMistakes": [
+      "Hard-coding destinations in a Switch that grows with every new route.",
+      "Moving files that are still checked out or missing metadata.",
+      "Expecting metadata to survive a move when the destination lacks the same columns.",
+      "No log, so a missing file cannot be traced."
+    ],
+    "troubleshooting": [
+      "If the flow fires several times per upload, add the trigger condition and set RoutingStatus as the first update.",
+      "If Move file fails with a locked file message, the document is open or checked out. Retry later or wait for check-in.",
+      "If metadata is blank after the move, create the same site columns in the destination library.",
+      "If no rule matches because of spacing or case, standardise DocumentType values with choice columns on both sides."
+    ],
+    "relatedPatterns": [
+      "route-approvals-by-document-type",
+      "create-document-set-metadata-after-intake",
+      "power-automate-try-catch-scope-error-handling"
+    ],
+    "faqs": [
+      {
+        "question": "How do I move files to different SharePoint libraries automatically?",
+        "answer": "Trigger a flow when a file is created or modified, read its metadata, look up the destination in a rules list and use the Move file action."
+      },
+      {
+        "question": "Does Move file keep the document's metadata and versions?",
+        "answer": "Version history moves with the file. Metadata is kept for columns that exist in both libraries with matching internal names."
+      },
+      {
+        "question": "How do I stop a flow running before the user has filled in the properties?",
+        "answer": "Add a trigger condition that requires the metadata columns to be filled, so the flow starts on the modification that completes them."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-metadata-synchronization-flow": {
+    "shortDescription": "Keep copied values in step between SharePoint lists: when a parent item changes, a flow updates the related child items, without loops or needless runs.",
+    "fullDescription": "Child items often carry copies of parent values such as project name, status or owner so that views and filters work. Copies go stale unless something updates them. This flow fires only when the watched columns change, finds the children with a delegable filter, updates only rows that differ and avoids triggering itself.",
+    "problemStatement": "A project is renamed or its owner changes, and hundreds of related tasks and documents still show the old value.",
+    "whenToUse": [
+      "Parent and child lists where children store copies of parent fields",
+      "Document libraries that carry project or customer metadata",
+      "When lookups alone cannot provide the filtering or grouping needed"
+    ],
+    "whenNotToUse": [
+      "A lookup column with additional fields already shows the parent value live",
+      "Dataverse tables, where relationships, rollups or column mappings are the better tools"
+    ],
+    "formulaOrCode": "Parent list: Projects      ID | Title | ProjectStatus (choice) | ProjectOwner (person) | SyncVersion (number)\nChild list:  Project Tasks  ProjectId (number, indexed) | ProjectTitle | ProjectStatus (text) | ProjectOwnerEmail (text)\n\nTrigger: SharePoint - When an item is created or modified (Projects)\n  The trigger fires for every edit. Find out whether the watched columns changed:\n\n1. Get changes for an item or a file (properties only)\n     ID: trigger ID       Since: Trigger Window Start Token       Until: Trigger Window End Token\n   Outputs \"Has Column Changed: Title\", \"Has Column Changed: ProjectStatus\", \"Has Column Changed: ProjectOwner\"\n   (requires version history on the list)\n\n2. Condition: any watched column changed\n     @or(equals(body('Get_changes')?['ColumnHasChanged']?['Title'], true),\n         equals(body('Get_changes')?['ColumnHasChanged']?['ProjectStatus'], true),\n         equals(body('Get_changes')?['ColumnHasChanged']?['ProjectOwner'], true))\n   No > Terminate (Succeeded)\n\n3. Get items (Project Tasks)\n     Filter Query: ProjectId eq @{triggerOutputs()?['body/ID']}\n     Top Count: 5000        Settings > Pagination: On, threshold 20000\n     Limit columns by view to keep the payload small\n\n4. Filter array: only children that differ (saves actions and avoids pointless versions)\n     @or(not(equals(item()?['ProjectTitle'], triggerOutputs()?['body/Title'])),\n         not(equals(item()?['ProjectStatus'], triggerOutputs()?['body/ProjectStatus/Value'])),\n         not(equals(toLower(coalesce(item()?['ProjectOwnerEmail'], '')),\n                    toLower(coalesce(triggerOutputs()?['body/ProjectOwner/Email'], '')))))\n\n5. Apply to each (body of Filter array)      Settings > Concurrency: On, degree 10\n     Send an HTTP request to SharePoint      updates without creating a new version or changing Modified By\n       Method: POST\n       Uri: _api/web/lists/getbytitle('Project Tasks')/items(@{items('Apply_to_each')?['ID']})/ValidateUpdateListItem\n       Body:\n       {\n         \"formValues\": [\n           { \"FieldName\": \"ProjectTitle\",      \"FieldValue\": \"@{triggerOutputs()?['body/Title']}\" },\n           { \"FieldName\": \"ProjectStatus\",     \"FieldValue\": \"@{triggerOutputs()?['body/ProjectStatus/Value']}\" },\n           { \"FieldName\": \"ProjectOwnerEmail\", \"FieldValue\": \"@{triggerOutputs()?['body/ProjectOwner/Email']}\" }\n         ],\n         \"bNewDocumentUpdate\": true\n       }\n     \"bNewDocumentUpdate\": true makes it a system-style update: no new version, Modified unchanged.\n     Use the ordinary Update item action if a version and audit entry are wanted.\n\n6. Compose summary: length(body('Filter_array')) rows updated. Log it to a flow run log list if runs are audited.\n\nAvoiding loops\n  This flow updates the child list, not the list that triggers it, so it cannot retrigger itself.\n  If a second flow listens on Project Tasks, give it a trigger condition that ignores the service account:\n    @not(equals(triggerOutputs()?['body/Editor/Email'], 'svc-flow@contoso.com'))\n  or rely on the system-style update above, which still fires triggers but can be filtered by unchanged columns.\n\nTrigger condition to cut runs further (optional, when only status matters)\n  Keep a hidden text column LastSyncedStatus on the parent, and use:\n    @not(equals(triggerOutputs()?['body/ProjectStatus/Value'], triggerOutputs()?['body/LastSyncedStatus']))\n  The flow's last step writes LastSyncedStatus, which fires the trigger once more and is then stopped by the condition.\n\nLarge numbers of children (thousands)\n  Batch updates through the SharePoint $batch endpoint, 100 changes per request, or run the update in a child\n  flow per 1,000 items. Expect about 600 SharePoint connector calls per minute per connection.\n\nReconciliation (Recurrence, weekly)\n  For each active project, repeat steps 3 to 5. It repairs anything missed while the flow was off or failed.\n\nDocument libraries\n  Same pattern with Get files (properties only) and a ProjectId column on the library. Checked-out files cannot\n  be updated: collect their names and report them.",
+    "stepByStepInstructions": [
+      "Decide which parent columns are copied to children and add matching child columns.",
+      "Index the child column that stores the parent ID.",
+      "Trigger on parent changes and use Get changes to detect the watched columns.",
+      "Get the children with a filter query and pagination.",
+      "Filter to the rows that actually differ.",
+      "Update them with concurrency and a system-style update if no version is wanted.",
+      "Add a weekly reconciliation run."
+    ],
+    "commonMistakes": [
+      "Updating every child on every parent edit.",
+      "Filtering children on a lookup column's text, which is slow or not delegable.",
+      "Triggering on the same list the flow updates, creating a loop.",
+      "Leaving pagination off and syncing only the first 100 children."
+    ],
+    "troubleshooting": [
+      "If Get changes returns nothing, version history is off on the list or the since token is missing.",
+      "If only 100 children update, turn on pagination and set Top Count.",
+      "If updates fail with 429, lower the concurrency and let the default retry policy run.",
+      "If person values do not match, compare emails in lower case and store the email as text on the child."
+    ],
+    "relatedPatterns": [
+      "power-automate-avoid-infinite-update-loop",
+      "power-automate-trigger-condition-status-changed",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "faqs": [
+      {
+        "question": "How do I update child items when a parent item changes in SharePoint?",
+        "answer": "Trigger a flow on the parent list, check that the relevant columns changed, get the children with a filter on the parent ID and update each one."
+      },
+      {
+        "question": "How do I know which column changed in a SharePoint trigger?",
+        "answer": "Use the Get changes for an item or a file action with the trigger window tokens. It returns a true or false value for each column."
+      },
+      {
+        "question": "How do I update a SharePoint item without creating a new version?",
+        "answer": "Call ValidateUpdateListItem through Send an HTTP request to SharePoint with bNewDocumentUpdate set to true."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-flow-ownership-transfer-checklist": {
+    "shortDescription": "A checklist for moving a Power Automate flow from one owner to another: connections, connection references, licences, shared resources and a tested first run.",
+    "fullDescription": "A flow runs with its owner's connections. When that person changes role or leaves, the flow keeps running until a password changes or the account is disabled, then fails. Transferring ownership properly means adding the new owner, replacing every connection, checking licences and proving the flow still works, ideally before the old account goes.",
+    "problemStatement": "Someone leaves, their account is disabled, and a week later a critical flow has been failing silently because every connection was theirs.",
+    "whenToUse": [
+      "An owner is leaving, changing role or handing over a solution",
+      "Moving a personal flow to a service account or a team",
+      "During joiner, mover and leaver processing"
+    ],
+    "whenNotToUse": [
+      "Flows that are no longer needed, which should be turned off and deleted instead",
+      "Moving a flow between environments, which is a solution export and import, not an ownership transfer"
+    ],
+    "formulaOrCode": "Before the transfer\n  [ ] Flow name, environment, solution (or \"not in a solution\"), business owner, criticality\n  [ ] New owner named. Prefer a service account or a team (security group) plus two named co-owners.\n  [ ] New owner has the licence the flow needs:\n        Standard connectors only        > Microsoft 365 licence\n        Premium or custom connectors    > Power Automate Premium for the owner, or a Process licence on the flow\n  [ ] New owner has access to everything the flow touches:\n        SharePoint sites and lists, mailboxes (Send As / shared mailbox), Teams channels, Dataverse security roles,\n        SQL or on-premises gateway (must be a gateway user), third-party accounts and API keys\n  [ ] List every connection and who owns it: flow details page > Connections; in a solution > Connection references\n\nTransfer: flow inside a solution\n  [ ] Environment admin opens the solution > flow > Details > Edit > Primary owner > set the new owner\n      PowerShell alternative:\n        Set-AdminFlowOwnerRole -EnvironmentName <env id> -FlowName <flow id> -PrincipalType User\n                               -PrincipalObjectId <new owner object id> -RoleName CanEdit\n      Changing the primary owner of a solution flow:  update the workflow row's ownerid (Dataverse) or use the\n      \"Change owner\" option in the flow's details panel.\n  [ ] New owner signs in, opens each connection reference and selects or creates THEIR connection\n  [ ] Turn the flow off and on once so the trigger re-registers with the new connection\n\nTransfer: flow not in a solution\n  [ ] Current owner (or an admin through the admin centre: Environments > Resources > Flows > Manage sharing)\n      adds the new owner as a co-owner\n  [ ] New owner opens the flow, edits each action's connection (the \"...\" menu or the Connections panel) and\n      switches it to their own; save\n  [ ] The original owner cannot be removed from a non-solution flow by themselves. Options:\n        add the flow to a solution, then change the primary owner; or\n        Save As / export and import a copy under the new owner, turn the old one off, and delete it after a\n        parallel run\n  [ ] Check \"Run-only users\" for instant flows: connections may be set to \"Provided by run-only user\" or to a\n      specific connection that must be replaced\n\nThings that carry the old owner's identity\n  [ ] Approvals: requests are sent from the connection's user. Check wording and that in-flight approvals finish\n      before switching.\n  [ ] Emails \"sent from\" the owner's mailbox: switch to a shared mailbox (Send an email from a shared mailbox V2)\n  [ ] SharePoint \"Modified By\" and Teams \"posted by\" will now show the new account\n  [ ] Triggers on personal resources (My OneDrive, my mailbox, my calendar, Forms the person owns):\n        move the form to a group (Forms > Move to a group), move files to a SharePoint library, use a shared mailbox\n  [ ] Child flows: connections must be embedded (\"Use this connection\"), not run-only user\n  [ ] Custom connectors and gateways shared with the new owner\n  [ ] Environment variables and secrets (Key Vault access for the new identity)\n  [ ] Power Apps that call the flow: open the app, refresh the flow, republish if the connection set changed\n\nTest\n  [ ] Trigger a real or test run. Every action succeeds with the new connections.\n  [ ] Run history shows no action still using the previous owner's connection\n        (flow details > Connections lists only the new owner's)\n  [ ] Disable nothing on the old account until this passes\n\nClean up\n  [ ] Remove the previous owner as co-owner (if not the unremovable creator)\n  [ ] Delete the previous owner's unused connections\n  [ ] Update the flow inventory and support guide: owner, co-owners, service account, date transferred\n  [ ] Add a calendar check a week later: 28-day run history shows no failures\n\nWhen the owner has already left\n  [ ] Admin: Power Platform admin centre > Environments > Resources > Flows > select the flow > Manage sharing >\n      add an owner. Or Set-AdminFlowOwnerRole.\n  [ ] Flows of deleted users are listed as orphaned; the CoE Starter Kit and Get-AdminFlow help find them\n  [ ] Then follow the connection and test steps above. Connections of a disabled account cannot be repaired;\n      they must be replaced.",
+    "stepByStepInstructions": [
+      "Record the flow, its connections and what each connects to.",
+      "Confirm the new owner's licence and access to every resource.",
+      "Add the new owner, or change the primary owner for solution flows.",
+      "Replace every connection or connection reference with the new owner's.",
+      "Move personal triggers and mailboxes to shared resources.",
+      "Run the flow and confirm no action uses the previous owner's connection.",
+      "Remove old access and update the inventory."
+    ],
+    "commonMistakes": [
+      "Adding a co-owner and assuming the connections changed too.",
+      "Transferring to a person without the required premium licence.",
+      "Leaving triggers on a personal OneDrive, mailbox or form.",
+      "Disabling the leaver's account before the transfer is tested."
+    ],
+    "troubleshooting": [
+      "If the flow fails with an unauthorized error after transfer, one action still uses the previous owner's connection.",
+      "If the trigger stops firing, turn the flow off and on so the trigger subscription is recreated.",
+      "If the new owner cannot select a connection reference, they need access to the solution and their own connection in that environment.",
+      "If the flow is suspended for licensing, assign Power Automate Premium to the new owner or a Process licence to the flow."
+    ],
+    "relatedPatterns": [
+      "govern-power-automate-service-account-ownership",
+      "connection-references-for-solution-flows",
+      "find-orphaned-apps-and-flows-powershell"
+    ],
+    "faqs": [
+      {
+        "question": "How do I change the owner of a Power Automate flow?",
+        "answer": "For a solution flow, change the primary owner in the flow's details. For other flows, add the new person as a co-owner and replace the connections, or move the flow into a solution first."
+      },
+      {
+        "question": "What happens to flows when the owner leaves the company?",
+        "answer": "They keep running until the owner's connections stop working, then fail. An admin can add a new owner, who must replace every connection."
+      },
+      {
+        "question": "Does adding a co-owner change the flow's connections?",
+        "answer": "No. The flow keeps using the original connections until each one is switched to the new owner's."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-connector-dependency-register": {
+    "shortDescription": "A register of which connectors, connections and accounts each flow and app depends on, built from the admin PowerShell cmdlets, so the impact of a change is known in advance.",
+    "fullDescription": "A DLP policy change, a retiring connector, an expiring service account password or a licence review all raise the same question: which flows and apps are affected? A dependency register answers it. It is generated from the platform, not typed by hand, and refreshed on a schedule.",
+    "problemStatement": "The admin team wants to block a connector or rotate an account's password and cannot say what will break.",
+    "whenToUse": [
+      "Before changing DLP policies",
+      "Service account password rotation or account retirement",
+      "Licence reviews for premium connector use",
+      "Connector deprecations announced by Microsoft or a vendor"
+    ],
+    "whenNotToUse": [
+      "Tenants running the CoE Starter Kit, which already inventories connectors per app and flow",
+      "A single-maker environment with a handful of flows"
+    ],
+    "formulaOrCode": "Register columns (SharePoint list or Dataverse table \"Connector Dependencies\")\n  ResourceType (Flow | App)   ResourceName   ResourceId   Environment   Owner   State (Started/Stopped)\n  Connector (display name)    ConnectorId (shared_sharepointonline)   Tier (Standard | Premium | Custom)\n  ConnectionOwner / Account   ConnectionStatus   ConnectionReference (logical name)   Endpoint (site, server, URL)\n  LastSeen (date of the scan)\n\nBuild it: PowerShell (Power Platform admin; modules Microsoft.PowerApps.Administration.PowerShell)\n  Add-PowerAppsAccount\n  $rows = @()\n  foreach ($env in Get-AdminPowerAppEnvironment) {\n\n      # Connector catalogue for tier lookup\n      $tiers = @{}\n      Get-AdminPowerAppConnector -EnvironmentName $env.EnvironmentName | ForEach-Object {\n          $tiers[$_.ConnectorName] = \"Custom\" }          # custom connectors in this environment\n      # Standard and premium tiers: Get-PowerAppConnector (maker module) returns properties.tier per connector\n\n      # Flows\n      foreach ($f in Get-AdminFlow -EnvironmentName $env.EnvironmentName) {\n          $detail = Get-AdminFlow -EnvironmentName $env.EnvironmentName -FlowName $f.FlowName\n          foreach ($ref in $detail.Internal.properties.connectionReferences.PSObject.Properties) {\n              $rows += [pscustomobject]@{\n                  ResourceType = \"Flow\"; ResourceName = $f.DisplayName; ResourceId = $f.FlowName\n                  Environment  = $env.DisplayName; Owner = $f.CreatedBy.userId; State = $f.Enabled\n                  ConnectorId  = ($ref.Value.id -split \"/\")[-1]\n                  Connector    = $ref.Value.displayName\n                  ConnectionName = $ref.Value.connectionName\n                  Tier = $ref.Value.tier\n              }\n          }\n      }\n\n      # Canvas apps\n      foreach ($a in Get-AdminPowerApp -EnvironmentName $env.EnvironmentName) {\n          foreach ($c in $a.Internal.properties.connectionReferences.PSObject.Properties) {\n              $rows += [pscustomobject]@{\n                  ResourceType = \"App\"; ResourceName = $a.DisplayName; ResourceId = $a.AppName\n                  Environment  = $env.DisplayName; Owner = $a.Owner.displayName; State = \"n/a\"\n                  ConnectorId  = ($c.Value.id -split \"/\")[-1]\n                  Connector    = $c.Value.displayName\n                  ConnectionName = \"\"; Tier = $c.Value.apiTier\n              }\n          }\n      }\n  }\n  $rows | Export-Csv .\\connector-dependencies.csv -NoTypeInformation\n\n  # Connections and the accounts behind them\n  Get-AdminPowerAppConnection | Select-Object ConnectionName, ConnectorName, DisplayName,\n      @{n=\"CreatedBy\";e={$_.CreatedBy.userPrincipalName}}, @{n=\"Status\";e={($_.Statuses | Select-Object -First 1).status}},\n      EnvironmentName | Export-Csv .\\connections.csv -NoTypeInformation\n  # Join the two files on ConnectionName to see which account each flow action runs as.\n\nQuestions the register answers\n  Which flows use the SQL Server connector?            filter ConnectorId = shared_sql\n  What breaks if svc-flow's password is rotated?       filter ConnectionOwner = svc-flow@contoso.com\n  Which resources use premium connectors, by owner?    Tier = Premium, group by Owner   (licence review)\n  What would a DLP change block?                       ConnectorId in the connectors moving to Blocked, or flows that\n                                                       mix connectors from the Business and Non-business groups\n  Which connections are broken now?                    ConnectionStatus = Error\n\nEndpoints (the part the cmdlets do not give)\n  The site, server or URL inside each action lives in the flow definition:\n    $detail.Internal.properties.definition  (triggers and actions > inputs > parameters > dataset / table / host)\n  Parse for 'dataset' values to list SharePoint sites and SQL servers per flow, and for HTTP action 'uri' hosts.\n\nBefore a change\n  1. Filter the register for the affected connector, connection or account.\n  2. Notify owners with the list of their resources and the change date.\n  3. For DLP: test the policy on a single environment first, or use the admin centre's impact view where offered.\n  4. After the change, check ConnectionStatus and failed runs for the listed flows.\n\nKeep it current\n  Run the script weekly from Azure Automation or a scheduled task with a service principal\n  (New-PowerAppManagementApp registers the app for admin cmdlets). Load the CSV into the list with a flow,\n  set LastSeen, and flag rows not seen in the latest scan as removed.\n\nIn solutions\n  Connection references are the unit of dependency: Solutions > Connection references shows each one and the\n  flows that use it. One reference per connector and purpose keeps the register short.",
+    "stepByStepInstructions": [
+      "Create the register list or table.",
+      "Run the script to export connector use for flows and apps in every environment.",
+      "Export connections with their owning accounts and join on connection name.",
+      "Add endpoints by parsing flow definitions where needed.",
+      "Load the result into the register and build views by connector, account and tier.",
+      "Use the register to assess and announce each change.",
+      "Schedule the scan weekly and track removed rows."
+    ],
+    "commonMistakes": [
+      "Maintaining the register by hand, so it is wrong within a month.",
+      "Listing connectors without the account behind each connection.",
+      "Forgetting canvas apps, which have their own connections.",
+      "Scanning only the default environment."
+    ],
+    "troubleshooting": [
+      "If the cmdlets return nothing for an environment, the account needs Power Platform admin rights or environment admin in each one.",
+      "If connection references are empty for a flow, request the single flow with its name to get the full definition.",
+      "If tiers are blank, read the connector's tier from Get-PowerAppConnector and join on the connector id.",
+      "If the scan is slow in large tenants, run per environment in parallel or query the Dataverse workflow and connectionreference tables for solution flows."
+    ],
+    "relatedPatterns": [
+      "export-power-platform-inventory-powershell",
+      "connection-references-for-solution-flows",
+      "power-automate-document-flow-inventory"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find which flows use a particular connector?",
+        "answer": "Run Get-AdminFlow for each environment and read the connection references in each flow's properties, then filter by connector id. The CoE Starter Kit provides the same view."
+      },
+      {
+        "question": "How do I know what a DLP policy change will break?",
+        "answer": "Compare the connectors each flow and app uses with the policy's groups. Any resource using a blocked connector, or mixing business and non-business connectors, will be suspended."
+      },
+      {
+        "question": "How do I see which account a flow's connections use?",
+        "answer": "Export connections with Get-AdminPowerAppConnection, which shows who created each one, and join that to the flow's connection names."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-failed-run-triage-process": {
+    "shortDescription": "A triage process for failed Power Automate runs: collect failures in one place, classify the error, apply the standard fix, resubmit, and record the cause.",
+    "fullDescription": "Flows fail for a small number of reasons: a connection expired, a service throttled, the data was not what the flow expected, or a permission changed. A triage process brings failures to one list, sorts them by cause using the error code, gives each cause a standard response and makes sure failed work is resubmitted instead of lost.",
+    "problemStatement": "Failure emails go to one maker's inbox and are ignored. Nobody knows which runs failed, whether the work was redone, or why it keeps happening.",
+    "whenToUse": [
+      "Any environment with business-critical flows",
+      "Support teams taking over flows from makers",
+      "When the same failures recur"
+    ],
+    "whenNotToUse": [
+      "Personal productivity flows, where the weekly failure email to the owner is enough",
+      "Environments already monitored through Application Insights alerts with an on-call process"
+    ],
+    "formulaOrCode": "1. Capture\n  In every important flow: Scope \"Try\" + Scope \"Catch\" (run after: has failed, has timed out).\n  Catch writes one row to a shared \"Flow Failures\" list, then Terminate (Failed):\n    FlowName       workflow()?['tags']?['flowDisplayName']\n    RunLink        concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'],\n                          '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])\n    FailedAction   first(body('Filter_failed'))?['name']\n    ErrorCode      coalesce(first(body('Filter_failed'))?['code'], first(body('Filter_failed'))?['outputs']?['statusCode'])\n    ErrorMessage   coalesce(first(body('Filter_failed'))?['error']?['message'],\n                            first(body('Filter_failed'))?['outputs']?['body']?['message'])\n    RecordKey      the business identifier (item ID, order number) so the work can be found\n    where Filter_failed = Filter array on result('Try') with  @equals(item()?['status'], 'Failed')\n  List columns to add: Category (choice), Status (New | Investigating | Resubmitted | Fixed | Ignored),\n    AssignedTo, RootCause, FixApplied, ClosedOn\n  Flows without a catch scope: admins can list failures with PowerShell\n    Get-FlowRun -EnvironmentName <env> -FlowName <flow id> | Where-Object Status -eq \"Failed\"\n  or route cloud flow telemetry to Application Insights (environment setting > Data export).\n\n2. Classify by error\n  Code / text                                  Category          Usual cause\n  401, 403 \"Unauthorized\", \"connection is     Connection        password changed, token expired, account\n    not configured\", InvalidConnection                           disabled, permission removed\n  429, \"Rate limit\", \"TooManyRequests\"        Throttling        loop without delay, bulk load, shared limits\n  408, 502, 503, 504, \"GatewayTimeout\"        Transient         service or network blip\n  400 \"BadRequest\", \"InvalidTemplate\",        Data or logic     null value, wrong type, missing column,\n    \"The template language expression...\"                        bad expression, required field empty\n  404 \"NotFound\"                               Missing resource  item, file, list or site deleted or renamed\n  409, 412 \"Conflict\", \"Precondition failed\"   Concurrency       two runs edited the same item; file locked\n  \"ActionTimedOut\", approval timeout           Timeout           approval not answered in 30 days; long HTTP call\n  \"FlowSuspended\", licence messages            Licence or DLP    owner licence removed; DLP policy change\n\n3. Standard response per category\n  Connection        Fix the connection as its owner (Connections > Fix connection). Resubmit failed runs.\n  Throttling        Usually recovers with the built-in retry. If not: lower concurrency, add a delay, batch. Resubmit.\n  Transient         Resubmit. If it recurs more than weekly, raise the action's retry policy (exponential, 4 to 6 tries).\n  Data or logic     Do not resubmit unchanged: it fails again. Fix the data or the flow, then resubmit.\n  Missing resource  Restore or repoint. Check whether a site, list or column was renamed.\n  Concurrency       Resubmit. Add concurrency control on the trigger or check ETag before update.\n  Timeout           Decide the business outcome (escalate, cancel), then rerun from a suitable point.\n  Licence or DLP    Platform admin. Flow stays off until resolved.\n\n4. Resubmit\n  Run history > open the failed run > Resubmit. It reruns with the original trigger data, using the current\n  version of the flow. Runs are kept for 28 days: after that the trigger data is gone.\n  Many runs: Run history > select failed runs > Resubmit (bulk, up to 20 at a time in the portal), or script it:\n    POST https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<env>/flows/<flow>/\n         triggers/<trigger>/histories/<run>/resubmit?api-version=2016-11-01\n  Before resubmitting, check the flow is safe to run twice for that record (will it send a second email,\n  create a duplicate item?). Idempotent flows check for existing output first.\n\n5. Daily routine (15 minutes)\n  Open \"Flow Failures\" view: Status = New, grouped by FlowName.\n  Set Category from the error. Apply the standard response. Set Status and FixApplied.\n  Same flow and category three times in a week > raise a problem record for a permanent fix.\n\n6. Weekly review\n  Failures by flow and by category (group and count in the list, or a Power BI report).\n  Top three recurring causes get an owner and a due date.\n  Flows with no failures recorded but known to be critical: confirm their catch scope works by forcing a test failure.\n\n7. Alerts\n  Flow on \"Flow Failures\" item created: post to the support Teams channel for flows marked critical.\n  Avoid alert floods: one message per flow per hour (check for an existing New item for the same flow in the last hour).",
+    "stepByStepInstructions": [
+      "Add try and catch scopes to important flows and log failures to one list.",
+      "Add category, status and root cause columns to the list.",
+      "Classify each new failure from its error code.",
+      "Apply the standard response for that category.",
+      "Resubmit runs once the cause is fixed, checking for duplicate side effects.",
+      "Review counts weekly and assign permanent fixes for repeat causes.",
+      "Alert the support channel for critical flows without flooding it."
+    ],
+    "commonMistakes": [
+      "Resubmitting data or logic failures without changing anything.",
+      "Leaving failures to the default email that only the owner sees.",
+      "Waiting more than 28 days, after which runs cannot be resubmitted.",
+      "Resubmitting flows that send emails or create items without checking for duplicates."
+    ],
+    "troubleshooting": [
+      "If the catch scope never runs, set its run after to has failed and has timed out, not is successful.",
+      "If the error message is blank, read outputs.body.message or outputs.body.error.message for connector actions.",
+      "If Resubmit is greyed out, the run is older than 28 days or the trigger type does not support it.",
+      "If the failure list fills with one error, fix that cause first and add the hourly limit to alerts."
+    ],
+    "relatedPatterns": [
+      "power-automate-try-catch-scope-error-handling",
+      "create-a-flow-run-logging-list",
+      "retry-transient-sharepoint-connector-failures"
+    ],
+    "faqs": [
+      {
+        "question": "How do I find all failed flow runs?",
+        "answer": "Log failures from a catch scope to a shared list, use the flow's 28-day run history filtered to failed, or list them with Get-FlowRun in PowerShell."
+      },
+      {
+        "question": "How do I rerun a failed Power Automate flow?",
+        "answer": "Open the failed run in run history and select Resubmit. It runs again with the original trigger data and the current flow definition."
+      },
+      {
+        "question": "What causes most Power Automate failures?",
+        "answer": "Expired or broken connections, throttling, transient service errors and unexpected data such as null values or missing columns."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-notification-throttling-pattern": {
+    "shortDescription": "Stop a flow flooding people with messages: send at most one notification per subject per period, collect the rest, and deliver them as a single digest.",
+    "fullDescription": "A flow that emails on every change is fine at five items a day and unbearable at five hundred. Throttling keeps a small log of what was sent to whom and when. Before sending, the flow checks the log: if a recent message exists for the same key it queues the event instead, and a scheduled flow sends the queue as one summary.",
+    "problemStatement": "A bulk edit or a busy day triggers hundreds of near-identical emails or Teams posts. People create inbox rules to hide them and then miss the one that mattered.",
+    "whenToUse": [
+      "Notifications triggered by item changes, failures or thresholds",
+      "Alerts to shared mailboxes and Teams channels",
+      "Flows that can be triggered in bulk by imports or other flows"
+    ],
+    "whenNotToUse": [
+      "Messages that must be delivered individually for audit or legal reasons",
+      "Low-volume flows where every event deserves its own message"
+    ],
+    "formulaOrCode": "List: Notification Log\n  Title (NotificationKey, indexed)   Recipient (text, indexed)   LastSentOn (date and time)   PendingCount (number)\n  PendingDetails (multiple lines, plain text)   Window (number of minutes, optional override)\n\nNotificationKey: what counts as \"the same\" notification\n  per item and recipient:        concat('Request-', ID, '-', recipientEmail)\n  per flow failure:              concat('FlowFailure-', flowName)\n  per recipient and category:    concat('Overdue-', ownerEmail)\n\nIn the notifying flow (after the event is detected)\n  1. Compose Key:      concat('Request-', triggerOutputs()?['body/ID'], '-', variables('recipient'))\n  2. Compose Line:     concat(formatDateTime(utcNow(), 'HH:mm'), ' ', triggerOutputs()?['body/Title'], ' changed to ',\n                              triggerOutputs()?['body/Status/Value'])\n  3. Get items (Notification Log)   Filter Query: Title eq '@{outputs('Key')}'    Top Count: 1\n  4. Compose WindowStart:  addMinutes(utcNow(), -60)          60-minute quiet period\n  5. Condition: send now?\n       @or(empty(body('Get_items')?['value']),\n           less(first(body('Get_items')?['value'])?['LastSentOn'], outputs('WindowStart')))\n     Yes:\n       Send the email or Teams message\n       If no log row: Create item  Title = Key, Recipient, LastSentOn = utcNow(), PendingCount = 0\n       Else:          Update item  LastSentOn = utcNow(), PendingCount = 0, PendingDetails = ''\n     No (within the quiet period): queue it\n       Update item  PendingCount = add(first(...)?['PendingCount'], 1)\n                    PendingDetails = concat(first(...)?['PendingDetails'], outputs('Line'), decodeUriComponent('%0A'))\n\n  Race condition: two runs can both find no row and both send. Reduce it with trigger concurrency = 1 for\n  low-volume flows, or accept an occasional double send. For strict once-only, create the log row first with\n  \"enforce unique values\" on Title and treat a failed create as \"someone else is sending\".\n\nDigest flow (Recurrence, every 60 minutes, or 08:00 and 13:00 for a calmer rhythm)\n  1. Get items (Notification Log)   Filter Query: PendingCount gt 0\n  2. Apply to each:\n       Send one message:  \"<PendingCount> further updates since <LastSentOn>\" followed by PendingDetails\n       Update item: LastSentOn = utcNow(), PendingCount = 0, PendingDetails = ''\n  Group by Recipient first (Select + union for distinct recipients) to send one message per person, not per key.\n\nSimpler variants\n  A. Trigger-side throttling when only the latest state matters\n     Trigger condition so the flow runs only for the change that matters:\n       @equals(triggerOutputs()?['body/Status/Value'], 'Approved')\n     plus a \"NotifiedOn\" column on the item; skip if NotifiedOn is within the last hour.\n  B. Debounce: wait for edits to stop\n     Delay 5 minutes > Get item > continue only if Modified equals the trigger's Modified.\n     Earlier runs end quietly; the last edit sends the message. Costs a waiting run per edit.\n  C. Digest only\n     Never send from the trigger flow. A scheduled flow queries what changed since its last run\n     (Modified ge '@{addHours(utcNow(), -24)}') and sends one summary per owner.\n\nTeams specifics\n  Post one parent message per key and add replies for later events (\"Reply with a message in a channel\"),\n  storing the parent's messageId in the log. The channel shows one thread instead of fifty posts.\n  Chat and channel posting is throttled by Teams (about one message per second per flow connection):\n  keep concurrency low when posting in loops.\n\nEmail specifics\n  Outlook connector: about 300 API calls per 60 seconds per connection, and Exchange limits of 10,000 recipients\n  per day and 30 messages per minute for a mailbox. A digest stays far below these.\n\nGive people control\n  Preferences list: Recipient | Category | Mode (Immediate | Hourly digest | Daily digest | Off)\n  Look it up before step 5 and choose the window or skip.",
+    "stepByStepInstructions": [
+      "Decide the key that defines a duplicate notification and the quiet period.",
+      "Create the notification log list with an indexed key.",
+      "In the notifying flow, look up the key before sending.",
+      "Send and stamp the log when outside the quiet period, otherwise add the event to the pending details.",
+      "Build the scheduled digest flow that sends and clears pending entries.",
+      "For Teams, reply in one thread per key.",
+      "Add a preferences list if recipients want different rhythms."
+    ],
+    "commonMistakes": [
+      "Throttling by dropping events, so information is lost instead of summarised.",
+      "A key that is too broad, which hides unrelated alerts behind one message.",
+      "No digest flow, leaving queued events unsent.",
+      "High concurrency that lets many runs pass the check at once."
+    ],
+    "troubleshooting": [
+      "If duplicates still arrive in bursts, runs are checking the log at the same moment. Lower trigger concurrency or use the unique-key create approach.",
+      "If the digest is empty, PendingCount is not being incremented. Check the false branch updates the row found in Get items.",
+      "If PendingDetails is cut off, the plain text column limit was reached. Cap the lines stored and show the count.",
+      "If Teams posts fail with 429, add a one-second delay inside the loop."
+    ],
+    "relatedPatterns": [
+      "send-a-digest-email-grouped-by-owner",
+      "handle-duplicate-flow-trigger-runs",
+      "use-child-flows-for-shared-notification-logic"
+    ],
+    "faqs": [
+      {
+        "question": "How do I stop Power Automate sending too many emails?",
+        "answer": "Record when each notification was last sent, skip or queue further ones inside a quiet period, and send the queued events as one digest on a schedule."
+      },
+      {
+        "question": "How do I send one summary email instead of many?",
+        "answer": "Use a scheduled flow that gathers the pending events or recently changed items, groups them by recipient and sends each person a single message."
+      },
+      {
+        "question": "How do I wait until a user has finished editing before notifying?",
+        "answer": "Add a short delay, re-read the item and continue only if its modified time still matches the trigger. Only the last edit gets through."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-reusable-approval-child-flow": {
+    "shortDescription": "One child flow that runs approvals for every process: the parent passes title, approvers and a link, and gets back the outcome, approver and comments in a standard shape.",
+    "fullDescription": "Approval steps are rebuilt in flow after flow, each with slightly different reminders, timeouts and wording. A child flow in a solution holds that logic once. Parents call it with a few inputs and act on a consistent response, so a change to reminders or logging is made in one place.",
+    "problemStatement": "Ten flows each contain their own approval, reminder loop and timeout handling. They behave differently and fixing a bug means editing all ten.",
+    "whenToUse": [
+      "Several processes need approvals with the same behaviour",
+      "A standard approval record is required across processes",
+      "Reminders, timeouts and delegation should be consistent"
+    ],
+    "whenNotToUse": [
+      "A single simple flow with one approval and no reminders",
+      "Parents that are not in a solution, since child flows can only be called from solution flows"
+    ],
+    "formulaOrCode": "Child flow: \"Shared - Run approval\"   (inside a solution)\n\nTrigger: Manually trigger a flow     inputs:\n  Title            Text      \"Purchase request PR-1042: laptop\"\n  Details          Text      Markdown shown in the approval\n  ApproverEmails   Text      semicolon-separated\n  ApprovalType     Text      \"First\" (first to respond) or \"All\" (everyone must approve)\n  ItemLink         Text      URL to the record\n  RequestorEmail   Text\n  TimeoutDays      Number    days before the approval is treated as timed out\n  ProcessName      Text      for logging\n  RecordKey        Text      for logging\n\nScope: Try\n  1. Start and wait for an approval\n       Approval type:  if(equals(triggerBody()?['text_3'], 'All'), 'Approve/Reject - Everyone must approve',\n                          'Approve/Reject - First to respond')\n                       (the action's type cannot be an expression in the designer: use a Condition with two\n                        approval actions, one per type, and join the results below)\n       Title, Assigned to, Details, Item link, Requestor from the inputs\n       Settings > Timeout:  concat('P', string(triggerBody()?['number']), 'D')      for example P7D\n  2. Parallel branch for reminders (optional)\n       Do until the approval branch sets varDone = true:\n         Delay TimeoutDays / 2 days > if not done, send a reminder email with the approval link\n       Simpler: one Delay then one reminder, in a branch that is cancelled when the flow ends.\n\nScope: Timed out   (run after Try: has timed out)\n  Set varOutcome = \"TimedOut\"\n\nScope: Failed      (run after Try: has failed)\n  Set varOutcome = \"Error\"; varComments = the error message\n\nAfter Try succeeds\n  varOutcome   = outputs('Start_and_wait_for_an_approval')?['body/outcome']          \"Approve\" or \"Reject\"\n  varApprover  = first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['responder']?['email']\n  varComments  = join(xpath(xml(json(concat('{\"r\":{\"c\":',\n                   string(outputs('Start_and_wait_for_an_approval')?['body/responses']), '}}'))),\n                   '/r/c/comments/text()'), ' | ')\n                 or simply first(...responses)?['comments'] for first-to-respond approvals\n\nLog (one place for every process)\n  Create item in \"Approval Log\": ProcessName, RecordKey, Title, Outcome, Approver, Comments, RequestedOn, CompletedOn\n\nRespond to a PowerApp or flow     (must run on every path: set run after to succeeded, failed, skipped, timed out)\n  Outcome      Text     Approve | Reject | TimedOut | Error\n  Approver     Text\n  Comments     Text\n  CompletedOn  Text     utcNow()\n\nChild flow settings\n  Run only users: set every connection to \"Use this connection (<service account>)\". A child flow cannot use\n  \"Provided by run-only user\" connections.\n  Connections through connection references so the solution deploys cleanly.\n\nParent flow\n  Run a Child Flow > \"Shared - Run approval\"\n    Title:           concat('Purchase request ', triggerOutputs()?['body/Title'])\n    Details:         concat('**Amount:** ', triggerOutputs()?['body/Amount'], decodeUriComponent('%0A'),\n                            '**Requested by:** ', triggerOutputs()?['body/Author/DisplayName'])\n    ApproverEmails:  the manager's email, or several joined with ';'\n    ApprovalType:    First\n    ItemLink:        triggerOutputs()?['body/{Link}']\n    TimeoutDays:     7\n    ProcessName:     Purchasing        RecordKey: string(triggerOutputs()?['body/ID'])\n  Switch on body('Run_a_Child_Flow')?['outcome']\n    Approve   > update status to Approved, notify requester\n    Reject    > update status to Rejected with comments\n    TimedOut  > escalate: call the child flow again with the approver's manager, or mark \"Escalated\"\n    Error     > notify support\n\nLimits to design around\n  A parent waits for the child's response. Flow runs last at most 30 days, so TimeoutDays plus any\n  escalation round must stay under that. For longer waits, have the child update the record and end,\n  and let a second flow pick up the status change.\n  The synchronous Respond action must be reached within the parent's action timeout; raise the Run a Child\n  Flow action's timeout setting (for example P14D) to cover the approval period.\n\nVersioning\n  Add new inputs as optional with defaults inside the child (coalesce(triggerBody()?['text_9'], 'default')).\n  Removing or renaming an input breaks every parent until each is opened and saved.",
+    "stepByStepInstructions": [
+      "Create the child flow in a solution with the manual trigger inputs.",
+      "Add the approval with a timeout and separate handling for timed out and failed.",
+      "Normalise outcome, approver and comments into variables.",
+      "Log the result to a shared approval log.",
+      "Add the Respond action and make it run on every path.",
+      "Set the child flow's run-only connections to fixed connections.",
+      "Call it from each parent and branch on the returned outcome."
+    ],
+    "commonMistakes": [
+      "Leaving the Respond action on the success path only, so parents hang on a timeout.",
+      "Run-only user connections in the child, which block it from being called.",
+      "Timeouts longer than the 30-day run limit.",
+      "Renaming inputs after parents are live."
+    ],
+    "troubleshooting": [
+      "If the child flow is not listed in Run a Child Flow, both flows must be in a solution in the same environment.",
+      "If the parent fails with a timeout while the approval is still pending, raise the timeout on the Run a Child Flow action.",
+      "If saving the parent reports the child must use embedded connections, edit the child's run-only users and choose Use this connection for each.",
+      "If comments are blank for everyone-must-approve, loop the responses array and join each responder's comments."
+    ],
+    "relatedPatterns": [
+      "use-child-flows-for-shared-notification-logic",
+      "power-automate-approval-timeout-escalation",
+      "respond-to-power-app-return-values-from-flow"
+    ],
+    "faqs": [
+      {
+        "question": "Can I reuse an approval across several flows?",
+        "answer": "Yes. Put the approval in a child flow inside a solution, pass in the title, approvers and link, and return the outcome with a Respond action."
+      },
+      {
+        "question": "Why can't I select my child flow?",
+        "answer": "Child flows must be in a solution, use the manual trigger, end with a Respond action and use fixed connections, not run-only user connections."
+      },
+      {
+        "question": "How long can an approval wait in a child flow?",
+        "answer": "A run can last up to 30 days. Set the approval's timeout below that and handle the timed-out path, for example by escalating."
+      }
+    ],
+    "updatedAt": "2026-11-20"
+  },
+  "create-a-scheduled-maintenance-flow": {
+    "shortDescription": "A scheduled flow that does the housekeeping a solution needs: trims logs, closes abandoned drafts, checks reference data and reports what it did.",
+    "fullDescription": "Solutions accumulate debris: run logs grow past the list view threshold, drafts are abandoned, lookups point at inactive values. A weekly maintenance flow handles these in one place, in batches that respect connector limits, and sends a short report so someone knows it ran and what it changed.",
+    "problemStatement": "The log list reaches 100,000 rows and views stop working. Hundreds of draft requests from two years ago clutter every report. Nobody owns the tidying.",
+    "whenToUse": [
+      "Solutions with logging, audit or staging lists",
+      "Processes that leave drafts or temporary items",
+      "As part of handing a solution to operations"
+    ],
+    "whenNotToUse": [
+      "Deleting business records subject to retention rules, which belongs to Purview retention",
+      "Dataverse log tables, where bulk delete jobs are the built-in tool"
+    ],
+    "formulaOrCode": "Trigger: Recurrence     Frequency: Week   On: Sunday   At: 02:00   Time zone: set explicitly\n  Settings come from a \"Maintenance Settings\" list or environment variables, not hard-coded:\n    LogRetentionDays 90      DraftAbandonDays 60      BatchSize 500      ReportTo ops@contoso.com      DryRun No\n\nInitialize variables: varReport (array), varDeleted (integer), varClosed (integer)\n\nTask 1: trim the run log\n  Do until (no more rows or 10 loops):\n    Get items (Flow Run Log)\n      Filter Query: Created lt '@{addDays(utcNow(), mul(-1, variables('LogRetentionDays')))}'\n      Top Count: @{variables('BatchSize')}        Order By: ID asc\n      Limit columns by view: a view showing only ID\n    Condition: length(body('Get_items')?['value']) equals 0 > set varDone = true\n    Apply to each (concurrency 10): Delete item        (skipped when DryRun = Yes)\n    Increment varDeleted by length(body('Get_items')?['value'])\n  Do until limits: Count 10, Timeout PT1H. Ten loops of 500 remove 5,000 rows per run and stay within limits.\n  Faster for large backlogs: one SharePoint $batch request per 100 deletes\n    POST _api/$batch  with a changeset of DELETE _api/web/lists/getbytitle('Flow Run Log')/items(<id>), IF-MATCH: *\n  Deleted items go to the site recycle bin and count toward storage for 93 days.\n\nTask 2: close abandoned drafts\n  Get items (Requests)\n    Filter Query: Status eq 'Draft' and Modified lt '@{addDays(utcNow(), mul(-1, variables('DraftAbandonDays')))}'\n    Top Count: 500\n  Apply to each: Update item  Status = Cancelled, CancelReason = \"Draft not submitted within 60 days\"\n                 (optional) email the author once with a link to reopen\n  Increment varClosed.\n\nTask 3: reference data checks (report only, change nothing)\n  a. Open requests pointing at inactive categories\n       Get items (Categories) IsActive eq 0 > Select IDs\n       Get items (Requests) Status ne 'Closed' > Filter array where CategoryId is in the inactive IDs\n  b. Open items assigned to people who have left\n       For each distinct AssignedTo email: Get user profile (V2); a 404 means the account is gone.\n       Configure run after on the following step to include \"has failed\", and collect the email.\n  c. Lists close to limits\n       Send an HTTP request to SharePoint: GET _api/web/lists/getbytitle('Requests')?$select=ItemCount\n       Report any list over 80% of a working limit you set (for example 4,000 for unindexed views,\n       or 100,000 for permission inheritance changes).\n  Append each finding to varReport.\n\nTask 4: connection and flow health\n  List flows as admin (Power Automate Management connector: List Flows as Admin) for the solution's flows;\n  report any that are Stopped or Suspended.\n  For each critical flow, count failed rows in the Flow Failures list in the last 7 days.\n\nReport (always sent, even when nothing was done)\n  Subject: Maintenance report <solution> <date>: <varDeleted> log rows removed, <varClosed> drafts closed\n  Body: HTML table from varReport (Create HTML table), settings used, DryRun state, run link:\n    concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'],\n           '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])\n  A missing Monday report is itself the signal that the flow is broken.\n\nStructure\n  Put each task in its own Scope. Set every later scope to run after the previous one \"is successful, has\n  failed, is skipped, has timed out\" so one failing task does not stop the rest.\n  Final step: if any scope failed (check result('Task_1') and so on), Terminate with status Failed after\n  sending the report.\n\nSafety\n  DryRun setting for the first runs: count and report without deleting or updating.\n  Never delete from business lists in this flow. Change status and let retention deal with removal.\n  Run as the service account. Add the flow to the support guide with what it changes and when.\n\nDataverse equivalents\n  Logs: Settings > Data management > Bulk deletion jobs, with a recurring schedule and a view as the filter.\n  Flow run history stored in Dataverse (FlowRun table) has its own retention setting (default 28 days).",
+    "stepByStepInstructions": [
+      "List the housekeeping the solution needs and the safe thresholds.",
+      "Store thresholds and the dry-run switch in a settings list or environment variables.",
+      "Build one scope per task, each able to run after a failure of the one before.",
+      "Trim logs in limited batches with a Do until loop.",
+      "Close abandoned drafts by status change, not deletion.",
+      "Add report-only checks for reference data, leavers and list sizes.",
+      "Send a report on every run and fail the run if any task failed."
+    ],
+    "commonMistakes": [
+      "Deleting tens of thousands of rows in one run and hitting throttling or the action limits.",
+      "Deleting business records from a housekeeping flow.",
+      "Sending a report only when something went wrong, so a dead flow goes unnoticed.",
+      "Hard-coding thresholds inside filter queries."
+    ],
+    "troubleshooting": [
+      "If Get items fails with a threshold error on the log list, index Created and filter on it first.",
+      "If the Do until stops early, raise its count and timeout limits or the batch size.",
+      "If deletes return 429, lower the loop concurrency and rely on the default retry.",
+      "If the flow ran but changed nothing, check the DryRun setting and the time zone of the date filter."
+    ],
+    "relatedPatterns": [
+      "build-a-scheduled-stale-item-cleanup-flow",
+      "create-a-flow-run-logging-list",
+      "get-more-than-5000-items-power-automate"
+    ],
+    "faqs": [
+      {
+        "question": "How do I delete old SharePoint list items automatically?",
+        "answer": "Use a scheduled flow that gets items older than a cutoff date in batches and deletes them, limited per run to stay within connector limits."
+      },
+      {
+        "question": "How many items can a flow delete at once?",
+        "answer": "Work in batches of a few hundred with a bounded loop, or use the SharePoint batch endpoint with 100 deletes per request. Several thousand per run is practical."
+      },
+      {
+        "question": "How do I know a scheduled flow is still running?",
+        "answer": "Have it send a short report on every run. A missing report tells you it has stopped."
+      }
+    ],
+    "updatedAt": "2026-11-20"
   }
 }
