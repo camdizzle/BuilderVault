@@ -13944,5 +13944,1250 @@
         "answer": "Purpose, type, region, owner and backup owner, data classification, expected users and a review date."
       }
     ]
+  },
+  {
+    "id": "pat-1605",
+    "slug": "adaptive-card-input-form-teams-collect-data",
+    "title": "Collect form data in Teams with an Adaptive Card",
+    "shortDescription": "Build a card with text, date, choice and toggle inputs, mark fields as required, post it from a flow and read each answer by its input ID.",
+    "fullDescription": "An Adaptive Card can be a small form inside a Teams chat or channel. Each input has an ID. When the user presses a submit button, the flow receives a data object keyed by those IDs. Required fields and error messages are handled by the card, so the flow only receives complete answers.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive Cards",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "Inputs",
+      "Teams",
+      "Validation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A flow needs three facts from a manager before it can continue. Sending an email and parsing the reply is fragile, and a full app is too much for three fields.",
+    "whenToUse": [
+      "Short structured questions inside a flow",
+      "Collecting a reason, date or choice from one person",
+      "Replacing reply-by-email steps"
+    ],
+    "whenNotToUse": [
+      "Long forms with many fields, where an app or Microsoft Forms is easier to use",
+      "Inputs that need lookups against large data sets"
+    ],
+    "formulaOrCode": "Flow action\n  Microsoft Teams > Post adaptive card and wait for a response\n    Post as: Flow bot        Post in: Chat with Flow bot        Recipient: manager's email\n    Update message: \"Thanks, your answer was recorded.\"\n    Message (the card JSON):\n\n{\n  \"type\": \"AdaptiveCard\",\n  \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n  \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"text\": \"Extension request: @{triggerOutputs()?['body/Title']}\", \"weight\": \"Bolder\", \"size\": \"Medium\", \"wrap\": true },\n    { \"type\": \"TextBlock\", \"text\": \"Requested by @{triggerOutputs()?['body/Author/DisplayName']}\", \"isSubtle\": true, \"wrap\": true },\n    { \"type\": \"Input.ChoiceSet\", \"id\": \"decision\", \"label\": \"Decision\", \"isRequired\": true,\n      \"errorMessage\": \"Choose a decision\", \"style\": \"expanded\",\n      \"choices\": [ { \"title\": \"Approve\", \"value\": \"Approved\" }, { \"title\": \"Decline\", \"value\": \"Declined\" } ] },\n    { \"type\": \"Input.Date\", \"id\": \"newDueDate\", \"label\": \"New due date\",\n      \"min\": \"@{formatDateTime(utcNow(),'yyyy-MM-dd')}\", \"errorMessage\": \"Pick a date from today onwards\" },\n    { \"type\": \"Input.Number\", \"id\": \"extraBudget\", \"label\": \"Extra budget (USD)\", \"min\": 0, \"max\": 50000, \"value\": 0 },\n    { \"type\": \"Input.Text\", \"id\": \"comments\", \"label\": \"Comments\", \"isMultiline\": true, \"maxLength\": 500,\n      \"isRequired\": true, \"errorMessage\": \"A comment is required\" },\n    { \"type\": \"Input.Toggle\", \"id\": \"notifyTeam\", \"title\": \"Notify the project team\", \"value\": \"true\",\n      \"valueOn\": \"true\", \"valueOff\": \"false\" }\n  ],\n  \"actions\": [\n    { \"type\": \"Action.Submit\", \"title\": \"Send\", \"data\": { \"action\": \"send\" } },\n    { \"type\": \"Action.Submit\", \"title\": \"Ask me later\", \"data\": { \"action\": \"later\" }, \"associatedInputs\": \"none\" }\n  ]\n}\n\nRead the answers (dynamic content, or expressions)\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['decision']        Approved | Declined\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['newDueDate']      2026-12-04\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['extraBudget']     number as text\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['comments']\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['notifyTeam']      \"true\" | \"false\" (text)\n  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['action']          send | later\n  body('Post_adaptive_card_and_wait_for_a_response')?['responder']?['email']      who answered\n\nConvert types\n  Number:  float(coalesce(body('Post_adaptive_card_and_wait_for_a_response')?['data']?['extraBudget'], '0'))\n  Toggle:  equals(body('Post_adaptive_card_and_wait_for_a_response')?['data']?['notifyTeam'], 'true')\n  Date:    empty when not filled. Guard with coalesce or a condition.\n\nNotes on validation\n  isRequired and errorMessage need a label on the input and card version 1.3 or later.\n  \"associatedInputs\": \"none\" lets a button submit without validating or sending the inputs.\n  Input.Text also supports \"regex\": \"^[A-Z]{3}-\\\\d{4}$\" with an errorMessage for format checks, and\n  \"style\": \"Email\" | \"Tel\" | \"Url\" for the right mobile keyboard.\n\nTimeout\n  Action settings > Timeout: P2D. Add a parallel branch or a following action with run after \"has timed out\"\n  to remind or escalate.\n\nDesign the card\n  Adaptive Cards Designer (adaptivecards.io/designer or the Teams Developer Portal). Host app: Microsoft Teams.\n  Build with sample data, then paste the JSON into the flow and replace values with dynamic content.",
+    "stepByStepInstructions": [
+      "Design the card in the Adaptive Cards Designer with Teams as the host app.",
+      "Give every input a clear ID and a label.",
+      "Mark required inputs and add error messages.",
+      "Paste the JSON into Post adaptive card and wait for a response.",
+      "Read each value from the response data by input ID and convert types.",
+      "Set a timeout and handle the no-answer path."
+    ],
+    "commonMistakes": [
+      "Inputs without IDs, so nothing comes back.",
+      "Using hint text inside the box as the only label.",
+      "Treating toggle and number values as typed values when they arrive as text.",
+      "No timeout, leaving the flow waiting for 30 days."
+    ],
+    "troubleshooting": [
+      "If the card fails to post, validate the JSON and check the version is supported by Teams (1.4 is safe, 1.5 for most features).",
+      "If required validation does not fire, add a label and check the card version.",
+      "If a value is empty in the flow, compare the input ID with the expression's property name.",
+      "If the dynamic content list shows no inputs, save the flow once after pasting the card."
+    ],
+    "relatedPatterns": [
+      "post-adaptive-card-and-wait-for-response",
+      "parse-adaptive-card-responses-into-decisions",
+      "create-a-card-retry-and-timeout-path"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Collect form data in Teams with an Adaptive Card",
+    "seoDescription": "Build a card with text, date, choice and toggle inputs, mark fields as required, post it from a flow and read each answer by its input ID.",
+    "primaryKeyword": "Adaptive Card input form Teams Power Automate",
+    "secondaryKeywords": [
+      "Adaptive Cards",
+      "Inputs",
+      "Teams",
+      "Validation"
+    ],
+    "faqs": [
+      {
+        "question": "How do I get user input from an Adaptive Card in Power Automate?",
+        "answer": "Use Post adaptive card and wait for a response. Each input's value is returned in the data object under the input's ID."
+      },
+      {
+        "question": "Can Adaptive Card inputs be required?",
+        "answer": "Yes. Set isRequired with a label and an errorMessage on the input, using card version 1.3 or later."
+      },
+      {
+        "question": "Which Adaptive Card version does Teams support?",
+        "answer": "Version 1.4 works everywhere in Teams, and 1.5 features are supported in most clients."
+      }
+    ]
+  },
+  {
+    "id": "pat-1606",
+    "slug": "update-adaptive-card-after-action-teams",
+    "title": "Update a Teams Adaptive Card after someone acts on it",
+    "shortDescription": "Replace a posted card with a new version showing the outcome, so a channel does not keep displaying live buttons for a request that is already handled.",
+    "fullDescription": "A card posted to a channel stays as it was unless the flow changes it. After the first person responds, the others still see buttons. Updating the card in place with the result, who acted and when, keeps the channel accurate and stops duplicate decisions.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive Cards",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "Update Card",
+      "Teams",
+      "Status"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A request card is posted to a team channel. One person approves it, but the card still shows Approve and Reject to everyone else an hour later.",
+    "whenToUse": [
+      "Cards posted to channels or group chats where several people can act",
+      "Showing the final status on the original message",
+      "Long-running requests whose status changes"
+    ],
+    "whenNotToUse": [
+      "One-to-one cards where the built-in update message is enough",
+      "Updating cards posted by a different identity, which fails"
+    ],
+    "formulaOrCode": "Option 1: built-in update on the waiting action\n  Post adaptive card and wait for a response\n    Update message: Decision recorded.\n    Should update card: Yes\n  After a response, the card is replaced by the update message text. Simple, but only text.\n\nOption 2: replace with a full result card\n  1. Post adaptive card and wait for a response\n       Post as: Flow bot      Post in: Channel      Team / Channel: Requests\n       (the action returns the message ID after the response)\n  2. Update an adaptive card in a chat or channel\n       Post as: Flow bot      Post in: Channel      Team / Channel: same as step 1\n       Message ID: body('Post_adaptive_card_and_wait_for_a_response')?['messageId']\n       Adaptive Card:\n{\n  \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"ColumnSet\", \"columns\": [\n      { \"type\": \"Column\", \"width\": \"stretch\", \"items\": [\n        { \"type\": \"TextBlock\", \"text\": \"@{triggerOutputs()?['body/Title']}\", \"weight\": \"Bolder\", \"wrap\": true } ] },\n      { \"type\": \"Column\", \"width\": \"auto\", \"items\": [\n        { \"type\": \"TextBlock\",\n          \"text\": \"@{body('Post_adaptive_card_and_wait_for_a_response')?['data']?['decision']}\",\n          \"color\": \"@{if(equals(body('Post_adaptive_card_and_wait_for_a_response')?['data']?['decision'],'Approved'),'Good','Attention')}\",\n          \"weight\": \"Bolder\" } ] } ] },\n    { \"type\": \"FactSet\", \"facts\": [\n      { \"title\": \"Decided by\", \"value\": \"@{body('Post_adaptive_card_and_wait_for_a_response')?['responder']?['displayName']}\" },\n      { \"title\": \"When\", \"value\": \"@{convertFromUtc(utcNow(),'Eastern Standard Time','dd MMM yyyy HH:mm')}\" },\n      { \"title\": \"Comment\", \"value\": \"@{body('Post_adaptive_card_and_wait_for_a_response')?['data']?['comments']}\" } ] }\n  ],\n  \"actions\": [ { \"type\": \"Action.OpenUrl\", \"title\": \"Open request\", \"url\": \"@{triggerOutputs()?['body/{Link}']}\" } ]\n}\n\nOption 3: post now, update later from another flow\n  Flow A: Post card in a chat or channel (the non-waiting action) > returns  outputs('Post_card')?['body/id']\n          Save it on the record: Update item > TeamsMessageId = that id (and the team and channel IDs).\n  Flow B (status changes days later): Update an adaptive card in a chat or channel with the stored Message ID.\n  The card in Flow A should use Action.OpenUrl buttons only, since nothing is waiting for Action.Submit.\n\nRules\n  The same identity that posted the card must update it: Flow bot updates Flow bot cards, a user updates\n  their own. Post in and the team, channel or chat must match the original.\n  Group chat: keep the chat ID as well as the message ID.\n  Deleted messages cannot be updated: the action fails with NotFound. Handle with run after.\n\nFirst responder wins\n  Post adaptive card and wait for a response continues on the first submission. Updating the card straight\n  afterwards removes the buttons for everyone else. If two people submit within the same second, the second\n  sees an error that the card is no longer active.",
+    "stepByStepInstructions": [
+      "Post the card with the waiting action in the channel.",
+      "Capture the message ID from the action's output.",
+      "Build a result card showing decision, responder, time and comment.",
+      "Call Update an adaptive card in a chat or channel with the same location and message ID.",
+      "Store message, team and channel IDs on the record if later flows need to update the card.",
+      "Handle failure when the original message was deleted."
+    ],
+    "commonMistakes": [
+      "Leaving live buttons on a card after a decision.",
+      "Updating with a different Post as identity than the one that posted.",
+      "Not saving the message ID for later updates.",
+      "Using Action.Submit on cards posted without a waiting action."
+    ],
+    "troubleshooting": [
+      "If the update fails with forbidden or not found, check Post as, team, channel and message ID all match the original post.",
+      "If the message ID is empty, read it after the response from the waiting action's body.",
+      "If the card does not change visually, the JSON is identical or invalid. Test it in the designer.",
+      "If the update lands on the wrong card, the stored ID belongs to another item. Save it immediately after posting."
+    ],
+    "relatedPatterns": [
+      "post-adaptive-card-and-wait-for-response",
+      "adaptive-card-input-form-teams-collect-data",
+      "create-a-decision-capture-card"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Update a Teams Adaptive Card after someone acts on it",
+    "seoDescription": "Replace a posted card with a new version showing the outcome, so a channel does not keep displaying live buttons for a request that is already handled.",
+    "primaryKeyword": "update adaptive card Teams Power Automate",
+    "secondaryKeywords": [
+      "Adaptive Cards",
+      "Update Card",
+      "Teams",
+      "Status"
+    ],
+    "faqs": [
+      {
+        "question": "Can a flow change a card it already posted in Teams?",
+        "answer": "Yes. Use Update an adaptive card in a chat or channel with the original message ID and the same posting identity."
+      },
+      {
+        "question": "Where do I get the message ID?",
+        "answer": "From the output of the action that posted the card. The waiting action returns it after a response."
+      },
+      {
+        "question": "Can a card be updated days later?",
+        "answer": "Yes, if you stored the message ID and its team, channel or chat when it was posted."
+      }
+    ]
+  },
+  {
+    "id": "pat-1607",
+    "slug": "adaptive-card-toggle-visibility-show-card",
+    "title": "Show and hide parts of an Adaptive Card",
+    "shortDescription": "Keep cards short with expandable details, a reject button that reveals a reason box, and sections that only appear when the data calls for them.",
+    "fullDescription": "Cards in a busy channel need to be compact. Action.ToggleVisibility expands and collapses elements on the client with no flow involved. Action.ShowCard reveals a nested card with its own inputs and submit button. Conditional isVisible values set from flow data hide sections that do not apply.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive Cards",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Adaptive Cards",
+      "ToggleVisibility",
+      "ShowCard",
+      "Layout"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A request card shows fifteen lines of detail that most readers do not need, and the reject path needs a reason that approve does not.",
+    "whenToUse": [
+      "Long details that only some readers need",
+      "Different inputs for different buttons",
+      "Sections that apply only to some records"
+    ],
+    "whenNotToUse": [
+      "Hiding information people must read before deciding",
+      "Deep nesting of ShowCards, which is awkward on mobile"
+    ],
+    "formulaOrCode": "1. Expand and collapse details (no round trip)\n{\n  \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"text\": \"Purchase request PR-1042\", \"weight\": \"Bolder\", \"size\": \"Medium\" },\n    { \"type\": \"TextBlock\", \"text\": \"Laptop replacement, USD 1,850, Finance\", \"wrap\": true },\n    { \"type\": \"ActionSet\", \"actions\": [\n      { \"type\": \"Action.ToggleVisibility\", \"title\": \"Show details\",\n        \"targetElements\": [ \"detailsBlock\" ] } ] },\n    { \"type\": \"Container\", \"id\": \"detailsBlock\", \"isVisible\": false, \"items\": [\n      { \"type\": \"FactSet\", \"facts\": [\n        { \"title\": \"Supplier\", \"value\": \"Contoso Hardware\" },\n        { \"title\": \"Cost centre\", \"value\": \"FIN-200\" },\n        { \"title\": \"Justification\", \"value\": \"Current device is out of warranty.\" } ] } ] }\n  ]\n}\n\n   Swap the button label too: two elements, toggled together\n      { \"type\": \"Action.ToggleVisibility\", \"title\": \"Show details\", \"targetElements\": [ \"detailsBlock\", \"showBtn\", \"hideBtn\" ] }\n   Set explicit states instead of flipping:\n      \"targetElements\": [ { \"elementId\": \"detailsBlock\", \"isVisible\": true }, { \"elementId\": \"summary\", \"isVisible\": false } ]\n\n2. Reject needs a reason: Action.ShowCard\n  \"actions\": [\n    { \"type\": \"Action.Submit\", \"title\": \"Approve\", \"style\": \"positive\", \"data\": { \"decision\": \"Approved\" } },\n    { \"type\": \"Action.ShowCard\", \"title\": \"Reject\", \"card\": {\n        \"type\": \"AdaptiveCard\",\n        \"body\": [\n          { \"type\": \"Input.Text\", \"id\": \"rejectReason\", \"label\": \"Reason for rejecting\", \"isMultiline\": true,\n            \"isRequired\": true, \"errorMessage\": \"Give a reason\" } ],\n        \"actions\": [\n          { \"type\": \"Action.Submit\", \"title\": \"Confirm reject\", \"style\": \"destructive\", \"data\": { \"decision\": \"Rejected\" } } ] } }\n  ]\n  In the flow:\n    body('Post_adaptive_card_and_wait_for_a_response')?['data']?['decision']\n    body('Post_adaptive_card_and_wait_for_a_response')?['data']?['rejectReason']\n  The Approve button sits outside the ShowCard, so the required reason does not block it.\n\n3. Sections that depend on the data (set by the flow)\n    { \"type\": \"Container\", \"isVisible\": @{greater(triggerOutputs()?['body/Amount'], 5000)}, \"style\": \"warning\", \"items\": [\n      { \"type\": \"TextBlock\", \"text\": \"Over USD 5,000: finance director approval also required.\", \"wrap\": true } ] }\n  The expression writes true or false without quotes, which is valid JSON for a boolean.\n  For optional text: \"isVisible\": @{not(empty(triggerOutputs()?['body/Notes']))}\n\n4. Overflow menu for secondary actions\n  { \"type\": \"Action.OpenUrl\", \"title\": \"View history\", \"url\": \"https://...\", \"mode\": \"secondary\" }\n  Secondary actions appear under the ... menu (version 1.5).\n\nBehaviour notes\n  ToggleVisibility state is local to each viewer and resets when the card reloads.\n  Hidden inputs are still submitted with their current values.\n  Teams shows up to six primary actions. Extra ones may be dropped: use ShowCard or secondary mode.\n  Test on desktop and mobile: ShowCard opens inline in Teams.",
+    "stepByStepInstructions": [
+      "Decide which parts of the card are summary and which are detail.",
+      "Wrap details in a container with an ID and isVisible false.",
+      "Add an Action.ToggleVisibility targeting that ID.",
+      "Use Action.ShowCard for buttons that need extra input.",
+      "Set isVisible from flow expressions for data-dependent sections.",
+      "Test the card on desktop and mobile Teams."
+    ],
+    "commonMistakes": [
+      "Putting the reject reason on the main card as required, which blocks approval.",
+      "Quoting the boolean expression so isVisible receives text.",
+      "Hiding essential facts behind a toggle.",
+      "More than six top-level actions."
+    ],
+    "troubleshooting": [
+      "If the toggle does nothing, the target ID does not match the element's id.",
+      "If the card fails to post, check the isVisible expression outputs true or false, not empty.",
+      "If the ShowCard inputs are missing from the response, their IDs clash with other inputs.",
+      "If buttons vanish, reduce primary actions or move some to a ShowCard."
+    ],
+    "relatedPatterns": [
+      "adaptive-card-input-form-teams-collect-data",
+      "create-an-adaptive-card-approval-summary",
+      "adaptive-card-fact-set-from-sharepoint-items"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Show and hide parts of an Adaptive Card",
+    "seoDescription": "Keep cards short with expandable details, a reject button that reveals a reason box, and sections that only appear when the data calls for them.",
+    "primaryKeyword": "Adaptive Card ToggleVisibility ShowCard",
+    "secondaryKeywords": [
+      "Adaptive Cards",
+      "ToggleVisibility",
+      "ShowCard",
+      "Layout"
+    ],
+    "faqs": [
+      {
+        "question": "How do I make part of an Adaptive Card collapsible?",
+        "answer": "Give the element an ID with isVisible false and add an Action.ToggleVisibility that targets it."
+      },
+      {
+        "question": "How do I ask for a reason only when rejecting?",
+        "answer": "Use Action.ShowCard on the Reject button with a required text input and its own submit button."
+      },
+      {
+        "question": "Can a flow hide a section based on data?",
+        "answer": "Yes. Set isVisible with an expression that outputs true or false when the card is built."
+      }
+    ]
+  },
+  {
+    "id": "pat-1608",
+    "slug": "adaptive-card-table-from-array-select",
+    "title": "Build a table of rows in an Adaptive Card from an array",
+    "shortDescription": "Turn a list of items into card rows with the Select action, using ColumnSets or the Table element, and insert the result into the card without a loop.",
+    "fullDescription": "Cards often need a variable number of rows: open tasks, order lines, overdue items. Building JSON by appending strings in a loop is slow and error-prone. The Select action maps each item to a row object in one step, and the resulting array drops straight into the card body.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive Cards",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "Select",
+      "Dynamic Rows",
+      "Tables"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A daily digest card should list each overdue task with owner and due date, but the number of tasks changes and string-concatenated JSON keeps breaking on quotes.",
+    "whenToUse": [
+      "Digest cards listing a handful of items",
+      "Order or checklist lines in an approval card",
+      "Any card with repeating rows"
+    ],
+    "whenNotToUse": [
+      "More than about 15 rows, where a link to a view is kinder to readers",
+      "Cards near the 28 KB Teams size limit"
+    ],
+    "formulaOrCode": "Source\n  Get items (SharePoint): Tasks, Filter Query: DueDate lt '@{utcNow()}' and Status ne 'Done', Top Count 15\n\nOption A: ColumnSet rows with Select\n  Select\n    From: body('Get_items')?['value']\n    Map (switch to text mode and paste one object):\n    {\n      \"type\": \"ColumnSet\",\n      \"separator\": true,\n      \"columns\": [\n        { \"type\": \"Column\", \"width\": 50, \"items\": [ { \"type\": \"TextBlock\", \"text\": \"@{item()?['Title']}\", \"wrap\": true } ] },\n        { \"type\": \"Column\", \"width\": 30, \"items\": [ { \"type\": \"TextBlock\", \"text\": \"@{item()?['AssignedTo/DisplayName']}\", \"wrap\": true } ] },\n        { \"type\": \"Column\", \"width\": 20, \"items\": [ { \"type\": \"TextBlock\",\n            \"text\": \"@{formatDateTime(item()?['DueDate'],'dd MMM')}\", \"color\": \"Attention\", \"horizontalAlignment\": \"Right\" } ] }\n      ]\n    }\n\n  Card (Compose, then use its output in the post action)\n    {\n      \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n      \"body\": @{union(\n          createArray(\n            json('{\"type\":\"TextBlock\",\"text\":\"Overdue tasks\",\"weight\":\"Bolder\",\"size\":\"Medium\"}'),\n            json('{\"type\":\"ColumnSet\",\"columns\":[{\"type\":\"Column\",\"width\":50,\"items\":[{\"type\":\"TextBlock\",\"text\":\"Task\",\"weight\":\"Bolder\"}]},{\"type\":\"Column\",\"width\":30,\"items\":[{\"type\":\"TextBlock\",\"text\":\"Owner\",\"weight\":\"Bolder\"}]},{\"type\":\"Column\",\"width\":20,\"items\":[{\"type\":\"TextBlock\",\"text\":\"Due\",\"weight\":\"Bolder\",\"horizontalAlignment\":\"Right\"}]}]}')\n          ),\n          body('Select'))},\n      \"actions\": [ { \"type\": \"Action.OpenUrl\", \"title\": \"Open the list\", \"url\": \"https://contoso.sharepoint.com/sites/ops/Lists/Tasks\" } ]\n    }\n  Simpler assembly: put the rows inside a Container\n      \"body\": [\n        { \"type\": \"TextBlock\", \"text\": \"Overdue tasks (@{length(body('Select'))})\", \"weight\": \"Bolder\" },\n        { \"type\": \"Container\", \"items\": @{body('Select')} }\n      ]\n  An array output placed directly after \"items\": produces valid JSON, since the action output is already an array.\n\nOption B: the Table element (version 1.5)\n  Select map:\n    { \"type\": \"TableRow\", \"cells\": [\n        { \"type\": \"TableCell\", \"items\": [ { \"type\": \"TextBlock\", \"text\": \"@{item()?['Title']}\", \"wrap\": true } ] },\n        { \"type\": \"TableCell\", \"items\": [ { \"type\": \"TextBlock\", \"text\": \"@{item()?['AssignedTo/DisplayName']}\", \"wrap\": true } ] },\n        { \"type\": \"TableCell\", \"items\": [ { \"type\": \"TextBlock\", \"text\": \"@{formatDateTime(item()?['DueDate'],'dd MMM')}\" } ] } ] }\n  Card body element:\n    { \"type\": \"Table\", \"firstRowAsHeader\": false, \"showGridLines\": true,\n      \"columns\": [ { \"width\": 5 }, { \"width\": 3 }, { \"width\": 2 } ],\n      \"rows\": @{body('Select')} }\n\nEmpty result\n  Condition: length(body('Get_items')?['value']) is greater than 0. Otherwise skip posting, or post a short\n  \"Nothing overdue today\" message.\n\nText safety\n  Values inside \"@{...}\" within Select's JSON map are escaped for you, so quotes and line breaks in titles\n  do not break the card. Building JSON with concat() does not escape. Avoid it.\n\nSize\n  Teams rejects cards above roughly 28 KB. Cap rows with Top Count and add \"and 12 more\" with a link:\n    if(greater(length(body('Get_all')?['value']), 15), concat('and ', string(sub(length(body('Get_all')?['value']), 15)), ' more'), '')",
+    "stepByStepInstructions": [
+      "Get the items and limit the count.",
+      "Add a Select action that maps each item to a row object.",
+      "Compose the card with the Select output placed in a container's items or a table's rows.",
+      "Add a header row and a link to the full list.",
+      "Skip or simplify the card when there are no rows.",
+      "Check the card size and appearance in Teams."
+    ],
+    "commonMistakes": [
+      "Appending JSON strings in an Apply to each.",
+      "Posting an empty table.",
+      "Unlimited rows that exceed the card size limit.",
+      "Using the Table element with card version 1.4."
+    ],
+    "troubleshooting": [
+      "If the card is rejected as invalid, run the Compose output through the Adaptive Cards Designer.",
+      "If rows show as text, the Select output was wrapped in quotes. Place the expression without surrounding quotes.",
+      "If a person or lookup column is blank, use the expanded property path shown in the Get items output.",
+      "If the card is too large, reduce Top Count or the number of columns."
+    ],
+    "relatedPatterns": [
+      "adaptive-card-fact-set-from-sharepoint-items",
+      "filter-array-instead-of-apply-to-each",
+      "create-a-queue-digest-card"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Build a table of rows in an Adaptive Card from an array",
+    "seoDescription": "Turn a list of items into card rows with the Select action, using ColumnSets or the Table element, and insert the result into the card without a loop.",
+    "primaryKeyword": "Adaptive Card dynamic rows Power Automate",
+    "secondaryKeywords": [
+      "Adaptive Cards",
+      "Select",
+      "Dynamic Rows",
+      "Tables"
+    ],
+    "faqs": [
+      {
+        "question": "How do I repeat rows in an Adaptive Card from Power Automate?",
+        "answer": "Use a Select action to map each item to a ColumnSet or TableRow object and place its output array in the card."
+      },
+      {
+        "question": "Does Teams support tables in Adaptive Cards?",
+        "answer": "Yes, the Table element is available with version 1.5. ColumnSets work in earlier versions."
+      },
+      {
+        "question": "How big can a Teams Adaptive Card be?",
+        "answer": "About 28 KB. Limit the number of rows and link to the full list."
+      }
+    ]
+  },
+  {
+    "id": "pat-1609",
+    "slug": "teams-workflows-webhook-post-to-channel",
+    "title": "Post to a Teams channel from any system with a Workflows webhook",
+    "shortDescription": "Replace retired Office 365 connector webhooks with a flow that receives an HTTP request and posts a message or card to a channel.",
+    "fullDescription": "Incoming webhooks built on Office 365 connectors in Teams are being retired. The replacement is a flow using the trigger 'When a Teams webhook request is received'. It gives a URL that monitoring tools, scripts and pipelines can post to, and the flow decides how to format and where to post.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams integration",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Webhooks",
+      "Teams",
+      "Workflows",
+      "Integration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A monitoring tool posts alerts to a Teams channel through an old incoming webhook URL, and Teams shows a notice that the connector will stop working.",
+    "whenToUse": [
+      "Alerts from monitoring, build or deployment tools",
+      "Scripts that need to notify a channel",
+      "Migrating existing incoming webhook integrations"
+    ],
+    "whenNotToUse": [
+      "Posting confidential data through an unauthenticated URL",
+      "High-volume event streams, which will hit Teams and flow limits"
+    ],
+    "formulaOrCode": "Create it from Teams (quickest)\n  Channel > ... > Workflows > \"Post to a channel when a webhook request is received\" > name it > pick team and\n  channel > Add workflow > copy the URL.\n\nOr build it in Power Automate\n  Trigger: Microsoft Teams > When a Teams webhook request is received\n    Who can trigger the flow: Anyone | Any user in my tenant | Specific users in my tenant\n  Action: Apply to each  triggerBody()?['attachments']\n            Post card in a chat or channel\n              Post as: Flow bot     Post in: Channel     Team / Channel: target\n              Adaptive Card: items('Apply_to_each')?['content']\n\nPayload the default template expects (Adaptive Card wrapped as an attachment)\n  POST <webhook url>\n  Content-Type: application/json\n  {\n    \"type\": \"message\",\n    \"attachments\": [\n      {\n        \"contentType\": \"application/vnd.microsoft.card.adaptive\",\n        \"content\": {\n          \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n          \"body\": [\n            { \"type\": \"TextBlock\", \"text\": \"Deployment finished\", \"weight\": \"Bolder\", \"size\": \"Medium\" },\n            { \"type\": \"FactSet\", \"facts\": [\n              { \"title\": \"Solution\", \"value\": \"RequestHub 1.5.0.0\" },\n              { \"title\": \"Environment\", \"value\": \"Production\" },\n              { \"title\": \"Result\", \"value\": \"Succeeded\" } ] }\n          ],\n          \"actions\": [ { \"type\": \"Action.OpenUrl\", \"title\": \"View run\", \"url\": \"https://dev.azure.com/contoso/_build/results?buildId=123\" } ]\n        }\n      }\n    ]\n  }\n\nSend it\n  PowerShell:\n    $body = Get-Content .\\card.json -Raw\n    Invoke-RestMethod -Method Post -Uri $env:TEAMS_WEBHOOK_URL -ContentType \"application/json\" -Body $body\n  curl:\n    curl -X POST -H \"Content-Type: application/json\" -d @card.json \"$TEAMS_WEBHOOK_URL\"\n  Response: 202 Accepted. The post appears a few seconds later.\n\nAccept a simple payload instead (friendlier for scripts)\n  Sender posts:  { \"title\": \"Disk space low\", \"text\": \"Server APP01 at 92%\", \"severity\": \"warning\", \"url\": \"https://...\" }\n  In the flow, build the card yourself:\n    \"text\": \"@{triggerBody()?['title']}\"\n    \"color\": \"@{if(equals(triggerBody()?['severity'],'error'),'Attention',if(equals(triggerBody()?['severity'],'warning'),'Warning','Good'))}\"\n  Old MessageCard payloads (\"@type\": \"MessageCard\") are not rendered by the new trigger. Convert them to\n  Adaptive Cards or map their title and text fields in the flow.\n\nSecurity\n  The URL contains a signature (sig=). Anyone holding it can post when the trigger is set to Anyone.\n  Keep it in a secret store. Rotate by recreating the flow or re-saving the trigger to regenerate the URL.\n  Add a shared secret check: sender includes a header or field, flow Condition compares it with an environment\n  variable and Terminates when it does not match.\n  For tenant-only callers choose \"Any user in my tenant\", which requires an Entra token on the request.\n\nLimits and behaviour\n  Posts appear as the Flow bot (Workflows), with the flow owner's name shown.\n  Private channels: the Flow bot cannot post. Use Post as: User, or a shared channel alternative.\n  Teams throttles rapid posting to one channel. Batch alerts or add a digest.\n  The flow belongs to its creator: add co-owners, or put it in a solution with a service account as owner.",
+    "stepByStepInstructions": [
+      "Create the webhook workflow from the channel's Workflows menu or build it in Power Automate.",
+      "Copy the generated URL into the sending system's secret store.",
+      "Send a test Adaptive Card payload and confirm it appears.",
+      "Reshape incoming data in the flow if senders cannot produce card JSON.",
+      "Add a shared secret check or restrict who can trigger it.",
+      "Add co-owners or move the flow into a solution with a service owner."
+    ],
+    "commonMistakes": [
+      "Sending old MessageCard JSON and getting an empty post.",
+      "Leaving the URL in a script committed to source control.",
+      "One personal owner on a flow that production alerting depends on.",
+      "Flooding a channel with one post per event."
+    ],
+    "troubleshooting": [
+      "If the request returns 400, the body is not valid JSON or lacks the attachments array the flow expects.",
+      "If nothing appears but the run succeeded, the card content is invalid. Test it in the designer.",
+      "If posting fails in a private channel, change Post as to User.",
+      "If the URL stops working, the flow was turned off or deleted. Check its run history and owner."
+    ],
+    "relatedPatterns": [
+      "teams-channel-notification-deep-link-to-app",
+      "create-a-channel-based-exception-alert",
+      "create-a-notification-throttling-pattern"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Post to a Teams channel from any system with a Workflows webhook",
+    "seoDescription": "Replace retired Office 365 connector webhooks with a flow that receives an HTTP request and posts a message or card to a channel.",
+    "primaryKeyword": "Teams Workflows webhook replace Office 365 connector",
+    "secondaryKeywords": [
+      "Webhooks",
+      "Teams",
+      "Workflows",
+      "Integration"
+    ],
+    "faqs": [
+      {
+        "question": "What replaces Teams incoming webhooks?",
+        "answer": "A Workflows flow with the trigger When a Teams webhook request is received, which provides a URL to post to."
+      },
+      {
+        "question": "Does the new webhook accept the old MessageCard format?",
+        "answer": "No. Send an Adaptive Card in an attachments array, or have the flow build the card from simple fields."
+      },
+      {
+        "question": "Is the webhook URL secure?",
+        "answer": "It is secret but unauthenticated when set to Anyone. Store it safely and add a shared secret check or tenant restriction."
+      }
+    ]
+  },
+  {
+    "id": "pat-1610",
+    "slug": "teams-keyword-mention-trigger-flow",
+    "title": "Start a flow when a keyword is mentioned in a Teams channel",
+    "shortDescription": "Watch channels for words such as urgent or outage, fetch the full message and act on it by creating a ticket or alerting an on-call group.",
+    "fullDescription": "The Teams connector can start a flow when a message containing chosen keywords is posted in a channel or chat. The trigger returns identifiers and a link, so the flow fetches the message details, filters out noise and then logs or routes it. It suits lightweight triage where people already report problems in a channel.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams triggers",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Teams Triggers",
+      "Keywords",
+      "Channel Messages",
+      "Automation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "People post 'the portal is down' in a general channel. Nobody on the support team sees it for an hour, because it was never raised as a ticket.",
+    "whenToUse": [
+      "Turning channel chatter into tracked items",
+      "Alerting an on-call group on specific words",
+      "Simple triage without a bot"
+    ],
+    "whenNotToUse": [
+      "Monitoring private conversations without telling the people in them",
+      "Keywords so common that the flow fires constantly"
+    ],
+    "formulaOrCode": "Trigger\n  Microsoft Teams > When keywords are mentioned\n    Message type: Channel            (or Group chat)\n    Keywords to search for: outage, urgent, \"portal down\"        comma-separated. Quotes for phrases.\n    Team: IT Support        Channel: General (add more with Add new item)\n  Polls about every few minutes. Matches whole words, not case-sensitive.\n\nOutputs\n  triggerOutputs()?['body/messageId'], ['body/teamId'], ['body/channelId'], ['body/messageLink'], ['body/conversationId']\n\nGet the text and author\n  Microsoft Teams > Get message details\n    Message: messageId        Message type: Channel        Team / Channel: from the trigger\n  body('Get_message_details')?['body/content']               HTML of the message\n  body('Get_message_details')?['from/user/displayName']      author\n  body('Get_message_details')?['from/user/id']               Entra object ID\n  body('Get_message_details')?['createdDateTime']\n\nSkip noise (Condition, all must be true)\n  Author is a person, not the Flow bot:    not(empty(body('Get_message_details')?['from/user/id']))\n  Not a reply inside a thread you already handled (optional): empty(body('Get_message_details')?['replyToId'])\n  Not containing your own marker text:     not(contains(body('Get_message_details')?['body/content'], 'Logged as'))\n\nPlain text from the HTML\n  Content Conversion > Html to text: body('Get_message_details')?['body/content']\n\nAct\n  SharePoint > Create item: Tickets\n    Title: @{take(body('Html_to_text'), 120)}\n    Details: full text        ReportedBy: author email from Office 365 Users > Get user profile (V2) with the object ID\n    Source: Teams        Link: triggerOutputs()?['body/messageLink']\n    Priority: if(contains(toLower(body('Html_to_text')), 'outage'), 'High', 'Normal')\n\n  Reply in the thread so the poster sees it was picked up\n    Microsoft Teams > Reply with a message in a channel\n      Post as: Flow bot        Team / Channel: from trigger        Message: messageId\n      Reply: Logged as ticket #@{outputs('Create_item')?['body/ID']}. The support team has been notified.\n\n  Alert on-call for high priority\n    Post message in a chat or channel > Chat with Flow bot > on-call user, with the message link.\n\nPrevent duplicates\n  The same message can match more than once if edited. Before creating, Get items with Filter Query\n  TeamsMessageId eq '<messageId>' and Top Count 1, and stop when found. Store messageId on the ticket.\n\nAlternatives\n  When a new channel message is added: fires on every message. Filter with your own conditions for more\n  complex matching (regular wording, several channels).\n  When I am mentioned / When someone reacts to a message: other human-driven triggers.\n  A reaction-based approach is often less noisy: act only when a triager adds a specific emoji.",
+    "stepByStepInstructions": [
+      "Choose a small set of specific keywords and the channels to watch.",
+      "Add the keyword trigger and fetch the message details.",
+      "Filter out bot posts, replies you made and duplicates.",
+      "Create a tracked item with the text, author and message link.",
+      "Reply in the thread with the reference.",
+      "Alert the on-call person for high-priority matches."
+    ],
+    "commonMistakes": [
+      "Common keywords that match half the channel's messages.",
+      "The flow's own reply containing a keyword and re-triggering it.",
+      "No duplicate check on message ID.",
+      "Watching chats without the participants knowing."
+    ],
+    "troubleshooting": [
+      "If the flow triggers itself, exclude messages from the bot or remove keywords from the reply text.",
+      "If the message text is empty, call Get message details with the IDs from the trigger.",
+      "If nothing triggers, confirm the connection's user is a member of the team and channel.",
+      "If it fires late, the trigger polls on an interval. Use a reaction or message action for immediacy."
+    ],
+    "relatedPatterns": [
+      "create-a-channel-based-exception-alert",
+      "create-a-support-intake-queue",
+      "handle-duplicate-flow-trigger-runs"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Start a flow when a keyword is mentioned in a Teams channel",
+    "seoDescription": "Watch channels for words such as urgent or outage, fetch the full message and act on it by creating a ticket or alerting an on-call group.",
+    "primaryKeyword": "Power Automate Teams keyword trigger",
+    "secondaryKeywords": [
+      "Teams Triggers",
+      "Keywords",
+      "Channel Messages",
+      "Automation"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate react to words in a Teams message?",
+        "answer": "Yes. The When keywords are mentioned trigger starts a flow for channel or group chat messages containing your keywords."
+      },
+      {
+        "question": "Does the trigger include the message text?",
+        "answer": "It returns IDs and a link. Use Get message details to read the content and author."
+      },
+      {
+        "question": "How do I stop the flow replying to itself?",
+        "answer": "Exclude messages posted by the Flow bot and keep keywords out of the reply."
+      }
+    ]
+  },
+  {
+    "id": "pat-1611",
+    "slug": "teams-selected-message-flow-create-task",
+    "title": "Turn a Teams message into a task with a message action flow",
+    "shortDescription": "Add a flow to the message menu in Teams that asks for a few details with a card, then creates a Planner task or list item linked to the original message.",
+    "fullDescription": "The trigger 'For a selected message' puts a flow in the More actions menu of any Teams message. The person running it can be shown an Adaptive Card to add details. The flow receives the message, its author and a link, which makes it a quick route from conversation to tracked work.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams triggers",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Message Actions",
+      "Teams Triggers",
+      "Planner",
+      "Adaptive Cards"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Action items agreed in a chat are lost in the scroll, because moving them into the task tool means copying text and switching apps.",
+    "whenToUse": [
+      "Capturing tasks, decisions or issues from conversations",
+      "Any follow-up that starts from a specific message",
+      "Teams that plan work in Planner or a list"
+    ],
+    "whenNotToUse": [
+      "Processes that should start automatically without a person choosing a message",
+      "Flows that need to appear for users who have never been given run access"
+    ],
+    "formulaOrCode": "Trigger\n  Microsoft Teams > For a selected message (V2)\n    Adaptive Card (optional): Create adaptive card > designer opens. Example card:\n{\n  \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"Input.Text\", \"id\": \"taskTitle\", \"label\": \"Task title\", \"isRequired\": true, \"errorMessage\": \"Enter a title\" },\n    { \"type\": \"Input.Date\", \"id\": \"dueDate\", \"label\": \"Due date\" },\n    { \"type\": \"Input.ChoiceSet\", \"id\": \"bucket\", \"label\": \"Bucket\", \"value\": \"backlog\",\n      \"choices\": [ { \"title\": \"Backlog\", \"value\": \"backlog\" }, { \"title\": \"This week\", \"value\": \"week\" } ] },\n    { \"type\": \"Input.Toggle\", \"id\": \"assignToMe\", \"title\": \"Assign to me\", \"value\": \"true\" }\n  ],\n  \"actions\": [ { \"type\": \"Action.Submit\", \"title\": \"Create task\" } ]\n}\n\nTrigger outputs\n  triggerBody()?['entity/cardOutputs/taskTitle'], ['entity/cardOutputs/dueDate'], ['entity/cardOutputs/bucket']\n  triggerBody()?['entity/teamsFlowRunContext/messagePayload/body/plainText']        the selected message as text\n  triggerBody()?['entity/teamsFlowRunContext/messagePayload/body/content']          HTML\n  triggerBody()?['entity/teamsFlowRunContext/messagePayload/from/user/displayName'] original author\n  triggerBody()?['entity/teamsFlowRunContext/messagePayload/linkToMessage']         deep link\n  triggerBody()?['entity/teamsFlowRunContext/from/aadObjectId']                     who ran the flow\n  triggerBody()?['entity/teamsFlowRunContext/channelData/team/aadGroupId']          team (empty in chats)\n  The designer lists these as dynamic content: \"Message plain text\", \"Link to message\", \"Originating user\".\n\nCreate the task\n  Planner > Create a task\n    Group Id / Plan Id: your plan\n    Title: @{triggerBody()?['entity/cardOutputs/taskTitle']}\n    Bucket Id: @{if(equals(triggerBody()?['entity/cardOutputs/bucket'],'week'),'<this week bucket id>','<backlog bucket id>')}\n    Due Date Time: @{triggerBody()?['entity/cardOutputs/dueDate']}\n    Assigned User Ids: @{if(equals(triggerBody()?['entity/cardOutputs/assignToMe'],'true'), triggerBody()?['entity/teamsFlowRunContext/from/aadObjectId'], '')}\n  Planner > Update task details\n    Description: From @{...from/user/displayName}: @{take(...plainText, 800)}\n    References: Resource link = linkToMessage, Alias = \"Teams message\", Type = Other\n\nConfirm to the person\n  Microsoft Teams > Post message in a chat or channel\n    Post as: Flow bot     Post in: Chat with Flow bot     Recipient: the user who ran it (Get user profile by object ID)\n    Message: Task created: <a href=\"https://tasks.office.com/...\">@{title}</a>\n  Or reply under the original message when it is in a channel:\n    Reply with a message in a channel, Message ID = triggerBody()?['entity/teamsFlowRunContext/messagePayload/id']\n\nWhere it appears\n  Hover a message > ... More actions > the flow's name (first use may sit under \"More actions > See more\").\n  The flow shows for its owners and for users it is shared with as run-only users.\n  It must be in the default environment for the standard Teams menu.\n\nShare it with the team\n  Flow details > Run only users > add the team's Microsoft 365 group.\n  Connections used: \"Provided by run-only user\" for Planner so tasks are created as the person, or use the\n  owner's connection so everything is created by one account.\n\nName it for the menu\n  The flow name is the menu label: \"Create task from message\" reads better than \"Flow 12\".",
+    "stepByStepInstructions": [
+      "Create a flow with the For a selected message trigger.",
+      "Design a short Adaptive Card for the extra details.",
+      "Create the task or list item using the card answers and the message text.",
+      "Attach the link to the original message.",
+      "Confirm to the person who ran it.",
+      "Share the flow with the team as run-only users and give it a clear name."
+    ],
+    "commonMistakes": [
+      "Building it outside the default environment and not finding it in the menu.",
+      "Not sharing it as run-only, so only the owner can see it.",
+      "Copying the HTML content into a plain-text field.",
+      "A vague flow name in the message menu."
+    ],
+    "troubleshooting": [
+      "If the flow is missing from the menu, check the environment and run-only sharing, then restart Teams.",
+      "If card values are empty, compare input IDs with the cardOutputs property names.",
+      "If assignment fails, pass the user's object ID, not an email address.",
+      "If the team ID is empty, the message was in a chat. Branch on that."
+    ],
+    "relatedPatterns": [
+      "power-automate-create-planner-task-from-sharepoint",
+      "adaptive-card-input-form-teams-collect-data",
+      "create-a-decision-capture-card"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Turn a Teams message into a task with a message action flow",
+    "seoDescription": "Add a flow to the message menu in Teams that asks for a few details with a card, then creates a Planner task or list item linked to the original message.",
+    "primaryKeyword": "Power Automate for a selected message Teams",
+    "secondaryKeywords": [
+      "Message Actions",
+      "Teams Triggers",
+      "Planner",
+      "Adaptive Cards"
+    ],
+    "faqs": [
+      {
+        "question": "How do I run a flow on a specific Teams message?",
+        "answer": "Use the For a selected message trigger. The flow then appears under More actions on messages."
+      },
+      {
+        "question": "Can the flow ask the user questions first?",
+        "answer": "Yes. Add an Adaptive Card to the trigger and read the answers from cardOutputs."
+      },
+      {
+        "question": "Why can't my colleagues see the flow in Teams?",
+        "answer": "Share it with them as run-only users and make sure it lives in the default environment."
+      }
+    ]
+  },
+  {
+    "id": "pat-1612",
+    "slug": "teams-create-group-chat-post-message-flow",
+    "title": "Create a Teams group chat from a flow and post into it",
+    "shortDescription": "Open a one-to-one or group chat for the people involved in a record, give it a title, post the context and keep the chat ID for later updates.",
+    "fullDescription": "Some events need the right three people talking, not another channel post. The Teams connector can create a chat with chosen members, name it, and post messages or cards into it. Storing the chat ID on the record lets later flows post updates into the same conversation.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams messaging",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Group Chat",
+      "Teams",
+      "Notifications",
+      "Collaboration"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A high-priority incident needs the requester, the engineer and the service owner in one conversation, and someone has to create the chat and paste in the details by hand each time.",
+    "whenToUse": [
+      "Incident or escalation swarms with a few named people",
+      "Handover conversations tied to a record",
+      "Follow-ups that should stay in one thread"
+    ],
+    "whenNotToUse": [
+      "Broad announcements, which belong in a channel",
+      "Adding people outside the organisation without checking external access policy"
+    ],
+    "formulaOrCode": "1. Create the chat\n  Microsoft Teams > Create a chat\n    Title: INC-@{triggerOutputs()?['body/ID']} @{triggerOutputs()?['body/Title']}       (titles apply to group chats)\n    Members to add: semicolon-separated UPNs or object IDs\n      @{triggerOutputs()?['body/Author/Email']};@{triggerOutputs()?['body/AssignedTo/Email']};@{outputs('Get_owner')?['body/mail']}\n  The connection's user is added automatically. Two members total = one-to-one chat (no title).\n  Output: body('Create_a_chat')?['id']       for example 19:abc123...@thread.v2\n\n2. Save the chat ID on the record\n  SharePoint > Update item: TeamsChatId = body('Create_a_chat')?['id']\n  Later runs check it first: if not empty, reuse instead of creating another chat.\n\n3. Post the context\n  Microsoft Teams > Post message in a chat or channel\n    Post as: User (the connection account) or Flow bot\n    Post in: Group chat        Group chat: body('Create_a_chat')?['id']   (enter as custom value)\n    Message:\n      <p><strong>@{triggerOutputs()?['body/Title']}</strong></p>\n      <p>Priority: @{triggerOutputs()?['body/Priority/Value']}<br>\n      Reported: @{convertFromUtc(triggerOutputs()?['body/Created'],'Eastern Standard Time','dd MMM HH:mm')}</p>\n      <p><a href=\"@{triggerOutputs()?['body/{Link}']}\">Open the incident</a></p>\n  Or Post card in a chat or channel with an Adaptive Card and the same chat ID.\n\n4. Later updates into the same chat (another flow, on status change)\n  Condition: TeamsChatId is not empty\n  Post message in a chat or channel > Group chat > TeamsChatId\n    Message: Status changed to <strong>@{triggerOutputs()?['body/Status/Value']}</strong> by @{triggerOutputs()?['body/Editor/DisplayName']}\n\n5. Add someone later\n  Microsoft Teams > Add a member to a chat (where available), or Graph:\n  Send a Microsoft Graph HTTP request\n    POST https://graph.microsoft.com/v1.0/chats/@{chatId}/members\n    { \"@odata.type\": \"#microsoft.graph.aadUserConversationMember\", \"roles\": [\"owner\"],\n      \"user@odata.bind\": \"https://graph.microsoft.com/v1.0/users('<object id>')\",\n      \"visibleHistoryStartDateTime\": \"0001-01-01T00:00:00Z\" }\n\nBehaviour to know\n  Creating a chat with exactly the same members as an existing one-to-one chat returns that existing chat.\n  Group chats with the same members are created anew each time.\n  Flow bot can post in a group chat only if the bot is allowed in it. Posting as User always works when the\n  connection's account is a member.\n  Limit: 250 members per group chat. For more, use a channel.\n  The chat belongs to its members. If the service account that created it leaves, the chat continues.\n\nService account\n  Create and post with a service account's connection, so the chat does not depend on a person's account and\n  its messages are clearly automated: display name \"Incident Bot (automation)\".",
+    "stepByStepInstructions": [
+      "Collect the participants' email addresses or object IDs from the record.",
+      "Create the chat with a meaningful title.",
+      "Store the returned chat ID on the record.",
+      "Post the summary and a link to the record in the chat.",
+      "Have later flows reuse the stored chat ID for updates.",
+      "Use a service account connection for creation and posting."
+    ],
+    "commonMistakes": [
+      "Creating a new chat on every update.",
+      "Not storing the chat ID.",
+      "Using a personal connection so messages appear to come from an individual.",
+      "Including external users without checking policy."
+    ],
+    "troubleshooting": [
+      "If the chat is created without a title, there were only two members. Titles need a group chat.",
+      "If posting fails, enter the chat ID as a custom value and confirm the poster is a member.",
+      "If a member is missing, their address was blank or malformed in the semicolon list.",
+      "If duplicates appear, check the stored chat ID before the create action."
+    ],
+    "relatedPatterns": [
+      "create-a-teams-handoff-message-template",
+      "send-teams-cards-for-new-high-priority-issues",
+      "create-a-request-escalation-screen"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Create a Teams group chat from a flow and post into it",
+    "seoDescription": "Open a one-to-one or group chat for the people involved in a record, give it a title, post the context and keep the chat ID for later updates.",
+    "primaryKeyword": "Power Automate create Teams chat",
+    "secondaryKeywords": [
+      "Group Chat",
+      "Teams",
+      "Notifications",
+      "Collaboration"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate create a Teams group chat?",
+        "answer": "Yes. The Create a chat action takes a title and a list of members and returns the chat ID."
+      },
+      {
+        "question": "How do I post to the same chat later?",
+        "answer": "Save the chat ID on the record when the chat is created and use it in later post actions."
+      },
+      {
+        "question": "Can the Flow bot post in a group chat?",
+        "answer": "In many cases yes. Posting as the connection's user is the dependable option when that user is a member."
+      }
+    ]
+  },
+  {
+    "id": "pat-1613",
+    "slug": "teams-mention-tag-team-channel-flow",
+    "title": "Mention a tag, a channel or a whole team from a flow",
+    "shortDescription": "Notify the right group without listing people: post a message that @mentions a Teams tag, the channel or the team using the connector or Microsoft Graph.",
+    "fullDescription": "Mentioning individuals from a flow is straightforward with the user mention token. Notifying a group such as the on-call tag or everyone in a channel needs a different approach: the tag mention token action, or a Graph request with a mentions array. Used sparingly, it gets attention without building recipient lists.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams messaging",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Mentions",
+      "Tags",
+      "Teams",
+      "Notifications"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "An alert must reach whoever is on call this week. The flow hard-codes three names, and nobody remembers to change them when the rota changes.",
+    "whenToUse": [
+      "Alerts for a rota or role managed as a Teams tag",
+      "Announcements that should notify a channel",
+      "Avoiding hard-coded recipient lists"
+    ],
+    "whenNotToUse": [
+      "Routine posts, where team-wide mentions quickly get muted",
+      "Private channels with the Flow bot, which cannot post there"
+    ],
+    "formulaOrCode": "A. Mention a tag (connector)\n  Microsoft Teams > List all tags for a team          Team: IT Support\n  Filter array: displayName equals 'OnCall'  >  first(body('Filter_array'))?['id']\n  Microsoft Teams > Get an @mention token for a tag\n    Team: IT Support        Tag: the tag id\n  Microsoft Teams > Post message in a chat or channel\n    Post as: User             (tag mentions require posting as a user, not the Flow bot)\n    Post in: Channel          Team: IT Support        Channel: Alerts\n    Message: @{outputs('Get_an_@mention_token_for_a_tag')?['body/atMention']} Database CPU above 90% for 10 minutes.\n             <a href=\"https://...\">Open dashboard</a>\n\nB. Mention a person (for reference)\n  Get an @mention token for a user: User = email  >  body/atMention in the message. Works as Flow bot or User.\n\nC. Mention the channel or the team (Microsoft Graph)\n  Microsoft Teams > Send a Microsoft Graph HTTP request\n    URI:    https://graph.microsoft.com/v1.0/teams/@{teamId}/channels/@{channelId}/messages\n    Method: POST\n    Body:\n    {\n      \"body\": { \"contentType\": \"html\",\n                \"content\": \"<at id=\\\"0\\\">Alerts</at> Planned maintenance tonight 22:00 to 23:00.\" },\n      \"mentions\": [\n        { \"id\": 0, \"mentionText\": \"Alerts\",\n          \"mentioned\": { \"conversation\": { \"id\": \"@{channelId}\", \"displayName\": \"Alerts\",\n                                           \"conversationIdentityType\": \"channel\" } } }\n      ]\n    }\n  Whole team: \"id\": \"@{teamId}\", \"conversationIdentityType\": \"team\", and mentionText = the team name.\n  Tag through Graph:  \"mentioned\": { \"tag\": { \"id\": \"<tag id>\", \"displayName\": \"OnCall\" } }\n  Several mentions: number them 0, 1, 2 in both the <at id> elements and the mentions array.\n  Graph posts as the connection's user.\n\nFind IDs\n  Team ID (group ID) and channel ID: channel > ... > Get link to channel:\n    .../channel/19%3Aabc...%40thread.tacv2/Alerts?groupId=<team id>     (URL-decode the channel part)\n  Or List teams / List channels actions.\n\nManage the rota as a tag\n  Teams > team > ... > Manage tags > OnCall: members updated weekly by the team owner.\n  Automate with Graph: POST /teams/{id}/tags/{tagId}/members { \"userId\": \"<object id>\" } and DELETE to remove.\n  Shifts-based tags update themselves from the Shifts schedule.\n\nEtiquette and settings\n  Team owners can turn off team and channel mentions: Manage team > Settings > @mentions.\n  Reserve team-wide mentions for incidents and deadlines. Use tags for roles.\n  Post one message with the detail, not a mention followed by a second message.",
+    "stepByStepInstructions": [
+      "Create and maintain a Teams tag for the role or rota.",
+      "Look up the tag's ID in the flow.",
+      "Get the mention token for the tag and include it in the message.",
+      "Post as a user account that belongs to the team.",
+      "Use a Graph request with a mentions array for channel or team mentions.",
+      "Limit broad mentions to events that justify them."
+    ],
+    "commonMistakes": [
+      "Hard-coding people instead of a tag.",
+      "Trying to post a tag mention as the Flow bot.",
+      "Mismatched ids between the at element and the mentions array.",
+      "Overusing team mentions until members mute the channel."
+    ],
+    "troubleshooting": [
+      "If the mention shows as plain text, the token was not used or the mentions array does not match the at id.",
+      "If the tag action finds nothing, check the tag exists in that team and the name matches.",
+      "If the Graph request is forbidden, the connection's user is not a member of the team.",
+      "If nobody is notified, mentions may be disabled in the team's settings."
+    ],
+    "relatedPatterns": [
+      "mention-a-user-in-teams-adaptive-card",
+      "create-a-teams-notification-routing-rule",
+      "create-a-channel-based-exception-alert"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Mention a tag, a channel or a whole team from a flow",
+    "seoDescription": "Notify the right group without listing people: post a message that @mentions a Teams tag, the channel or the team using the connector or Microsoft Graph.",
+    "primaryKeyword": "Power Automate mention team tag channel",
+    "secondaryKeywords": [
+      "Mentions",
+      "Tags",
+      "Teams",
+      "Notifications"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate @mention a Teams tag?",
+        "answer": "Yes. Use Get an @mention token for a tag and post the message as a user."
+      },
+      {
+        "question": "How do I mention a whole channel or team from a flow?",
+        "answer": "Send a Microsoft Graph request to post the message with a mentions entry whose conversation type is channel or team."
+      },
+      {
+        "question": "Why does my mention appear as text?",
+        "answer": "The message must contain the mention token or a matching at element and mentions array, not just the name."
+      }
+    ]
+  },
+  {
+    "id": "pat-1614",
+    "slug": "teams-team-channel-provisioning-flow",
+    "title": "Provision a Team with standard channels from a request",
+    "shortDescription": "Create a team from an approved request with consistent naming, owners, channels and a pinned tab, using the Teams connector and Microsoft Graph.",
+    "fullDescription": "Self-service team creation produces inconsistent names and ownerless teams. A provisioning flow takes a request, checks it, creates the team with two owners, adds the standard channels and records the result. Every project or client team then starts with the same structure.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams provisioning",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "Provisioning",
+      "Teams",
+      "Microsoft Graph",
+      "Governance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "3 hours",
+    "problemStatement": "Project teams are created by whoever gets there first, with names nobody can search for, one owner and a different set of channels each time.",
+    "whenToUse": [
+      "Project, client or department teams with a standard layout",
+      "Organisations that restrict who can create Microsoft 365 groups",
+      "Tracking teams with owners and review dates"
+    ],
+    "whenNotToUse": [
+      "One-off teams where a template in the Teams client is enough",
+      "Creating a team for every small topic, where a channel would do"
+    ],
+    "formulaOrCode": "Request list: Team Requests\n  Title (project name), Purpose, Owner1 (person), Owner2 (person), Members (multi-person), Privacy (Private | Public),\n  Template (Project | Client), Status, TeamId, TeamUrl\n\nFlow\n  Trigger: When an item is created > approval by the collaboration team (optional) > Status Approved\n\n  1. Name\n     Compose TeamName: PRJ - @{triggerOutputs()?['body/Title']}\n     Compose MailNickname: prj-@{toLower(replace(replace(triggerOutputs()?['body/Title'],' ','-'),'&',''))}\n     Check for an existing group: Office 365 Groups > List groups, filter mailNickname eq '<nickname>'. Stop if found.\n\n  2. Create the team\n     Microsoft Teams > Create a team\n       Team Name: TeamName        Description: Purpose        Visibility: Privacy\n     Output: body('Create_a_team')?['newTeamId']\n     The connection's account becomes an owner. Use a service account.\n\n  3. Wait for provisioning\n     Delay 30 seconds, then Do until Get a team succeeds (limit 10, 15 seconds apart). Channel and member\n     calls fail if made too early.\n\n  4. Owners and members\n     Microsoft Teams > Add a member to a team: Team = newTeamId, User = Owner1 email, Set as team owner: Yes\n     Repeat for Owner2. Apply to each Members: Add a member to a team (owner: No).\n     Optionally remove the service account as owner afterwards (Graph DELETE /groups/{id}/owners/{id}/$ref)\n     once two owners exist.\n\n  5. Standard channels (array per template)\n     Project: [\"Planning\",\"Delivery\",\"Risks and Issues\",\"Status Reports\"]\n     Apply to each: Microsoft Teams > Create a channel\n       Team: newTeamId        Display Name: current item        Description: optional\n     Private or shared channel through Graph:\n       POST https://graph.microsoft.com/v1.0/teams/@{teamId}/channels\n       { \"displayName\": \"Commercial\", \"membershipType\": \"private\",\n         \"members\": [ { \"@odata.type\": \"#microsoft.graph.aadUserConversationMember\", \"roles\": [\"owner\"],\n                        \"user@odata.bind\": \"https://graph.microsoft.com/v1.0/users('<owner object id>')\" } ] }\n\n  6. Pin a website tab in General\n     Send a Microsoft Graph HTTP request\n       POST https://graph.microsoft.com/v1.0/teams/@{teamId}/channels/@{generalChannelId}/tabs\n       { \"displayName\": \"Project site\",\n         \"teamsApp@odata.bind\": \"https://graph.microsoft.com/v1.0/appCatalogs/teamsApps/com.microsoft.teamspace.tab.web\",\n         \"configuration\": { \"contentUrl\": \"https://contoso.sharepoint.com/sites/pmo/project/@{ID}\",\n                            \"websiteUrl\": \"https://contoso.sharepoint.com/sites/pmo/project/@{ID}\" } }\n     General channel ID: List channels, filter displayName eq 'General'.\n\n  7. Welcome post\n     Post message in a chat or channel > Channel > General:\n       Welcome. Planning holds the schedule, Risks and Issues holds the log. Owners: Owner1 and Owner2.\n\n  8. Record\n     Update the request: Status Ready, TeamId, TeamUrl\n       https://teams.microsoft.com/l/team/@{encodeUriComponent(generalChannelId)}/conversations?groupId=@{teamId}&tenantId=<tenant id>\n     Email the owners with the link and their responsibilities.\n\nAlternative: create from a template in one call\n  POST https://graph.microsoft.com/v1.0/teams\n  { \"template@odata.bind\": \"https://graph.microsoft.com/v1.0/teamsTemplates('standard')\",\n    \"displayName\": \"PRJ - Apollo\", \"description\": \"…\", \"visibility\": \"Private\",\n    \"channels\": [ { \"displayName\": \"Planning\", \"isFavoriteByDefault\": true }, { \"displayName\": \"Delivery\" } ],\n    \"members\": [ { \"@odata.type\": \"#microsoft.graph.aadUserConversationMember\", \"roles\": [\"owner\"],\n                   \"user@odata.bind\": \"https://graph.microsoft.com/v1.0/users('<owner id>')\" } ] }\n  Returns 202 with a Location header to poll. Needs application or delegated Team.Create permission.\n\nGovernance to pair with it\n  Restrict Microsoft 365 group creation to a security group that includes the service account.\n  Group naming policy and expiration policy in Entra. Sensitivity labels for privacy and guest settings.\n  Quarterly: teams with one owner or no activity are reported to the owners.",
+    "stepByStepInstructions": [
+      "Create a request list with name, purpose, two owners and a template choice.",
+      "Build the name to your standard and check it does not already exist.",
+      "Create the team with a service account and wait for provisioning to finish.",
+      "Add both owners and the members.",
+      "Create the standard channels and pin key tabs.",
+      "Post a welcome message, record the team ID and notify the owners."
+    ],
+    "commonMistakes": [
+      "Adding channels or members before the team has finished provisioning.",
+      "One owner only.",
+      "Leaving the service account as the only owner.",
+      "No duplicate name check."
+    ],
+    "troubleshooting": [
+      "If channel creation fails with not found, increase the wait after creating the team.",
+      "If members are not added, the team is still provisioning or the user address is wrong.",
+      "If the tab call fails, check the General channel ID and that the app ID is the website tab.",
+      "If creation is forbidden, the service account is not allowed to create Microsoft 365 groups."
+    ],
+    "relatedPatterns": [
+      "design-a-site-provisioning-request-list",
+      "create-a-sharepoint-project-workspace-template",
+      "teams-channel-notification-deep-link-to-app"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Provision a Team with standard channels from a request",
+    "seoDescription": "Create a team from an approved request with consistent naming, owners, channels and a pinned tab, using the Teams connector and Microsoft Graph.",
+    "primaryKeyword": "Power Automate create Team channels provisioning",
+    "secondaryKeywords": [
+      "Provisioning",
+      "Teams",
+      "Microsoft Graph",
+      "Governance"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate create a Microsoft Teams team?",
+        "answer": "Yes. The Teams connector has Create a team, Create a channel and Add a member to a team actions."
+      },
+      {
+        "question": "Why do actions fail right after creating a team?",
+        "answer": "Provisioning takes time. Wait and retry before adding channels, members or tabs."
+      },
+      {
+        "question": "How do I create private channels from a flow?",
+        "answer": "Use a Microsoft Graph request to the channels endpoint with membershipType private and at least one owner."
+      }
+    ]
+  },
+  {
+    "id": "pat-1615",
+    "slug": "teams-reply-in-thread-channel-message",
+    "title": "Keep updates in one Teams thread by replying to the original post",
+    "shortDescription": "Post once when a record is created, store the message ID, and send every later update as a reply so the channel shows one thread per record.",
+    "fullDescription": "A flow that posts a new channel message for every status change buries the channel. Posting one root message per record and replying to it for each update keeps the history together and lets people follow or mute a single thread. The only requirement is saving the root message ID on the record.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams messaging",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Threads",
+      "Teams",
+      "Channel Messages",
+      "Notifications"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A request generates six separate channel posts over its life. Readers cannot tell which posts belong together, and the channel becomes noise.",
+    "whenToUse": [
+      "Records with several status updates over time",
+      "Incident and request channels",
+      "Any notification flow that posts more than once per item"
+    ],
+    "whenNotToUse": [
+      "One-off announcements with no follow-ups",
+      "Chats, where replies are not threaded the same way as channels"
+    ],
+    "formulaOrCode": "Columns on the record\n  TeamsMessageId (single line of text)        TeamsThreadLink (hyperlink or text, optional)\n\nFlow A: on create, post the root message\n  Trigger: SharePoint > When an item is created\n  Microsoft Teams > Post message in a chat or channel\n    Post as: Flow bot        Post in: Channel        Team: Operations        Channel: Requests\n    Subject: REQ-@{triggerOutputs()?['body/ID']} @{triggerOutputs()?['body/Title']}\n    Message: <p>New request from @{triggerOutputs()?['body/Author/DisplayName']}</p>\n             <p><a href=\"@{triggerOutputs()?['body/{Link}']}\">Open request</a></p>\n  SharePoint > Update item\n    TeamsMessageId: @{outputs('Post_message_in_a_chat_or_channel')?['body/id']}\n    TeamsThreadLink: @{outputs('Post_message_in_a_chat_or_channel')?['body/messageLink']}\n  (Posting a card instead: Post card in a chat or channel returns the same id property.)\n\nFlow B: on change, reply in the thread\n  Trigger: SharePoint > When an item is created or modified\n    Trigger condition so it runs only for real status changes, for example with a LastNotifiedStatus column:\n    @not(equals(triggerOutputs()?['body/Status/Value'], triggerOutputs()?['body/LastNotifiedStatus']))\n  Condition: TeamsMessageId is not empty\n    Yes:\n      Microsoft Teams > Reply with a message in a channel\n        Post as: Flow bot        Post in: Channel        Team / Channel: same as Flow A\n        Message ID: @{triggerOutputs()?['body/TeamsMessageId']}\n        Reply: Status changed to <strong>@{triggerOutputs()?['body/Status/Value']}</strong>\n               by @{triggerOutputs()?['body/Editor/DisplayName']}\n      (Card reply: Reply with an adaptive card in a channel, same Message ID.)\n    No:\n      Post a new root message and store its ID, as in Flow A.\n  Update item: LastNotifiedStatus = current status\n\nMention someone in the reply\n  Get an @mention token for a user (assignee email) > include body/atMention in the reply text.\n\nWhen the root message was deleted\n  The reply action fails with NotFound. Configure run after \"has failed\" on a fallback that posts a new\n  root message and overwrites TeamsMessageId.\n\nAvoid the update loop\n  Flow A's Update item triggers Flow B. The trigger condition on LastNotifiedStatus stops that run early.\n  Alternatively have Flow A set LastNotifiedStatus in the same update.\n\nGraph alternative\n  POST https://graph.microsoft.com/v1.0/teams/{teamId}/channels/{channelId}/messages/{messageId}/replies\n  { \"body\": { \"contentType\": \"html\", \"content\": \"Status changed to <b>Approved</b>\" } }\n\nTips\n  Use the Subject field on the root message: it becomes the bold thread title and is searchable.\n  Keep the first line of each reply self-contained, because the collapsed thread shows only the latest replies.\n  The same identity should post root and replies, so the thread reads consistently.",
+    "stepByStepInstructions": [
+      "Add a column to store the Teams message ID on the record.",
+      "Post one root message when the record is created and save its ID.",
+      "Trigger later updates only on meaningful changes.",
+      "Reply to the stored message ID with each update.",
+      "Fall back to a new root message when the ID is missing or the original was deleted.",
+      "Use the subject line so each thread has a clear title."
+    ],
+    "commonMistakes": [
+      "Posting a new root message for every change.",
+      "Not saving the message ID.",
+      "Triggering on every edit, including the flow's own update.",
+      "Replying in a different team or channel than the root message."
+    ],
+    "troubleshooting": [
+      "If the reply fails, confirm team, channel and message ID match the original post.",
+      "If the stored ID is blank, read body/id from the post action's output.",
+      "If the flow loops, add a trigger condition or a last-notified column.",
+      "If replies appear as new posts, you used the post action instead of the reply action."
+    ],
+    "relatedPatterns": [
+      "teams-channel-notification-deep-link-to-app",
+      "power-automate-avoid-infinite-update-loop",
+      "power-automate-trigger-condition-status-changed"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Keep updates in one Teams thread by replying to the original post",
+    "seoDescription": "Post once when a record is created, store the message ID, and send every later update as a reply so the channel shows one thread per record.",
+    "primaryKeyword": "Power Automate reply to Teams channel message",
+    "secondaryKeywords": [
+      "Threads",
+      "Teams",
+      "Channel Messages",
+      "Notifications"
+    ],
+    "faqs": [
+      {
+        "question": "How do I reply to a Teams channel message from Power Automate?",
+        "answer": "Use Reply with a message in a channel and pass the message ID of the original post."
+      },
+      {
+        "question": "Where does the message ID come from?",
+        "answer": "From the output of the action that posted the original message. Save it on the record."
+      },
+      {
+        "question": "Can the reply contain an Adaptive Card?",
+        "answer": "Yes. Use Reply with an adaptive card in a channel with the same message ID."
+      }
+    ]
+  },
+  {
+    "id": "pat-1616",
+    "slug": "canvas-app-teams-tab-context-theme",
+    "title": "Make a canvas app fit Teams with context and theme",
+    "shortDescription": "Read the Teams theme, team and channel a canvas app is running in, match dark mode, and filter data to the current channel.",
+    "fullDescription": "A canvas app added as a Teams tab can tell where it is running. Apps built in Teams use the Teams integration object. Apps built in the standard maker portal receive context through query parameters. Either way the app can match the user's theme and scope its data to the team or channel, which makes one app reusable across many teams.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Apps in Teams",
+    "platform": [
+      "Teams",
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Teams Tab",
+      "Context",
+      "Theme",
+      "Canvas Apps"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "An app pinned as a tab stays bright white when Teams is in dark mode, and shows every team's records instead of the ones for the channel it is pinned in.",
+    "whenToUse": [
+      "Apps pinned as channel or personal tabs",
+      "One app reused across several teams",
+      "Matching Teams light, dark and high-contrast themes"
+    ],
+    "whenNotToUse": [
+      "Security decisions based on context values, which a user can alter",
+      "Apps that are mainly used in the browser outside Teams"
+    ],
+    "formulaOrCode": "A. Apps created in Teams (Dataverse for Teams) or with the Teams integration object\n  Teams.ThisTeam.DisplayName      Teams.ThisTeam.GroupId\n  Teams.ThisChannel.DisplayName   Teams.ThisChannel.Id\n  Teams.Theme.Name                \"default\" | \"dark\" | \"contrast\"\n  Teams.Locale                    for example \"en-us\"\n  Example:  Filter(Tasks, 'Channel Id' = Teams.ThisChannel.Id)\n\nB. Standard canvas apps added to Teams (Add to Teams, or a Website/Power Apps tab)\n  Context arrives as parameters. Read them with Param():\n    Param(\"theme\")          default | dark | contrast\n    Param(\"groupId\")        Microsoft 365 group ID of the team\n    Param(\"channelId\")      19:...@thread.tacv2\n    Param(\"teamId\")         thread ID of the team\n    Param(\"channelType\")    Regular | Private | Shared\n    Param(\"hostClientType\") desktop | web | android | ios\n    Param(\"subEntityId\")    value from a deep link\n    Param(\"locale\"), Param(\"entityId\"), Param(\"chatId\"), Param(\"userTeamRole\")\n  Outside Teams these return blank.\n\n  App.Formulas (named formulas)\n    nfInTeams   = !IsBlank(Param(\"hostClientType\")) || !IsBlank(Param(\"theme\"));\n    nfTheme     = Coalesce(Param(\"theme\"), \"default\");\n    nfGroupId   = Param(\"groupId\");\n    nfChannelId = Param(\"channelId\");\n    nfIsMobile  = Param(\"hostClientType\") in [\"android\", \"ios\"];\n\nC. Theme colours\n  App.Formulas\n    nfColors = Switch(nfTheme,\n        \"dark\",     { Bg: ColorValue(\"#1F1F1F\"), Surface: ColorValue(\"#292929\"), Text: ColorValue(\"#FFFFFF\"),\n                      Subtle: ColorValue(\"#ADADAD\"), Accent: ColorValue(\"#7F85F5\"), Border: ColorValue(\"#3D3D3D\") },\n        \"contrast\", { Bg: Color.Black, Surface: Color.Black, Text: Color.White,\n                      Subtle: Color.White, Accent: ColorValue(\"#FFFF01\"), Border: Color.White },\n                    { Bg: ColorValue(\"#F5F5F5\"), Surface: Color.White, Text: ColorValue(\"#242424\"),\n                      Subtle: ColorValue(\"#616161\"), Accent: ColorValue(\"#5B5FC7\"), Border: ColorValue(\"#E0E0E0\") });\n  Use them:\n    Screen.Fill = nfColors.Bg          Label.Color = nfColors.Text        Card container Fill = nfColors.Surface\n    Button.Fill = nfColors.Accent      Borders = nfColors.Border\n  The theme parameter is read at launch. If the user switches theme, the tab reloads with the new value.\n\nD. Scope data to the channel\n  Gallery.Items:\n    Filter(Requests, IsBlank(nfChannelId) || ChannelId = nfChannelId)\n  On create:\n    Patch(Requests, Defaults(Requests), { Title: txtTitle.Text, ChannelId: nfChannelId, GroupId: nfGroupId })\n  Show where you are:\n    If(nfInTeams, \"Requests for this channel\", \"All requests\")\n  Treat this as a convenience filter. Enforce access with SharePoint or Dataverse permissions.\n\nE. Deep link to a record inside the tab\n  Link: https://teams.microsoft.com/l/entity/<appId>/<entityId>?context={\"subEntityId\":\"REQ-1042\"}\n  App.StartScreen: If(!IsBlank(Param(\"subEntityId\")), scrDetail, scrHome)\n  scrDetail.OnVisible: Set(gblRecord, LookUp(Requests, RequestNumber = Param(\"subEntityId\")))\n\nF. Layout inside Teams\n  App settings > Display > Scale to fit: Off, Lock aspect ratio: Off. Use containers so the tab fills the width.\n  Teams adds its own header: keep your app header short (40 to 48 px) or hide it when nfInTeams.\n  Mobile Teams: check nfIsMobile for a single-column layout, or rely on App.Width breakpoints.\n\nG. Add the app to Teams\n  make.powerapps.com > Apps > select > Add to Teams > Add to a team > choose channel > Save.\n  Or download the app package and publish to the organisation's app catalogue with a setup policy to pin it.",
+    "stepByStepInstructions": [
+      "Decide whether the app uses the Teams integration object or query parameters.",
+      "Define named formulas for theme, group and channel.",
+      "Create a colour record per theme and bind fills and text colours to it.",
+      "Filter and stamp data with the channel or group ID.",
+      "Handle deep links through the sub-entity parameter.",
+      "Test in light, dark and high-contrast themes on desktop and mobile."
+    ],
+    "commonMistakes": [
+      "Hard-coded white backgrounds in dark mode.",
+      "Assuming context values exist when the app runs in a browser.",
+      "Using the channel filter as a security boundary.",
+      "A fixed-size layout that leaves bars around the app in the tab."
+    ],
+    "troubleshooting": [
+      "If Param values are blank, the app was opened outside Teams or as a website tab that does not pass context.",
+      "If colours do not change, check the named formula falls back to default when the parameter is blank.",
+      "If a private channel shows no data, its channel ID differs from the parent team. Store and filter by channel ID.",
+      "If the app looks cramped, turn off Scale to fit and use responsive containers."
+    ],
+    "relatedPatterns": [
+      "responsive-canvas-app-layout-containers",
+      "teams-channel-notification-deep-link-to-app",
+      "use-named-formulas-for-app-constants"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Make a canvas app fit Teams with context and theme",
+    "seoDescription": "Read the Teams theme, team and channel a canvas app is running in, match dark mode, and filter data to the current channel.",
+    "primaryKeyword": "Power Apps Teams context theme Param",
+    "secondaryKeywords": [
+      "Teams Tab",
+      "Context",
+      "Theme",
+      "Canvas Apps"
+    ],
+    "faqs": [
+      {
+        "question": "How does a canvas app know it is running in Teams?",
+        "answer": "It receives parameters such as theme, groupId and channelId that can be read with Param, or it can use the Teams integration object."
+      },
+      {
+        "question": "How do I support Teams dark mode in Power Apps?",
+        "answer": "Read the theme value and bind fills and text colours to a set of colours for default, dark and contrast."
+      },
+      {
+        "question": "Can one app show different data in each channel?",
+        "answer": "Yes. Store the channel ID on each record and filter by the current channel."
+      }
+    ]
+  },
+  {
+    "id": "pat-1617",
+    "slug": "teams-meeting-create-from-flow",
+    "title": "Schedule a Teams meeting from a flow",
+    "shortDescription": "Create a Teams meeting with attendees and an agenda when a record reaches a stage, store the join link, and update or cancel it when details change.",
+    "fullDescription": "Review meetings, kick-offs and interviews follow a record's progress. The Teams connector's Create a Teams meeting action places an event on a calendar with an online meeting link and invites attendees. Saving the event ID and join link on the record lets the flow reschedule or cancel later.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams meetings",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Meetings",
+      "Teams",
+      "Calendar",
+      "Scheduling"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Each approved project needs a kick-off meeting. A coordinator creates every invite by hand, copying attendees and details from the list.",
+    "whenToUse": [
+      "Meetings that follow a status change, such as approved or shortlisted",
+      "Standard agendas and attendee sets",
+      "Keeping the join link with the record"
+    ],
+    "whenNotToUse": [
+      "Finding a time that suits everyone, which needs availability checks first",
+      "Sending invites from a personal calendar for an organisational process"
+    ],
+    "formulaOrCode": "Create\n  Microsoft Teams > Create a Teams meeting\n    Calendar id: Calendar                         (of the connection's account, or a shared calendar it can edit)\n    Subject: Kick-off: @{triggerOutputs()?['body/Title']}\n    Message (HTML):\n      <p>Agenda</p><ol><li>Scope and outcomes</li><li>Roles</li><li>Timeline and risks</li><li>Next steps</li></ol>\n      <p><a href=\"@{triggerOutputs()?['body/{Link}']}\">Project record</a></p>\n    Time zone: (UTC-05:00) Eastern Time (US & Canada)\n    Start time: @{formatDateTime(triggerOutputs()?['body/KickoffDate'],'yyyy-MM-ddTHH:mm:ss')}\n    End time:   @{formatDateTime(addMinutes(triggerOutputs()?['body/KickoffDate'],45),'yyyy-MM-ddTHH:mm:ss')}\n    Required attendees: @{triggerOutputs()?['body/ProjectManager/Email']};@{triggerOutputs()?['body/Sponsor/Email']}\n    Optional attendees: pmo@contoso.com\n    Importance: Normal        Reminder: 15        Show as: Busy\n\n  Start and end are local to the chosen time zone, without a Z suffix. If the list stores UTC:\n    convertFromUtc(triggerOutputs()?['body/KickoffDate'],'Eastern Standard Time','yyyy-MM-ddTHH:mm:ss')\n\nOutputs to store on the record\n  body('Create_a_Teams_meeting')?['id']                              event ID\n  body('Create_a_Teams_meeting')?['onlineMeeting/joinUrl']           join link\n  SharePoint > Update item: MeetingEventId, MeetingJoinUrl\n\nSuggest a time first (optional)\n  Office 365 Outlook > Find meeting times (V2)\n    Required attendees: emails        Meeting duration: 45\n    Start time: tomorrow 09:00        End time: +5 days        Activity domain: Work\n  first(body('Find_meeting_times_(V2)')?['meetingTimeSuggestions'])?['meetingTimeSlot/start/dateTime']\n  Suggestion times are returned in UTC. Convert before use.\n\nReschedule or change\n  Office 365 Outlook > Update event (V4)\n    Calendar id: same calendar        Id: MeetingEventId\n    Subject, Start time, End time, Time zone: new values        Required attendees: resend the full list\n  The online meeting link stays the same. Attendees receive an update.\n\nCancel\n  Office 365 Outlook > Delete event (V2): Id = MeetingEventId        attendees receive a cancellation\n  Graph for a cancellation message:\n    POST https://graph.microsoft.com/v1.0/me/events/{id}/cancel   { \"comment\": \"Project on hold. A new date will follow.\" }\n  Clear MeetingEventId and MeetingJoinUrl on the record.\n\nChannel meeting\n  Create a Teams meeting has no channel option. Use Graph with the channel's email address as an attendee,\n  or post the join link to the channel:\n    Post message in a chat or channel: Kick-off scheduled for <date>. <a href=\"@{joinUrl}\">Join</a>\n\nWho is the organiser\n  The connection's account. Use a service account with a mailbox and Teams licence (for example\n  \"PMO Meetings\"), so meetings do not vanish or lose their organiser when a person leaves. Add the real\n  host as a co-organiser afterwards in meeting options if needed.\n\nRecurring series\n  The action creates single meetings. For a series, create the event through Microsoft Graph with a\n  recurrence pattern and \"isOnlineMeeting\": true, \"onlineMeetingProvider\": \"teamsForBusiness\".\n\nGuard against duplicates\n  Condition before creating: MeetingEventId is empty. Without it, each edit of the record creates another meeting.",
+    "stepByStepInstructions": [
+      "Decide the trigger stage and the meeting's standard subject, agenda and attendees.",
+      "Create the Teams meeting with local start and end times and the right time zone.",
+      "Store the event ID and join link on the record.",
+      "Guard so a meeting is created only once per record.",
+      "Update the event when the date or attendees change.",
+      "Delete or cancel the event when the record is withdrawn."
+    ],
+    "commonMistakes": [
+      "Passing UTC times with a non-UTC time zone, shifting the meeting.",
+      "Creating a meeting on every edit.",
+      "Using a personal connection as organiser.",
+      "Not storing the event ID, so the meeting cannot be changed."
+    ],
+    "troubleshooting": [
+      "If the meeting is at the wrong hour, convert UTC values to the selected time zone before passing them.",
+      "If attendees are missing, check the semicolon-separated list for blank addresses.",
+      "If the join link is empty, read onlineMeeting/joinUrl from the action body.",
+      "If updates fail, the event belongs to another calendar or account than the connection's."
+    ],
+    "relatedPatterns": [
+      "convert-time-zone-format-date-power-automate",
+      "handle-duplicate-flow-trigger-runs",
+      "govern-power-automate-service-account-ownership"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Schedule a Teams meeting from a flow",
+    "seoDescription": "Create a Teams meeting with attendees and an agenda when a record reaches a stage, store the join link, and update or cancel it when details change.",
+    "primaryKeyword": "Power Automate create Teams meeting",
+    "secondaryKeywords": [
+      "Meetings",
+      "Teams",
+      "Calendar",
+      "Scheduling"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Automate create a Teams meeting?",
+        "answer": "Yes. The Teams connector's Create a Teams meeting action creates a calendar event with a join link and attendees."
+      },
+      {
+        "question": "How do I get the meeting join link in the flow?",
+        "answer": "Read onlineMeeting/joinUrl from the action's output and store it on the record."
+      },
+      {
+        "question": "How do I reschedule a meeting created by a flow?",
+        "answer": "Save the event ID and use Outlook's Update event action with the new times."
+      }
+    ]
+  },
+  {
+    "id": "pat-1618",
+    "slug": "adaptive-card-dynamic-choice-set-options",
+    "title": "Fill an Adaptive Card drop-down with options from a list",
+    "shortDescription": "Build the choices of an Input.ChoiceSet from SharePoint or Dataverse rows with a Select action, set a default, allow multi-select and read the answer back.",
+    "fullDescription": "Hard-coded choices in a card go stale as soon as the list of categories or assignees changes. Generating the choices array from live data keeps the card current. A Select action shapes each row into a title and value pair, and the output is placed directly into the card JSON.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Adaptive Cards",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Adaptive Cards",
+      "ChoiceSet",
+      "Select",
+      "Dynamic Data"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A triage card offers five assignees typed into the JSON. Two have changed teams, and every change means editing the flow.",
+    "whenToUse": [
+      "Cards that assign, categorise or route using reference data",
+      "Choices that change over time",
+      "Multi-select questions built from a list"
+    ],
+    "whenNotToUse": [
+      "Hundreds of options, which are unusable in a card",
+      "Dependent drop-downs, which cards cannot refresh without a bot"
+    ],
+    "formulaOrCode": "1. Get the options\n  SharePoint > Get items: Support Agents\n    Filter Query: Active eq 1        Order By: Title        Top Count: 50\n\n2. Shape them\n  Select\n    From: body('Get_items')?['value']\n    Map (text mode):\n    { \"title\": \"@{item()?['Title']} (@{item()?['Team/Value']})\", \"value\": \"@{item()?['Agent/Email']}\" }\n  Values must be strings. For numeric IDs: \"value\": \"@{string(item()?['ID'])}\"\n\n3. Card\n{\n  \"type\": \"AdaptiveCard\", \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\", \"version\": \"1.4\",\n  \"body\": [\n    { \"type\": \"TextBlock\", \"text\": \"Assign ticket #@{triggerOutputs()?['body/ID']}\", \"weight\": \"Bolder\", \"wrap\": true },\n    { \"type\": \"TextBlock\", \"text\": \"@{triggerOutputs()?['body/Title']}\", \"wrap\": true },\n    { \"type\": \"Input.ChoiceSet\", \"id\": \"assignee\", \"label\": \"Assign to\", \"style\": \"compact\",\n      \"isRequired\": true, \"errorMessage\": \"Choose an agent\",\n      \"value\": \"@{first(body('Select'))?['value']}\",\n      \"choices\": @{body('Select')} },\n    { \"type\": \"Input.ChoiceSet\", \"id\": \"tags\", \"label\": \"Tags\", \"isMultiSelect\": true, \"style\": \"expanded\",\n      \"choices\": @{body('Select_tags')} }\n  ],\n  \"actions\": [ { \"type\": \"Action.Submit\", \"title\": \"Assign\" } ]\n}\n  \"choices\": @{body('Select')} is written without quotes: the action output is already a JSON array.\n\n4. Styles\n  \"style\": \"compact\"    drop-down (single select)\n  \"style\": \"expanded\"   radio buttons, or check boxes with isMultiSelect\n  \"style\": \"filtered\"   type-ahead search within the provided choices (version 1.5). Good for 20+ options.\n\n5. Read the answer\n  Single:  body('Post_adaptive_card_and_wait_for_a_response')?['data']?['assignee']         one value\n  Multi:   body('Post_adaptive_card_and_wait_for_a_response')?['data']?['tags']             \"Hardware,Urgent\"\n           split(coalesce(body('Post_adaptive_card_and_wait_for_a_response')?['data']?['tags'], ''), ',')\n  Avoid commas inside values used with multi-select.\n\n6. Look the choice up again\n  The response holds only the value. To get the display name:\n    Filter array:\n      From: body('Select')        Condition: item()?['value'] is equal to <assignee value>\n      first(body('Filter_array'))?['title']\n  Or use the row ID as the value and Get item afterwards.\n\n7. Default selection\n  Single: \"value\": \"<one of the values>\". Omit it to force a deliberate choice (the required check then applies).\n  Multi:  \"value\": \"Hardware,Urgent\"\n\n8. No options\n  Condition: length(body('Select')) is greater than 0. If empty, post a plain message that no agents are active\n  instead of a card with an empty required field that cannot be submitted.\n\n9. Add a fixed option\n  union(body('Select'), json('[{\"title\":\"Leave unassigned\",\"value\":\"none\"}]'))\n  Put it in a Compose and use the Compose output for choices.\n\nLimits\n  Keep titles under about 60 characters, since they truncate on mobile.\n  Stay below the 28 KB card size: 50 choices with short titles is comfortable.",
+    "stepByStepInstructions": [
+      "Fetch the reference rows with a filter and a sensible limit.",
+      "Map each row to a title and string value with Select.",
+      "Place the Select output in the ChoiceSet's choices without quotes.",
+      "Choose compact, expanded or filtered style to suit the number of options.",
+      "Read the selected value from the response and look up related details.",
+      "Handle the case where no options exist."
+    ],
+    "commonMistakes": [
+      "Typing choices into the JSON by hand.",
+      "Non-string values, which make the card invalid.",
+      "Quoting the choices array.",
+      "Commas in values used with multi-select."
+    ],
+    "troubleshooting": [
+      "If the card fails to post, check each value is a string and the choices output is an array.",
+      "If the default is not selected, the value does not exactly match one of the choice values.",
+      "If multi-select returns one string, split it on commas.",
+      "If the list is long, switch the style to filtered and raise the card version to 1.5."
+    ],
+    "relatedPatterns": [
+      "adaptive-card-input-form-teams-collect-data",
+      "adaptive-card-table-from-array-select",
+      "parse-adaptive-card-responses-into-decisions"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Fill an Adaptive Card drop-down with options from a list",
+    "seoDescription": "Build the choices of an Input.ChoiceSet from SharePoint or Dataverse rows with a Select action, set a default, allow multi-select and read the answer back.",
+    "primaryKeyword": "Adaptive Card ChoiceSet dynamic choices Power Automate",
+    "secondaryKeywords": [
+      "Adaptive Cards",
+      "ChoiceSet",
+      "Select",
+      "Dynamic Data"
+    ],
+    "faqs": [
+      {
+        "question": "How do I populate an Adaptive Card drop-down from SharePoint?",
+        "answer": "Use Get items, map each row to a title and value with Select, and insert the output as the ChoiceSet's choices."
+      },
+      {
+        "question": "How is a multi-select answer returned?",
+        "answer": "As one comma-separated string of the selected values. Split it into an array in the flow."
+      },
+      {
+        "question": "Can the options change based on another input?",
+        "answer": "Not in a flow-posted card. Cards cannot refresh choices without a bot, so ask in two steps or use an app."
+      }
+    ]
+  },
+  {
+    "id": "pat-1619",
+    "slug": "teams-post-as-flow-bot-user-choose",
+    "title": "Choose how a flow posts in Teams: Flow bot, user or agent",
+    "shortDescription": "What each Post as and Post in option does, which combinations work in private channels and chats, and which identity suits alerts, approvals and conversations.",
+    "fullDescription": "The Teams post actions ask two questions: who posts, and where. The answers decide whether the message looks automated, whether recipients can reply to someone, whether it works in private channels and whether a waiting card is possible. Picking deliberately avoids the common surprises.",
+    "category": "Teams & Adaptive Cards",
+    "subCategory": "Teams messaging",
+    "platform": [
+      "Teams",
+      "Power Automate"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Flow Bot",
+      "Teams",
+      "Post As",
+      "Notifications"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A flow's messages appear to come from the person who built it, colleagues reply to them asking questions, and the same flow fails outright in a private channel.",
+    "whenToUse": [
+      "Designing any Teams notification or card flow",
+      "Fixing posts that appear under the wrong name",
+      "Working out why posting fails in a private channel or group chat"
+    ],
+    "whenNotToUse": [
+      "Posting as a named employee for automated alerts",
+      "Assuming one configuration works in every location"
+    ],
+    "formulaOrCode": "Post as\n  Flow bot                 Shown as \"Workflows\" (formerly Power Automate), with \"<owner name> via Workflows\".\n                           Clearly automated. Recipients cannot reply to it meaningfully.\n  User                     Shown as the connection's account, exactly as if they typed it.\n                           Replies and mentions go to that account.\n  Power Virtual Agents     Shown as a Copilot Studio agent you choose. Needs the agent published to Teams.\n  (Copilot Studio bot)     Lets replies continue as a conversation with the agent.\n\nPost in\n  Chat with Flow bot       one-to-one chat between the bot and one recipient\n  Channel                  a standard, private or shared channel\n  Group chat               an existing chat, by ID\n\nWhat works\n                              Flow bot     User      Agent\n  Chat with Flow bot          yes          n/a       yes (chat with agent)\n  Channel: standard           yes          yes       yes\n  Channel: private            no           yes       no\n  Channel: shared             limited      yes       no\n  Group chat                  yes*         yes       no        *the bot is added to the chat on first post\n  Post adaptive card and WAIT yes          yes**     yes       **waiting as User works in channels and chats\n\nTypical choices\n  Alert to a channel                          Flow bot in Channel. Private channel: User, with a service account.\n  Personal notification                       Flow bot, Chat with Flow bot, Recipient = the person.\n  Approval-style card to one person           Flow bot, Chat with Flow bot, Post adaptive card and wait.\n  Card several people can answer              Flow bot in Channel, then update the card after the first response.\n  Message that should invite a human reply    User, using a shared service account named for the team\n                                              (\"IT Service Desk\"), in a chat or channel.\n  Conversation after the notification         Agent, so the person can ask follow-up questions.\n\nRecipient formats\n  Chat with Flow bot > Recipient: email (UPN). Several recipients separated by semicolons create separate\n  one-to-one posts, not a group chat.\n  Group chat > enter the chat ID as a custom value (19:...@thread.v2).\n  Channel > pick Team and Channel, or pass the team (group) ID and channel ID as custom values for dynamic targets.\n\nFirst-time delivery\n  The Flow bot can message a user who has never used Workflows. If the Workflows app is blocked by a Teams\n  app permission policy, posts as Flow bot fail for those users: allow the app in the Teams admin center.\n  Guests and external users cannot receive Flow bot chats.\n\nMessage content\n  Post message accepts a subset of HTML: p, br, strong, em, a, ul/ol/li, table, code, h1 to h3.\n  Use Post card for layout, buttons and inputs.\n  Mentions: Get an @mention token for a user, then insert the token.\n\nIdentity hygiene\n  Connections belong to people. For production flows create the Teams connection with a service account, so\n  \"via Workflows\" shows a neutral name and the flow survives staff changes.\n  The service account must be a member of the teams and private channels it posts to.\n\nThrottling\n  Per connection roughly 100 calls per 60 seconds for the Teams connector. Posting to many people in a loop:\n  keep concurrency low, add a short delay, or send one channel post with a tag mention.",
+    "stepByStepInstructions": [
+      "Decide whether the message should look automated or come from an account people can reply to.",
+      "Pick the location: bot chat, channel or group chat.",
+      "Check the combination is supported, especially for private channels.",
+      "Create the Teams connection with a service account for production flows.",
+      "Use card actions when layout, buttons or inputs are needed.",
+      "Test delivery for a user who has never used Workflows."
+    ],
+    "commonMistakes": [
+      "Posting automated alerts as the maker's own account.",
+      "Using Flow bot in a private channel.",
+      "Putting several emails in Recipient and expecting a group chat.",
+      "Blocking the Workflows app in Teams policy and wondering why posts fail."
+    ],
+    "troubleshooting": [
+      "If posting to a private channel fails, switch Post as to User and add that account to the channel.",
+      "If a user gets nothing, check the Workflows app is allowed for them and the address is their UPN.",
+      "If the name shown is a former employee, recreate the Teams connection with a service account.",
+      "If posts are throttled, lower concurrency or consolidate messages."
+    ],
+    "relatedPatterns": [
+      "teams-channel-notification-deep-link-to-app",
+      "teams-mention-tag-team-channel-flow",
+      "govern-power-automate-service-account-ownership"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Choose how a flow posts in Teams: Flow bot, user or agent",
+    "seoDescription": "What each Post as and Post in option does, which combinations work in private channels and chats, and which identity suits alerts, approvals and conversations.",
+    "primaryKeyword": "Power Automate post as Flow bot vs user",
+    "secondaryKeywords": [
+      "Flow Bot",
+      "Teams",
+      "Post As",
+      "Notifications"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between posting as Flow bot and as User?",
+        "answer": "Flow bot posts as the Workflows app and looks automated. User posts as the connection's account, as if that person wrote it."
+      },
+      {
+        "question": "Why can't my flow post in a private channel?",
+        "answer": "The Flow bot is not supported in private channels. Post as a user who is a member of the channel."
+      },
+      {
+        "question": "Can a flow send a direct message to someone?",
+        "answer": "Yes. Post as Flow bot in Chat with Flow bot and set the recipient to the person's email."
+      }
+    ]
   }
 ]
