@@ -5,6 +5,10 @@ import { complexColumnsGuide, expressionsExplainedGuide, internalNamesGuide, par
 import { flowLimitsGuide } from "./flow-limits-guide";
 import { outlookQuickStartGuide, sharePointQuickStartGuide, teamsQuickStartGuide } from "./connector-guides-1";
 import { dataverseQuickStartGuide, excelQuickStartGuide, formsQuickStartGuide } from "./connector-guides-2";
+import { oneDriveQuickStartGuide, plannerQuickStartGuide } from "./connector-guides-3";
+import { approvalsQuickStartGuide, httpQuickStartGuide } from "./connector-guides-4";
+import { errorHandlingGuide, namedFormulasGuide, saveDataGuide, variablesGuide } from "./powerfx-guides-1";
+import { appStartGuide, findRecordsGuide, forAllGuide, textFormatGuide } from "./powerfx-guides-2";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
@@ -18,6 +22,14 @@ export const guides: Guide[] = [
   separatorsGuide,
   nestedIfGuide,
   excelUsersGuide,
+  variablesGuide,
+  namedFormulasGuide,
+  saveDataGuide,
+  errorHandlingGuide,
+  findRecordsGuide,
+  forAllGuide,
+  appStartGuide,
+  textFormatGuide,
   getItemsFilterQueryGuide,
   filterByDateGuide,
   dataverseFilterRowsGuide,
@@ -34,7 +46,11 @@ export const guides: Guide[] = [
   teamsQuickStartGuide,
   excelQuickStartGuide,
   formsQuickStartGuide,
-  dataverseQuickStartGuide
+  dataverseQuickStartGuide,
+  oneDriveQuickStartGuide,
+  plannerQuickStartGuide,
+  approvalsQuickStartGuide,
+  httpQuickStartGuide
 ];
 
 export const guidePath = (guide: Pick<Guide, "slug">) => `/guides/${guide.slug}`;
