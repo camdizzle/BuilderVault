@@ -17665,5 +17665,1235 @@
         "answer": "The hard limit is 50,000 unique scopes per list, with 5,000 as the recommended maximum."
       }
     ]
+  },
+  {
+    "id": "pat-1650",
+    "slug": "power-apps-deep-link-open-record-param",
+    "title": "Open a canvas app on a specific record with a deep link",
+    "shortDescription": "Pass a record ID in the app's URL, read it with Param, start on the detail screen and build links for emails and Teams messages.",
+    "fullDescription": "A notification that says 'open the app and find request 1042' wastes time. A deep link carries the record ID in the app URL. The app reads it with Param, chooses its start screen and loads the record. The same link works from email, Teams and other apps.",
+    "category": "Power Apps",
+    "subCategory": "Navigation",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Deep Links",
+      "Param",
+      "StartScreen",
+      "Navigation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Approval emails link to the app's home screen. Approvers then search for the request, and some approve the wrong one.",
+    "whenToUse": [
+      "Links in emails, Teams messages and Adaptive Cards",
+      "Opening an app from another app or a SharePoint column",
+      "QR codes that open a specific asset or location"
+    ],
+    "whenNotToUse": [
+      "Passing sensitive data in the URL, which is logged and shared",
+      "Treating the parameter as proof of access rights"
+    ],
+    "formulaOrCode": "The link\n  https://apps.powerapps.com/play/e/<environment id>/a/<app id>?tenantId=<tenant id>&RequestId=1042&screen=detail\n  Get the base from make.powerapps.com > Apps > ... > Details > Web link. Append your own parameters with &.\n  Parameter names are case-insensitive. Values are text.\n  Hide the Power Apps header: &hidenavbar=true          Source tag for analytics: &source=email\n\nRead parameters once (App.Formulas, named formulas)\n  nfRequestId  = Value(Param(\"RequestId\"));\n  nfDeepLinked = !IsBlank(Param(\"RequestId\"));\n  nfDeepRecord = If(nfDeepLinked, LookUp(Requests, ID = nfRequestId));\n\nStart on the right screen\n  App.StartScreen\n    If(nfDeepLinked && !IsBlank(nfDeepRecord), scrDetail, scrHome)\n  StartScreen is evaluated before OnStart finishes and must not depend on variables set there. Named\n  formulas and Param are safe.\n\nDetail screen\n  Use one variable for the record whichever way the user arrived:\n  scrDetail.OnVisible\n    If(IsBlank(gblSelected) && nfDeepLinked, Set(gblSelected, nfDeepRecord))\n  Gallery OnSelect elsewhere:  Set(gblSelected, ThisItem); Navigate(scrDetail)\n  Form.Item: gblSelected\n  Back button: If(nfDeepLinked && IsBlank(gblCameFromList), Navigate(scrHome), Back())\n\nRecord missing or no access\n  StartScreen falls back to scrHome when the lookup is blank. Tell the user why:\n  scrHome.OnVisible\n    If(nfDeepLinked && IsBlank(nfDeepRecord),\n       Notify(\"Request \" & Param(\"RequestId\") & \" was not found or you do not have access.\", NotificationType.Warning))\n\nGUID keys (Dataverse)\n  nfDeepRecord = If(!IsBlank(Param(\"id\")) && IsMatch(Param(\"id\"), \"^[0-9a-fA-F-]{36}$\"),\n                    LookUp(Requests, Request = GUID(Param(\"id\"))));\n  Validate before converting: GUID() errors on malformed text.\n\nBuild the link in a flow\n  Environment variable AppUrl = the web link. In the email or card:\n  @{parameters('AppUrl')}&RequestId=@{triggerOutputs()?['body/ID']}\n  Text values: @{encodeUriComponent(triggerOutputs()?['body/Title'])}\n\nBuild the link inside the app (share button)\n  With({ base: \"https://apps.powerapps.com/play/e/\" & gblEnvId & \"/a/\" & gblAppId & \"?tenantId=\" & gblTenantId },\n       Copy(base & \"&RequestId=\" & gblSelected.ID));\n  Notify(\"Link copied\", NotificationType.Success)\n  (Copy needs a user action such as OnSelect. Keep IDs in environment variables or app constants.)\n\nOpen another app with parameters\n  Launch(\"https://apps.powerapps.com/play/e/<env>/a/<other app id>\", { RequestId: gblSelected.ID, mode: \"edit\" }, LaunchTarget.New)\n  Launch(\"/providers/Microsoft.PowerApps/apps/<other app id>\", { RequestId: gblSelected.ID })     same environment\n\nTeams and mobile\n  Teams tab deep link: put the ID in subEntityId and read Param(\"subEntityId\").\n  Power Apps mobile: the same web link opens the app in the player if installed.\n  Parameters are read at launch. If the app is already open in a tab, the link starts a new session.\n\nSharePoint column link\n  JSON column formatting: \"elmType\": \"a\", \"attributes\": { \"href\": \"='https://apps.powerapps.com/play/e/<env>/a/<app>?tenantId=<t>&RequestId=' + [$ID]\", \"target\": \"_blank\" }\n\nModel-driven app equivalent\n  https://<org>.crm.dynamics.com/main.aspx?appid=<app id>&pagetype=entityrecord&etn=cr1a2_request&id=<guid>",
+    "stepByStepInstructions": [
+      "Copy the app's web link and decide the parameter names.",
+      "Read parameters with Param in named formulas.",
+      "Set App.StartScreen to the detail screen when a valid record is found.",
+      "Load the record into the same variable the gallery uses.",
+      "Handle missing records with a clear message.",
+      "Generate links in flows from an environment variable holding the app URL."
+    ],
+    "commonMistakes": [
+      "Reading Param in OnStart and expecting StartScreen to see the variable.",
+      "Hard-coding the app URL in every flow.",
+      "No handling when the record does not exist or is not permitted.",
+      "Putting names or other personal data in the query string."
+    ],
+    "troubleshooting": [
+      "If the app opens on the home screen, check the parameter name and that the lookup returns a record for that user.",
+      "If Value() errors, the parameter is blank or not numeric. Guard with IsBlank.",
+      "If the link opens the wrong environment's app, use the web link from the right environment.",
+      "If parameters are ignored, the URL probably has two question marks. Join extra parameters with &."
+    ],
+    "relatedPatterns": [
+      "teams-channel-notification-deep-link-to-app",
+      "power-automate-html-email-button-link",
+      "use-named-formulas-for-app-constants"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Open a canvas app on a specific record with a deep link",
+    "seoDescription": "Pass a record ID in the app's URL, read it with Param, start on the detail screen and build links for emails and Teams messages.",
+    "primaryKeyword": "Power Apps deep link Param record",
+    "secondaryKeywords": [
+      "Deep Links",
+      "Param",
+      "StartScreen",
+      "Navigation"
+    ],
+    "faqs": [
+      {
+        "question": "How do I open a Power App to a specific record?",
+        "answer": "Add the record ID to the app's URL as a parameter, read it with Param and set App.StartScreen to the detail screen."
+      },
+      {
+        "question": "Can I pass several parameters?",
+        "answer": "Yes. Add them to the URL separated by & and read each with Param."
+      },
+      {
+        "question": "Why can't StartScreen use my OnStart variable?",
+        "answer": "StartScreen is evaluated independently of OnStart. Use Param or named formulas in it."
+      }
+    ]
+  },
+  {
+    "id": "pat-1651",
+    "slug": "power-apps-pdf-function-generate-pdf-screen",
+    "title": "Create a PDF of a screen with the PDF function",
+    "shortDescription": "Lay out a print-friendly screen or container, generate a PDF from it in the app, preview it and send it to a flow to email or save.",
+    "fullDescription": "The PDF function turns a screen or a container into a PDF file inside the app, with no premium connector. Combined with a flow, the file can be saved to SharePoint or emailed. Good results depend on designing a dedicated print layout and knowing what the function will and will not capture.",
+    "category": "Power Apps",
+    "subCategory": "Documents",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "PDF",
+      "Print",
+      "Documents",
+      "Power Automate"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Users need a signed-off summary of a request as a PDF. Printing the screen from the browser cuts off the gallery and includes buttons and navigation.",
+    "whenToUse": [
+      "Summaries, receipts and inspection reports",
+      "Capturing a record's state at approval",
+      "Sending a formatted copy by email"
+    ],
+    "whenNotToUse": [
+      "Long data lists of hundreds of rows, where a server-generated document is more reliable",
+      "Layouts relying on controls the function cannot render"
+    ],
+    "formulaOrCode": "Enable\n  Settings > Updates > Experimental (or Preview, depending on version) > PDF function: On\n  Check current status of the feature before relying on it for production.\n\nPrint layout\n  A dedicated screen scrPrint, or a container conPrint, sized like a page:\n    Portrait Letter at 96 dpi: Width 816, Height 1056        A4: 794 x 1123\n  Use vertical containers with fixed widths. White fill, dark text, no buttons inside the print container.\n  Gallery of lines: set its Height to the content so nothing scrolls:\n    galLines.Height = CountRows(galLines.AllItems) * galLines.TemplateHeight + 10\n  Container: LayoutOverflowY = Scroll off, Height grows with content (Flexible height in an auto-layout parent).\n\nGenerate and preview\n  btnPdf.OnSelect\n    Set(gblPdf, PDF(conPrint, { Size: PaperSize.A4, Orientation: PaperOrientation.Portrait,\n                               Margin: \"20px\", DPI: 150, ExpandContainers: true }));\n  PDF viewer control on the same or another screen:   Document: gblPdf\n  Options\n    Size: PaperSize.Letter | A4 | Legal ...        Orientation: Portrait | Landscape\n    Margin: \"20px\" or \"10px 20px 10px 20px\"        DPI: 96 default. Higher is sharper and larger.\n    ExpandContainers: true expands scrollable galleries and containers so all rows are included\n      (up to the function's limits). Without it, only the visible part is captured.\n\nSend to a flow (Power Apps (V2) trigger with a File input)\n  Flow: trigger input \"file\" (File), \"requestId\" (Number), \"sendTo\" (Email)\n        SharePoint > Create file: Folder /Requests/REQ-<id>, File Name: Summary-<id>.pdf,\n                     File Content: triggerBody()?['file']?['contentBytes']\n        Office 365 Outlook > Send an email (V2): Attachments Name Summary-<id>.pdf, Content: same contentBytes\n        Respond to a PowerApp or flow: link (text)\n  App:\n    Set(gblSaving, true);\n    Set(gblResult,\n        SaveRequestPdf.Run(\n            { file: { name: \"Summary-\" & gblSelected.ID & \".pdf\", contentBytes: gblPdf } },\n            gblSelected.ID, User().Email));\n    Set(gblSaving, false);\n    Notify(\"PDF saved\", NotificationType.Success)\n  Wrap with IfError to report failures.\n\nSave without a flow (attachment on the list item)\n  Not directly: Patch cannot write a blob to an attachments field outside a form. Use the flow, or\n  a Dataverse File column:  Patch(Requests, gblSelected, { SummaryFile: { FileName: \"Summary.pdf\", Value: gblPdf } })\n\nWhat is captured and what is not\n  Captured: labels, HTML text, images already loaded, shapes, galleries, containers, charts in most cases.\n  Not reliably captured: embedded Power BI tiles, maps, PCF components, some modern controls, videos, web\n  views, content from other screens, and nested galleries beyond one level.\n  Images from authenticated sources must have finished loading. Use a short Loading state before generating.\n  Fonts are substituted with standard fonts where needed.\n  Size: the result must fit app memory and the flow's file input limit. Keep under about 20 MB.\n  PDF can only target the current screen or controls on it. Navigate to scrPrint first:\n    Navigate(scrPrint); then a button on that screen generates the file. Or keep conPrint on the current\n    screen positioned off-canvas (X: -2000) so users never see it.\n\nHeader, footer and page breaks\n  There is no page-break control. Design so content flows as one tall container, and expect breaks where the\n  page height falls. Put a small header inside the container. Page numbers are not available.\n\nAlternatives\n  Print(): opens the browser print dialog for the current screen (users choose Save as PDF).\n  Word template in a flow: best for multi-page documents with headers, footers and page numbers.",
+    "stepByStepInstructions": [
+      "Enable the PDF function in the app settings.",
+      "Build a print container sized to the page with no interactive controls.",
+      "Make galleries and containers expand to their content height.",
+      "Call PDF on the container and show the result in a PDF viewer.",
+      "Pass the file to a flow that saves or emails it.",
+      "Test with the longest realistic record and on the devices users have."
+    ],
+    "commonMistakes": [
+      "Capturing the working screen with buttons and navigation.",
+      "A scrolling gallery, so only the first rows appear.",
+      "Generating before images have loaded.",
+      "Relying on unsupported controls such as embedded reports."
+    ],
+    "troubleshooting": [
+      "If rows are missing, set ExpandContainers to true and size the gallery to its content.",
+      "If the PDF is blurry, raise DPI to 150 or 200.",
+      "If the flow receives an empty file, pass contentBytes from the file object and use the V2 trigger with a File input.",
+      "If the function is not recognised, turn the feature on in settings and save and reopen the app."
+    ],
+    "relatedPatterns": [
+      "build-a-printable-request-summary",
+      "populate-word-template-convert-pdf-power-automate",
+      "respond-to-power-app-return-values-from-flow"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Create a PDF of a screen with the PDF function",
+    "seoDescription": "Lay out a print-friendly screen or container, generate a PDF from it in the app, preview it and send it to a flow to email or save.",
+    "primaryKeyword": "Power Apps PDF function",
+    "secondaryKeywords": [
+      "PDF",
+      "Print",
+      "Documents",
+      "Power Automate"
+    ],
+    "faqs": [
+      {
+        "question": "Can Power Apps generate a PDF?",
+        "answer": "Yes. The PDF function creates a PDF from a screen or container, which you can preview or pass to a flow."
+      },
+      {
+        "question": "How do I save the PDF to SharePoint?",
+        "answer": "Send it to a flow with a file input and use Create file with the file's content."
+      },
+      {
+        "question": "Why does my PDF cut off gallery rows?",
+        "answer": "The gallery scrolls. Expand containers in the PDF options and size the gallery to show all rows."
+      }
+    ]
+  },
+  {
+    "id": "pat-1652",
+    "slug": "power-apps-concurrent-load-data-faster",
+    "title": "Load data in parallel with Concurrent",
+    "shortDescription": "Run independent data calls at the same time instead of one after another, to cut start-up and screen load times, and know when it does not help.",
+    "fullDescription": "Formulas separated by semicolons run in sequence: four one-second calls take four seconds. Concurrent runs its arguments in parallel, so the same four calls finish in about the time of the slowest. It suits independent loads at app start or screen entry. It is not for steps that depend on each other.",
+    "category": "Power Apps",
+    "subCategory": "Performance",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Concurrent",
+      "Performance",
+      "App Start",
+      "Collections"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "The app takes seven seconds to open, because OnStart fills five collections one after another.",
+    "whenToUse": [
+      "Several independent ClearCollect or Set calls at start-up",
+      "Screen OnVisible that loads unrelated data sets",
+      "Calling several flows or connectors whose results do not depend on each other"
+    ],
+    "whenNotToUse": [
+      "Steps where one needs another's result",
+      "Dozens of parallel calls, which hit connector throttling and browser connection limits"
+    ],
+    "formulaOrCode": "Before (sequential, about the sum of all calls)\n  ClearCollect(colCategories, Categories);\n  ClearCollect(colSites, Filter(Sites, Active));\n  Set(gblProfile, Office365Users.MyProfileV2());\n  ClearCollect(colMyOpen, Filter(Requests, Requester.Email = User().Email && Status.Value = \"Open\"));\n\nAfter (parallel, about the slowest single call)\n  Concurrent(\n      ClearCollect(colCategories, Categories),\n      ClearCollect(colSites, Filter(Sites, Active)),\n      Set(gblProfile, Office365Users.MyProfileV2()),\n      ClearCollect(colMyOpen, Filter(Requests, Requester.Email = User().Email && Status.Value = \"Open\"))\n  );\n  Set(gblLoaded, true)\n\nRules\n  Arguments are separated by commas. Each argument can be a chain joined with semicolons:\n    Concurrent(\n        ClearCollect(colA, SourceA); Set(gblCountA, CountRows(colA)),\n        ClearCollect(colB, SourceB)\n    )\n  Inside one argument, order is kept. Across arguments, order is not guaranteed.\n  Do not have one argument read a variable or collection that another argument writes.\n  Do not write the same variable or collection from two arguments.\n  Concurrent returns when every argument has finished. Formulas after it can use all results.\n  Only behaviour properties (OnStart, OnVisible, OnSelect, OnChange, timers) can use it.\n\nDependent data: sequence the dependency, parallelise the rest\n  Set(gblProfile, Office365Users.MyProfileV2());                    // needed by the calls below\n  Concurrent(\n      ClearCollect(colMyDept, Filter(Requests, Department = gblProfile.department)),\n      ClearCollect(colMyApprovals, Filter(Approvals, Approver.Email = gblProfile.mail)),\n      ClearCollect(colCategories, Categories)\n  )\n\nMeasure it\n  Before and after, in a label or Monitor:\n    Set(gblT0, Now()); Concurrent( ... ); Set(gblLoadMs, DateDiff(gblT0, Now(), TimeUnit.Milliseconds))\n  Advanced tools > Monitor shows each network call with duration and whether calls overlap.\n\nErrors\n  If one argument fails, the others still run. Wrap each in IfError to control messages:\n    Concurrent(\n        IfError(ClearCollect(colSites, Filter(Sites, Active)), Notify(\"Sites did not load\", NotificationType.Warning)),\n        IfError(ClearCollect(colCategories, Categories), Notify(\"Categories did not load\", NotificationType.Warning))\n    )\n\nLimits to expectations\n  Browsers allow roughly six parallel connections per host: more than six calls to the same service queue up.\n  Connector throttling applies. Keep to four to six arguments.\n  It does not speed up a single slow, non-delegable query. Fix the query.\n  Collections still copy at most the data row limit (500 by default, 2,000 maximum) per ClearCollect.\n\nOften better than loading at start\n  Named formulas (App.Formulas) load on first use and need no OnStart at all:\n    nfCategories = Sort(Categories, Title);\n  Reference data source tables directly in galleries with delegable filters instead of collecting.\n  Load screen-specific data in that screen's OnVisible, not in OnStart.\n  Settings > Performance: explicit column selection and delayed load are on by default. Leave them on.\n\nShow a loading state\n  App.StartScreen stays visible while OnStart runs. On screens:\n    OnVisible: Set(locLoading, true); Concurrent( ... ); Set(locLoading, false)\n    Spinner or overlay Visible: locLoading",
+    "stepByStepInstructions": [
+      "List the data calls in OnStart or OnVisible and mark which depend on others.",
+      "Run dependencies first in sequence.",
+      "Wrap the independent calls in one Concurrent.",
+      "Avoid two arguments writing the same variable or collection.",
+      "Wrap arguments in IfError where a failure needs a message.",
+      "Measure load time in Monitor before and after."
+    ],
+    "commonMistakes": [
+      "Putting dependent steps in separate arguments.",
+      "Twenty parallel calls that trigger throttling.",
+      "Using Concurrent to mask a slow non-delegable query.",
+      "Loading everything at start when most screens never need it."
+    ],
+    "troubleshooting": [
+      "If a collection is sometimes empty, another argument used it before it loaded. Sequence those two.",
+      "If there is no speed gain, calls are queued by the browser or one slow call dominates. Check Monitor.",
+      "If you get throttling errors, reduce the number of arguments.",
+      "If the formula bar shows an error, check arguments are separated by commas, not semicolons."
+    ],
+    "relatedPatterns": [
+      "cache-reference-data-on-app-start",
+      "use-named-formulas-for-app-constants",
+      "create-a-screen-performance-review"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Load data in parallel with Concurrent",
+    "seoDescription": "Run independent data calls at the same time instead of one after another, to cut start-up and screen load times, and know when it does not help.",
+    "primaryKeyword": "Power Apps Concurrent function",
+    "secondaryKeywords": [
+      "Concurrent",
+      "Performance",
+      "App Start",
+      "Collections"
+    ],
+    "faqs": [
+      {
+        "question": "What does Concurrent do in Power Apps?",
+        "answer": "It evaluates several formulas at the same time instead of in sequence, which shortens load times for independent data calls."
+      },
+      {
+        "question": "Can formulas inside Concurrent depend on each other?",
+        "answer": "No. Order across arguments is not guaranteed. Run dependent steps before or after it."
+      },
+      {
+        "question": "How many calls should I put in Concurrent?",
+        "answer": "Four to six is a sensible maximum, because browsers and connectors limit parallel requests."
+      }
+    ]
+  },
+  {
+    "id": "pat-1653",
+    "slug": "power-apps-user-defined-functions-reuse-logic",
+    "title": "Reuse logic with user-defined functions in Power Apps",
+    "shortDescription": "Write a calculation or check once in App.Formulas with typed parameters, then call it anywhere, in place of copied formulas or hidden buttons.",
+    "fullDescription": "Canvas apps used to repeat the same formula in many controls, or abuse a hidden button's OnSelect as a subroutine. User-defined functions put the logic in one place, with named, typed parameters and a typed result. They are declared alongside named formulas and can be pure calculations or, with behaviour functions enabled, actions that change data.",
+    "category": "Power Apps",
+    "subCategory": "Formulas",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "User Defined Functions",
+      "Named Formulas",
+      "Reuse",
+      "Power Fx"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "The rule for whether a request can be edited is copied into nine DisplayMode properties. When the rule changes, two copies are missed.",
+    "whenToUse": [
+      "Business rules used in several controls or screens",
+      "Formatting and calculation helpers",
+      "Shared actions such as save-and-log"
+    ],
+    "whenNotToUse": [
+      "One-off formulas used in a single place",
+      "Apps that must run on a version where the feature is not yet available to you"
+    ],
+    "formulaOrCode": "Enable\n  Settings > Updates > New (or Preview) > User-defined functions: On\n  For functions that change data: also enable User-defined types and behaviour UDFs where listed.\n  Check the feature's current release status before depending on it.\n\nWhere: App object > Formulas property\n\nSyntax\n  FunctionName(Param1: Type, Param2: Type): ReturnType = expression;\n  Types: Text, Number, Decimal, Boolean, Date, DateTime, Color, GUID, Hyperlink, plus user-defined types.\n\nPure functions (no side effects)\n  FullName(first: Text, last: Text): Text = Trim(first & \" \" & last);\n\n  Initials(name: Text): Text =\n      Upper(Left(name, 1) & Mid(name, Find(\" \", name & \" \") + 1, 1));\n\n  DaysOverdue(due: Date): Number = Max(0, DateDiff(due, Today(), TimeUnit.Days));\n\n  StatusColor(status: Text): Color =\n      Switch(status, \"Approved\", ColorValue(\"#107C10\"), \"Rejected\", ColorValue(\"#D13438\"),\n                     \"Pending\", ColorValue(\"#986F0B\"), ColorValue(\"#616161\"));\n\n  CanEditRequest(status: Text, ownerEmail: Text): Boolean =\n      (status = \"Draft\" && Lower(ownerEmail) = Lower(User().Email)) || nfIsAdmin;\n\n  FormatMoney(amount: Number): Text = Text(amount, \"$#,##0.00\");\n\nUse them\n  lblName.Text:          FullName(ThisItem.FirstName, ThisItem.LastName)\n  cirAvatar text:        Initials(ThisItem.'Assigned To'.DisplayName)\n  lblStatus.Color:       StatusColor(ThisItem.Status.Value)\n  btnEdit.DisplayMode:   If(CanEditRequest(ThisItem.Status.Value, ThisItem.Author.Email), DisplayMode.Edit, DisplayMode.Disabled)\n  Gallery sort:          SortByColumns(AddColumns(Requests, Overdue, DaysOverdue(DueDate)), \"Overdue\", SortOrder.Descending)\n  Functions can call other functions and named formulas (nfIsAdmin above).\n\nRecord and table parameters with user-defined types\n  RequestType := Type({ ID: Number, Title: Text, Amount: Number, Status: Text });\n  RequestsType := Type([RequestType]);\n\n  IsHighValue(r: RequestType): Boolean = r.Amount > 5000 && r.Status <> \"Cancelled\";\n  TotalAmount(rows: RequestsType): Number = Sum(rows, Amount);\n\n  Call: IsHighValue({ ID: ThisItem.ID, Title: ThisItem.Title, Amount: ThisItem.Amount, Status: ThisItem.Status.Value })\n  Extra columns on the passed record are ignored. Missing ones are blank.\n\nBehaviour functions (side effects), body in curly braces\n  LogAction(action: Text, recordId: Number): Void = {\n      Patch(AuditLog, Defaults(AuditLog), { Title: action, RecordId: recordId, User: User().Email, When: Now() })\n  };\n\n  SetStatus(recordId: Number, newStatus: Text): Boolean = {\n      IfError(\n          Patch(Requests, LookUp(Requests, ID = recordId), { Status: { Value: newStatus } });\n          LogAction(\"Status: \" & newStatus, recordId);\n          true,\n          Notify(FirstError.Message, NotificationType.Error); false\n      )\n  };\n\n  btnApprove.OnSelect:  If(SetStatus(gblSelected.ID, \"Approved\"), Navigate(scrHome))\n  Behaviour functions can only be called from behaviour properties (OnSelect and similar).\n\nRules and limits\n  Declared once, available on every screen. Order of declaration does not matter.\n  Pure functions cannot call Set, Patch, Navigate, Notify or Collect. Use the brace form for those.\n  Parameters are required: there are no optional parameters or overloads. Pass Blank() where needed.\n  Recursion is not supported.\n  Delegation: calling a function inside Filter on a data source makes that part non-delegable. Apply\n  functions to results, or keep delegable conditions inline.\n  Names must not clash with built-in functions, controls or data sources.\n\nNaming\n  PascalCase verbs or questions: CanEditRequest, FormatMoney, DaysOverdue. Keep a short comment above each:\n  // True when the signed-in user may edit the request\n\nCompared with other reuse options\n  Named formula: a value with no parameters.  UDF: logic with parameters.\n  Component with custom functions: reuse across apps through a component library.\n  Hidden button + Select(): the old workaround. Replace with behaviour UDFs.",
+    "stepByStepInstructions": [
+      "Turn on user-defined functions in the app's settings.",
+      "Find formulas repeated across controls.",
+      "Declare each as a typed function in App.Formulas.",
+      "Replace the copies with calls to the function.",
+      "Use the brace form for functions that patch data or navigate.",
+      "Keep delegable filters inline and document each function with a comment."
+    ],
+    "commonMistakes": [
+      "Calling a function inside a data source Filter and losing delegation.",
+      "Trying to Patch from a pure function.",
+      "Names that collide with controls or built-in functions.",
+      "Moving logic into functions without checking the feature is available in every environment."
+    ],
+    "troubleshooting": [
+      "If the function is not recognised, enable the feature and check the declaration ends with a semicolon.",
+      "If you get a type error, convert arguments explicitly, for example Value() or Text().",
+      "If a delegation warning appears, move the function call outside the delegable part of the query.",
+      "If a behaviour function cannot be called, you are in a non-behaviour property such as Text or Items."
+    ],
+    "relatedPatterns": [
+      "use-named-formulas-for-app-constants",
+      "with-function-readable-power-fx-formulas",
+      "create-a-formula-review-checklist"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Reuse logic with user-defined functions in Power Apps",
+    "seoDescription": "Write a calculation or check once in App.Formulas with typed parameters, then call it anywhere, in place of copied formulas or hidden buttons.",
+    "primaryKeyword": "Power Apps user defined functions",
+    "secondaryKeywords": [
+      "User Defined Functions",
+      "Named Formulas",
+      "Reuse",
+      "Power Fx"
+    ],
+    "faqs": [
+      {
+        "question": "Can I create my own functions in Power Apps?",
+        "answer": "Yes. Declare user-defined functions in App.Formulas with typed parameters and a return type."
+      },
+      {
+        "question": "Can a user-defined function change data?",
+        "answer": "Yes, when written as a behaviour function with its body in curly braces and called from a behaviour property."
+      },
+      {
+        "question": "Do user-defined functions affect delegation?",
+        "answer": "A function used inside a data source query is evaluated locally, so keep delegable conditions inline."
+      }
+    ]
+  },
+  {
+    "id": "pat-1654",
+    "slug": "power-apps-timer-auto-refresh-autosave",
+    "title": "Refresh data and autosave drafts with a Timer",
+    "shortDescription": "Use a hidden Timer control to refresh a dashboard on an interval, autosave a draft while the user types, show a countdown and debounce a search box.",
+    "fullDescription": "Canvas apps have no background scheduler, but a Timer control fires an event at an interval while its screen is open. That is enough for refreshing a queue, saving drafts so work is not lost, and delaying a search until the user stops typing. The control needs a few properties set correctly to repeat and to stay out of sight.",
+    "category": "Power Apps",
+    "subCategory": "Controls",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Timer",
+      "Auto Refresh",
+      "Autosave",
+      "Controls"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "A wall-mounted queue dashboard shows stale data until someone taps refresh, and users lose half-completed forms when a session times out.",
+    "whenToUse": [
+      "Dashboards and queues that should stay current",
+      "Draft forms on long or mobile sessions",
+      "Search-as-you-type against a slow source"
+    ],
+    "whenNotToUse": [
+      "Intervals of a few seconds against connectors, which burns API calls",
+      "Expecting timers to run when the app or screen is not open"
+    ],
+    "formulaOrCode": "Timer basics\n  Duration: milliseconds per cycle (30000 = 30 seconds). Maximum 24 hours.\n  Repeat: true          AutoStart: true          Visible: false\n  Start: a boolean. The timer starts when Start changes from false to true.\n  OnTimerEnd: runs at the end of each cycle.      OnTimerStart: at the beginning.\n  A timer only runs while its screen is displayed. AutoPause pauses it when navigating away (default true).\n\n1. Auto-refresh a queue\n  tmrRefresh: Duration 60000, Repeat true, AutoStart true, Visible false\n  OnTimerEnd:\n    If(!locEditing,                                  // do not disturb someone mid-edit\n       Refresh(Requests);\n       Set(locLastRefresh, Now()))\n  Label: \"Updated \" & Text(locLastRefresh, \"hh:mm:ss\")\n  For a collection-based view: ClearCollect(colQueue, Filter(Requests, Status.Value = \"Open\")) instead of Refresh.\n  Pick the longest interval the business accepts: 60 seconds is 60 calls an hour per open session.\n\n2. Autosave a draft\n  Track changes: each input's OnChange: Set(locDirty, true)\n  tmrAutosave: Duration 20000, Repeat true, AutoStart true\n  OnTimerEnd:\n    If(locDirty && !locSaving,\n       Set(locSaving, true);\n       IfError(\n           Set(gblDraft,\n               Patch(Requests, Coalesce(gblDraft, Defaults(Requests)),\n                     { Title: txtTitle.Text, Details: txtDetails.Text, Status: { Value: \"Draft\" } }));\n           Set(locDirty, false); Set(locSavedAt, Now()),\n           Notify(\"Draft not saved: \" & FirstError.Message, NotificationType.Warning));\n       Set(locSaving, false))\n  Label: If(locSaving, \"Saving\", !IsBlank(locSavedAt), \"Draft saved \" & Text(locSavedAt, \"hh:mm\"), \"\")\n  The first save creates the row and stores it in gblDraft. Later saves update the same row.\n  Offline or local-only alternative: SaveData(colDraft, \"requestDraft\") on the same timer (mobile player and\n  supported browsers).\n\n3. Debounce a search box (search after the user pauses)\n  txtSearch.OnChange: Set(locSearchStart, false); Set(locSearchStart, true)\n  txtSearch.DelayOutput: true           built-in half-second delay before Text updates. Often enough by itself.\n  tmrSearch: Duration 600, Repeat false, AutoStart false, Start: locSearchStart\n  OnTimerEnd: Set(locSearchText, txtSearch.Text); Set(locSearchStart, false)\n  Gallery.Items: Filter(Requests, StartsWith(Title, locSearchText))\n  Toggling Start false then true restarts the countdown on each keystroke.\n\n4. Countdown display\n  tmrCountdown: Duration 1000, Repeat true, AutoStart true\n  OnTimerEnd: Set(locSecondsLeft, Max(0, DateDiff(Now(), gblDeadline, TimeUnit.Seconds)))\n  Label: Text(RoundDown(locSecondsLeft / 60, 0), \"00\") & \":\" & Text(Mod(locSecondsLeft, 60), \"00\")\n  At zero: If(locSecondsLeft = 0, Set(locExpired, true))\n  Compute from a fixed deadline, not by subtracting one each tick, so the display stays accurate if a tick is late.\n\n5. Splash screen or timed message\n  tmrSplash: Duration 2000, AutoStart true, Repeat false        OnTimerEnd: Navigate(scrHome, ScreenTransition.Fade)\n  Toast: Set(locShowToast, true) > timer Start: locShowToast, Duration 3000 > OnTimerEnd: Set(locShowToast, false)\n\n6. Session inactivity warning\n  Any interaction: Set(gblLastActive, Now())  (put in key OnSelect/OnChange handlers)\n  tmrIdle: Duration 60000, Repeat true\n  OnTimerEnd: If(DateDiff(gblLastActive, Now(), TimeUnit.Minutes) >= 15, Navigate(scrIdleWarning))\n\nGood practice\n  One timer per purpose, named for it. Hide timers with Visible false, not by placing them off-screen.\n  Guard OnTimerEnd with conditions so it does nothing when nothing changed.\n  Timers stop when the device sleeps or the tab is suspended. Refresh on OnVisible as well.\n  Server-side schedules belong in Power Automate, not in an app timer.",
+    "stepByStepInstructions": [
+      "Add a Timer control and set Duration, Repeat, AutoStart and Visible.",
+      "Put the refresh or save logic in OnTimerEnd with guard conditions.",
+      "Track unsaved changes with a dirty flag for autosave.",
+      "Use a non-repeating timer restarted on each keystroke to debounce search.",
+      "Show the user when data was last refreshed or saved.",
+      "Choose the longest interval that meets the need."
+    ],
+    "commonMistakes": [
+      "Refreshing every few seconds.",
+      "Saving on every tick whether or not anything changed.",
+      "Expecting a timer on another screen to keep running.",
+      "Counting down by decrementing a variable, which drifts."
+    ],
+    "troubleshooting": [
+      "If the timer never fires, check AutoStart or that Start changes from false to true.",
+      "If it runs once only, set Repeat to true.",
+      "If autosave creates several rows, keep the saved record in a variable and patch that record next time.",
+      "If refresh interrupts editing, skip it while an edit flag is set."
+    ],
+    "relatedPatterns": [
+      "power-apps-save-draft-submit-later",
+      "power-apps-search-with-multiple-fields",
+      "track-unsaved-changes-before-navigation"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Refresh data and autosave drafts with a Timer",
+    "seoDescription": "Use a hidden Timer control to refresh a dashboard on an interval, autosave a draft while the user types, show a countdown and debounce a search box.",
+    "primaryKeyword": "Power Apps timer auto refresh",
+    "secondaryKeywords": [
+      "Timer",
+      "Auto Refresh",
+      "Autosave",
+      "Controls"
+    ],
+    "faqs": [
+      {
+        "question": "How do I auto-refresh a gallery in Power Apps?",
+        "answer": "Add a hidden Timer with Repeat and AutoStart on, and call Refresh on the data source in OnTimerEnd."
+      },
+      {
+        "question": "Can Power Apps autosave a form?",
+        "answer": "Yes. Use a repeating timer that patches the current values when a dirty flag is set."
+      },
+      {
+        "question": "Do timers run in the background?",
+        "answer": "No. A timer runs only while its screen is open and the app is active."
+      }
+    ]
+  },
+  {
+    "id": "pat-1655",
+    "slug": "power-apps-pen-input-signature-save",
+    "title": "Capture a signature with the Pen input control and save it",
+    "shortDescription": "Collect a handwritten signature, check that something was actually drawn, and store it in a Dataverse image column or a SharePoint library through a flow.",
+    "fullDescription": "Delivery notes, inspections and consent forms need a signature on the device. The Pen input control captures strokes as an image. The awkward parts are knowing whether the user signed, clearing the pad, and saving the image somewhere durable, since SharePoint lists do not accept it directly from Patch in every column type.",
+    "category": "Power Apps",
+    "subCategory": "Controls",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Pen Input",
+      "Signature",
+      "Images",
+      "SharePoint"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A field technician needs the customer to sign for completed work on a tablet. The app has a pen control, but the saved record shows no signature, or a blank white image.",
+    "whenToUse": [
+      "Proof of delivery and work completion",
+      "Inspection sign-off",
+      "Consent and acknowledgement forms"
+    ],
+    "whenNotToUse": [
+      "Legally binding e-signatures that need identity verification and audit trails, which call for a dedicated signing service",
+      "Typed-name acknowledgements, where a check box and timestamp are simpler"
+    ],
+    "formulaOrCode": "Control set-up\n  Insert > Input > Pen input            name: penSignature\n    Mode: PenMode.Draw        ShowControls: false (hide the built-in toolbar)\n    Color: Color.Black        Size: 3        Fill: Color.White        BorderThickness: 1\n  Label above: \"Sign in the box\"       Button: Clear       Button: Save\n\nClear the pad\n  btnClear.OnSelect: Reset(penSignature)\n\nHas the user signed?\n  Pen input has no \"is empty\" property. Track strokes with OnSelect, which fires when a stroke ends:\n    penSignature.OnSelect: Set(locSigned, true)\n    btnClear.OnSelect:     Reset(penSignature); Set(locSigned, false)\n    btnSave.DisplayMode:   If(locSigned && !locSaving, DisplayMode.Edit, DisplayMode.Disabled)\n\nA. Save to a Dataverse image column (simplest)\n  Patch('Work Orders', gblOrder, { 'Customer Signature': penSignature.Image, 'Signed On': Now(), 'Signed By Name': txtName.Text })\n  Show it later: Image control > Image: gblOrder.'Customer Signature'\n\nB. Save to a SharePoint image column\n  Patch(WorkOrders, gblOrder, { CustomerSignature: penSignature.Image, SignedOn: Now() })\n  Image columns accept the pen image in current versions. If the column stays empty in your environment, use C.\n\nC. Save as a file through a flow (works everywhere, keeps a real PNG)\n  Flow: Power Apps (V2) trigger\n    Inputs: file (File), orderId (Number), signerName (Text)\n    SharePoint > Create file\n      Folder Path: /Signatures/@{formatDateTime(utcNow(),'yyyy-MM')}\n      File Name:   WO-@{triggerBody()?['number']}-signature.png\n      File Content: @{triggerBody()?['file']?['contentBytes']}\n    SharePoint > Update item (Work Orders): SignatureLink = file link, SignedOn = utcNow(), SignedByName = signerName\n    Respond to a PowerApp or flow: link (Text)\n  App:\n    Set(locSaving, true);\n    IfError(\n        Set(locResult, SaveSignature.Run({ file: { name: \"signature.png\", contentBytes: penSignature.Image } },\n                                         gblOrder.ID, txtName.Text));\n        Reset(penSignature); Set(locSigned, false);\n        Notify(\"Signature saved\", NotificationType.Success),\n        Notify(\"Could not save the signature: \" & FirstError.Message, NotificationType.Error));\n    Set(locSaving, false)\n\nD. As a list item attachment (inside an edit form)\n  The Attachments control cannot take a pen image directly. Use the flow with SharePoint > Add attachment\n  (Id = item ID, File Name, File Content from the file input).\n\nE. Base64 text when a flow or API needs a string\n  With({ j: JSON(penSignature.Image, JSONFormat.IncludeBinaryData) },\n       Set(locBase64, Mid(j, Find(\",\", j) + 1, Len(j) - Find(\",\", j) - 1)))\n  JSON returns \"data:image/png;base64,....\" in quotes. The formula strips the prefix and closing quote.\n  In a flow: base64ToBinary(triggerBody()['text'])\n\nMake it usable\n  Size the pad at least 600 x 200 on tablets. On phones, use a landscape signing screen.\n  White fill and black ink: the image has the control's fill as background, so a transparent or dark fill\n  produces unreadable results when printed.\n  Capture the signer's printed name and the timestamp beside the signature.\n  Lock the record after signing (status Signed, form in View mode) so the signature relates to fixed content.\n  Store who operated the device: User().Email.\n\nDisplay and print\n  Image control bound to the stored image or the file link. Include it in a PDF summary container.\n  SharePoint file link in an Image control: the user needs access to the file, and the app needs the\n  SharePoint connection.\n\nOffline\n  Keep the image in a collection and SaveData it. Sync when Connection.Connected:\n    Collect(colPending, { OrderId: gblOrder.ID, Sig: penSignature.Image, Name: txtName.Text, At: Now() });\n    SaveData(colPending, \"pendingSignatures\")",
+    "stepByStepInstructions": [
+      "Add a Pen input with a white fill, black ink and hidden toolbar.",
+      "Track whether a stroke was made and provide a clear button.",
+      "Capture the signer's name and time with the signature.",
+      "Save the image to a Dataverse image column or send it to a flow that creates a PNG file.",
+      "Reset the pad and lock the record after saving.",
+      "Test on the actual devices, including small screens."
+    ],
+    "commonMistakes": [
+      "Allowing save with an empty pad.",
+      "Transparent or coloured fill that prints badly.",
+      "Patching a pen image to a column type that cannot hold it and not checking the result.",
+      "No name or timestamp alongside the signature."
+    ],
+    "troubleshooting": [
+      "If the saved image is blank, the control was reset before saving. Save first, then reset.",
+      "If the flow file is corrupt, pass contentBytes from the file object using the V2 trigger with a File input.",
+      "If the save button never enables, set the flag in the pen's OnSelect.",
+      "If the image will not display from SharePoint, check the user's access to the library."
+    ],
+    "relatedPatterns": [
+      "save-camera-photo-to-sharepoint-library-power-apps",
+      "patch-a-sharepoint-image-column-from-power-apps",
+      "power-apps-pdf-function-generate-pdf-screen"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Capture a signature with the Pen input control and save it",
+    "seoDescription": "Collect a handwritten signature, check that something was actually drawn, and store it in a Dataverse image column or a SharePoint library through a flow.",
+    "primaryKeyword": "Power Apps signature pen input save",
+    "secondaryKeywords": [
+      "Pen Input",
+      "Signature",
+      "Images",
+      "SharePoint"
+    ],
+    "faqs": [
+      {
+        "question": "How do I capture a signature in Power Apps?",
+        "answer": "Use the Pen input control and save its Image property to an image column or pass it to a flow that creates a file."
+      },
+      {
+        "question": "How do I check whether the user signed?",
+        "answer": "Set a variable in the pen control's OnSelect, which fires after a stroke, and clear it when the pad is reset."
+      },
+      {
+        "question": "Can I save a signature to SharePoint?",
+        "answer": "Yes, to an image column, or as a PNG file or attachment created by a flow."
+      }
+    ]
+  },
+  {
+    "id": "pat-1656",
+    "slug": "power-apps-launch-email-phone-maps-links",
+    "title": "Open email, phone, maps and other apps with Launch",
+    "shortDescription": "Start a prefilled email, a phone call, a Teams chat, a map route or a web page from a button, with parameters encoded correctly for mobile and web.",
+    "fullDescription": "Launch opens a URL or another app. With the right address scheme the same function starts an email draft, dials a number, opens directions or starts a Teams chat with someone. It keeps apps light: the device's own tools do the job, with the app supplying the details.",
+    "category": "Power Apps",
+    "subCategory": "Navigation",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Launch",
+      "Deep Links",
+      "Mobile",
+      "Navigation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A contacts app shows a phone number and an address as plain text. Field staff copy them by hand into the dialler and the maps app.",
+    "whenToUse": [
+      "Contact actions: call, email, chat",
+      "Directions to a site or customer",
+      "Opening documents, reports and other apps"
+    ],
+    "whenNotToUse": [
+      "Sending email silently, which needs a connector or flow, not Launch",
+      "Passing long bodies in a URL, which are cut off around 2,000 characters"
+    ],
+    "formulaOrCode": "Syntax\n  Launch(Address [, Parameters [, Target]])\n  Launch(\"https://contoso.com/help\", {}, LaunchTarget.New)\n  Target: LaunchTarget.New (new tab), LaunchTarget.Replace (same tab), LaunchTarget.Blank, or a named tab.\n  Parameters record is added to the query string and encoded for you:\n    Launch(\"https://www.bing.com/search\", { q: \"power apps \" & txtTerm.Text })\n\nEmail draft (user's default mail app)\n  Launch(\"mailto:\" & ThisItem.Email &\n         \"?subject=\" & EncodeUrl(\"Request \" & ThisItem.RequestNumber) &\n         \"&body=\" & EncodeUrl(\"Hello \" & ThisItem.FirstName & \",\" & Char(13) & Char(10) & \"About your request...\"))\n  Several recipients: separate with commas (semicolons for Outlook desktop). cc= and bcc= work the same way.\n  The user still presses Send. To send without a draft, use Office365Outlook.SendEmailV2.\n\nPhone, SMS\n  Launch(\"tel:\" & Substitute(Substitute(ThisItem.Phone, \" \", \"\"), \"-\", \"\"))\n  Launch(\"sms:\" & ThisItem.Mobile & \"?body=\" & EncodeUrl(\"On my way\"))        iOS uses &body= in some versions\n  Works on phones. On desktop it opens the default calling app if one is registered.\n\nTeams\n  Chat:   Launch(\"https://teams.microsoft.com/l/chat/0/0?users=\" & ThisItem.Email & \"&message=\" & EncodeUrl(\"Hi, about \" & ThisItem.Title))\n  Group:  users=a@contoso.com,b@contoso.com&topicName=Incident%20123\n  Call:   Launch(\"https://teams.microsoft.com/l/call/0/0?users=\" & ThisItem.Email)\n  Meeting: Launch(\"https://teams.microsoft.com/l/meeting/new?subject=\" & EncodeUrl(ThisItem.Title) & \"&attendees=\" & ThisItem.Email)\n  Native scheme on mobile: \"msteams://teams.microsoft.com/l/chat/0/0?users=...\"\n\nMaps\n  Bing:    Launch(\"https://www.bing.com/maps?rtp=~adr.\" & EncodeUrl(ThisItem.Address))                 directions to an address\n  Google:  Launch(\"https://www.google.com/maps/dir/?api=1&destination=\" & EncodeUrl(ThisItem.Address))\n           Launch(\"https://www.google.com/maps/search/?api=1&query=\" & ThisItem.Latitude & \",\" & ThisItem.Longitude)\n  Apple:   Launch(\"https://maps.apple.com/?daddr=\" & EncodeUrl(ThisItem.Address))\n  From the current position:  origin is the device location by default. To pass it:\n           \"&origin=\" & Location.Latitude & \",\" & Location.Longitude\n\nDocuments and Microsoft 365\n  SharePoint file in the browser: Launch(ThisItem.'{Link}')  or  Launch(ThisItem.'Link to item')\n  Open in the desktop app:  Launch(\"ms-word:ofe|u|\" & ThisItem.'{Link}')       ms-excel:, ms-powerpoint: likewise\n  Power BI report with a filter:\n    Launch(\"https://app.powerbi.com/groups/<ws>/reports/<id>/ReportSection\", { filter: \"Requests/Id eq \" & ThisItem.ID })\n\nOther Power Apps\n  Canvas app: Launch(\"/providers/Microsoft.PowerApps/apps/<app id>\", { RequestId: ThisItem.ID })\n  Model-driven record:\n    Launch(\"https://contoso.crm.dynamics.com/main.aspx\", { appid: \"<app id>\", pagetype: \"entityrecord\",\n           etn: \"cr1a2_request\", id: Text(ThisItem.Request) })\n\nEncoding\n  Use EncodeUrl for anything typed by users or containing spaces, &, ? or #. The Parameters record encodes\n  values automatically, which is the safer route for http(s) links. mailto:, tel: and sms: need EncodeUrl by hand.\n  Line break in a mailto body: Char(13) & Char(10) inside EncodeUrl, or %0D%0A.\n\nGuards\n  btnCall.DisplayMode: If(IsBlank(ThisItem.Phone), DisplayMode.Disabled, DisplayMode.Edit)\n  Validate web links before launching: If(StartsWith(Lower(ThisItem.Url), \"https://\"), Launch(ThisItem.Url))\n  never Launch arbitrary text from data without checking the scheme.\n\nBehaviour notes\n  Launch must run from a user action (OnSelect). Browsers block pop-ups started from timers or OnStart.\n  In the mobile player, links open in the device's default handler. Teams and Outlook open their apps if installed.\n  Inside Teams, external links open in the browser, and Teams deep links stay in Teams.\n  Download(url) is the companion function for saving a file to the device.",
+    "stepByStepInstructions": [
+      "Choose the address scheme for the action: mailto, tel, https or an app link.",
+      "Build the address and encode user-supplied text.",
+      "Call Launch from the button's OnSelect with a target.",
+      "Disable the button when the needed value is blank.",
+      "Validate link schemes that come from data.",
+      "Test on web, mobile and inside Teams."
+    ],
+    "commonMistakes": [
+      "Unencoded subjects and addresses that break the link.",
+      "Launching from OnStart or a timer and being blocked as a pop-up.",
+      "Expecting mailto to send the email automatically.",
+      "Launching unvalidated URLs stored in data."
+    ],
+    "troubleshooting": [
+      "If the email body is cut off, shorten it. Mail clients limit URL length.",
+      "If nothing opens on desktop, the browser blocked a pop-up. Launch from a direct button press.",
+      "If Teams opens in the browser on mobile, use the msteams: scheme.",
+      "If special characters appear as codes or break the link, apply EncodeUrl once, not twice."
+    ],
+    "relatedPatterns": [
+      "power-apps-deep-link-open-record-param",
+      "teams-channel-notification-deep-link-to-app",
+      "power-automate-html-email-button-link"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Open email, phone, maps and other apps with Launch",
+    "seoDescription": "Start a prefilled email, a phone call, a Teams chat, a map route or a web page from a button, with parameters encoded correctly for mobile and web.",
+    "primaryKeyword": "Power Apps Launch function",
+    "secondaryKeywords": [
+      "Launch",
+      "Deep Links",
+      "Mobile",
+      "Navigation"
+    ],
+    "faqs": [
+      {
+        "question": "How do I open an email from Power Apps?",
+        "answer": "Use Launch with a mailto: address and encoded subject and body. The user's mail app opens a draft."
+      },
+      {
+        "question": "How do I start a phone call from a canvas app?",
+        "answer": "Launch(\"tel:\" & number) on a phone opens the dialler with the number."
+      },
+      {
+        "question": "How do I open a link in a new tab?",
+        "answer": "Pass LaunchTarget.New as the third argument to Launch."
+      }
+    ]
+  },
+  {
+    "id": "pat-1657",
+    "slug": "power-apps-gallery-pagination-next-previous",
+    "title": "Add page-by-page navigation to a gallery",
+    "shortDescription": "Show a fixed number of rows per page with Next and Previous buttons and a page counter, for collections and for large delegable data sources.",
+    "fullDescription": "Galleries scroll and load more rows as they go, which suits phones. Desktop users of a long table often want pages: a fixed row count, a page number and the total. For data already in a collection the maths is simple. For large sources, paging has to work with delegation, using a sortable key to fetch each page.",
+    "category": "Power Apps",
+    "subCategory": "Galleries",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Galleries",
+      "Pagination",
+      "Performance",
+      "Collections"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "A table-style gallery of 1,800 rows scrolls endlessly. Users lose their place, cannot say 'it is on page 4', and the gallery height does not fit the screen design.",
+    "whenToUse": [
+      "Desktop table layouts with a fixed number of visible rows",
+      "Reviewing long result sets methodically",
+      "Printing or exporting a page at a time"
+    ],
+    "whenNotToUse": [
+      "Mobile lists, where native scrolling is better",
+      "Very large sources without a filter, where search should narrow results first"
+    ],
+    "formulaOrCode": "A. Data in a collection (up to the row limit, typically 2,000)\n  Screen OnVisible\n    ClearCollect(colRows, SortByColumns(Filter(Requests, Status.Value = \"Open\"), \"Created\", SortOrder.Descending));\n    Set(locPage, 1); Set(locPageSize, 15)\n  Named values (or inline)\n    locTotal = CountRows(colRows)\n    locPages = Max(1, RoundUp(CountRows(colRows) / locPageSize, 0))\n\n  Gallery.Items\n    LastN(FirstN(colRows, locPage * locPageSize),\n          Min(locPageSize, CountRows(colRows) - (locPage - 1) * locPageSize))\n  FirstN takes everything up to the end of the current page. LastN keeps just this page.\n  The Min handles a short last page.\n\n  Buttons\n    btnPrev.OnSelect:     Set(locPage, Max(1, locPage - 1))\n    btnPrev.DisplayMode:  If(locPage > 1, DisplayMode.Edit, DisplayMode.Disabled)\n    btnNext.OnSelect:     Set(locPage, Min(locPages, locPage + 1))\n    btnNext.DisplayMode:  If(locPage < locPages, DisplayMode.Edit, DisplayMode.Disabled)\n    btnFirst.OnSelect:    Set(locPage, 1)          btnLast.OnSelect: Set(locPage, locPages)\n  Label\n    \"Page \" & locPage & \" of \" & locPages & \"  (\" & CountRows(colRows) & \" rows)\"\n    Rows shown: (locPage - 1) * locPageSize + 1 & \" to \" & Min(locPage * locPageSize, CountRows(colRows))\n\n  Page-size drop-down:  Items [10, 15, 25, 50]     OnChange: Set(locPageSize, Self.Selected.Value); Set(locPage, 1)\n  Search or filter changes:  reset to page 1:  txtSearch.OnChange: Set(locPage, 1)\n  With a filter applied, compute pages from the filtered table:\n    With({ f: Filter(colRows, StartsWith(Title, txtSearch.Text)) }, LastN(FirstN(f, ...), ...))\n\n  Gallery height to fit exactly one page:  locPageSize * galRows.TemplateHeight   and turn off the scrollbar.\n\nB. Row numbers on each page\n  Label in the template:  (locPage - 1) * locPageSize + ThisItem.RowNo\n  where Items is  ForAll(Sequence(CountRows(pageRows)), Patch(Index(pageRows, Value), { RowNo: Value }))\n  or add a RowNo column once when collecting:\n    ClearCollect(colRows, ForAll(Sequence(CountRows(src)), Patch(Index(src, Value), { RowNo: Value })))\n\nC. Large delegable sources (more rows than a collection can hold): keyset paging\n  Sort by a unique, indexed, increasing column such as ID, and fetch each page by key.\n  State: locLastId (last ID on the current page), colPageStarts (stack of first IDs for going back)\n\n  First page\n    ClearCollect(colPage, FirstN(Sort(Filter(Requests, ID > 0), ID, SortOrder.Ascending), locPageSize));\n    Clear(colPageStarts); Collect(colPageStarts, { StartId: 0 })\n  Next\n    With({ last: Last(colPage).ID },\n        Collect(colPageStarts, { StartId: last });\n        ClearCollect(colPage, FirstN(Sort(Filter(Requests, ID > last), ID, SortOrder.Ascending), locPageSize)))\n  Previous\n    Remove(colPageStarts, Last(colPageStarts));\n    With({ start: Last(colPageStarts).StartId },\n        ClearCollect(colPage, FirstN(Sort(Filter(Requests, ID > start), ID, SortOrder.Ascending), locPageSize)))\n  Gallery.Items: colPage\n  btnNext.DisplayMode: If(CountRows(colPage) = locPageSize, DisplayMode.Edit, DisplayMode.Disabled)\n  Filter(ID > x) with Sort and FirstN delegates for SharePoint and Dataverse, so each page is one small query.\n  Newest first: Sort descending and use ID < last.\n  Total page count is not known cheaply for large SharePoint lists (CountRows does not delegate). Show\n  \"Page 3\" without \"of N\", or get a count from Dataverse with CountRows on a delegable filter (up to 50,000).\n\nD. Dataverse or SQL with large sets\n  Same keyset approach on the primary key or a created-on plus key combination. Avoid Skip-style paging by\n  loading everything: it defeats the purpose.\n\nAccessibility\n  Buttons with AccessibleLabel \"Next page\", \"Previous page\". Announce page changes in a live label:\n  Label.Live = Live.Polite, Text = \"Page \" & locPage & \" of \" & locPages",
+    "stepByStepInstructions": [
+      "Decide the page size and whether the data fits in a collection.",
+      "Hold the current page number in a variable.",
+      "Set the gallery's Items to the slice for that page with FirstN and LastN.",
+      "Add Next, Previous, First and Last buttons with disabled states at the ends.",
+      "Reset to page 1 whenever search or filters change.",
+      "For large sources, fetch each page by key with a delegable filter and sort."
+    ],
+    "commonMistakes": [
+      "Not handling the short last page.",
+      "Staying on page 9 after a filter reduces results to two pages.",
+      "Paging over a non-delegable query that only sees the first 500 rows.",
+      "Showing a total page count that the source cannot provide accurately."
+    ],
+    "troubleshooting": [
+      "If the last page repeats earlier rows, cap LastN with the remaining row count.",
+      "If the gallery is empty after filtering, reset the page to 1.",
+      "If Next shows nothing on a big list, switch to keyset paging with a delegable filter on ID.",
+      "If row numbers restart on each page, add the page offset."
+    ],
+    "relatedPatterns": [
+      "sort-gallery-by-column-header-power-apps",
+      "sharepoint-list-view-threshold-5000-items",
+      "power-apps-search-with-multiple-fields"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Add page-by-page navigation to a gallery",
+    "seoDescription": "Show a fixed number of rows per page with Next and Previous buttons and a page counter, for collections and for large delegable data sources.",
+    "primaryKeyword": "Power Apps gallery pagination",
+    "secondaryKeywords": [
+      "Galleries",
+      "Pagination",
+      "Performance",
+      "Collections"
+    ],
+    "faqs": [
+      {
+        "question": "How do I paginate a gallery in Power Apps?",
+        "answer": "Keep a page number variable and set Items to LastN(FirstN(data, page * size), size), with buttons that change the page."
+      },
+      {
+        "question": "How do I page through more than 2,000 rows?",
+        "answer": "Fetch each page from the source with a delegable filter on a key column, sorted, using FirstN for the page size."
+      },
+      {
+        "question": "How do I show the total number of pages?",
+        "answer": "Divide the row count by the page size and round up. For very large SharePoint lists the count is not available cheaply."
+      }
+    ]
+  },
+  {
+    "id": "pat-1658",
+    "slug": "power-apps-multi-language-labels-localisation",
+    "title": "Translate a canvas app's labels by user language",
+    "shortDescription": "Detect the user's language, keep translations in a table and look up every label through one small function, with a fallback and a language switcher.",
+    "fullDescription": "Canvas apps have no built-in resource files. The standard approach is a translations table keyed by a text ID and language, loaded once, with labels calling a lookup. Language() gives the user's setting. Dates and numbers format themselves when Text is given a language tag. Done from the start it costs little, and retrofitting is a search-and-replace exercise.",
+    "category": "Power Apps",
+    "subCategory": "Localisation",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Localisation",
+      "Language",
+      "Translations",
+      "Named Formulas"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "An app built in English is rolled out to teams in France and Germany. Every label is typed into the control, so a translated version would mean maintaining three copies of the app.",
+    "whenToUse": [
+      "Apps used across countries or language communities",
+      "Organisations with a legal duty to offer more than one language",
+      "Text that business owners want to edit without a release"
+    ],
+    "whenNotToUse": [
+      "Single-language apps with no prospect of translation",
+      "Translating data values in the app when the data source should hold them"
+    ],
+    "formulaOrCode": "Translations source\n  Option 1: SharePoint list or Dataverse table \"App Translations\": Key (text), Lang (text: en, fr, de), Value (text)\n  Option 2: Excel imported as static data, or a table typed in App.Formulas for small apps:\n    nfStrings = Table(\n      { Key: \"home.title\",    en: \"My requests\",  fr: \"Mes demandes\",   de: \"Meine Anfragen\" },\n      { Key: \"btn.save\",      en: \"Save\",         fr: \"Enregistrer\",    de: \"Speichern\" },\n      { Key: \"btn.cancel\",    en: \"Cancel\",       fr: \"Annuler\",        de: \"Abbrechen\" },\n      { Key: \"msg.saved\",     en: \"Saved\",        fr: \"Enregistré\",     de: \"Gespeichert\" },\n      { Key: \"err.required\",  en: \"{0} is required\", fr: \"{0} est obligatoire\", de: \"{0} ist erforderlich\" }\n    );\n\nDetect the language\n  Language()          \"en-US\", \"fr-FR\", \"de-DE\": the browser or device language\n  App.Formulas\n    nfSupported = [\"en\", \"fr\", \"de\"];\n    nfDetected  = Lower(Left(Language(), 2));\n  App.OnStart (a variable, so the user can switch it)\n    Set(gblLang, If(nfDetected in nfSupported, nfDetected, \"en\"))\n\nLookup function\n  With user-defined functions enabled (wide table above):\n    T(key: Text): Text =\n        With({ r: LookUp(nfStrings, Key = key) },\n             Coalesce(Switch(gblLang, \"fr\", r.fr, \"de\", r.de, r.en), r.en, \"[\" & key & \"]\"));\n  Long table (Key, Lang, Value) loaded once:\n    App.OnStart: ClearCollect(colT, Filter('App Translations', Lang = gblLang Or Lang = \"en\"))\n    T(key: Text): Text =\n        Coalesce(LookUp(colT, Key = key && Lang = gblLang).Value, LookUp(colT, Key = key && Lang = \"en\").Value, \"[\" & key & \"]\");\n  Without user-defined functions, use the LookUp inline, or a component with an input \"Key\" and output \"Text\".\n\nUse it\n  lblTitle.Text:        T(\"home.title\")\n  btnSave.Text:         T(\"btn.save\")\n  Notify(T(\"msg.saved\"), NotificationType.Success)\n  Hint text, tooltips, AccessibleLabel: translate these too.\n  With values inserted:  Substitute(T(\"err.required\"), \"{0}\", T(\"field.title\"))\n  Missing keys show as [key], which makes gaps obvious in testing.\n\nLanguage switcher\n  Dropdown Items: Table({ Code: \"en\", Name: \"English\" }, { Code: \"fr\", Name: \"Français\" }, { Code: \"de\", Name: \"Deutsch\" })\n  Default: LookUp(Self.Items... ) or simply gblLang        OnChange: Set(gblLang, Self.Selected.Code)\n  Long-table variant: reload colT for the new language in OnChange.\n  Remember the choice: SaveData/LoadData on mobile, or a user settings row keyed by email.\n\nDates, numbers and currency\n  Text(Today(), DateTimeFormat.LongDate, gblLang)                 \"20 novembre 2026\"\n  Text(ThisItem.Due, \"dd mmm yyyy\", gblLang)\n  Text(1234.5, \"#,##0.00\", gblLang)                               \"1 234,50\" in fr\n  Month and weekday names:  Calendar.MonthsLong(gblLang), Calendar.WeekdaysShort(gblLang)\n  Parsing typed numbers:  Value(txtAmount.Text, gblLang)   and dates:  DateValue(txtDate.Text, gblLang)\n  A full tag such as \"fr-CA\" gives regional formats. Keep a second variable gblLocale if needed.\n\nChoices and data values\n  SharePoint choice labels are not translated per user. Map them:\n    T(\"status.\" & ThisItem.Status.Value)       with keys status.Open, status.Closed ...\n  Dataverse choice labels and table and column display names DO follow the user's Dataverse language when\n  translations are imported into the solution. Model-driven apps handle that natively.\n\nLayout\n  German and French labels run 20 to 35 percent longer than English. Use auto-height labels, auto-layout\n  containers and avoid fixed-width buttons sized for English.\n  Right-to-left languages need mirrored layouts: align by a variable, for example\n    Align: If(gblLang in [\"ar\",\"he\"], Align.Right, Align.Left)\n\nProcess\n  Keys named by area and purpose: screen.element. One owner per language reviews the list.\n  Export the table to Excel for translators and re-import. Never translate inside formulas.\n  Test each language end to end, including error messages and emails sent by flows (pass gblLang to the flow).",
+    "stepByStepInstructions": [
+      "Create a translations table with a key and a value per language.",
+      "Detect the user's language and fall back to a default.",
+      "Write one lookup function or component that returns the text for a key.",
+      "Replace literal text in labels, buttons, hints and notifications with lookups.",
+      "Format dates and numbers with the language tag.",
+      "Add a language switcher and test layouts with the longest language."
+    ],
+    "commonMistakes": [
+      "Typing translated text into If statements on every control.",
+      "No fallback when a key or language is missing.",
+      "Fixed-width controls sized for English.",
+      "Forgetting notifications, hint text and accessibility labels."
+    ],
+    "troubleshooting": [
+      "If a label shows [key], add the key or check its spelling.",
+      "If dates stay in English, pass the language tag as the third argument to Text.",
+      "If switching language does not update a screen, the label reads a collection loaded for the old language. Reload it.",
+      "If numbers parse wrongly, give Value the same language the user types in."
+    ],
+    "relatedPatterns": [
+      "power-apps-user-defined-functions-reuse-logic",
+      "use-named-formulas-for-app-constants",
+      "power-apps-accessible-status-text"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Translate a canvas app's labels by user language",
+    "seoDescription": "Detect the user's language, keep translations in a table and look up every label through one small function, with a fallback and a language switcher.",
+    "primaryKeyword": "Power Apps multilingual app Language function",
+    "secondaryKeywords": [
+      "Localisation",
+      "Language",
+      "Translations",
+      "Named Formulas"
+    ],
+    "faqs": [
+      {
+        "question": "How do I make a Power Apps canvas app multilingual?",
+        "answer": "Store translations in a table keyed by text ID and language, detect the language with Language() and look up each label's text."
+      },
+      {
+        "question": "How do I get the user's language in Power Apps?",
+        "answer": "The Language function returns the language tag of the user's browser or device, such as fr-FR."
+      },
+      {
+        "question": "How do I format dates for the user's language?",
+        "answer": "Pass the language tag to Text, for example Text(Today(), DateTimeFormat.LongDate, \"fr\")."
+      }
+    ]
+  },
+  {
+    "id": "pat-1659",
+    "slug": "power-apps-monitor-debug-performance-trace",
+    "title": "Debug a slow or failing canvas app with Monitor and Trace",
+    "shortDescription": "Use Monitor to see every data call, its duration and its errors, add your own Trace events, diagnose a user's session remotely and find delegation and load problems.",
+    "fullDescription": "When an app is slow or a Patch fails for one user, guessing is expensive. Monitor records what the app actually does: each network request, formula evaluation and error, with timings and payloads. Trace adds your own checkpoints. A session can be shared with a user so you watch their run, with their permissions, from your machine.",
+    "category": "Power Apps",
+    "subCategory": "Troubleshooting",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Monitor",
+      "Trace",
+      "Debugging",
+      "Performance"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Users report that a screen takes ten seconds to load and that saving 'sometimes fails'. In the studio, with the maker's permissions and data, everything looks fine.",
+    "whenToUse": [
+      "Finding which query or formula makes a screen slow",
+      "Seeing the real error behind a failed save",
+      "Reproducing a problem only one user has"
+    ],
+    "whenNotToUse": [
+      "Leaving verbose tracing of personal data in a published app",
+      "Using Monitor as long-term telemetry, which Application Insights is for"
+    ],
+    "formulaOrCode": "Open Monitor\n  Studio: Advanced tools > Monitor > Open monitor. Then use the app in the studio tab. Events stream in.\n  Published app: make.powerapps.com > Apps > ... > Details (or Monitor) > Play published app.\n    Tick \"Debug published app\" in app Settings > Updates/Support to get formula-level detail.\n\nReading the grid\n  Columns: Time, Category (Network, UserAction, Performance, Telemetry), Operation (getRows, createRow,\n  patchRow, Select, Navigate), Result (Success, Error, Warning), Status (HTTP code), Duration (ms),\n  Data source, Control, Property, Response size.\n  Select a row: Details (what ran), Formula (the property's formula), Request (URL with the actual filter\n  sent), Response (rows returned or the error body).\n  Filter: Result = Error. Sort by Duration to find the slowest calls.\n\nWhat to look for\n  Slow screen\n    Many getRows in sequence in OnVisible: parallelise with Concurrent or load less.\n    getRows with a large response size: select fewer columns, filter at the source.\n    The same getRows repeated per gallery row: a LookUp inside the template (N+1). Move it out with\n    AddColumns once, or collect reference data.\n  Delegation\n    Request URL without a $filter where you expected one, and a row count equal to your data row limit\n    (500 or 2,000): the filter ran locally on a partial set.\n    Warning events mentioning delegation.\n  Failed save\n    patchRow or createRow with Result Error. Response shows the real cause: 400 with a column name,\n    403 no permission, 409/412 conflict (someone else changed the row), 429 throttled.\n  Slow start\n    Time from the first event to the first screen render. OnStart with many collections. Consider named formulas.\n\nAdd your own events\n  Trace(Message, Severity, CustomRecord)\n    Trace(\"Save started\", TraceSeverity.Information, { RequestId: gblSelected.ID, User: User().Email });\n    IfError(\n        Patch(Requests, gblSelected, { Status: { Value: \"Approved\" } }),\n        Trace(\"Save failed\", TraceSeverity.Error, { RequestId: gblSelected.ID, Kind: FirstError.Kind, Message: FirstError.Message });\n        Notify(\"Could not save. \" & FirstError.Message, NotificationType.Error),\n        Trace(\"Save succeeded\", TraceSeverity.Information, { RequestId: gblSelected.ID }))\n  Traces appear in Monitor with Category \"Telemetry\" and, if configured, in Application Insights.\n  Severity: Information, Warning, Error, Critical.\n\nTime a block\n  Set(locT0, Now());\n  ClearCollect(colOpen, Filter(Requests, Status.Value = \"Open\"));\n  Trace(\"Load open requests\", TraceSeverity.Information, { Ms: DateDiff(locT0, Now(), TimeUnit.Milliseconds), Rows: CountRows(colOpen) })\n\nWatch another person's session\n  Monitor > Invite: enter a colleague (maker) to view your session, or\n  Monitor > Connect user: sends the USER a link. They open it and run the published app. You see their\n  events with their permissions and data. Tell them what you will see: payloads include their data.\n\nGlobal error handler\n  App.OnError\n    Trace(\"Unhandled error\", TraceSeverity.Error,\n          { Source: FirstError.Source, Observed: FirstError.Observed, Kind: FirstError.Kind,\n            Message: FirstError.Message, Screen: App.ActiveScreen.Name });\n    Notify(\"Something went wrong. Reference \" & Text(Now(), \"hhmmss\"), NotificationType.Error)\n  Catches errors nothing else handled, so they are logged instead of vanishing.\n\nKeep it after go-live: Application Insights\n  App object > Instrumentation key (or connection string) from an Application Insights resource.\n  Trace events, errors and screen views flow there for all users. Query with KQL:\n    traces | where timestamp > ago(1d) and severityLevel >= 3 | project timestamp, message, customDimensions\n    pageViews | summarize count() by name\n  Do not put personal data in trace records.\n\nOther tools in the same menu\n  App checker: formula errors, accessibility, performance hints, delegation warnings.\n  Variables and Collections viewers: current values while testing.\n  Performance insights (app details): start-up time and suggestions from real usage.\n\nExport\n  Monitor > Download: saves the session as JSON to attach to a support ticket or compare later. Upload reopens it.",
+    "stepByStepInstructions": [
+      "Open Monitor from the studio or for the published app.",
+      "Reproduce the slow or failing action.",
+      "Sort by duration and filter by errors to find the event responsible.",
+      "Read the request and response for the true filter sent and the real error.",
+      "Add Trace calls around key operations and an App.OnError handler.",
+      "Connect a user's session when the problem is specific to them, and send traces to Application Insights for production."
+    ],
+    "commonMistakes": [
+      "Testing only as the maker, with different permissions and data.",
+      "Guessing at the cause of a failed Patch without reading the response.",
+      "Tracing personal or sensitive data.",
+      "Ignoring repeated identical calls from inside a gallery."
+    ],
+    "troubleshooting": [
+      "If Monitor shows no formula detail for a published app, enable debugging of the published app and republish.",
+      "If no events appear, the monitored session is in another tab. Use the tab Monitor opened.",
+      "If the error body is empty, look at the status code and the data source's own logs.",
+      "If Trace events are missing in Application Insights, check the instrumentation key and allow a few minutes."
+    ],
+    "relatedPatterns": [
+      "create-a-screen-performance-review",
+      "power-apps-error-handling-iferror-patch",
+      "avoid-delegation-warnings-sharepoint-filters"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Debug a slow or failing canvas app with Monitor and Trace",
+    "seoDescription": "Use Monitor to see every data call, its duration and its errors, add your own Trace events, diagnose a user's session remotely and find delegation and load problems.",
+    "primaryKeyword": "Power Apps Monitor debug Trace",
+    "secondaryKeywords": [
+      "Monitor",
+      "Trace",
+      "Debugging",
+      "Performance"
+    ],
+    "faqs": [
+      {
+        "question": "How do I see why a Power App is slow?",
+        "answer": "Open Monitor, reproduce the action and sort events by duration to find the slow data calls and their formulas."
+      },
+      {
+        "question": "How do I debug a problem that only one user has?",
+        "answer": "Use Monitor's Connect user option so they run the app while you watch their session's events."
+      },
+      {
+        "question": "What does the Trace function do?",
+        "answer": "It writes a custom event with a message, severity and data to Monitor and, if configured, Application Insights."
+      }
+    ]
+  },
+  {
+    "id": "pat-1660",
+    "slug": "sharepoint-column-formatting-progress-bar-json",
+    "title": "Show a progress bar in a SharePoint column with JSON formatting",
+    "shortDescription": "Turn a number or percentage column into a coloured bar with the value beside it, change colour by threshold and handle blanks, using column formatting JSON.",
+    "fullDescription": "A column of percentages is hard to scan. Column formatting replaces how a field is drawn in list views without changing the data. A few lines of JSON draw a bar whose width follows the value and whose colour follows thresholds, which makes progress readable at a glance in any view that includes the column.",
+    "category": "SharePoint",
+    "subCategory": "Column formatting",
+    "platform": [
+      "SharePoint"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Column Formatting",
+      "JSON",
+      "Progress Bar",
+      "List Views"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A project list shows '% complete' as plain numbers. Managers cannot see at a glance which projects are behind.",
+    "whenToUse": [
+      "Percent complete, capacity and score columns",
+      "Dashboards built from list views",
+      "Any numeric column with a known maximum"
+    ],
+    "whenNotToUse": [
+      "Columns people must edit inline in grid view, where plain values are easier",
+      "Conveying status by colour alone, without the number"
+    ],
+    "formulaOrCode": "Where\n  List view > column header > Column settings > Format this column > Advanced mode > paste > Save\n  Works on Number columns. For a number shown as percentage, the stored value is 0 to 1 (0.45 = 45%).\n\nA. Percentage column stored as 0 to 1\n{\n  \"$schema\": \"https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json\",\n  \"elmType\": \"div\",\n  \"style\": { \"display\": \"flex\", \"align-items\": \"center\", \"width\": \"100%\" },\n  \"children\": [\n    {\n      \"elmType\": \"div\",\n      \"style\": { \"flex-grow\": \"1\", \"height\": \"10px\", \"border-radius\": \"5px\", \"background-color\": \"#e1e1e1\", \"overflow\": \"hidden\" },\n      \"attributes\": { \"title\": \"=toString(round(@currentField * 100, 0)) + '% complete'\" },\n      \"children\": [\n        {\n          \"elmType\": \"div\",\n          \"style\": {\n            \"height\": \"100%\",\n            \"width\": \"=if(@currentField >= 1, '100%', if(@currentField <= 0, '0%', toString(@currentField * 100) + '%'))\",\n            \"background-color\": \"=if(@currentField >= 1, '#107c10', if(@currentField >= 0.5, '#0078d4', if(@currentField >= 0.25, '#ffaa44', '#d13438')))\"\n          }\n        }\n      ]\n    },\n    {\n      \"elmType\": \"span\",\n      \"style\": { \"margin-left\": \"8px\", \"min-width\": \"38px\", \"text-align\": \"right\" },\n      \"txtContent\": \"=if(@currentField == '', '', toString(round(@currentField * 100, 0)) + '%')\"\n    }\n  ]\n}\n\nB. Plain number out of a maximum held in another column (Done out of Total)\n  \"width\": \"=if([$Total] > 0, toString(([$Done] / [$Total]) * 100) + '%', '0%')\"\n  \"txtContent\": \"=[$Done] + ' / ' + [$Total]\"\n  [$InternalName] reads another column in the same row. The column must be in the view, or it returns blank.\n\nC. Number 0 to 100\n  \"width\": \"=toString(@currentField) + '%'\"\n  thresholds: \"=if(@currentField >= 100, '#107c10', if(@currentField >= 50, '#0078d4', '#d13438'))\"\n\nD. Theme-aware classes instead of fixed colours\n  Replace background-color with a class on the inner bar:\n  \"attributes\": { \"class\": \"=if(@currentField >= 1, 'sp-field-severity--good', if(@currentField >= 0.5, 'sp-field-severity--low', if(@currentField >= 0.25, 'sp-field-severity--warning', 'sp-field-severity--blocked')))\" }\n  Or theme colours: \"ms-bgColor-themePrimary\", \"ms-bgColor-neutralLight\".\n  Classes adapt to site themes and dark mode in Teams.\n\nE. Built-in data bar (no JSON)\n  Format this column > Data bars > Edit template: minimum and maximum values and a colour.\n  Choose JSON when you need thresholds, labels or another column's value.\n\nExpression reference used above\n  @currentField      this column's value          [$Column]     another column\n  if(cond, a, b)     nested for thresholds         toString(), round(n, digits), Number()\n  Operators: + - * /  ==  !=  <  >  <=  >=  &&  ||\n  Text joins with +. Compare blanks with == ''.\n\nAccessibility\n  Keep the number beside the bar and put the meaning in the title attribute.\n  Add \"role\": \"img\" and \"aria-label\" on the outer bar:\n  \"attributes\": { \"role\": \"img\", \"aria-label\": \"=toString(round(@currentField * 100, 0)) + ' percent complete'\" }\n\nWhere it shows\n  List views, the list web part and Microsoft Lists. Not in the classic experience, grid edit mode, exports to\n  Excel or Power Apps galleries. The stored value is unchanged.\n\nReuse\n  Apply the same JSON to a site column so every list using it gets the format, or deploy with PnP:\n  Set-PnPField -List \"Projects\" -Identity \"PercentComplete\" -Values @{ CustomFormatter = (Get-Content .\\progress.json -Raw) }",
+    "stepByStepInstructions": [
+      "Confirm how the column stores its value: 0 to 1, or 0 to 100.",
+      "Open Format this column in advanced mode.",
+      "Paste the JSON and adjust thresholds and colours.",
+      "Keep the numeric value visible beside the bar.",
+      "Handle blank and over-100 values in the width expression.",
+      "Apply the format to the site column or deploy it with PnP for reuse."
+    ],
+    "commonMistakes": [
+      "Treating a percentage column as 0 to 100 when it stores 0 to 1.",
+      "Referencing another column that is not in the view.",
+      "Colour as the only indicator.",
+      "A width expression that breaks on blank values."
+    ],
+    "troubleshooting": [
+      "If the bar is always full or empty, check the value scale and multiply or divide by 100.",
+      "If the JSON will not save, validate brackets and quotes. Expressions start with = inside a string.",
+      "If another column's value is blank, add that column to the view.",
+      "If colours clash with the theme, switch to the sp-field-severity classes."
+    ],
+    "relatedPatterns": [
+      "sharepoint-json-status-pill-formatting",
+      "use-view-formatting-for-overdue-items",
+      "format-sharepoint-hyperlink-field-json"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Show a progress bar in a SharePoint column with JSON formatting",
+    "seoDescription": "Turn a number or percentage column into a coloured bar with the value beside it, change colour by threshold and handle blanks, using column formatting JSON.",
+    "primaryKeyword": "SharePoint column formatting progress bar",
+    "secondaryKeywords": [
+      "Column Formatting",
+      "JSON",
+      "Progress Bar",
+      "List Views"
+    ],
+    "faqs": [
+      {
+        "question": "How do I add a progress bar to a SharePoint list?",
+        "answer": "Format the number column with JSON that draws an inner div whose width is the column's value as a percentage."
+      },
+      {
+        "question": "Why is my percentage bar always empty?",
+        "answer": "Percentage columns store values from 0 to 1. Multiply by 100 when building the width."
+      },
+      {
+        "question": "Does column formatting change the data?",
+        "answer": "No. It only changes how the value is displayed in modern list views."
+      }
+    ]
+  },
+  {
+    "id": "pat-1661",
+    "slug": "sharepoint-list-form-conditional-fields-formula",
+    "title": "Show or hide SharePoint list form fields with conditional formulas",
+    "shortDescription": "Make the built-in list form show fields only when they apply, group fields into sections with form JSON, and pair it with validation, without building an app.",
+    "fullDescription": "The standard SharePoint list form can react to what the user enters. Each column can carry a conditional formula that decides whether it appears, and the form's header, body and footer can be arranged with JSON. For many lists this removes the need for a customised Power Apps form.",
+    "category": "SharePoint",
+    "subCategory": "List forms",
+    "platform": [
+      "SharePoint"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "List Forms",
+      "Conditional Formulas",
+      "Form Configuration",
+      "Validation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "30 minutes",
+    "problemStatement": "A request form shows twenty fields to everyone, including a block that only applies to hardware requests. People fill in the wrong ones or give up.",
+    "whenToUse": [
+      "Fields that apply only to some categories or statuses",
+      "Simple intake forms on lists",
+      "Lists where a custom app would be over-engineering"
+    ],
+    "whenNotToUse": [
+      "Cascading lookups, repeating sections or multi-screen flows, which need Power Apps",
+      "Using hidden fields as a security measure"
+    ],
+    "formulaOrCode": "Open\n  List > New (or open an item) > form toolbar: Edit form (icon at top right) > Edit columns\n  Each column: tick to show, drag to reorder, ... > Edit conditional formula\n\nConditional formulas (must return true to SHOW the field)\n  Show \"Asset Tag\" only for hardware:\n    =if([$Category] == 'Hardware', 'true', 'false')\n  Show \"Other reason\" when Reason is Other:\n    =if([$Reason] == 'Other', 'true', 'false')\n  Several values:\n    =if([$Category] == 'Hardware' || [$Category] == 'Software', 'true', 'false')\n  Yes/No column:\n    =if([$NeedsApproval] == true, 'true', 'false')\n  Number threshold:\n    =if([$Amount] > 5000, 'true', 'false')\n  Date present:\n    =if([$StartDate] != '', 'true', 'false')\n  Person column (email of the selected person):\n    =if([$Manager.email] != '', 'true', 'false')\n  Only on existing items (ID is empty on the new form):\n    =if([$ID] != '', 'true', 'false')\n  Only for the item's creator's own edits (compare with the signed-in user):\n    =if([$Author.email] == @me, 'true', 'false')\n  Use internal column names: [$Asset_x0020_Tag] for \"Asset Tag\" created with a space.\n\nRules of the formula language\n  Same expression syntax as column formatting. if(), ==, !=, <, >, &&, ||, +, and functions such as\n  indexOf, toLowerCase, length, Number, Date.\n  Supported column types in conditions: text, choice (single), number, yes/no, date, person (single), and a few\n  others. Multi-choice, lookup and managed metadata support is limited: test them, or drive visibility from a\n  simple helper choice column.\n  The form re-evaluates as the user changes values, so fields appear and disappear live.\n  A hidden field keeps any value it already had. It is not cleared.\n\nRequired fields that are sometimes hidden\n  A column that is Required at list level blocks saving when hidden and empty. Make it optional in column\n  settings and enforce the rule with list validation instead:\n  List settings > Validation settings > Formula:\n    =IF([Category]=\"Hardware\", NOT(ISBLANK([Asset Tag])), TRUE)\n    User message: Asset Tag is required for hardware requests.\n  (Validation formulas use Excel-style syntax and display names in square brackets.)\n\nGroup fields into sections (Edit form > Configure layout > Body)\n{\n  \"sections\": [\n    { \"displayname\": \"Request\", \"fields\": [ \"Title\", \"Category\", \"Priority\" ] },\n    { \"displayname\": \"Hardware details\", \"fields\": [ \"Asset Tag\", \"Model\", \"Location\" ] },\n    { \"displayname\": \"Approval\", \"fields\": [ \"Manager\", \"Needs Approval\", \"Amount\" ] }\n  ]\n}\n  The layout JSON uses display names for fields. Sections lay out in up to three columns on wide screens.\n  A section whose fields are all hidden by conditional formulas disappears.\n\nHeader and footer (Configure layout > Header / Footer)\n  Header showing the title and status:\n{\n  \"elmType\": \"div\",\n  \"style\": { \"padding\": \"12px\", \"font-size\": \"18px\", \"font-weight\": \"600\" },\n  \"txtContent\": \"=if([$ID] == '', 'New request', 'Request ' + [$ID] + ': ' + [$Status])\"\n}\n  Footer with a help link:\n{\n  \"elmType\": \"a\", \"txtContent\": \"How to complete this form\",\n  \"attributes\": { \"href\": \"https://contoso.sharepoint.com/sites/help/SitePages/Requests.aspx\", \"target\": \"_blank\" }\n}\n\nHide columns from the form entirely\n  Edit columns > untick. Good for system-maintained columns such as Status or Assigned To, which a flow sets.\n  Per content type: each content type has its own form configuration.\n\nWhat this does not do\n  It does not protect data: hidden columns are still visible in views and through the API.\n  It does not apply in grid (quick edit) view, in Power Apps, or in flows.\n  It cannot filter one drop-down by another or set default values from other fields.\n\nDeploy to other lists\n  The configuration is stored on the content type (ClientFormCustomFormatter). Copy it with PnP PowerShell:\n    $ct = Get-PnPContentType -List \"Requests\" -Identity \"Item\"\n    $ct.ClientFormCustomFormatter       # read, then set on the target list's content type and Update()",
+    "stepByStepInstructions": [
+      "Open the list form and choose Edit columns.",
+      "Untick columns that should never appear on the form.",
+      "Add a conditional formula to each field that applies only in some cases.",
+      "Make conditionally hidden fields optional and enforce them with list validation.",
+      "Group fields into sections with the body layout JSON.",
+      "Test new and edit forms for each category."
+    ],
+    "commonMistakes": [
+      "Leaving a hidden field required at column level, which blocks saving.",
+      "Using display names instead of internal names in formulas.",
+      "Assuming hidden fields are secure.",
+      "Expecting the rules to apply in quick edit or Power Apps."
+    ],
+    "troubleshooting": [
+      "If the form will not save, a hidden required column is empty. Make it optional and validate at list level.",
+      "If a formula has no effect, check the internal column name and that the formula returns the text true or false.",
+      "If a multi-choice condition fails, base visibility on a single-choice or yes/no column.",
+      "If a section shows empty, remove fields that no longer exist from the layout JSON."
+    ],
+    "relatedPatterns": [
+      "govern-required-fields-by-lifecycle-stage",
+      "sharepoint-internal-name-safe-column-design",
+      "power-apps-form-mode-new-edit-view"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Show or hide SharePoint list form fields with conditional formulas",
+    "seoDescription": "Make the built-in list form show fields only when they apply, group fields into sections with form JSON, and pair it with validation, without building an app.",
+    "primaryKeyword": "SharePoint list form conditional formula show hide",
+    "secondaryKeywords": [
+      "List Forms",
+      "Conditional Formulas",
+      "Form Configuration",
+      "Validation"
+    ],
+    "faqs": [
+      {
+        "question": "Can SharePoint list forms show fields conditionally without Power Apps?",
+        "answer": "Yes. Edit the form's columns and add a conditional formula to each field that should appear only in certain cases."
+      },
+      {
+        "question": "What does a conditional formula look like?",
+        "answer": "For example =if([$Category] == 'Hardware', 'true', 'false'), using the column's internal name."
+      },
+      {
+        "question": "Why can't I save when a field is hidden?",
+        "answer": "The hidden column is required. Make it optional and use list validation to require it only when relevant."
+      }
+    ]
+  },
+  {
+    "id": "pat-1662",
+    "slug": "sharepoint-column-list-validation-formulas",
+    "title": "Validate SharePoint list data with column and list formulas",
+    "shortDescription": "Block bad entries at the list itself with column validation and list validation formulas: formats, ranges, date order and conditional required fields.",
+    "fullDescription": "Rules enforced only in an app are skipped by grid edits, flows and imports. SharePoint validation formulas run on the server for every save, however the item is written. Column validation checks one column against a rule. List validation compares columns with each other. They use Excel-style syntax and a single message shown when the rule fails.",
+    "category": "SharePoint",
+    "subCategory": "Validation",
+    "platform": [
+      "SharePoint"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "Validation",
+      "Formulas",
+      "Data Quality",
+      "List Settings"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "End dates before start dates, negative quantities and malformed reference codes keep appearing, because people edit the list in grid view where the app's rules do not apply.",
+    "whenToUse": [
+      "Rules that must hold for every write: app, grid, flow or import",
+      "Cross-column rules such as date order",
+      "Conditional required fields"
+    ],
+    "whenNotToUse": [
+      "Complex rules needing lookups to other lists, which need a flow or app",
+      "Rules on column types validation cannot read, such as people, lookups and multi-choice"
+    ],
+    "formulaOrCode": "Column validation (one column, cannot reference others)\n  List settings > column > Column validation > Formula + User message\n  Number between 1 and 100:\n    =AND([Quantity]>=1,[Quantity]<=100)\n  Not in the past (date column):\n    =[Due Date]>=TODAY()\n  Text length exactly 8:\n    =LEN([Asset Code])=8\n  Starts with a prefix:\n    =LEFT([Reference],4)=\"REQ-\"\n  Pattern \"ABC-1234\" (three letters, hyphen, four digits) without regular expressions:\n    =AND(LEN([Reference])=8, MID([Reference],4,1)=\"-\", ISNUMBER(VALUE(RIGHT([Reference],4))),\n         CODE(UPPER(LEFT([Reference],1)))>=65, CODE(UPPER(LEFT([Reference],1)))<=90)\n  Email shape (simple):\n    =AND(ISNUMBER(FIND(\"@\",[Contact Email])), ISNUMBER(FIND(\".\",[Contact Email],FIND(\"@\",[Contact Email])+2)), ISERROR(FIND(\" \",[Contact Email])))\n  Optional column: allow blank, validate when filled:\n    =OR(ISBLANK([Reference]), LEFT([Reference],4)=\"REQ-\")\n\nList validation (compares columns, one formula per list)\n  List settings > Validation settings > Formula + User message\n  End after start:\n    =[End Date]>=[Start Date]\n  Required only when another column has a value:\n    =IF([Status]=\"Rejected\", NOT(ISBLANK([Rejection Reason])), TRUE)\n  Amount limit by category:\n    =IF([Category]=\"Travel\", [Amount]<=2000, TRUE)\n  One of two must be filled:\n    =OR(NOT(ISBLANK([Phone])), NOT(ISBLANK([Email])))\n  Several rules in one formula:\n    =AND(\n       [End Date]>=[Start Date],\n       IF([Status]=\"Rejected\", NOT(ISBLANK([Rejection Reason])), TRUE),\n       IF([Category]=\"Travel\", [Amount]<=2000, TRUE)\n     )\n  One message covers the whole list formula, so write it to name every rule:\n    \"Check: end date is on or after start date. Rejected items need a reason. Travel is limited to 2,000.\"\n\nSyntax notes\n  Column DISPLAY names in square brackets. Names with spaces are fine: [Due Date].\n  Functions are Excel-like: AND, OR, NOT, IF, ISBLANK, ISNUMBER, ISERROR, LEN, LEFT, RIGHT, MID, FIND, SEARCH,\n  UPPER, LOWER, TRIM, VALUE, TEXT, TODAY, NOW, DATE, YEAR, MONTH, DAY, WEEKDAY, DATEDIF, ROUND, INT.\n  Regional settings decide the argument separator: comma in English sites, semicolon in many European ones.\n  Choice columns (single) compare as text: [Status]=\"Rejected\". Yes/No compares to TRUE or FALSE.\n  Not usable: Person, Lookup, Managed Metadata, multi-choice, multi-line text, calculated-on-the-fly [Me].\n  [Today] is not available in validation formulas. Use TODAY().\n  Formula length limit: about 1,024 characters.\n\nCommon examples\n  Weekdays only:            =WEEKDAY([Visit Date],2)<6\n  Within the next 90 days:  =AND([Visit Date]>=TODAY(),[Visit Date]<=TODAY()+90)\n  Whole numbers only:       =[Quantity]=INT([Quantity])\n  Upper case only:          =EXACT([Code],UPPER([Code]))\n  No leading/trailing spaces: =[Title]=TRIM([Title])\n  Unique values: not a formula. Column settings > Enforce unique values: Yes (needs an indexed column).\n\nWhere it applies\n  Every save through the form, grid view, Power Apps, Power Automate, the API and imports. In a flow or app\n  the failure comes back as an error containing your user message: handle it and show it.\n  TODAY() rules are checked only when an item is saved. A due date that was valid last month still fails if\n  someone edits the item now. Scope such rules: =OR([Status]<>\"Draft\",[Due Date]>=TODAY())\n  Existing items are not re-checked until they are edited.\n\nRoll out\n  Test formulas in a copy of the list. Fix existing rows that would fail, or users will be unable to edit them\n  without also fixing the old data. Document each rule in the column description.\n  Scripted: Set-PnPField -List \"Requests\" -Identity \"Quantity\" -Values @{ ValidationFormula = \"=AND([Quantity]>=1,[Quantity]<=100)\"; ValidationMessage = \"Enter 1 to 100.\" }\n            Set-PnPList -Identity \"Requests\" ... then $list.ValidationFormula and ValidationMessage with Update().",
+    "stepByStepInstructions": [
+      "List the rules that must hold however the data is written.",
+      "Add column validation for single-column rules with a clear message.",
+      "Combine cross-column rules in the list validation formula.",
+      "Write a user message that names every rule in the formula.",
+      "Test through the form, grid view and any app or flow that writes to the list.",
+      "Fix existing rows that break the new rules."
+    ],
+    "commonMistakes": [
+      "Enforcing rules only in the app.",
+      "Referencing other columns in column validation.",
+      "A vague message such as 'Invalid data'.",
+      "A TODAY() rule that blocks edits to old items."
+    ],
+    "troubleshooting": [
+      "If the formula is rejected, check separators for the site's regional settings and unsupported column types.",
+      "If users cannot save old items, scope date rules by status or creation date.",
+      "If a flow fails with a validation error, surface the message and correct the data it sends.",
+      "If you need two messages, split rules between column validation and list validation."
+    ],
+    "relatedPatterns": [
+      "sharepoint-calculated-column-vs-power-apps-formula",
+      "validate-required-fields-before-patch",
+      "govern-required-fields-by-lifecycle-stage"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Validate SharePoint list data with column and list formulas",
+    "seoDescription": "Block bad entries at the list itself with column validation and list validation formulas: formats, ranges, date order and conditional required fields.",
+    "primaryKeyword": "SharePoint column validation formula",
+    "secondaryKeywords": [
+      "Validation",
+      "Formulas",
+      "Data Quality",
+      "List Settings"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between column validation and list validation?",
+        "answer": "Column validation checks one column by itself. List validation is a single formula that can compare several columns."
+      },
+      {
+        "question": "Do validation formulas apply to Power Apps and flows?",
+        "answer": "Yes. They run on the server for every save, and failures are returned to the app or flow as errors."
+      },
+      {
+        "question": "Can I validate a person or lookup column?",
+        "answer": "No. Validation formulas cannot read person, lookup, managed metadata or multi-choice columns."
+      }
+    ]
+  },
+  {
+    "id": "pat-1663",
+    "slug": "sharepoint-button-column-run-flow-json",
+    "title": "Add a button to a SharePoint list row that runs a flow",
+    "shortDescription": "Format a column as a button that starts a Power Automate flow for that item, show it only when relevant and change its label by status.",
+    "fullDescription": "Running a flow for a selected item normally means the Automate menu and several clicks. Column formatting can draw a button in the row that launches a specific flow for that item in one click. With conditions on status and user, the button appears only when the action makes sense.",
+    "category": "SharePoint",
+    "subCategory": "Column formatting",
+    "platform": [
+      "SharePoint"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Column Formatting",
+      "JSON",
+      "Power Automate",
+      "Buttons"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "1 hour",
+    "problemStatement": "Approvers have to select an item, open the Automate menu, find the right flow and confirm. Most do not know the menu exists.",
+    "whenToUse": [
+      "One-click actions per item: request approval, send reminder, archive",
+      "Lists used directly as the working interface",
+      "Actions that should be visible only in certain states"
+    ],
+    "whenNotToUse": [
+      "Actions that must be restricted securely, since hiding a button is not access control",
+      "Bulk actions over many selected rows"
+    ],
+    "formulaOrCode": "1. The flow\n  Trigger: SharePoint > For a selected item (or For a selected file for libraries)\n    Site Address and List Name: the list\n    Optional inputs: text, choice, date, email, yes/no. The user fills them in the side panel.\n  Use the item: SharePoint > Get item, Id = triggerBody()?['entity']?['ID']\n  Who clicked: triggerBody()?['headers']?['x-ms-user-email-encoded'] (base64) or the trigger's User email output.\n  Save, then copy the flow's ID: the GUID after /flows/ in the flow's URL.\n  The flow must be in the DEFAULT environment for the button to launch it from the list.\n\n2. A column to carry the button\n  Add a text or calculated column named \"Action\" (its value is not used). Include it in the view.\n\n3. Column formatting JSON\n{\n  \"$schema\": \"https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json\",\n  \"elmType\": \"button\",\n  \"customRowAction\": {\n    \"action\": \"executeFlow\",\n    \"actionParams\": \"{\\\"id\\\": \\\"1a2b3c4d-5e6f-7a8b-9c0d-112233445566\\\", \\\"headerText\\\": \\\"Request approval\\\", \\\"runFlowButtonText\\\": \\\"Send\\\"}\"\n  },\n  \"attributes\": { \"class\": \"ms-fontColor-themePrimary ms-fontColor-themeDark--hover\", \"title\": \"Send this item for approval\" },\n  \"style\": {\n    \"border\": \"1px solid\",\n    \"border-radius\": \"4px\",\n    \"background-color\": \"transparent\",\n    \"cursor\": \"pointer\",\n    \"padding\": \"4px 10px\",\n    \"display\": \"=if([$Status] == 'Draft', 'inline-flex', 'none')\"\n  },\n  \"children\": [\n    { \"elmType\": \"span\", \"attributes\": { \"iconName\": \"Send\" }, \"style\": { \"padding-right\": \"6px\" } },\n    { \"elmType\": \"span\", \"txtContent\": \"Request approval\" }\n  ]\n}\n  id: the flow's GUID. headerText: panel title. runFlowButtonText: the panel's confirm button.\n  Clicking opens the flow panel on the right. The user confirms, and the flow runs for that row.\n\n4. Label and visibility by status and user\n  \"txtContent\": \"=if([$Status] == 'Draft', 'Request approval', if([$Status] == 'Rejected', 'Resubmit', ''))\"\n  Show only to the item's creator:\n    \"display\": \"=if([$Status] == 'Draft' && [$Author.email] == @me, 'inline-flex', 'none')\"\n  Show only to the assigned person:\n    \"display\": \"=if([$AssignedTo.email] == @me, 'inline-flex', 'none')\"\n  Columns used in expressions must be in the view.\n\n5. Different flows per state (two buttons in one cell)\n{\n  \"elmType\": \"div\",\n  \"children\": [\n    { \"elmType\": \"button\", \"txtContent\": \"Approve\",\n      \"style\": { \"display\": \"=if([$Status] == 'Pending', 'inline-block', 'none')\", \"margin-right\": \"6px\" },\n      \"customRowAction\": { \"action\": \"executeFlow\", \"actionParams\": \"{\\\"id\\\": \\\"<approve flow id>\\\"}\" } },\n    { \"elmType\": \"button\", \"txtContent\": \"Send reminder\",\n      \"style\": { \"display\": \"=if([$Status] == 'Pending' && [$DueDate] < @now, 'inline-block', 'none')\" },\n      \"customRowAction\": { \"action\": \"executeFlow\", \"actionParams\": \"{\\\"id\\\": \\\"<reminder flow id>\\\"}\" } }\n  ]\n}\n\n6. Other customRowAction values\n  \"setValue\": update columns in the row directly, no flow needed (quick status changes):\n    \"customRowAction\": { \"action\": \"setValue\", \"actionInput\": { \"Status\": \"In progress\", \"AssignedTo\": \"@me\" } }\n  \"defaultClick\", \"editProps\" (open the form), \"openContextMenu\", \"share\", \"delete\".\n  setValue is immediate and needs edit permission. Use it for simple state changes and a flow for anything\n  with notifications or logic.\n\n7. Permissions and sharing\n  The user needs permission to run the flow: for \"For a selected item\" flows, anyone with edit access to the\n  list can run it when the flow is shared via the list (Run-only users > SharePoint list).\n  Connections: set run-only connections to \"Use this connection\" for a service account, or\n  \"Provided by run-only user\" so actions occur as the person clicking.\n  Hiding the button does not stop someone running the flow from the Automate menu: check status and the\n  caller inside the flow, and exit when the action is not allowed.\n\n8. Feedback\n  The panel shows whether the flow started. Have the flow update a column (for example Status = Pending) so the\n  row changes and the button disappears. The view refreshes within a few seconds.\n\nLimits\n  Works in modern list views and Microsoft Lists. Not in grid edit mode, classic pages or Teams list tab in\n  every client. A flow in a non-default environment will not launch from the button.",
+    "stepByStepInstructions": [
+      "Create a flow with the For a selected item trigger in the default environment.",
+      "Copy the flow's ID from its URL.",
+      "Add a column to hold the button and include it in the view.",
+      "Apply column formatting JSON with a customRowAction of executeFlow.",
+      "Set visibility and label expressions by status and user.",
+      "Share the flow with list users as run-only and validate the action inside the flow."
+    ],
+    "commonMistakes": [
+      "Building the flow outside the default environment.",
+      "Relying on a hidden button to restrict who can run the action.",
+      "Referencing columns that are not in the view.",
+      "No status update, so the button stays and gets clicked twice."
+    ],
+    "troubleshooting": [
+      "If clicking does nothing, check the flow ID, that the flow is on and that it is in the default environment.",
+      "If users get a permission message, add the list under the flow's run-only users.",
+      "If the button shows for every row, the status column is missing from the view or the internal name is wrong.",
+      "If the JSON will not save, check the escaped quotes inside actionParams."
+    ],
+    "relatedPatterns": [
+      "sharepoint-json-status-pill-formatting",
+      "power-automate-start-approval-from-power-apps",
+      "use-view-formatting-for-overdue-items"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Add a button to a SharePoint list row that runs a flow",
+    "seoDescription": "Format a column as a button that starts a Power Automate flow for that item, show it only when relevant and change its label by status.",
+    "primaryKeyword": "SharePoint column formatting button executeFlow",
+    "secondaryKeywords": [
+      "Column Formatting",
+      "JSON",
+      "Power Automate",
+      "Buttons"
+    ],
+    "faqs": [
+      {
+        "question": "Can I add a button to a SharePoint list that runs a flow?",
+        "answer": "Yes. Use column formatting JSON with a button element and a customRowAction of executeFlow with the flow's ID."
+      },
+      {
+        "question": "Where do I find the flow ID?",
+        "answer": "In the flow's URL in Power Automate: it is the GUID after /flows/."
+      },
+      {
+        "question": "Can the button update a column without a flow?",
+        "answer": "Yes. The setValue action writes column values directly when the button is clicked."
+      }
+    ]
+  },
+  {
+    "id": "pat-1664",
+    "slug": "sharepoint-list-provision-pnp-powershell-template",
+    "title": "Create SharePoint lists consistently with PnP PowerShell",
+    "shortDescription": "Script a list with its columns, views, indexes and formatting, or capture an existing list as a template and apply it to other sites.",
+    "fullDescription": "Lists built by hand drift: internal names differ, an index is forgotten, a view is missing. PnP PowerShell creates lists from a script or from a template extracted from a reference list. The same definition then produces identical lists in development, test and production sites, which keeps apps and flows that depend on internal names working.",
+    "category": "SharePoint",
+    "subCategory": "Provisioning",
+    "platform": [
+      "SharePoint"
+    ],
+    "difficulty": "Advanced",
+    "tags": [
+      "PnP PowerShell",
+      "Provisioning",
+      "List Templates",
+      "Automation"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "2 hours",
+    "problemStatement": "The Requests list exists in three sites, each built by hand. Column internal names differ, so the same Power App and flow break when pointed at another site.",
+    "whenToUse": [
+      "Lists that back apps and flows across several sites or environments",
+      "Repeatable project or team site set-up",
+      "Recording a list's design in source control"
+    ],
+    "whenNotToUse": [
+      "A single one-off list nobody will recreate",
+      "Copying list data in bulk, which templates do not handle well"
+    ],
+    "formulaOrCode": "Set-up (once)\n  Install-Module PnP.PowerShell -Scope CurrentUser\n  PnP PowerShell needs an Entra app registration for sign-in:\n    Register-PnPEntraIDAppForInteractiveLogin -ApplicationName \"PnP Provisioning\" -Tenant contoso.onmicrosoft.com\n    (note the Client ID it returns, and have an admin consent to it)\n  Connect-PnPOnline -Url https://contoso.sharepoint.com/sites/Dev -Interactive -ClientId <client id>\n\nA. Script a list from scratch\n  $list = \"Requests\"\n  New-PnPList -Title $list -Template GenericList -Url \"Lists/Requests\" -EnableVersioning\n\n  # Internal names are fixed by -InternalName: no spaces, never change them later\n  Add-PnPField -List $list -DisplayName \"Request Type\" -InternalName \"RequestType\" -Type Choice -Choices \"Hardware\",\"Software\",\"Access\" -AddToDefaultView\n  Add-PnPField -List $list -DisplayName \"Status\" -InternalName \"RequestStatus\" -Type Choice -Choices \"Draft\",\"Submitted\",\"Approved\",\"Rejected\",\"Closed\" -AddToDefaultView\n  Set-PnPField -List $list -Identity \"RequestStatus\" -Values @{ DefaultValue = \"Draft\"; Indexed = $true }\n  Add-PnPField -List $list -DisplayName \"Amount\" -InternalName \"Amount\" -Type Currency -AddToDefaultView\n  Add-PnPField -List $list -DisplayName \"Due Date\" -InternalName \"DueDate\" -Type DateTime -AddToDefaultView\n  Set-PnPField -List $list -Identity \"DueDate\" -Values @{ DisplayFormat = 0; Indexed = $true }      # 0 = date only\n  Add-PnPField -List $list -DisplayName \"Assigned To\" -InternalName \"AssignedTo\" -Type User\n  Add-PnPField -List $list -DisplayName \"Details\" -InternalName \"Details\" -Type Note\n  Add-PnPField -List $list -DisplayName \"Needs Approval\" -InternalName \"NeedsApproval\" -Type Boolean\n\n  # Types needing XML\n  Add-PnPFieldFromXml -List $list -FieldXml '<Field Type=\"Number\" DisplayName=\"Quantity\" Name=\"Quantity\" StaticName=\"Quantity\" Min=\"1\" Max=\"100\" Decimals=\"0\" Required=\"TRUE\" />'\n  Add-PnPFieldFromXml -List $list -FieldXml '<Field Type=\"Lookup\" DisplayName=\"Category\" Name=\"Category\" StaticName=\"Category\" List=\"Lists/Categories\" ShowField=\"Title\" />'\n\n  # Views (each command is one line when you run it)\n  Add-PnPView -List $list -Title \"My open requests\" -Fields \"Title\",\"RequestType\",\"RequestStatus\",\"DueDate\"\n      -Query '<Where><And><Eq><FieldRef Name=\"Author\"/><Value Type=\"Integer\"><UserID/></Value></Eq><Neq><FieldRef Name=\"RequestStatus\"/><Value Type=\"Choice\">Closed</Value></Neq></And></Where><OrderBy><FieldRef Name=\"DueDate\"/></OrderBy>'\n  Add-PnPView -List $list -Title \"By status\" -Fields \"Title\",\"AssignedTo\",\"DueDate\",\"Amount\" -RowLimit 50\n      -Query '<GroupBy Collapse=\"FALSE\"><FieldRef Name=\"RequestStatus\"/></GroupBy>'\n\n  # Validation, formatting, settings\n  Set-PnPField -List $list -Identity \"Amount\" -Values @{ ValidationFormula = \"=[Amount]>=0\"; ValidationMessage = \"Amount cannot be negative.\" }\n  Set-PnPField -List $list -Identity \"RequestStatus\" -Values @{ CustomFormatter = (Get-Content .\\status-pill.json -Raw) }\n  Set-PnPList -Identity $list -EnableAttachments $true -MajorVersions 50 -Description \"Managed by script. Do not rename columns.\"\n\nB. Capture an existing list as a template\n  Connect-PnPOnline -Url https://contoso.sharepoint.com/sites/Dev -Interactive -ClientId <client id>\n  Get-PnPSiteTemplate -Out .\\requests.xml -ListsToExtract \"Requests\",\"Categories\" -Handlers Lists,Fields,ContentTypes\n  The XML holds columns, content types, views, formatting and settings. Commit it to source control.\n  Review and trim: remove site-specific IDs and anything unrelated the extract picked up.\n  Include reference rows:  Add-PnPDataRowsToSiteTemplate -Path .\\requests.xml -List \"Categories\" -Query \"<View></View>\"\n\n  Apply to another site\n  Connect-PnPOnline -Url https://contoso.sharepoint.com/sites/Prod -Interactive -ClientId <client id>\n  Invoke-PnPSiteTemplate -Path .\\requests.xml\n  Re-running applies differences: new columns and views are added, existing ones updated. Nothing is deleted.\n\nC. Simple alternatives\n  One-off copy in the browser: New list > From existing list (copies structure, views and formatting within the tenant).\n  Site scripts and list designs for self-service templates in the New list dialog:\n    $script = Get-SPOSiteScriptFromList -ListUrl \"https://contoso.sharepoint.com/sites/Dev/Lists/Requests\"\n    $s = Add-SPOSiteScript -Title \"Requests list\" -Content $script\n    Add-SPOListDesign -Title \"Requests\" -SiteScripts $s.Id -ListColor Blue -ListIcon Clipboard\n  (SharePoint Online Management Shell. The list then appears under \"From your organization\".)\n\nD. Idempotent scripts\n  Check before creating so the script can be re-run:\n    if (-not (Get-PnPList -Identity $list -ErrorAction SilentlyContinue)) { New-PnPList ... }\n    if (-not (Get-PnPField -List $list -Identity \"DueDate\" -ErrorAction SilentlyContinue)) { Add-PnPField ... }\n\nE. Unattended runs (pipelines)\n  Certificate sign-in with an app registration that has Sites.Selected or Sites.FullControl.All:\n    Connect-PnPOnline -Url $siteUrl -ClientId $clientId -Tenant contoso.onmicrosoft.com -CertificatePath .\\pnp.pfx -CertificatePassword $pwd\n  Prefer Sites.Selected with access granted to specific sites.\n\nAfter provisioning\n  Point the app's and flows' environment variables at the new site and list. Because internal names match,\n  nothing else changes. Record the script version in the list description.",
+    "stepByStepInstructions": [
+      "Install PnP PowerShell and register an app for sign-in.",
+      "Script the list with explicit internal names for every column.",
+      "Add indexes, views, validation and formatting in the script.",
+      "Or extract a template from a reference list and review the XML.",
+      "Apply the script or template to each target site.",
+      "Keep the script or template in source control and make it safe to re-run."
+    ],
+    "commonMistakes": [
+      "Creating columns with display names containing spaces and no explicit internal name.",
+      "Building each environment's list by hand.",
+      "Extracting a whole-site template when only two lists are needed.",
+      "Forgetting indexes on columns used for filtering large lists."
+    ],
+    "troubleshooting": [
+      "If a column exists error stops the script, add existence checks before creating.",
+      "If a lookup fails to provision, create the lookup's source list first and reference it by URL.",
+      "If sign-in fails, register the Entra app and pass its client ID to Connect-PnPOnline.",
+      "If views are missing after applying a template, include the Lists handler and check the extract contains them."
+    ],
+    "relatedPatterns": [
+      "sharepoint-internal-name-safe-column-design",
+      "sharepoint-list-template-release-checklist",
+      "sharepoint-view-indexing-for-large-lists"
+    ],
+    "createdAt": "2026-11-20",
+    "updatedAt": "2026-11-20",
+    "seoTitle": "Create SharePoint lists consistently with PnP PowerShell",
+    "seoDescription": "Script a list with its columns, views, indexes and formatting, or capture an existing list as a template and apply it to other sites.",
+    "primaryKeyword": "PnP PowerShell create SharePoint list columns",
+    "secondaryKeywords": [
+      "PnP PowerShell",
+      "Provisioning",
+      "List Templates",
+      "Automation"
+    ],
+    "faqs": [
+      {
+        "question": "How do I create a SharePoint list with PowerShell?",
+        "answer": "Use PnP PowerShell: New-PnPList, then Add-PnPField for each column and Add-PnPView for views."
+      },
+      {
+        "question": "How do I copy a list's structure to another site?",
+        "answer": "Extract it with Get-PnPSiteTemplate and apply the file to the target site with Invoke-PnPSiteTemplate."
+      },
+      {
+        "question": "Why set internal names explicitly?",
+        "answer": "Apps and flows refer to internal names, which cannot be changed later. Fixed names keep every environment identical."
+      }
+    ]
   }
 ]
