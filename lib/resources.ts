@@ -438,6 +438,66 @@ Table display name: Service Request
 Schema name: bv_ServiceRequest
 Primary column: bv_RequestName
 Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stays consistent across apps, flows, and solutions.", commonMistakes: ["Changing schema names late", "Using generic table names", "Ignoring relationship names"] }], relatedPatterns: ["design-a-dataverse-table-relationship-model", "standardize-a-solution-publisher-prefix"] }),
+  item({
+    slug: "trigger-condition-builder",
+    kind: "tool",
+    title: "Trigger Condition Builder for Power Automate",
+    eyebrow: "Free tool",
+    description: "Build Power Automate trigger conditions for SharePoint and Dataverse triggers. Combine rules with and or or, check choice, person, date, and number columns, and stop a flow from re-triggering on its own updates.",
+    keywords: ["Power Automate trigger conditions", "trigger condition SharePoint", "trigger condition Dataverse", "stop flow infinite loop", "trigger condition examples"],
+    audience: "Flow builders who want a flow to start only for the items that matter, instead of running on every change and ending early with a Condition action.",
+    summaryBullets: [
+      "Builds conditions for SharePoint, Dataverse, and any other trigger that returns a body.",
+      "Reads choice values through /Value and people through /Email for SharePoint, and lookups through _name_value for Dataverse.",
+      "Wraps text in coalesce() so an empty column doesn't make contains() or startsWith() fail.",
+      "Compares dates with ticks() so date and time formats don't matter.",
+      "Can add a loop guard that ignores changes made by the flow's own account."
+    ],
+    examples: [
+      {
+        title: "Status is Submitted and the amount is over 1,000",
+        problem: "Only start an approval flow for large submitted requests.",
+        code: `@and(equals(triggerOutputs()?['body/Status/Value'], 'Submitted'), greater(triggerOutputs()?['body/Amount'], 1000))`,
+        expectedResult: "The flow doesn't start at all for other items, so they don't show up in run history.",
+        commonMistakes: ["Comparing the choice column itself instead of its /Value.", "Leaving out the @ at the start of the condition."]
+      },
+      {
+        title: "Stop a flow from triggering itself",
+        problem: "A flow that updates the same item it was triggered by can start itself again in a loop.",
+        code: `@not(equals(toLower(coalesce(triggerOutputs()?['body/Editor/Email'], '')), 'flow-service@contoso.com'))`,
+        expectedResult: "Updates made by the flow's connection account no longer start a new run.",
+        commonMistakes: ["Using the account of the person who built the flow, when the connection runs as a different account.", "Forgetting that every person who edits items through that same account is ignored too."]
+      },
+      {
+        title: "Several boxes or one",
+        problem: "Each trigger condition box must be true for the flow to start, so separate boxes act like and.",
+        code: `@equals(triggerOutputs()?['body/Status/Value'], 'Submitted')
+@greater(triggerOutputs()?['body/Amount'], 1000)`,
+        expectedResult: "Same result as the and() version, and each rule is easier to read.",
+        commonMistakes: ["Putting or rules in separate boxes. They still act like and. Use one box with or() instead."]
+      }
+    ],
+    relatedPatterns: ["power-automate-trigger-condition-status-changed", "sharepoint-list-schema-for-project-intake"],
+    relatedTools: ["power-fx-formatter", "power-automate-expression-builder", "sharepoint-internal-name-helper"],
+    faqs: [
+      {
+        question: "Where do I paste a trigger condition?",
+        answer: "Open the trigger, go to Settings, and add it under Trigger conditions. In the classic designer, select the three dots on the trigger, then Settings."
+      },
+      {
+        question: "Can a trigger condition check whether a column changed?",
+        answer: "Not on its own. The trigger only sees the item as it is now, not the previous value. A common approach is to keep a copy of the value in a second column and compare the two, or to check the change in the flow with Get changes for an item or a file."
+      },
+      {
+        question: "Why does my condition never fire?",
+        answer: "Check that you used the internal name of the column, that choice columns end in /Value, and that the condition starts with @. If an expression errors, for example because a column is empty, the flow doesn't start. That's why this tool wraps text in coalesce()."
+      },
+      {
+        question: "Is my data sent anywhere?",
+        answer: "No. The condition is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from small, testable card blocks.", "Use consistent headings and facts.", "Keep action buttons aligned to flow outcomes.", "Document payload owners and test channels."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
