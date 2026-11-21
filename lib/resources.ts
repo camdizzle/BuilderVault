@@ -1065,6 +1065,184 @@ Filter(
       }
     ]
   }),
+  item({
+    slug: "patch-formula-builder",
+    kind: "tool",
+    title: "Power Apps Patch Formula Builder for SharePoint and Dataverse",
+    eyebrow: "Free tool",
+    description: "Build a Power Apps Patch formula for SharePoint or Dataverse. List the columns and the controls they come from, and get the right record shape for choice, person, lookup, multi-choice, date and yes/no columns, wrapped in IfError.",
+    keywords: ["Power Apps Patch formula", "Patch SharePoint person column", "Patch choice column Power Apps", "Patch lookup column", "Patch Dataverse choice"],
+    audience: "Makers who save data with Patch instead of a form, and anyone whose Patch fails on a choice, person or lookup column.",
+    summaryBullets: [
+      "Create a record, update the one selected in a gallery, or update one found by its ID.",
+      "Writes the record shape each column type needs, which differs between SharePoint and Dataverse.",
+      "Reads the value from the control's right property, such as Text, Selected or SelectedDate, based on the control's prefix.",
+      "Wraps the save in IfError so the user sees the data source's own reason when it fails.",
+      "Can keep the saved record in a variable and clear the controls after a successful save."
+    ],
+    examples: [
+      {
+        title: "Choice and person columns on SharePoint",
+        problem: "SharePoint expects a record for a choice and a claims record for a person, not plain text.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Status: { Value: "Submitted" },
+        'Assigned To': {
+            Claims: "i:0#.f|membership|" & Lower(User().Email),
+            DisplayName: User().FullName,
+            Email: Lower(User().Email),
+            Department: "",
+            JobTitle: "",
+            Picture: ""
+        }
+    }
+)`,
+        expectedResult: "A new item is created with the status set and the current user in Assigned To.",
+        commonMistakes: ["Setting a choice column to text, such as Status: \"Submitted\".", "Leaving out Claims on a person column."]
+      },
+      {
+        title: "The same columns on Dataverse",
+        problem: "Dataverse takes the choice itself and a row from the Users table.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Status: 'Status (Requests)'.Submitted,
+        'Assigned To': LookUp(Users, 'Primary Email' = User().Email)
+    }
+)`,
+        expectedResult: "A new row is created with the choice and the user set.",
+        commonMistakes: ["Copying a SharePoint record shape such as { Value: \"Submitted\" } into a Dataverse Patch."]
+      }
+    ],
+    relatedPatterns: ["patch-sharepoint-choice-field", "patch-sharepoint-lookup-field", "patch-sharepoint-people-picker-power-apps", "patch-dataverse-lookup-and-choice-columns", "power-apps-error-handling-iferror-patch"],
+    relatedTools: ["power-fx-formatter", "gallery-search-filter-builder"],
+    faqs: [
+      {
+        question: "Why does my Patch say a choice or person column has the wrong type?",
+        answer: "SharePoint stores choices, people and lookups as records, so Patch needs a record such as { Value: \"Approved\" } for a choice and a record with Claims for a person. Dataverse takes the choice itself and a row from the related table. Pick the data source and column type in the tool to get the shape that fits."
+      },
+      {
+        question: "Should I use Patch or SubmitForm?",
+        answer: "SubmitForm is simpler when the screen is a form bound to one data source, because the form handles validation and column types. Use Patch when you save from controls outside a form, save to more than one place, or need to set columns the user doesn't see."
+      },
+      {
+        question: "How does the tool know which property of a control to use?",
+        answer: "It reads the control's name prefix: txt for text inputs, cmb or drp for combo boxes and dropdowns, dp for date pickers, and tgl or chk for toggles and checkboxes. If your controls use other names, type the full value, such as TextInput1.Text."
+      },
+      {
+        question: "Why can't I save ID, Created or Modified?",
+        answer: "The data source sets those columns itself. The tool warns you if you add one. This also explains a common error: patching a whole record from a gallery sends those read-only columns back."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The formula is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "error-message-finder",
+    kind: "tool",
+    title: "Power Platform Error Message Finder",
+    eyebrow: "Free tool",
+    description: "Paste a Power Automate, Power Apps, Dataverse or solution import error message and find the page that explains it and how to fix it. Names, IDs and GUIDs in the message are ignored.",
+    keywords: ["Power Automate error message", "Power Apps error lookup", "flow failed error meaning", "Power Platform error codes", "Dataverse error code"],
+    audience: "Anyone looking at a failed flow run, a red banner in an app, or a failed solution import who wants the fix without searching.",
+    summaryBullets: [
+      "Matches the whole message against every page in the BuilderVault error library.",
+      "Ignores the parts that change every time, such as action names in quotes, IDs, GUIDs, emails and links.",
+      "Finds the specific reason inside a general message, such as the function named inside an InvalidTemplate error.",
+      "Recognizes error codes such as 0x80040220 and explains HTTP status codes such as 401, 403, 404 and 429.",
+      "Shows the short answer from each matching page, with a link to the full fix."
+    ],
+    examples: [
+      {
+        title: "A flow error inside a general message",
+        problem: "Power Automate puts the real reason after the general InvalidTemplate text.",
+        code: `Unable to process template language expressions in action 'Compose' inputs at line '0' and column '0': 'The template language function 'split' expects its first parameter to be of type string. The provided value is of type 'Null'.'`,
+        expectedResult: "The finder ranks the page for the null value first, and the general InvalidTemplate page after it.",
+        commonMistakes: ["Searching only for the first line, which is the same for dozens of different problems."]
+      }
+    ],
+    relatedPatterns: [],
+    relatedTools: ["power-automate-expression-builder", "parse-json-schema-generator"],
+    faqs: [
+      {
+        question: "Which errors does the finder know?",
+        answer: "Every page in the BuilderVault error library: Power Automate flow and approval errors, connection and sign-in errors, Power Apps formula and save errors, solution imports, Dataverse, desktop flows and Power Pages. The library grows over time, and the finder uses all of it."
+      },
+      {
+        question: "What should I paste?",
+        answer: "The full error text. In a failed flow run, open the failed action and copy the message from its outputs, because the banner at the top often shows only the general part. You don't need to remove names, IDs or links."
+      },
+      {
+        question: "What if nothing matches?",
+        answer: "Try pasting only the first sentence. If the message includes an HTTP status code, the finder still explains what the code means. You can also browse the error library by product."
+      },
+      {
+        question: "Is the error I paste sent anywhere?",
+        answer: "No. The library is loaded with the page and the search runs in your browser. Nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "gallery-search-filter-builder",
+    kind: "tool",
+    title: "Power Apps Gallery Search and Filter Builder",
+    eyebrow: "Free tool",
+    description: "Build a delegation-friendly Items formula for a Power Apps gallery with a search box, dropdown filters, a my-items toggle, a date range and sorting. Each filter shows everything while it's empty. Works for SharePoint, Dataverse and SQL Server.",
+    keywords: ["Power Apps gallery filter", "Power Apps search gallery", "filter gallery by dropdown", "Power Apps multiple filters", "gallery search SharePoint delegation"],
+    audience: "Makers building a list screen with a search box and filters, especially on SharePoint, where the obvious formula stops finding rows once the list grows.",
+    summaryBullets: [
+      "Combines a search box, choice, text and lookup dropdowns, a my-items toggle, a yes/no toggle and a date range in one Items formula.",
+      "Each filter is skipped while its control is empty or off, so users only narrow the list when they want to.",
+      "On SharePoint the search uses StartsWith, which is delegated. On Dataverse and SQL Server it uses Search, which finds text anywhere.",
+      "Also gives the Items for each dropdown, DelayOutput for the search box, and AllowEmptySelection for dropdowns.",
+      "Notes which parts aren't delegated, such as Distinct for a dropdown's values."
+    ],
+    examples: [
+      {
+        title: "Search and filters on SharePoint",
+        problem: "Search and the in operator aren't delegated to SharePoint, and a filter with nothing picked should show every item.",
+        code: `Sort(
+    Filter(
+        Requests,
+        StartsWith(Title, txtSearch.Text) &&
+        (IsBlank(cmbStatus.Selected.Value) || Status.Value = cmbStatus.Selected.Value) &&
+        (tglMyItems.Value = false || 'Assigned To'.Email = User().Email)
+    ),
+    Created,
+    SortOrder.Descending
+)`,
+        expectedResult: "The gallery searches and filters the whole list, newest first, and shows everything while the filters are empty.",
+        commonMistakes: ["Using Search on a SharePoint list, which only searches the first 500 items, or up to 10,000 if you raise the data row limit.", "Writing If(IsBlank(...), Requests, Filter(...)) for each filter, which grows quickly as filters are added."]
+      }
+    ],
+    relatedPatterns: ["power-apps-search-with-multiple-fields", "avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter", "dataverse-delegation-filter-search-large-tables", "sort-gallery-by-column-header-power-apps"],
+    relatedTools: ["power-apps-delegation-checker", "power-fx-formatter", "patch-formula-builder"],
+    faqs: [
+      {
+        question: "Why does the SharePoint search only match the start of a column?",
+        answer: "SharePoint can't run Search or the in operator, so Power Apps would only search the first 500 items, or up to 10,000 if you raise the data row limit. StartsWith is delegated, so it searches the whole list. If you need to match text anywhere, keep a smaller list or move the data to Dataverse."
+      },
+      {
+        question: "How does a filter show everything when nothing is picked?",
+        answer: "Each condition starts with a check on the control, such as IsBlank(cmbStatus.Selected.Value) || .... While the control is empty that part is true for every row, so the filter lets everything through. The check doesn't depend on the row, so the rest of the formula is still sent to the data source."
+      },
+      {
+        question: "Why does the my-items toggle use = false instead of Not?",
+        answer: "Both work the same, but the ! and Not operators are not delegated to SharePoint when they are applied to a column. Writing tglMyItems.Value = false keeps the formula easy to check in the delegation checker, which flags Not inside a filter."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The formula is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed

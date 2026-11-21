@@ -436,7 +436,7 @@ IfError(
   relatedGuides: ["power-fx-iferror-and-app-onerror"],
   relatedErrors: ["network-error-patch-requested-operation-is-invalid", "patch-conflicts-exist-with-changes-on-the-server"],
   relatedPatterns: ["power-apps-error-handling-iferror-patch"],
-  relatedTools: ["power-fx-formatter"],
+  relatedTools: ["power-fx-formatter", "patch-formula-builder"],
   sources: [errorDoc, powerFxDoc("error-handling", "Error handling in Power Fx")]
 };
 

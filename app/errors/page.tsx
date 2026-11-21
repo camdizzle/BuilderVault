@@ -36,6 +36,9 @@ export default function ErrorsPage() {
           <p className="lead">
             {errorPages.length} error messages, each on its own page: what the message means, the causes in order of likelihood, the fix for each one, and how to stop it coming back. Match your error on its first few words, because the wording changes a little between releases.
           </p>
+          <p style={{ margin: "14px 0 0" }}>
+            <Link className="button secondary" href="/tools/error-message-finder">Paste your error into the error message finder</Link>
+          </p>
         </div>
 
         {errorProducts.map((product) => (

@@ -18,8 +18,12 @@ import { ReleaseChecklistGenerator } from "@/components/tools/release-checklist-
 import { AdaptiveCardBuilder } from "@/components/tools/adaptive-card-builder";
 import { PowerFxTableGenerator } from "@/components/tools/power-fx-table-generator";
 import { NamingLinter } from "@/components/tools/naming-linter";
+import { PatchFormulaBuilder } from "@/components/tools/patch-formula-builder";
+import { ErrorMessageFinder } from "@/components/tools/error-message-finder";
+import { GalleryFilterBuilder } from "@/components/tools/gallery-filter-builder";
+import type { ErrorEntry } from "@/lib/tools/error-finder";
 
-export function ToolWidget({ slug, functionLinks = [] }: { slug: string; functionLinks?: FunctionLink[] }) {
+export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter functionLinks={functionLinks} />;
   if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
   if (slug === "date-format-tester") return <DateFormatTester />;
@@ -37,6 +41,9 @@ export function ToolWidget({ slug, functionLinks = [] }: { slug: string; functio
   if (slug === "adaptive-card-preview-snippets") return <AdaptiveCardBuilder />;
   if (slug === "csv-to-power-fx-table") return <PowerFxTableGenerator />;
   if (slug === "power-apps-naming-linter") return <NamingLinter />;
+  if (slug === "patch-formula-builder") return <PatchFormulaBuilder />;
+  if (slug === "error-message-finder") return <ErrorMessageFinder entries={errorEntries} />;
+  if (slug === "gallery-search-filter-builder") return <GalleryFilterBuilder />;
   return null;
 }
 

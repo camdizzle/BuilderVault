@@ -93,7 +93,7 @@ Filter(Requests, 'Created By'.Email = User().Email)`),
   relatedGuides: ["power-fx-lookup-vs-filter-vs-search", "power-apps-delegation-warning-explained"],
   relatedErrors: ["incompatible-types-for-comparison-power-apps"],
   relatedPatterns: ["avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter", "dataverse-delegation-filter-search-large-tables"],
-  relatedTools: ["power-fx-formatter", "power-apps-delegation-checker"],
+  relatedTools: ["gallery-search-filter-builder", "power-fx-formatter", "power-apps-delegation-checker"],
   sources: [fxRef("function-filter-lookup", "Filter, Search and LookUp functions"), delegationDoc, sharePointDoc, dataverseDoc]
 };
 
@@ -257,7 +257,7 @@ Filter(
   relatedGuides: ["power-fx-lookup-vs-filter-vs-search", "power-apps-delegation-warning-explained"],
   relatedErrors: [],
   relatedPatterns: ["power-apps-search-with-multiple-fields", "avoid-delegation-warnings-sharepoint-filters", "dataverse-delegation-filter-search-large-tables"],
-  relatedTools: ["power-fx-formatter", "power-apps-delegation-checker"],
+  relatedTools: ["gallery-search-filter-builder", "power-fx-formatter", "power-apps-delegation-checker"],
   sources: [fxRef("function-filter-lookup", "Filter, Search and LookUp functions"), sharePointDoc, dataverseDoc]
 };
 
@@ -339,7 +339,7 @@ SortByColumns(
   relatedGuides: ["power-apps-delegation-warning-explained"],
   relatedErrors: [],
   relatedPatterns: ["avoid-delegation-warnings-sharepoint-filters"],
-  relatedTools: ["power-fx-formatter", "power-apps-delegation-checker"],
+  relatedTools: ["gallery-search-filter-builder", "power-fx-formatter", "power-apps-delegation-checker"],
   sources: [fxRef("function-sort", "Sort and SortByColumns functions"), delegationDoc, sharePointDoc]
 };
 
@@ -424,7 +424,7 @@ Filter(
   relatedGuides: ["power-apps-delegation-warning-explained"],
   relatedErrors: [],
   relatedPatterns: ["dataverse-choices-combo-box-canvas-app"],
-  relatedTools: ["power-fx-formatter", "power-apps-delegation-checker"],
+  relatedTools: ["power-fx-formatter", "power-apps-delegation-checker", "gallery-search-filter-builder"],
   sources: [fxRef("function-distinct", "Distinct function"), delegationDoc]
 };
 
