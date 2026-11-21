@@ -205,6 +205,160 @@ ResolvedOn`, expectedResult: "Support can search for failures by request or user
 
 export const cheatSheets: ResourceItem[] = [
   item({ slug: "patch-sharepoint-columns-cheat-sheet", kind: "cheat-sheet", title: "Patch SharePoint Columns Cheat Sheet", eyebrow: "Cheat sheet", description: "Quick examples for patching text, choice, person, lookup, date, yes/no, and metadata columns from Power Apps.", keywords: ["Patch SharePoint columns", "Power Apps person field", "Power Apps choice field"], audience: "Makers who know the field they need to save and want the correct Patch shape quickly.", summaryBullets: ["Person fields need claims-shaped records.", "Choice fields need records with Value.", "Lookup fields need Id and Value.", "Dates should be validated before save."], examples: [{ title: "Choice field", problem: "Patch a SharePoint choice column from a combo box.", code: `Patch(Requests, galRequests.Selected, { Priority: { Value: cmbPriority.Selected.Value } })`, expectedResult: "Priority stores the selected choice value.", commonMistakes: ["Patching only text when SharePoint expects a choice record"] }, { title: "Lookup field", problem: "Patch a lookup column from a selected record.", code: `Patch(Requests, galRequests.Selected, { Customer: { Id: cmbCustomer.Selected.ID, Value: cmbCustomer.Selected.Title } })`, expectedResult: "The lookup points to the selected customer item.", commonMistakes: ["Using ID instead of Id", "Omitting the display value"] }], relatedPatterns: ["patch-sharepoint-choice-field", "patch-sharepoint-lookup-field", "patch-sharepoint-people-picker-power-apps"] }),
+  item({
+    slug: "patch-dataverse-columns-cheat-sheet",
+    kind: "cheat-sheet",
+    title: "Patch Dataverse Columns Cheat Sheet",
+    eyebrow: "Cheat sheet",
+    description: "The Patch value for every Dataverse column type in Power Apps: text, numbers, dates, Yes/No, choices, multi-select choices, lookups, Owner and Customer, images, and how to clear a value.",
+    keywords: ["Patch Dataverse choice column", "Patch Dataverse lookup Power Apps", "Patch Owner Dataverse", "Patch Yes/No Dataverse", "Patch multi-select choice Dataverse"],
+    audience: "Makers saving to Dataverse with Patch, especially anyone who learned Patch on SharePoint, where choices and people need different shapes.",
+    summaryBullets: [
+      "Choices take the option itself, such as 'Status (Requests)'.Approved, never text and never a { Value: } record.",
+      "Yes/No columns take true or false.",
+      "Lookups take a whole row from the related table, from LookUp or a combo box's Selected.",
+      "Owner and Customer are polymorphic lookups: they take a row from either of their tables.",
+      "Use the column's display name in Power Apps, in single quotes when it has spaces."
+    ],
+    examples: [
+      {
+        title: "Text, numbers and dates",
+        problem: "Read values from text inputs and a date picker. Text inputs always give text, so numbers need Value.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Amount: Value(txtAmount.Text),
+        Quantity: Round(Value(txtQuantity.Text), 0),
+        'Due Date': dpDue.SelectedDate
+    }
+)`,
+        expectedResult: "A new row with the text, the amount, a whole number quantity and the due date.",
+        commonMistakes: ["Passing txtAmount.Text to a number or currency column.", "Sending a decimal to a whole number column. Round it first."]
+      },
+      {
+        title: "Yes/No",
+        problem: "A Yes/No column stores a boolean, so it takes true or false.",
+        code: `Patch(Requests, galRequests.Selected, { Urgent: tglUrgent.Value })
+
+// or a fixed value
+Patch(Requests, galRequests.Selected, { Urgent: true })`,
+        expectedResult: "Urgent is set from the toggle, or to Yes.",
+        commonMistakes: ["Patching the label text, such as \"Yes\"."]
+      },
+      {
+        title: "Choice",
+        problem: "Dataverse stores a choice as a number, and Power Apps names each option. Patch the option, not its label.",
+        code: `// A choice that belongs to this table
+Patch(Requests, galRequests.Selected, { Status: 'Status (Requests)'.Approved })
+
+// A global choice uses its own name
+Patch(Requests, galRequests.Selected, { Priority: Priority.High })
+
+// From a combo box whose Items is Choices(Requests.Status)
+Patch(Requests, galRequests.Selected, { Status: cmbStatus.Selected.Value })`,
+        expectedResult: "The status is stored as the option, in every language the app is used in.",
+        commonMistakes: ["Status: \"Approved\" (text) or Status: { Value: \"Approved\" } (the SharePoint shape).", "Filling the combo box from a hard-coded list of text instead of Choices()."]
+      },
+      {
+        title: "Multi-select choice",
+        problem: "A multi-select choice takes a table of options.",
+        code: `// From a combo box whose Items is Choices(Requests.Tags)
+Patch(Requests, galRequests.Selected, { Tags: cmbTags.SelectedItems })
+
+// Fixed options
+Patch(Requests, galRequests.Selected, { Tags: [ 'Tags (Requests)'.Finance, 'Tags (Requests)'.Urgent ] })`,
+        expectedResult: "The row holds exactly the options given. Options not listed are removed.",
+        commonMistakes: ["Passing one option where a table is expected.", "Forgetting that Patch replaces the whole set, so add the existing options if you mean to append."]
+      },
+      {
+        title: "Lookup",
+        problem: "A lookup takes a row from the related table, not its ID or name.",
+        code: `// A row found by a value
+Patch(
+    Requests,
+    galRequests.Selected,
+    { Account: LookUp(Accounts, 'Account Name' = "Contoso") }
+)
+
+// From a combo box whose Items is the Accounts table
+Patch(Requests, galRequests.Selected, { Account: cmbAccount.Selected })`,
+        expectedResult: "The request points to the chosen account.",
+        commonMistakes: ["Passing the account's GUID or name as text.", "Using a combo box that lists text values instead of rows."]
+      },
+      {
+        title: "Owner",
+        problem: "Owner can be a user or a team, and Patch accepts a row from either table.",
+        code: `// The signed-in user
+Patch(
+    Requests,
+    galRequests.Selected,
+    { Owner: LookUp(Users, 'Primary Email' = User().Email) }
+)
+
+// A team
+Patch(Requests, galRequests.Selected, { Owner: LookUp(Teams, 'Team Name' = "Finance") })`,
+        expectedResult: "The row is assigned to the user or the team.",
+        commonMistakes: ["Passing an email address as text.", "Looking the user up inside a loop. Look the user up once, for example in a named formula."]
+      },
+      {
+        title: "Customer",
+        problem: "A Customer column is a lookup to an account or a contact.",
+        code: `Patch(Contacts, galContacts.Selected, { 'Company Name': cmbAccount.Selected })
+
+// or a contact
+Patch(Cases, galCases.Selected, { Customer: LookUp(Contacts, 'Full Name' = "Sam Lee") })`,
+        expectedResult: "The customer points to the chosen account or contact.",
+        commonMistakes: ["Assuming the column only takes accounts."]
+      },
+      {
+        title: "Image",
+        problem: "An image column takes an image value, such as a photo from the camera or the image picker.",
+        code: `Patch(Requests, galRequests.Selected, { Photo: Camera1.Photo })
+
+// From an Add picture control
+Patch(Requests, galRequests.Selected, { Photo: AddMediaButton1.Media })`,
+        expectedResult: "The image is saved to the row's image column.",
+        commonMistakes: ["Patching the image's file name instead of the image."]
+      },
+      {
+        title: "Clear a value",
+        problem: "Set a column back to empty.",
+        code: `Patch(
+    Requests,
+    galRequests.Selected,
+    {
+        'Due Date': Blank(),
+        Account: Blank(),
+        Status: Blank()
+    }
+)`,
+        expectedResult: "The due date, account and status are empty. Required columns can't be cleared.",
+        commonMistakes: ["Using an empty string \"\" for a date, lookup or choice."]
+      }
+    ],
+    relatedPatterns: ["patch-dataverse-lookup-and-choice-columns", "dataverse-polymorphic-lookup-patch-power-apps", "power-apps-error-handling-iferror-patch"],
+    relatedTools: ["patch-formula-builder", "dataverse-table-naming-helper"],
+    faqs: [
+      {
+        question: "How do I Patch a choice column in Dataverse?",
+        answer: "Patch the option, such as 'Status (Requests)'.Approved for a choice that belongs to the table, or the global choice's name followed by the option, such as Priority.High. Don't patch the label text."
+      },
+      {
+        question: "How do I Patch a lookup column in Dataverse?",
+        answer: "Give it a whole row from the related table, for example LookUp(Accounts, 'Account Name' = \"Contoso\") or a combo box's Selected when the combo box lists that table."
+      },
+      {
+        question: "Why does my SharePoint Patch formula fail on Dataverse?",
+        answer: "SharePoint uses records such as { Value: \"Approved\" } for choices and a claims record for people. Dataverse uses the option itself for choices and a row from the Users table for people. The column shapes are different even when the column names match."
+      },
+      {
+        question: "What is the name of my choice in the formula?",
+        answer: "For a choice that belongs to one table, Power Apps names it after the column and the table, such as 'Status (Requests)'. For a global choice, it uses the choice's own name. Type the name and a dot in the formula bar, and Power Apps lists the options."
+      }
+    ]
+  }),
   item({ slug: "power-apps-gallery-filtering-cheat-sheet", kind: "cheat-sheet", title: "Power Apps Gallery Filtering Cheat Sheet", eyebrow: "Cheat sheet", description: "Delegation-aware gallery filter formulas for search boxes, status chips, date ranges, user filters, and queue screens.", keywords: ["Power Apps gallery filter", "delegation", "Search gallery"], audience: "Makers building galleries that need to keep working after the list gets large.", summaryBullets: ["Start with delegable filters first.", "Use StartsWith for SharePoint search when possible.", "Combine status and ownership filters carefully.", "Avoid wrapping columns in non-delegable transformations."], examples: [{ title: "Status and search", problem: "Filter a request gallery by status and title search.", code: `Filter(
     Requests,
     RequestStatus.Value = cmbStatus.Selected.Value,
@@ -244,7 +398,8 @@ export const tools: ResourceItem[] = [
       "Short calls stay on one line, and long calls break with one argument per line.",
       "Operators such as <>, >=, && and || stay intact, along with comments, quoted names, and text values.",
       "Supports comma locales and semicolon locales (; for arguments, ;; for chaining).",
-      "Flags unbalanced brackets and quotes, and common delegation risks inside Filter, LookUp, and Search.",
+      "Flags unbalanced brackets and quotes, and checks delegation for the data source you pick: SharePoint, Dataverse, SQL Server, or Excel.",
+      "Links each function in the formula to its page in the Power Fx function reference.",
       "Nothing is uploaded. The formula never leaves your browser."
     ],
     examples: [
@@ -293,7 +448,7 @@ With(
       },
       {
         question: "Is my formula sent anywhere?",
-        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored."
+        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored. Copy share link puts the formula in the part of the link after #, which browsers don't send to the server, but anyone you give the link to can read it."
       },
       {
         question: "Can formatting change what my formula does?",
@@ -305,7 +460,7 @@ With(
       },
       {
         question: "How accurate is the delegation check?",
-        answer: "It is a heuristic. It looks for functions and operators that commonly break delegation, such as Lower, Len, or the in operator inside Filter, and Search against SharePoint. Delegation depends on the data source and column type, so always confirm with the warnings in Studio."
+        answer: "It is a guide, not a guarantee. Pick the data source the formula runs against, and the formatter uses the same rules as the delegation checker to flag functions and operators that source can't delegate, such as Lower or the in operator inside Filter on SharePoint. Column types matter too, so always confirm with the warnings in Studio."
       }
     ]
   }),
@@ -325,6 +480,9 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       "Quotes text and dates the way each connector expects, and doubles single quotes inside values.",
       "Handles yes/no (1 and 0 in SharePoint, true and false in Dataverse), choice, lookup, and person columns.",
       "Accepts flow expressions such as @{utcNow()} as values.",
+      "Groups conditions in brackets, such as (Status is Open or In Review) and Priority is High.",
+      "Adds Dataverse date functions such as LastXDays and ThisMonth, and ContainValues for multi-select choices.",
+      "Fills in sort order, row count and columns to return, and warns about the 100-item default on Get items.",
       "Warns about display names with spaces, uppercase Dataverse names, and values in the wrong format."
     ],
     examples: [
@@ -438,9 +596,62 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       }
     ]
   }),
-  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "Pick a common Power Automate expression for dates, null checks, arrays or conditions, fill in your own values and copy the result into a flow.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Choose a template for dates, blank values, arrays or conditions.", "Replace the sample values with your own trigger or action outputs.", "Copy the finished expression into the expression editor.", "Each template notes what its inputs mean and where it is typically used."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
-Null fallback: coalesce(<value>, '<fallback>')
-Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"] }),
+  item({
+    slug: "power-automate-expression-builder",
+    kind: "tool",
+    title: "Power Automate Expression Builder",
+    eyebrow: "Free tool",
+    description: "Build Power Automate expressions for dates, time zones, empty values, text, numbers, arrays, trigger conditions and approvals. Fill in your own values and copy an expression that handles nulls and quotes for you.",
+    keywords: ["Power Automate expression builder", "Power Automate expressions", "formatDateTime null", "coalesce Power Automate", "trigger condition expression"],
+    audience: "Flow builders who need a working expression quickly and don't want to debug a null or a missing quote in run history.",
+    summaryBullets: [
+      "Choose from 28 templates in seven groups: dates and times, text, numbers, arrays and loops, trigger conditions, approvals, and flow details.",
+      "Replace the sample values with your own trigger or action outputs. Text is quoted for you, with single quotes doubled.",
+      "Date and text templates check for empty values first, so the flow doesn't fail when a column is blank.",
+      "Each template explains its inputs and links to the error page for the mistake it avoids.",
+      "Nothing you type leaves your browser."
+    ],
+    examples: [
+      {
+        title: "Format a date that can be empty",
+        problem: "formatDateTime fails with a null error when a SharePoint date column is blank.",
+        code: `if(empty(triggerOutputs()?['body/DueDate']), '', formatDateTime(triggerOutputs()?['body/DueDate'], 'MMM d, yyyy'))`,
+        expectedResult: "A formatted date when there is one, and empty text when there isn't, with no failed run.",
+        commonMistakes: ["Formatting the date without checking it first", "Using coalesce, which doesn't catch empty text"]
+      },
+      {
+        title: "Read the first item without a loop",
+        problem: "Get items returns an array, so reading one column normally adds an Apply to each.",
+        code: `first(body('Get_items')?['value'])?['Title']`,
+        expectedResult: "The Title of the first row, or null when no rows came back.",
+        commonMistakes: ["Forgetting the ['value'] part", "Typing the action name with spaces instead of underscores"]
+      }
+    ],
+    relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"],
+    relatedTools: ["date-format-tester", "trigger-condition-builder", "odata-filter-query-builder"],
+    faqs: [
+      {
+        question: "Where do I paste the expression?",
+        answer: "Click into an action field, open the expression editor (fx), paste it and select Add or OK. Don't add @ or @{ } around it there. Trigger conditions are the exception: they go in the trigger's Settings and start with @."
+      },
+      {
+        question: "Why does my expression fail when a column is empty?",
+        answer: "Functions such as formatDateTime, toLower and ticks fail when they are given null. The templates check with empty() or coalesce() first, so a blank column returns a fallback instead of failing the run."
+      },
+      {
+        question: "What is the difference between coalesce and empty?",
+        answer: "coalesce returns the first value that isn't null, so empty text still comes back as empty text. empty() is true for null, empty text, an empty array and an empty object, so if(empty(value), fallback, value) catches both."
+      },
+      {
+        question: "Why do action names have underscores?",
+        answer: "Expressions refer to actions by their internal name, which replaces spaces with underscores. An action shown as Get items is body('Get_items') in an expression."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. The expressions are built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({
     slug: "parse-json-schema-generator",
     kind: "tool",
@@ -596,8 +807,10 @@ Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stay
       "Builds conditions for SharePoint, Dataverse, and any other trigger that returns a body.",
       "Reads choice values through /Value and people through /Email for SharePoint, and lookups through _name_value for Dataverse.",
       "Wraps text in coalesce() so an empty column doesn't make contains() or startsWith() fail.",
-      "Compares dates with ticks() so date and time formats don't matter.",
-      "Can add a loop guard that ignores changes made by the flow's own account."
+      "Compares dates with ticks() so date and time formats don't matter, and checks for an empty date first so the condition can't fail.",
+      "Groups rules in brackets, such as (Status is Open or In Review) and Urgent is Yes.",
+      "Can add a loop guard that ignores changes made by the flow's own account.",
+      "Shows how to run only when a column changes: Select columns for Dataverse, and Get changes for SharePoint."
     ],
     examples: [
       {
@@ -711,7 +924,7 @@ If(varIsAdmin, AdminScreen, HomeScreen)`,
       }
     ]
   }),
-  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Swap the sample text for dynamic content once the card is in your flow."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
+  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Add a dropdown, a date picker or a comment box, and put the message and facts side by side.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Copy the expressions that read the button, dropdown, date and comment from the response."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
 ] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "adaptive-card-fact-set-from-sharepoint-items"] }),
@@ -855,9 +1068,13 @@ colRequests    Collection`,
       }
     ]
   }),
-  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide to get RGBA and ColorValue formulas.", "Copy the set as named formulas or as Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "Check text and background pairs for contrast before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
-Set(gblColorSurface, RGBA(255, 255, 255, 1));
-Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
+  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide, one per line with a name, to get RGBA formulas.", "Copy the set as named formulas, one theme record, or Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "See whether white or black text meets WCAG AA contrast on each color before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `// App.Formulas
+ColorPrimary = RGBA(15, 118, 110, 1);
+ColorSurface = RGBA(255, 255, 255, 1);
+ColorDanger = RGBA(185, 28, 28, 1);
+
+// On a button
+Fill = ColorPrimary`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
   item({
     slug: "sharepoint-column-formatting-builder",
     kind: "tool",
@@ -867,8 +1084,9 @@ Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update colo
     keywords: ["SharePoint column formatting JSON", "SharePoint JSON formatting", "SharePoint status pill JSON", "SharePoint progress bar column", "open Power Apps from SharePoint list"],
     audience: "Makers who use SharePoint lists behind Power Apps and Power Automate and want the list itself to be easy to scan.",
     summaryBullets: [
-      "Five layouts that cover the most common list needs: status, due date, progress, person, and an app button.",
-      "Status pills take your own values and colors, with a grey fallback for anything else.",
+      "Seven layouts that cover the most common list needs: status, multiple choices, whole-row colors, due date, progress, person, and an app button.",
+      "Status pills take your own values and colors, with a grey fallback for anything else. Multi-select choice columns get one pill per value.",
+      "Row formatting colors the whole row in a view, using SharePoint's built-in highlight colors.",
       "Due date highlights turn red when overdue and amber a set number of days before.",
       "Progress bars work with 0 to 100 numbers and with percentage columns stored as 0 to 1.",
       "The Power Apps button passes the item ID to your app as a URL parameter."
@@ -941,7 +1159,7 @@ Set(
     summaryBullets: [
       "Checks the formula against the data source you pick, because each source delegates a different set of functions.",
       "Flags functions applied to a column inside Filter, LookUp, and CountIf, and skips ones applied to a value such as User().Email or a text box.",
-      "Covers Search, the in operator, IsBlank, aggregates, FirstN and LastN, and table shaping functions.",
+      "Covers Search, the in and ! operators, IsBlank, text functions, aggregates, FirstN and LastN, and table shaping functions.",
       "Separates hard problems from limits, such as Dataverse aggregates that stop at 50,000 rows.",
       "Includes a reference table of what each data source delegates."
     ],
@@ -981,11 +1199,11 @@ Filter(
       },
       {
         question: "How is this different from the check in the Power Fx Formatter?",
-        answer: "The formatter gives general hints while it formats. This tool checks against one data source, tells problems apart from limits, suggests a rewrite for each finding, and shows the full support table for that source."
+        answer: "Both use the same rules. The formatter shows the findings while it formats your formula. This tool adds the full support table for each data source, so you can see what is delegated before you write the formula."
       },
       {
         question: "How accurate is it?",
-        answer: "It follows Microsoft's delegation documentation for each connector, and it reads your formula as text. It can't see your column types, and connectors change over time, so treat it as a first pass and confirm with the warning triangle in Power Apps Studio."
+        answer: "The support table was checked row by row against Microsoft's delegation tables for SharePoint, Dataverse and SQL Server in November 2026. The tool reads your formula as text, so it can't see your column types, and connectors change over time. Treat it as a first pass and confirm with the warning triangle in Power Apps Studio."
       },
       {
         question: "Why isn't Lower(User().Email) flagged?",
@@ -998,6 +1216,307 @@ Filter(
       {
         question: "Is my formula sent anywhere?",
         answer: "No. The check runs in your browser, and nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "patch-formula-builder",
+    kind: "tool",
+    title: "Power Apps Patch Formula Builder for SharePoint and Dataverse",
+    eyebrow: "Free tool",
+    description: "Build a Power Apps Patch formula for SharePoint or Dataverse. List the columns and the controls they come from, and get the right record shape for choice, person, lookup, multi-choice, date and yes/no columns, wrapped in IfError.",
+    keywords: ["Power Apps Patch formula", "Patch SharePoint person column", "Patch choice column Power Apps", "Patch lookup column", "Patch Dataverse choice"],
+    audience: "Makers who save data with Patch instead of a form, and anyone whose Patch fails on a choice, person or lookup column.",
+    summaryBullets: [
+      "Create a record, update the one selected in a gallery, or update one found by its ID.",
+      "Writes the record shape each column type needs, which differs between SharePoint and Dataverse.",
+      "Reads the value from the control's right property, such as Text, Selected or SelectedDate, based on the control's prefix.",
+      "Wraps the save in IfError so the user sees the data source's own reason when it fails.",
+      "Can keep the saved record in a variable and clear the controls after a successful save."
+    ],
+    examples: [
+      {
+        title: "Choice and person columns on SharePoint",
+        problem: "SharePoint expects a record for a choice and a claims record for a person, not plain text.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Status: { Value: "Submitted" },
+        'Assigned To': {
+            Claims: "i:0#.f|membership|" & Lower(User().Email),
+            DisplayName: User().FullName,
+            Email: Lower(User().Email),
+            Department: "",
+            JobTitle: "",
+            Picture: ""
+        }
+    }
+)`,
+        expectedResult: "A new item is created with the status set and the current user in Assigned To.",
+        commonMistakes: ["Setting a choice column to text, such as Status: \"Submitted\".", "Leaving out Claims on a person column."]
+      },
+      {
+        title: "The same columns on Dataverse",
+        problem: "Dataverse takes the choice itself and a row from the Users table.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Status: 'Status (Requests)'.Submitted,
+        'Assigned To': LookUp(Users, 'Primary Email' = User().Email)
+    }
+)`,
+        expectedResult: "A new row is created with the choice and the user set.",
+        commonMistakes: ["Copying a SharePoint record shape such as { Value: \"Submitted\" } into a Dataverse Patch."]
+      }
+    ],
+    relatedPatterns: ["patch-sharepoint-choice-field", "patch-sharepoint-lookup-field", "patch-sharepoint-people-picker-power-apps", "patch-dataverse-lookup-and-choice-columns", "power-apps-error-handling-iferror-patch"],
+    relatedTools: ["power-fx-formatter", "gallery-search-filter-builder"],
+    faqs: [
+      {
+        question: "Why does my Patch say a choice or person column has the wrong type?",
+        answer: "SharePoint stores choices, people and lookups as records, so Patch needs a record such as { Value: \"Approved\" } for a choice and a record with Claims for a person. Dataverse takes the choice itself and a row from the related table. Pick the data source and column type in the tool to get the shape that fits."
+      },
+      {
+        question: "Should I use Patch or SubmitForm?",
+        answer: "SubmitForm is simpler when the screen is a form bound to one data source, because the form handles validation and column types. Use Patch when you save from controls outside a form, save to more than one place, or need to set columns the user doesn't see."
+      },
+      {
+        question: "How does the tool know which property of a control to use?",
+        answer: "It reads the control's name prefix: txt for text inputs, cmb or drp for combo boxes and dropdowns, dp for date pickers, and tgl or chk for toggles and checkboxes. If your controls use other names, type the full value, such as TextInput1.Text."
+      },
+      {
+        question: "Why can't I save ID, Created or Modified?",
+        answer: "The data source sets those columns itself. The tool warns you if you add one. This also explains a common error: patching a whole record from a gallery sends those read-only columns back."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The formula is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "error-message-finder",
+    kind: "tool",
+    title: "Power Platform Error Message Finder",
+    eyebrow: "Free tool",
+    description: "Paste a Power Automate, Power Apps, Dataverse or solution import error message and find the page that explains it and how to fix it. Names, IDs and GUIDs in the message are ignored.",
+    keywords: ["Power Automate error message", "Power Apps error lookup", "flow failed error meaning", "Power Platform error codes", "Dataverse error code"],
+    audience: "Anyone looking at a failed flow run, a red banner in an app, or a failed solution import who wants the fix without searching.",
+    summaryBullets: [
+      "Matches the whole message against every page in the BuilderVault error library.",
+      "Ignores the parts that change every time, such as action names in quotes, IDs, GUIDs, emails and links.",
+      "Finds the specific reason inside a general message, such as the function named inside an InvalidTemplate error.",
+      "Recognizes error codes such as 0x80040220 and explains HTTP status codes such as 401, 403, 404 and 429.",
+      "Shows the short answer from each matching page, with a link to the full fix."
+    ],
+    examples: [
+      {
+        title: "A flow error inside a general message",
+        problem: "Power Automate puts the real reason after the general InvalidTemplate text.",
+        code: `Unable to process template language expressions in action 'Compose' inputs at line '0' and column '0': 'The template language function 'split' expects its first parameter to be of type string. The provided value is of type 'Null'.'`,
+        expectedResult: "The finder ranks the page for the null value first, and the general InvalidTemplate page after it.",
+        commonMistakes: ["Searching only for the first line, which is the same for dozens of different problems."]
+      }
+    ],
+    relatedPatterns: [],
+    relatedTools: ["power-automate-expression-builder", "parse-json-schema-generator"],
+    faqs: [
+      {
+        question: "Which errors does the finder know?",
+        answer: "Every page in the BuilderVault error library: Power Automate flow and approval errors, connection and sign-in errors, Power Apps formula and save errors, solution imports, Dataverse, desktop flows and Power Pages. The library grows over time, and the finder uses all of it."
+      },
+      {
+        question: "What should I paste?",
+        answer: "The full error text. In a failed flow run, open the failed action and copy the message from its outputs, because the banner at the top often shows only the general part. You don't need to remove names, IDs or links."
+      },
+      {
+        question: "What if nothing matches?",
+        answer: "Try pasting only the first sentence. If the message includes an HTTP status code, the finder still explains what the code means. You can also browse the error library by product."
+      },
+      {
+        question: "Is the error I paste sent anywhere?",
+        answer: "No. The library is loaded with the page and the search runs in your browser. Nothing you paste is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "gallery-search-filter-builder",
+    kind: "tool",
+    title: "Power Apps Gallery Search and Filter Builder",
+    eyebrow: "Free tool",
+    description: "Build a delegation-friendly Items formula for a Power Apps gallery with a search box, dropdown filters, a my-items toggle, a date range and sorting. Each filter shows everything while it's empty. Works for SharePoint, Dataverse and SQL Server.",
+    keywords: ["Power Apps gallery filter", "Power Apps search gallery", "filter gallery by dropdown", "Power Apps multiple filters", "gallery search SharePoint delegation"],
+    audience: "Makers building a list screen with a search box and filters, especially on SharePoint, where the obvious formula stops finding rows once the list grows.",
+    summaryBullets: [
+      "Combines a search box, choice, text and lookup dropdowns, a my-items toggle, a yes/no toggle and a date range in one Items formula.",
+      "Each filter is skipped while its control is empty or off, so users only narrow the list when they want to.",
+      "On SharePoint the search uses StartsWith, which is delegated. On Dataverse and SQL Server it uses Search, which finds text anywhere.",
+      "Also gives the Items for each dropdown, DelayOutput for the search box, and AllowEmptySelection for dropdowns.",
+      "Notes which parts aren't delegated, such as Distinct for a dropdown's values."
+    ],
+    examples: [
+      {
+        title: "Search and filters on SharePoint",
+        problem: "Search and the in operator aren't delegated to SharePoint, and a filter with nothing picked should show every item.",
+        code: `Sort(
+    Filter(
+        Requests,
+        StartsWith(Title, txtSearch.Text) &&
+        (IsBlank(cmbStatus.Selected.Value) || Status.Value = cmbStatus.Selected.Value) &&
+        (tglMyItems.Value = false || 'Assigned To'.Email = User().Email)
+    ),
+    Created,
+    SortOrder.Descending
+)`,
+        expectedResult: "The gallery searches and filters the whole list, newest first, and shows everything while the filters are empty.",
+        commonMistakes: ["Using Search on a SharePoint list, which only searches the first 500 items, or up to 10,000 if you raise the data row limit.", "Writing If(IsBlank(...), Requests, Filter(...)) for each filter, which grows quickly as filters are added."]
+      }
+    ],
+    relatedPatterns: ["power-apps-search-with-multiple-fields", "avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter", "dataverse-delegation-filter-search-large-tables", "sort-gallery-by-column-header-power-apps"],
+    relatedTools: ["power-apps-delegation-checker", "power-fx-formatter", "patch-formula-builder"],
+    faqs: [
+      {
+        question: "Why does the SharePoint search only match the start of a column?",
+        answer: "SharePoint can't run Search or the in operator, so Power Apps would only search the first 500 items, or up to 10,000 if you raise the data row limit. StartsWith is delegated, so it searches the whole list. If you need to match text anywhere, keep a smaller list or move the data to Dataverse."
+      },
+      {
+        question: "How does a filter show everything when nothing is picked?",
+        answer: "Each condition starts with a check on the control, such as IsBlank(cmbStatus.Selected.Value) || .... While the control is empty that part is true for every row, so the filter lets everything through. The check doesn't depend on the row, so the rest of the formula is still sent to the data source."
+      },
+      {
+        question: "Why does the my-items toggle use = false instead of Not?",
+        answer: "Both work the same, but the ! and Not operators are not delegated to SharePoint when they are applied to a column. Writing tglMyItems.Value = false keeps the formula easy to check in the delegation checker, which flags Not inside a filter."
+      },
+      {
+        question: "Is my formula sent anywhere?",
+        answer: "No. The formula is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "recurrence-schedule-planner",
+    kind: "tool",
+    title: "Power Automate Recurrence Schedule Planner",
+    eyebrow: "Free tool",
+    description: "Preview the next 10 runs of a Power Automate Recurrence trigger in your time zone and in UTC. Set the interval, frequency, start time, days, hours and minutes, see what daylight saving time does, and copy the trigger definition.",
+    keywords: ["Power Automate recurrence trigger", "Power Automate schedule flow time zone", "recurrence trigger daylight saving", "Power Automate run every weekday", "scheduled cloud flow start time"],
+    audience: "Anyone setting up a scheduled cloud flow who wants to know exactly when it will run before saving it, especially across time zones and daylight saving changes.",
+    summaryBullets: [
+      "Shows the next 10 run times in the trigger's time zone and in UTC.",
+      "Covers Minute, Hour, Day, Week and Month, with days, hours and minutes for Day and Week schedules.",
+      "Flags daylight saving changes, times between 2:00 and 3:00 AM, and months without the start day.",
+      "Explains the documented rules: no start time means the first run is immediate, and a time zone only applies with a start time.",
+      "Gives the trigger definition, so you can check it against Peek code in your flow."
+    ],
+    examples: [
+      {
+        title: "Weekdays at 9 AM Eastern Time",
+        problem: "Run a report every weekday morning, at the same local time all year.",
+        code: `{
+  "type": "Recurrence",
+  "recurrence": {
+    "frequency": "Week",
+    "interval": 1,
+    "schedule": {
+      "hours": [9],
+      "minutes": [0],
+      "weekDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    },
+    "startTime": "2027-01-04T00:00:00",
+    "timeZone": "Eastern Standard Time"
+  }
+}`,
+        expectedResult: "The flow runs at 9:00 AM Eastern on weekdays. The UTC time moves by an hour when daylight saving starts and ends, so the local time doesn't.",
+        commonMistakes: ["Leaving At these minutes empty, so the runs use the start time's minute.", "Leaving the time zone empty, so 9:00 means 9:00 UTC."]
+      }
+    ],
+    relatedPatterns: [],
+    relatedTools: ["date-format-tester", "trigger-condition-builder", "power-automate-expression-builder"],
+    faqs: [
+      {
+        question: "Why did my scheduled flow run as soon as I saved it?",
+        answer: "With no start time, the Recurrence trigger runs once straight away, then counts on from that run. Set a start time to control the first run."
+      },
+      {
+        question: "Why does my scheduled flow run an hour early or late in summer?",
+        answer: "The trigger has no time zone, so its times are UTC and don't move with daylight saving time. Select your time zone and a start time, and the trigger keeps the same local time all year."
+      },
+      {
+        question: "Why does the start time need a Z at the end?",
+        answer: "Only when no time zone is selected. The Z marks the time as UTC. With a time zone selected, leave the Z off, because Microsoft says a Z makes the trigger ignore the time zone."
+      },
+      {
+        question: "How accurate is the preview?",
+        answer: "It follows Microsoft's documented Recurrence rules. Microsoft notes runs can start up to a minute late, and simple schedules count from the last run, so they can drift. For schedules every two or more weeks, compare with the preview the trigger shows."
+      },
+      {
+        question: "Is anything sent anywhere?",
+        answer: "No. The run times are worked out in your browser."
+      }
+    ]
+  }),
+  item({
+    slug: "sharepoint-http-request-builder",
+    kind: "tool",
+    title: "SharePoint HTTP Request Builder for Power Automate",
+    eyebrow: "Free tool",
+    description: "Build the method, URI, headers and body for the Send an HTTP request to SharePoint action. Get, create, update and delete items, list files, create folders and change permissions, with the expression that reads the result.",
+    keywords: ["Send an HTTP request to SharePoint", "SharePoint REST API Power Automate", "SharePoint HTTP request update item", "break role inheritance Power Automate", "SharePoint REST $select $expand"],
+    audience: "Flow builders who need something the standard SharePoint actions can't do, such as setting item permissions, selecting lookup fields, or creating an item inside a folder.",
+    summaryBullets: [
+      "16 requests: get items with $select, $filter, $orderby and $top, get one item, list columns, create, update and delete items, attachments, files, folders and permissions.",
+      "Adds $expand automatically when a lookup or person column is in $select.",
+      "Writes create and update bodies with the item type and the right value for each column type, including lookups and people as their ID.",
+      "Gives the headers as JSON, including IF-MATCH and X-HTTP-Method for updates and deletes.",
+      "Gives the expression that reads the result, such as the items array or the new item's ID."
+    ],
+    examples: [
+      {
+        title: "Update two columns on the item that started the flow",
+        problem: "Change a status and a number without sending every column back.",
+        code: `Method:  POST
+Uri:     _api/web/lists/getbytitle('Requests')/items(@{triggerOutputs()?['body/ID']})
+Headers: {
+  "Accept": "application/json;odata=verbose",
+  "Content-Type": "application/json;odata=verbose",
+  "IF-MATCH": "*",
+  "X-HTTP-Method": "MERGE"
+}
+Body:    {
+  "__metadata": { "type": "SP.Data.RequestsListItem" },
+  "Status": "Approved",
+  "Amount": 250
+}`,
+        expectedResult: "Only Status and Amount change. MERGE keeps every other column as it was.",
+        commonMistakes: ["Using the column's display name instead of its internal name.", "Guessing the item type for a list that was renamed. Get it with $select=ListItemEntityTypeFullName."]
+      }
+    ],
+    relatedPatterns: ["send-http-request-to-sharepoint-power-automate", "sharepoint-item-level-permissions-break-inheritance-flow", "sharepoint-batch-create-update-items-power-automate", "get-more-than-5000-items-power-automate"],
+    relatedTools: ["odata-filter-query-builder", "sharepoint-internal-name-helper", "parse-json-schema-generator"],
+    faqs: [
+      {
+        question: "When should I use Send an HTTP request to SharePoint instead of the normal actions?",
+        answer: "When the normal actions can't do the job: setting permissions with specific permission levels, creating an item inside a folder, reading a lookup column's other fields, or reading the list's columns. For ordinary create, update and get, the standard actions are easier to maintain."
+      },
+      {
+        question: "Why does my request fail with a column that does not exist?",
+        answer: "REST uses internal names, which often differ from the display name, for example Request_x0020_Number. Use the List a list's columns request to find each internal name."
+      },
+      {
+        question: "What is the item type in the body?",
+        answer: "It is the list's ListItemEntityTypeFullName, such as SP.Data.RequestsListItem. SharePoint's documentation says create and update requests need it. The tool guesses it from the title, but a renamed list or a library has a different value, so read it once with the Get the list's item type request."
+      },
+      {
+        question: "Do I need an Authorization or X-RequestDigest header?",
+        answer: "No. The action signs in with the flow's SharePoint connection, so you only add the headers the tool shows."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. The request is built in your browser."
       }
     ]
   }),

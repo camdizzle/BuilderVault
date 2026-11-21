@@ -55,7 +55,7 @@ test("person link", () => {
   assert.equal(personEmailFormat("", false).attributes.href, "=if(@currentField.email == '', '', 'mailto:' + @currentField.email)");
   assert.equal(
     personEmailFormat("About", true).attributes.href,
-    "=if(@currentField.email == '', '', 'mailto:' + @currentField.email + '?subject=' + 'About ' + [$Title])"
+    "=if(@currentField.email == '', '', 'mailto:' + @currentField.email + '?subject=' + encodeURIComponent('About ' + [$Title]))"
   );
 });
 

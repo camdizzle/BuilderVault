@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ToolShell } from "@/components/resources/tool-shell";
-import { checkDelegation, dataSourceLabels, delegationRules, type DataSource, type Support } from "@/lib/tools/delegation-check";
+import { checkDelegation, dataSourceLabels, delegationRules, delegationSources, type DataSource, type Support } from "@/lib/tools/delegation-check";
 
 const sampleFormula = `Filter(
     Requests,
@@ -111,6 +111,16 @@ export function DelegationChecker() {
             </tbody>
           </table>
         </div>
+        <p style={{ color: "var(--muted)", fontSize: "0.92rem", lineHeight: 1.6, margin: "10px 0 0" }}>
+          Checked against Microsoft&apos;s delegation tables on {delegationSources.checked}:{" "}
+          {delegationSources.links.map((link, index) => (
+            <span key={link.href}>
+              {index > 0 ? ", " : ""}
+              <a href={link.href} rel="noopener noreferrer" target="_blank">{link.label}</a>
+            </span>
+          ))}
+          . Excel tables are never delegated.
+        </p>
       </div>
     </ToolShell>
   );

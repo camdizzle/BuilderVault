@@ -268,7 +268,7 @@ const approvalEmailNotReceived: ErrorPage = {
     { question: "Why does the approval email have no Approve and Reject buttons?", answer: "The buttons need Outlook actionable messages. They do not appear if the feature is disabled for the organisation, the mail client does not support it, the mailbox is on-premises, or the email was delayed by more than about an hour. The email then contains a link to respond in the browser." },
     { question: "Does the flow fail if the approval email is not delivered?", answer: "No. The approval is created and the flow waits for a response. It fails only when the run reaches its time limit with no answer." }
   ],
-  relatedTools: [],
+  relatedTools: ["adaptive-card-preview-snippets"],
   relatedPatterns: ["power-automate-approval-timeout-escalation", "power-automate-teams-notification-for-high-risk", "post-adaptive-card-and-wait-for-response"],
   relatedLinks: [
     { href: "/guides/power-automate-teams-quick-start", label: "Teams connector quick start" },

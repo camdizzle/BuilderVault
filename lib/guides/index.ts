@@ -3,6 +3,7 @@ import { excelUsersGuide, nestedIfGuide, separatorsGuide, slowFormulasGuide } fr
 import { dataverseFilterRowsGuide, filterByDateGuide, getItemsFilterQueryGuide, triggerConditionsGuide, whereToFilterGuide } from "./flow-guides-1";
 import { complexColumnsGuide, expressionsExplainedGuide, internalNamesGuide, parseJsonGuide, troubleshootFailedRunGuide } from "./flow-guides-2";
 import { flowLimitsGuide } from "./flow-limits-guide";
+import { callFlowFromPowerAppsGuide, scheduleFlowGuide } from "./flow-guides-3";
 import { outlookQuickStartGuide, sharePointQuickStartGuide, teamsQuickStartGuide } from "./connector-guides-1";
 import { dataverseQuickStartGuide, excelQuickStartGuide, formsQuickStartGuide } from "./connector-guides-2";
 import { oneDriveQuickStartGuide, plannerQuickStartGuide } from "./connector-guides-3";
@@ -11,6 +12,7 @@ import { customConnectorQuickStartGuide, outlookCalendarQuickStartGuide, sqlServ
 import { flowHandoverGuide } from "./flow-handover-guide";
 import { errorHandlingGuide, namedFormulasGuide, saveDataGuide, variablesGuide } from "./powerfx-guides-1";
 import { appStartGuide, findRecordsGuide, forAllGuide, textFormatGuide } from "./powerfx-guides-2";
+import { sharePointGalleryGuide } from "./powerfx-guides-3";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
@@ -29,6 +31,7 @@ export const guides: Guide[] = [
   saveDataGuide,
   errorHandlingGuide,
   findRecordsGuide,
+  sharePointGalleryGuide,
   forAllGuide,
   appStartGuide,
   textFormatGuide,
@@ -42,6 +45,8 @@ export const guides: Guide[] = [
   internalNamesGuide,
   complexColumnsGuide,
   troubleshootFailedRunGuide,
+  callFlowFromPowerAppsGuide,
+  scheduleFlowGuide,
   flowLimitsGuide,
   flowHandoverGuide,
   sharePointQuickStartGuide,

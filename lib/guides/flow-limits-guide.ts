@@ -214,7 +214,7 @@ P7D      seven days`, "Do until Timeout"),
       answer: "The flow is slowed down. Actions wait and are retried, so runs take longer. A flow that stays over the limit for 14 days is turned off, and the owner is emailed first."
     }
   ],
-  relatedTools: ["odata-filter-query-builder", "power-automate-expression-builder"],
+  relatedTools: ["odata-filter-query-builder", "power-automate-expression-builder", "recurrence-schedule-planner"],
   relatedPatterns: ["get-more-than-5000-items-power-automate", "do-until-polling-loop-timeout-power-automate", "apply-to-each-concurrency-variables-power-automate", "filter-array-instead-of-apply-to-each", "chunk-array-into-batches-power-automate"],
   relatedLinks: [
     { href: "/errors/429-rate-limit-exceeded-power-automate", label: "Error: 429 Rate limit is exceeded" },

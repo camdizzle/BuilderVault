@@ -165,7 +165,7 @@ export const approvalsQuickStartGuide: Guide = {
       answer: "A flow run can last 30 days, so an approval that is not answered in that time ends as timed out. Set a shorter timeout on the action and add a step that runs after a timeout to remind or escalate."
     }
   ],
-  relatedTools: ["trigger-condition-builder", "power-automate-expression-builder"],
+  relatedTools: ["trigger-condition-builder", "power-automate-expression-builder", "adaptive-card-preview-snippets"],
   relatedPatterns: ["power-automate-approval-with-sharepoint-status-sync", "power-automate-get-manager-approval-route", "power-automate-approval-timeout-escalation", "power-automate-start-approval-from-power-apps"],
   relatedLinks: [
     { href: "/errors/required-field-assignedto-contained-no-valid-users", label: "Error: 'assignedTo' contained no valid users" },
@@ -203,7 +203,7 @@ export const httpQuickStartGuide: Guide = {
         ["Licence", "Premium", "Premium"],
         ["Paired with", "Parse JSON, to read the answer", "Response, to answer the caller"]
       ),
-      p("Before you reach for either, check whether a connector already does the job. A connector handles sign-in for you and is easier to maintain. For SharePoint, the standard action **Send an HTTP request to SharePoint** calls the SharePoint API on the existing connection with no premium licence. The [SharePoint HTTP pattern](/patterns/send-http-request-to-sharepoint-power-automate) shows how."),
+      p("Before you reach for either, check whether a connector already does the job. A connector handles sign-in for you and is easier to maintain. For SharePoint, the standard action **Send an HTTP request to SharePoint** calls the SharePoint API on the existing connection with no premium licence. The [SharePoint HTTP pattern](/patterns/send-http-request-to-sharepoint-power-automate) shows how, and the [SharePoint HTTP request builder](/tools/sharepoint-http-request-builder) writes the request for you."),
       note("Administrators can block the HTTP connectors with a data loss prevention policy. If the flow will not save or is switched off as soon as you add one, see [the DLP error page](/errors/app-not-compliant-data-loss-prevention-policies).")
     ),
     section(

@@ -27,24 +27,38 @@ const s = (sharepoint: Support, dataverse: Support, sql: Support): Record<DataSo
 export const delegationRules: DelegationRule[] = [
   { key: "filter", label: "Filter", group: "Query", support: s("yes", "yes", "yes") },
   { key: "lookup", label: "LookUp", group: "Query", support: s("yes", "yes", "yes") },
-  { key: "sort", label: "Sort and SortByColumns", group: "Query", support: s("yes", "yes", "yes"), notes: { sharepoint: "Sorting by a person, choice, or lookup column isn't delegated." } },
-  { key: "search", label: "Search", group: "Query", support: s("no", "yes", "yes"), fix: "Use Filter with StartsWith on a text column." },
-  { key: "sum", label: "Sum, Average, Min, Max", group: "Aggregate", support: s("no", "partial", "yes"), notes: { dataverse: "Delegated for up to 50,000 rows." }, fix: "Keep a running total in a column, or total a filtered set that is known to be small." },
-  { key: "countrows", label: "CountRows", group: "Aggregate", support: s("no", "partial", "yes"), notes: { dataverse: "On a whole table it returns a cached count. On a filter it is delegated for up to 50,000 rows." }, fix: "Count a filtered set that is known to be small, or store the count." },
-  { key: "countif", label: "CountIf", group: "Aggregate", support: s("no", "partial", "yes"), notes: { dataverse: "Delegated for up to 50,000 rows." }, fix: "Count a filtered set that is known to be small, or store the count." },
-  { key: "compare", label: "=, <>, <, >, <=, >=", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "The ID column only supports =." } },
-  { key: "logic", label: "And, Or, Not (&&, ||, !)", group: "Inside a filter", support: s("yes", "yes", "yes") },
-  { key: "startswith", label: "StartsWith", group: "Inside a filter", support: s("yes", "yes", "yes") },
-  { key: "endswith", label: "EndsWith", group: "Inside a filter", support: s("no", "yes", "yes"), fix: "Use StartsWith if you can, or store the ending in its own column." },
-  { key: "in", label: "in (contains text, or is in a list)", group: "Inside a filter", support: s("no", "yes", "yes"), fix: "Use StartsWith, or compare with = against each value joined with ||." },
-  { key: "isblank", label: "IsBlank", group: "Inside a filter", support: s("partial", "yes", "yes"), notes: { sharepoint: "Compare the column with Blank() instead, such as DueDate = Blank()." }, fix: "Write Column = Blank() instead of IsBlank(Column)." },
-  { key: "text", label: "Lower, Upper, Len, Trim, Left, Right, Mid, Substitute, Replace", group: "Inside a filter", support: s("no", "no", "yes"), fix: "Do the text work on the value you compare against, not on the column. For example, store With({me: Lower(User().Email)}, ...) first." },
-  { key: "date", label: "Year, Month, Day, Hour, Weekday on a column", group: "Inside a filter", support: s("no", "no", "yes"), fix: "Compare the date column with a start and end date instead, such as Created >= dStart && Created < dEnd." },
-  { key: "dateadd", label: "DateAdd, DateDiff on a column", group: "Inside a filter", support: s("no", "partial", "yes"), notes: { dataverse: "Delegated for date and time columns in common cases. Check the warning in Studio." }, fix: "Move the date math to the other side: Created >= DateAdd(Today(), -7, TimeUnit.Days)." },
+  { key: "sort", label: "Sort and SortByColumns", group: "Query", support: s("yes", "yes", "yes"), notes: { sharepoint: "Sorting by a person, choice, or lookup column isn't delegated.", dataverse: "Sorting by a lookup (Guid) column isn't delegated." } },
+  { key: "search", label: "Search", group: "Query", support: s("no", "yes", "yes"), notes: { dataverse: "Searches text columns only.", sql: "Searches text columns only." }, fix: "Use Filter with StartsWith on a text column." },
+  { key: "sum", label: "Sum, Average, Min, Max", group: "Aggregate", support: s("no", "partial", "yes"), notes: { dataverse: "Delegated on number columns for up to 50,000 rows, and not on views.", sql: "Delegated on number columns." }, fix: "Keep a running total in a column, or total a filtered set that is known to be small." },
+  { key: "countrows", label: "CountRows", group: "Aggregate", support: s("no", "partial", "no"), notes: { dataverse: "On a whole table it returns a cached count. For an exact count under 50,000 rows, use CountIf(table, true)." }, fix: "Count a filtered set that is known to be small, or store the count." },
+  { key: "countif", label: "CountIf", group: "Aggregate", support: s("no", "partial", "no"), notes: { dataverse: "Delegated for up to 50,000 rows." }, fix: "Count a filtered set that is known to be small, or store the count." },
+  { key: "compare", label: "=, <>, <, >, <=, >=", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "<, >, <= and >= aren't delegated on text or Yes/No columns, and the ID column only supports =.", dataverse: "Choice columns only support = and <>.", sql: "<, >, <= and >= aren't delegated on text or bit columns." } },
+  { key: "logic", label: "And, Or (&&, ||)", group: "Inside a filter", support: s("yes", "yes", "yes") },
+  { key: "not", label: "Not (!)", group: "Inside a filter", support: s("no", "yes", "yes"), fix: "Compare with <> instead, such as Status.Value <> \"Closed\"." },
+  { key: "startswith", label: "StartsWith", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "Not delegated on a choice or lookup column's value.", sql: "The column must be the first argument." } },
+  { key: "endswith", label: "EndsWith", group: "Inside a filter", support: s("no", "no", "yes"), notes: { sql: "The column must be the first argument." }, fix: "Use StartsWith if you can, or store the ending in its own column." },
+  { key: "in", label: "in (contains text, or is in a list)", group: "Inside a filter", support: s("no", "yes", "yes"), notes: { dataverse: "Only for columns on the table itself, not on a related table.", sql: "Only as \"text\" in Column. Column in a list isn't delegated." }, fix: "Use StartsWith, or compare with = against each value joined with ||." },
+  { key: "isblank", label: "IsBlank", group: "Inside a filter", support: s("partial", "yes", "partial"), notes: { sharepoint: "Compare the column with Blank() instead, such as DueDate = Blank().", dataverse: "Not delegated on choice columns.", sql: "Compare with Blank() instead, such as CustomerId <> Blank()." }, fix: "Write Column = Blank() (or <> Blank()) instead of IsBlank(Column)." },
+  { key: "text", label: "Lower, Upper, Left, Right, Mid, Substitute, Replace", group: "Inside a filter", support: s("no", "yes", "no"), fix: "Do the text work on the value you compare against, not on the column. For example, store With({me: Lower(User().Email)}, ...) first." },
+  { key: "len", label: "Len", group: "Inside a filter", support: s("no", "no", "yes"), notes: { sql: "On char and nchar columns, SQL counts the padding spaces too." }, fix: "Store the length in its own column if you need to filter on it." },
+  { key: "trim", label: "Trim, TrimEnds, Concatenate (&)", group: "Inside a filter", support: s("no", "no", "no"), fix: "Trim or join the value you compare against instead, or store the cleaned value in its own column." },
+  { key: "date", label: "Year, Month, Day, Hour, Weekday on a column", group: "Inside a filter", support: s("no", "no", "no"), fix: "Compare the date column with a start and end date instead, such as Created >= dStart && Created < dEnd." },
+  { key: "dateadd", label: "DateAdd, DateDiff on a column", group: "Inside a filter", support: s("no", "no", "no"), fix: "Move the date math to the other side: Created >= DateAdd(Today(), -7, TimeUnit.Days)." },
   { key: "convert", label: "Text, Value, DateValue on a column", group: "Inside a filter", support: s("no", "no", "no"), fix: "Compare the column in its own type, and convert the value you compare against instead." },
   { key: "firstn", label: "FirstN, Last, LastN", group: "Table shaping", support: s("no", "no", "no"), fix: "Sort in the other direction and use First, or filter down to a small set first." },
-  { key: "shape", label: "AddColumns, GroupBy, Distinct, Concat, ForAll", group: "Table shaping", support: s("no", "no", "no"), notes: { dataverse: "Distinct is delegated in some cases." }, fix: "Filter first so only a small set of rows is shaped in the app." }
+  { key: "shape", label: "AddColumns, GroupBy, Distinct, Concat, ForAll", group: "Table shaping", support: s("no", "no", "no"), fix: "Filter first so only a small set of rows is shaped in the app." }
 ];
+
+/** The Microsoft pages the support table was checked against. */
+export const delegationSources = {
+  checked: "2026-11-21",
+  links: [
+    { href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/delegation-overview", label: "Delegation overview" },
+    { href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/connections/connection-sharepoint-online#power-apps-delegable-functions-and-operations-for-sharepoint", label: "SharePoint" },
+    { href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/connections/connection-common-data-service#power-apps-delegable-functions-and-operations-for-dataverse", label: "Dataverse" },
+    { href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/connections/sql-connection-overview#power-apps-functions-and-operations-delegable-to-sql-server", label: "SQL Server" }
+  ]
+};
 
 const ruleByKey = new Map(delegationRules.map((rule) => [rule.key, rule]));
 
@@ -138,7 +152,10 @@ export function isRowIndependent(expression: string) {
 const predicateFunctions: Array<{ rule: string; names: string[] }> = [
   { rule: "endswith", names: ["EndsWith"] },
   { rule: "isblank", names: ["IsBlank"] },
-  { rule: "text", names: ["Lower", "Upper", "Len", "Trim", "TrimEnds", "Left", "Right", "Mid", "Substitute", "Replace", "Concatenate"] },
+  { rule: "text", names: ["Lower", "Upper", "Left", "Right", "Mid", "Substitute", "Replace"] },
+  { rule: "len", names: ["Len"] },
+  { rule: "trim", names: ["Trim", "TrimEnds", "Concatenate"] },
+  { rule: "not", names: ["Not"] },
   { rule: "date", names: ["Year", "Month", "Day", "Hour", "Minute", "Second", "Weekday"] },
   { rule: "dateadd", names: ["DateAdd", "DateDiff"] },
   { rule: "convert", names: ["Text", "Value", "DateValue", "DateTimeValue"] }
@@ -208,6 +225,7 @@ export function checkDelegation(formula: string, source: DataSource): Delegation
         }
       }
       if (/(^|[^A-Za-z0-9_.])(in|exactin)(?![A-Za-z0-9_])/.test(predicate)) report("in", 'The "in" operator', ` inside ${call.name}`);
+      if (/!(?!=)/.test(predicate)) report("not", 'The "!" operator', ` inside ${call.name}`);
     }
 
     if (lower === "search") {

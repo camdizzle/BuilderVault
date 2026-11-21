@@ -270,7 +270,7 @@ Created ge '2026-12-01T00:00:00Z'`, "Filter Query"),
       answer: "Join two conditions with and: the column ge the from date, and the column lt the day after the to date. Using lt with the following day includes every item on the last day, whatever its time."
     }
   ],
-  relatedTools: ["odata-filter-query-builder", "date-format-tester"],
+  relatedTools: ["odata-filter-query-builder", "date-format-tester", "recurrence-schedule-planner"],
   relatedPatterns: ["convert-time-zone-format-date-power-automate", "power-automate-reminder-before-due-date", "power-automate-compose-date-formatting"],
   relatedLinks: [
     { href: "/guides/sharepoint-get-items-filter-query", label: "Get items Filter Query by column type" },

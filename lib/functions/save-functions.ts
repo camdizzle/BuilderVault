@@ -102,7 +102,7 @@ With(
   relatedGuides: ["power-apps-patch-vs-submitform-vs-collect", "power-fx-iferror-and-app-onerror"],
   relatedErrors: ["function-patch-has-some-invalid-arguments", "network-error-patch-requested-operation-is-invalid", "patch-conflicts-exist-with-changes-on-the-server", "field-title-is-required-power-apps"],
   relatedPatterns: ["patch-sharepoint-choice-field", "patch-dataverse-lookup-and-choice-columns", "power-apps-error-handling-iferror-patch", "power-apps-bulk-update-selected-gallery-items"],
-  relatedTools: ["power-fx-formatter"],
+  relatedTools: ["patch-formula-builder", "power-fx-formatter"],
   sources: [fxRef("function-patch", "Patch function"), fxRef("function-defaults", "Defaults function"), errorHandlingDoc]
 };
 
