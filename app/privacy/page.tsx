@@ -1,6 +1,10 @@
 import { SimplePage } from "@/components/layout/simple-page";
 import { analyticsConfig } from "@/lib/analytics";
 import { newsletterEnabled } from "@/lib/downloads";
+import { proEnabled } from "@/lib/pro/config";
+
+// Reads PRO_ENABLED when the page is requested, so the account section appears when Pro is switched on.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Privacy Policy | BuilderVault",
@@ -9,6 +13,7 @@ export const metadata = {
 };
 
 export default function PrivacyPage() {
+  const pro = proEnabled();
   return (
     <SimplePage
       eyebrow="Privacy"
@@ -16,7 +21,7 @@ export default function PrivacyPage() {
       title="Privacy policy."
     >
       <p>
-        <strong>Last updated:</strong> November 20, 2026
+        <strong>Last updated:</strong> {pro ? "November 21, 2026" : "November 20, 2026"}
       </p>
       <p>
         This policy is provided as practical boilerplate for the current public
@@ -24,12 +29,19 @@ export default function PrivacyPage() {
         relying on it for a commercial launch.
       </p>
       <h2>Information we collect</h2>
-      <p>
-        BuilderVault does not currently create user accounts, process payments, or
-        ask visitors to submit sensitive personal information. If you contact us by
-        email, we may receive your name, email address, organization, and the
-        contents of your message.
-      </p>
+      {pro ? (
+        <p>
+          Accounts are optional. If you contact us by email, we may receive your
+          name, email address, organization, and the contents of your message.
+        </p>
+      ) : (
+        <p>
+          BuilderVault does not currently create user accounts, process payments, or
+          ask visitors to submit sensitive personal information. If you contact us by
+          email, we may receive your name, email address, organization, and the
+          contents of your message.
+        </p>
+      )}
       <p>
         The site may also receive basic technical information through hosting logs,
         such as IP address, browser type, device information, pages visited, and
@@ -74,6 +86,29 @@ export default function PrivacyPage() {
             If you subscribe to the newsletter, your email address is sent to our email
             provider and used only to send BuilderVault updates. Every email includes an
             unsubscribe link, and you can ask us to delete your address at any time.
+          </p>
+        </>
+      ) : null}
+      {pro ? (
+        <>
+          <h2>Accounts and BuilderVault Pro</h2>
+          <p>
+            If you sign in, we store your email address, the date you signed up, and
+            any formatter settings and formulas you choose to save. Saved formulas are
+            stored only when you choose Save to history, and you can delete them at any
+            time from the formatter.
+          </p>
+          <p>
+            Sign-in emails are sent through Resend. If you subscribe to Pro, payments
+            are processed by Stripe, which receives your email address and payment
+            details. We store your Stripe customer ID and subscription status, and we
+            never receive or store your full card number.
+          </p>
+          <p>
+            Signing in sets one strictly necessary cookie, bv_session, that keeps you
+            signed in for 30 days. It is not used for analytics or advertising, so it is
+            not controlled by the cookie banner. Signing out removes it. To delete your
+            account and saved data, contact us at the address below.
           </p>
         </>
       ) : null}

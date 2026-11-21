@@ -92,6 +92,10 @@ Downloadable packs live in `public/packs/` and are listed in `lib/downloads.ts`.
 
 Step-by-step setup for analytics, the newsletter, Search Console and automatic Plesk deploys is in [docs/setup.md](docs/setup.md).
 
+BuilderVault Pro (sign-in, Stripe subscriptions and the formatter's saved settings and history) is
+controlled by server environment variables read at request time, starting with `PRO_ENABLED`. It is
+off until that is `true`. Setup steps for Stripe, Resend and Plesk are in [docs/pro-setup.md](docs/pro-setup.md).
+
 ## Production build
 
 ```bash

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { SiteNav } from "@/components/layout/site-nav";
-import { formatterLink, navMenus } from "@/lib/navigation";
+import { AccountMenu } from "@/components/pro/account-menu";
 
 export function SiteHeader() {
   return (
@@ -12,7 +11,15 @@ export function SiteHeader() {
           </span>
           BuilderVault
         </Link>
-        <SiteNav formatter={formatterLink} menus={navMenus} />
+        <nav aria-label="Main navigation" className="compact-nav-group">
+          <Link href="/patterns">Patterns</Link>
+          <Link href="/resources">Resources</Link>
+          <Link href="/examples">Examples</Link>
+          <Link href="/tools">Tools</Link>
+          <Link href="/services">Get help</Link>
+          <Link href="/about">About</Link>
+          <AccountMenu />
+        </nav>
       </div>
     </header>
   );
