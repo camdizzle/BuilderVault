@@ -265,7 +265,7 @@ UpdateIf(colEdit, IsChanged, { IsChanged: false })`
       },
       {
         question: "How many rows can a Power Apps collection hold?",
-        answer: "A collection can hold many thousands of rows in memory, but loading from a data source is limited by delegation: a non-delegable query returns at most the data row limit, 500 by default and 2,000 at most."
+        answer: "A collection can hold many thousands of rows in memory, but loading from a data source is limited by delegation: a non-delegable query returns at most the data row limit, 500 by default and 10,000 at most."
       },
       {
         question: "Are collections saved when the app closes?",

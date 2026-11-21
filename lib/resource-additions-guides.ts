@@ -137,7 +137,7 @@ Filter(Requests, AssignedToEmail = nfMe)`,
       ),
       ex(
         "Search box",
-        "StartsWith is delegable on SharePoint. Search and the in operator are not, so they only look at the first 500 to 2,000 rows.",
+        "StartsWith is delegable on SharePoint. Search and the in operator are not, so they only look at the first 500 to 10,000 rows.",
         `// Delegable on SharePoint and Dataverse
 Filter(Requests, StartsWith(Title, txtSearch.Text))
 
@@ -194,14 +194,14 @@ Not delegable on SharePoint: Search, in, exactin, EndsWith, Not on some comparis
 Person columns:              Email and DisplayName comparisons delegate. Other properties do not.
 Yes/No columns:              compare with true or false directly.
 ID column:                   only = delegates.
-Data row limit:              Settings > General. 500 by default, 2,000 at most. Keep it at 500 while testing.`,
+Data row limit:              Settings > General. 500 by default, 10,000 at most. Keep it at 500 while testing.`,
         "Delegation warnings can be predicted before they appear."
       )
     ],
     faqs: [
       q("What does the delegation warning mean?", "Part of the formula cannot be run by the data source, so Power Apps downloads rows up to the data row limit and filters those. Rows beyond the limit are ignored."),
       q("How do I search a large SharePoint list by text in the middle of a field?", "SharePoint cannot delegate a contains search. Use StartsWith, add a narrower delegable filter first, or call a flow that uses the SharePoint search API."),
-      q("Should I raise the data row limit to 2,000?", "Only as a deliberate choice for small lists. It hides the problem until the list grows past the limit.")
+      q("Should I raise the data row limit to 10,000?", "Only as a deliberate choice for small lists. It hides the problem until the list grows past the limit.")
     ]
   },
 

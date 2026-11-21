@@ -183,8 +183,8 @@ export function checkDelegation(formula: string, source: DataSource): Delegation
         title: `${what}${where} is not delegated to ${sourceName}`,
         detail:
           source === "excel"
-            ? "The Excel connector doesn't delegate anything, so the app only works with the first 500 to 2,000 rows of the table."
-            : `Power Apps loads only the first 500 to 2,000 rows and works on those, so rows past that limit are silently ignored.${note ? " " + note : ""}`,
+            ? "The Excel connector doesn't delegate anything, so the app only works with the first 500 to 10,000 rows of the table."
+            : `Power Apps loads only the first 500 to 10,000 rows and works on those, so rows past that limit are silently ignored.${note ? " " + note : ""}`,
         fix: rule.fix
       });
     }
