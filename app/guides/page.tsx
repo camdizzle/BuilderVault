@@ -1,0 +1,79 @@
+import Link from "next/link";
+import { GuideCard } from "@/components/guides/guide-card";
+import { ResourceCard } from "@/components/resources/resource-card";
+import { guides } from "@/lib/guides";
+import { getResourceBySlug, type ResourceItem } from "@/lib/resources";
+
+export const metadata = {
+  title: "Power Fx and Power Automate How-To Guides | BuilderVault",
+  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions and troubleshooting failed runs.",
+  alternates: { canonical: "/guides" }
+};
+
+const groups = [
+  {
+    eyebrow: "Power Fx how-to",
+    title: "Power Apps formula guides",
+    text: "Fix, tidy and speed up Power Fx formulas."
+  },
+  {
+    eyebrow: "Power Automate how-to",
+    title: "Power Automate flow guides",
+    text: "Filter data, control triggers, read expressions and troubleshoot failed runs."
+  }
+];
+
+const toolSlugs = [
+  "power-fx-formatter",
+  "power-apps-delegation-checker",
+  "odata-filter-query-builder",
+  "trigger-condition-builder",
+  "parse-json-schema-generator",
+  "power-automate-expression-builder",
+  "power-apps-naming-linter",
+  "excel-to-power-fx"
+];
+
+export default function GuidesPage() {
+  const tools = toolSlugs
+    .map((slug) => getResourceBySlug("tool", slug))
+    .filter((tool): tool is ResourceItem => Boolean(tool));
+
+  return (
+    <section style={{ padding: "54px 0" }}>
+      <div className="container" style={{ display: "grid", gap: 34 }}>
+        <nav aria-label="Breadcrumb" className="badge-row">
+          <Link href="/resources" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Resources</Link>
+        </nav>
+        <div style={{ maxWidth: 940 }}>
+          <div className="eyebrow">How-to guides</div>
+          <h1 className="page-title">How-to guides for Power Apps formulas and Power Automate flows.</h1>
+          <p className="lead">
+            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>.
+          </p>
+        </div>
+        {groups.map((group) => (
+          <section key={group.eyebrow} style={{ display: "grid", gap: 18 }}>
+            <div>
+              <div className="eyebrow">{group.eyebrow}</div>
+              <h2 className="section-title">{group.title}</h2>
+              <p style={{ color: "#415049", lineHeight: 1.7, margin: "8px 0 0" }}>{group.text}</p>
+            </div>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+              {guides.filter((guide) => guide.eyebrow === group.eyebrow).map((guide) => <GuideCard guide={guide} key={guide.slug} />)}
+            </div>
+          </section>
+        ))}
+        <section style={{ display: "grid", gap: 18 }}>
+          <div>
+            <div className="eyebrow">Tools used in the guides</div>
+            <h2 className="section-title">Check your work as you read.</h2>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {tools.map((tool) => <ResourceCard key={tool.slug} resource={tool} />)}
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
