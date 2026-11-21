@@ -79,7 +79,7 @@ const patchOperationInvalid: ErrorPage = {
     { question: "How do I see why a Patch failed in Power Apps?", answer: "Open Monitor from Advanced tools in Studio, run the Patch and read the response on the failed row. In the app itself, wrap the Patch in IfError and show FirstError.Message." },
     { question: "Why does the Patch work for me and fail for other users?", answer: "You probably own the list, so you can edit every item. Other users may have read access only, or the item may have its own permissions. Check their access to the list, not to the app." }
   ],
-  relatedTools: ["power-fx-formatter"],
+  relatedTools: ["patch-formula-builder", "power-fx-formatter"],
   relatedPatterns: ["power-apps-error-handling-iferror-patch", "patch-sharepoint-choice-field", "power-apps-monitor-debug-performance-trace"],
   relatedLinks: [patchCheatSheet, formulaErrorsGuide],
   relatedErrors: ["function-patch-has-some-invalid-arguments", "specified-column-is-read-only-power-apps", "field-title-is-required-power-apps", "patch-conflicts-exist-with-changes-on-the-server"],
@@ -219,7 +219,7 @@ const patchInvalidArguments: ErrorPage = {
     { question: "How do I Patch a choice column in Power Apps?", answer: "Give it a record with a Value field, such as Status: {Value: \"Submitted\"}, or the Selected record of a dropdown whose Items are Choices(Requests.Status)." },
     { question: "Why does Patch say the column does not exist?", answer: "The name in the formula does not match a column Studio knows. Check the spelling, wrap names with spaces in single quotes, and refresh the data source if the column was added recently." }
   ],
-  relatedTools: ["power-fx-formatter", "power-apps-naming-linter"],
+  relatedTools: ["patch-formula-builder", "power-fx-formatter", "power-apps-naming-linter"],
   relatedPatterns: ["patch-sharepoint-choice-field", "power-apps-error-handling-iferror-patch"],
   relatedLinks: [patchCheatSheet, formulaErrorsGuide, { href: "/cookbooks/power-apps-patch-cookbook", label: "Power Apps Patch Cookbook" }],
   relatedErrors: ["network-error-patch-requested-operation-is-invalid", "incompatible-types-for-comparison-power-apps", "specified-column-is-read-only-power-apps"],
@@ -290,7 +290,7 @@ If(frmRequest.Mode = FormMode.New, "REQ-" & Text(Now(), "yyyymmdd-hhmmss"), This
     { question: "How do I hide the Title field in a Power Apps form?", answer: "Set the Title data card's Visible property to false. If the column is still required in SharePoint, also set the card's Default so that a value is submitted, or make the column optional in the list." },
     { question: "I made Title optional but still get the error. Why?", answer: "The app is using the column settings it loaded earlier. Refresh the data source in Studio, then save and publish the app." }
   ],
-  relatedTools: [],
+  relatedTools: ["patch-formula-builder"],
   relatedPatterns: ["power-apps-error-handling-iferror-patch"],
   relatedLinks: [patchCheatSheet, { href: "/standards/sharepoint-list-design-standards", label: "SharePoint List Design Standards" }],
   relatedErrors: ["entry-is-required-or-has-an-invalid-value", "network-error-patch-requested-operation-is-invalid"],
@@ -361,7 +361,7 @@ Notify(frmRequest.Error, NotificationType.Error)`)
     { question: "Why does SubmitForm do nothing?", answer: "The form is not valid, so nothing is sent. If there is no visible message, the failing card is probably hidden. Check the form's Valid property and each card's Valid property." },
     { question: "How do I make a field required only in some cases?", answer: "Set the data card's Required property to a formula, such as drpType.Selected.Value = \"Purchase\". The card is then required only when the formula is true. The column must be optional in the data source for this to work." }
   ],
-  relatedTools: ["power-fx-formatter"],
+  relatedTools: ["patch-formula-builder", "power-fx-formatter"],
   relatedPatterns: ["power-apps-error-handling-iferror-patch"],
   relatedLinks: [formulaErrorsGuide, patchCheatSheet],
   relatedErrors: ["field-title-is-required-power-apps", "network-error-patch-requested-operation-is-invalid"],
@@ -431,7 +431,7 @@ Patch(
     { question: "Can I change Created or Created By from Power Apps?", answer: "No. These are system columns set by SharePoint. Add your own date and person columns if the app needs to record a different date or person." },
     { question: "How do I save a whole collection back to SharePoint?", answer: "Use Patch with the data source and a table that holds only ID and the editable columns, for example Patch(Requests, ShowColumns(colEdits, ID, Status, Notes)). Rows with an ID update the matching item." }
   ],
-  relatedTools: ["power-fx-formatter", "csv-to-power-fx-table"],
+  relatedTools: ["patch-formula-builder", "power-fx-formatter", "csv-to-power-fx-table"],
   relatedPatterns: ["power-apps-error-handling-iferror-patch"],
   relatedLinks: [patchCheatSheet, { href: "/cookbooks/power-apps-collections-cookbook", label: "Power Apps Collections Cookbook" }],
   relatedErrors: ["network-error-patch-requested-operation-is-invalid", "function-patch-has-some-invalid-arguments"],
@@ -508,7 +508,7 @@ Filter(Requests, !Approved)`),
     { question: "What does Record, Text mean in the error?", answer: "The left side of the comparison is a record and the right side is text. Choice, lookup and person columns are records. Compare one of their fields, such as Value or Email, with the text." },
     { question: "How do I compare a text input with a number?", answer: "Convert the text with Value, for example Value(txtAmount.Text) > 100. The Text property of a text input is always text, even when its format is set to Number." }
   ],
-  relatedTools: ["power-apps-delegation-checker", "power-fx-formatter"],
+  relatedTools: ["power-apps-delegation-checker", "power-fx-formatter", "gallery-search-filter-builder"],
   relatedPatterns: ["avoid-delegation-warnings-sharepoint-filters", "patch-sharepoint-choice-field"],
   relatedLinks: [formulaErrorsGuide, { href: "/cheat-sheets/power-apps-gallery-filtering-cheat-sheet", label: "Power Apps Gallery Filtering Cheat Sheet" }],
   relatedErrors: ["function-patch-has-some-invalid-arguments", "fetching-items-failed-possible-invalid-string-in-filter-query"],

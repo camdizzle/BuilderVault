@@ -37,7 +37,8 @@ test("a function on a column is flagged, but not on a value", () => {
     "Lower() inside Filter is not delegated to SharePoint list"
   ]);
   assert.deepEqual(titles("Filter(Requests, Owner.Email = Lower(User().Email))", "sharepoint"), []);
-  assert.deepEqual(titles("Filter(Requests, Lower(Owner.Email) = varMe)", "sql"), []);
+  assert.deepEqual(titles("Filter(Requests, Lower(Owner.Email) = varMe)", "dataverse"), []);
+  assert.equal(titles("Filter(Requests, Lower(Owner.Email) = varMe)", "sql").length, 1);
 });
 
 test("results depend on the data source", () => {
@@ -54,7 +55,8 @@ test("aggregates and limits", () => {
   const dataverse = checkDelegation("Sum(Filter(Orders, Region = varRegion), Amount)", "dataverse");
   assert.equal(dataverse.findings[0].severity, "limit");
   assert.ok(dataverse.findings[0].detail.includes("50,000"));
-  assert.deepEqual(checkDelegation("CountRows(Orders)", "sql").findings, []);
+  assert.equal(checkDelegation("CountRows(Orders)", "sql").findings[0].severity, "problem");
+  assert.equal(checkDelegation("CountRows(Orders)", "dataverse").findings[0].severity, "limit");
 });
 
 test("IsBlank on SharePoint is a limit with a fix", () => {
@@ -79,4 +81,18 @@ test("every rule covers every data source", () => {
     for (const source of Object.keys(dataSourceLabels)) assert.ok(["yes", "partial", "no"].includes(rule.support[source]), rule.key);
     if (["sharepoint", "dataverse", "sql"].some((source) => rule.support[source] !== "yes") && rule.key !== "sort") assert.ok(rule.fix, rule.key + " needs a fix");
   }
+});
+
+test("Not is not delegated to SharePoint", () => {
+  assert.equal(titles("Filter(Tasks, Not(IsBlank(DueDate)))", "sharepoint").filter((title) => title.startsWith("Not()")).length, 1);
+  assert.equal(titles("Filter(Tasks, !Done)", "sharepoint")[0], 'The "!" operator inside Filter is not delegated to SharePoint list');
+  assert.deepEqual(titles("Filter(Tasks, Status <> \"Closed\")", "sharepoint"), []);
+  assert.deepEqual(titles("Filter(Tasks, !Done)", "dataverse"), []);
+});
+
+test("Len and Trim follow Microsoft's tables", () => {
+  assert.equal(titles("Filter(Tasks, Len(Title) > 5)", "sql").length, 0);
+  assert.equal(titles("Filter(Tasks, Len(Title) > 5)", "dataverse").length, 1);
+  assert.equal(titles("Filter(Tasks, Trim(Title) = varName)", "dataverse").length, 1);
+  assert.equal(titles("Filter(Tasks, Upper(Title) = varName)", "dataverse").length, 0);
 });

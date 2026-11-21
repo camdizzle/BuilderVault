@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCondition, buildFilterQuery, operatorsFor, quoteText } from "../../lib/tools/odata-filter.ts";
+import { buildCondition, buildFilterQuery, buildQueryOptions, columnTypesFor, operatorsFor, quoteText } from "../../lib/tools/odata-filter.ts";
 
 const c = (column, type, operator, value = "") => ({ column, type, operator, value });
 
@@ -67,4 +67,44 @@ test("empty rows are ignored", () => {
 test("SharePoint text has no endswith", () => {
   assert.ok(!operatorsFor("sharepoint", "text").includes("endswith"));
   assert.ok(operatorsFor("dataverse", "text").includes("endswith"));
+});
+
+const g = (column, type, operator, value, group) => ({ column, type, operator, value, group });
+
+test("groups are wrapped in brackets", () => {
+  const result = buildFilterQuery(
+    "sharepoint",
+    [g("Status", "choice", "eq", "Open", 1), g("Status", "choice", "eq", "In Review", 1), g("Priority", "choice", "eq", "High", 2)],
+    "or",
+    "and"
+  );
+  assert.equal(result.query, "(Status eq 'Open' or Status eq 'In Review') and Priority eq 'High'");
+});
+
+test("one group behaves like no groups", () => {
+  assert.equal(buildFilterQuery("sharepoint", [g("A", "number", "eq", "1", 1), g("B", "number", "eq", "2", 1)], "or", "and").query, "A eq 1 or B eq 2");
+});
+
+test("Dataverse date query functions", () => {
+  assert.equal(buildCondition("dataverse", c("createdon", "date", "lastxdays", "7")), "Microsoft.Dynamics.CRM.LastXDays(PropertyName='createdon',PropertyValue=7)");
+  assert.equal(buildCondition("dataverse", c("createdon", "date", "today")), "Microsoft.Dynamics.CRM.Today(PropertyName='createdon')");
+  assert.ok(operatorsFor("dataverse", "date").includes("thismonth"));
+  assert.ok(!operatorsFor("sharepoint", "date").includes("thismonth"));
+});
+
+test("Dataverse multi-select choices use ContainValues", () => {
+  assert.equal(
+    buildCondition("dataverse", c("cr123_regions", "multichoice", "containvalues", "100000000, 100000001")),
+    "Microsoft.Dynamics.CRM.ContainValues(PropertyName='cr123_regions',PropertyValues=['100000000','100000001'])"
+  );
+  assert.ok(!columnTypesFor("sharepoint").includes("multichoice"));
+  assert.ok(buildFilterQuery("dataverse", [c("cr123_regions", "multichoice", "containvalues", "East")], "and").notes.some((note) => note.includes("number values")));
+});
+
+test("query options", () => {
+  const sharepoint = buildQueryOptions("sharepoint", { orderBy: "Created", descending: true, top: "", select: "" });
+  assert.deepEqual(sharepoint.fields, [{ label: "Order By", value: "Created desc" }]);
+  assert.ok(sharepoint.notes.some((note) => note.includes("first 100 items")));
+  const dataverse = buildQueryOptions("dataverse", { orderBy: "", descending: false, top: "50", select: "name, createdon" });
+  assert.deepEqual(dataverse.fields, [{ label: "Row count", value: "50" }, { label: "Select columns", value: "name,createdon" }]);
 });

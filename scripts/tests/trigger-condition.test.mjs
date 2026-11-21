@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildRule, buildTriggerCondition, fieldReference } from "../../lib/tools/trigger-condition.ts";
+import { buildRule, buildTriggerCondition, changedColumnsHelp, fieldReference } from "../../lib/tools/trigger-condition.ts";
 
 const r = (field, type, operator, value = "") => ({ field, type, operator, value });
 const noGuard = { enabled: false, value: "" };
@@ -17,10 +17,10 @@ test("rules", () => {
   assert.equal(buildRule("sharepoint", r("Title", "text", "contains", "O'Brien")), "contains(coalesce(triggerOutputs()?['body/Title'], ''), 'O''Brien')");
   assert.equal(buildRule("sharepoint", r("Amount", "number", "greater", "1000")), "greater(triggerOutputs()?['body/Amount'], 1000)");
   assert.equal(buildRule("sharepoint", r("IsUrgent", "boolean", "isTrue")), "equals(triggerOutputs()?['body/IsUrgent'], true)");
-  assert.equal(buildRule("sharepoint", r("DueDate", "date", "beforeNow")), "less(ticks(triggerOutputs()?['body/DueDate']), ticks(utcNow()))");
+  assert.equal(buildRule("sharepoint", r("DueDate", "date", "beforeNow")), "if(empty(triggerOutputs()?['body/DueDate']), false, less(ticks(triggerOutputs()?['body/DueDate']), ticks(utcNow())))");
   assert.equal(
     buildRule("sharepoint", r("DueDate", "date", "after", "2026-01-31")),
-    "greater(ticks(triggerOutputs()?['body/DueDate']), ticks('2026-01-31T00:00:00Z'))"
+    "if(empty(triggerOutputs()?['body/DueDate']), false, greater(ticks(triggerOutputs()?['body/DueDate']), ticks('2026-01-31T00:00:00Z')))"
   );
   assert.equal(
     buildRule("sharepoint", r("AssignedTo", "person", "equals", "Ana@Contoso.com")),
@@ -55,4 +55,29 @@ test("notes", () => {
   assert.ok(result.notes.some((note) => note.includes("Request_x0020_Status")));
   assert.ok(result.notes.some((note) => note.includes("enter a value")));
   assert.ok(result.notes.some((note) => note.includes("loop guard")));
+});
+
+test("groups of rules", () => {
+  const rules = [
+    { ...r("Status", "choice", "equals", "Open"), group: 1 },
+    { ...r("Status", "choice", "equals", "In Review"), group: 1 },
+    { ...r("IsUrgent", "boolean", "isTrue"), group: 2 }
+  ];
+  const result = buildTriggerCondition("sharepoint", rules, "or", { enabled: false, value: "" }, "and");
+  assert.equal(
+    result.combined,
+    "@and(or(equals(triggerOutputs()?['body/Status/Value'], 'Open'), equals(triggerOutputs()?['body/Status/Value'], 'In Review')), equals(triggerOutputs()?['body/IsUrgent'], true))"
+  );
+  assert.equal(result.separate.length, 2);
+});
+
+test("changed columns help", () => {
+  assert.equal(changedColumnsHelp("dataverse", "StatusCode, ownerid").value, "statuscode,ownerid");
+  assert.equal(
+    changedColumnsHelp("sharepoint", "Status").value,
+    "equals(body('Get_changes_for_an_item_or_a_file_(properties_only)')?['ColumnHasChanged']?['Status'], true)"
+  );
+  assert.ok(changedColumnsHelp("sharepoint", "Status, Priority").value.startsWith("or("));
+  assert.equal(changedColumnsHelp("other", "x"), null);
+  assert.equal(changedColumnsHelp("sharepoint", " "), null);
 });

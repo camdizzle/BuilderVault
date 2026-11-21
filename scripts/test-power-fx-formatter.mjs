@@ -5,7 +5,8 @@ import {
   findDelegationHints,
   formatPowerFxFormula,
   minifyPowerFxFormula,
-  significantTokens
+  significantTokens,
+  toCommaSeparators
 } from "../lib/tools/power-fx-format.ts";
 
 let failures = 0;
@@ -165,6 +166,25 @@ test("delegation: plain equality has no hints", () => {
 test("delegation: AddColumns on a data source", () => {
   const hints = findDelegationHints(`AddColumns(Tasks, "Days", DateDiff(Created, Today()))`);
   assert.ok(hints.some((hint) => hint.title.startsWith("AddColumns")));
+});
+
+test("a leading = is kept tight to the formula", () => {
+  assert.equal(formatPowerFxFormula(`=If(x, 1, 2)`).output, `=If(x, 1, 2)`);
+  assert.equal(minifyPowerFxFormula(`  =  If( x , 1 , 2 )`).output, `=If(x,1,2)`);
+});
+
+test("a leading = keeps issue positions on the original text", () => {
+  const { issues } = formatPowerFxFormula(`=Notify("oops)`);
+  assert.equal(issues[0].position, 8);
+});
+
+test("a comparison that starts with = is not treated as a prefix", () => {
+  assert.equal(formatPowerFxFormula(`x = 1`).output, `x = 1`);
+});
+
+test("semicolon separators convert to comma separators", () => {
+  assert.equal(toCommaSeparators(`If(x = 1,5; Notify("a;b");; Back())`, "eu"), `If(x = 1.5, Notify("a;b"); Back())`);
+  assert.equal(toCommaSeparators(`Set(a, 1)`, "en"), `Set(a, 1)`);
 });
 
 console.log(`${passed} passed, ${failures} failed`);

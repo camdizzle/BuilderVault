@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
+import Link from "next/link";
 import { convertOnStart, formulasText } from "@/lib/tools/named-formulas";
+import { formatterLink } from "@/lib/tools/formula-link";
 import { formatPowerFxFormula } from "@/lib/tools/power-fx-format";
 
 const sampleOnStart = `Set(varAppName, "Service Requests");
@@ -57,6 +59,13 @@ export function NamedFormulasConverter() {
       ) : null}
 
       <CopyCodeBlock code={formulas || "Nothing here can move to App.Formulas."} copyEvent="Named Formulas Copied" label="App.Formulas" />
+      {formulas ? (
+        <div>
+          <Link className="button secondary" href={formatterLink(formulas)}>
+            Check App.Formulas in the Power Fx formatter
+          </Link>
+        </div>
+      ) : null}
       <CopyCodeBlock code={remaining || "Nothing is left. App.OnStart can be empty."} copyEvent="OnStart Copied" label="App.OnStart (what is left)" />
 
       {result.kept.length > 0 ? (

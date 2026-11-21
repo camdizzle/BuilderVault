@@ -26,6 +26,8 @@ export type TriggerRule = {
   type: TriggerFieldType;
   operator: TriggerOperator;
   value: string;
+  /** Rules with the same group number are joined together first. */
+  group?: number;
 };
 
 export type TriggerGuard = {
@@ -141,14 +143,16 @@ export function buildRule(source: TriggerSource, rule: TriggerRule) {
       return `equals(${ref}, true)`;
     case "isFalse":
       return `not(equals(${ref}, true))`;
+    // ticks() fails on an empty date, and a trigger condition that fails stops the flow from running,
+    // so an empty date is checked first. if() only works out the branch it returns.
     case "beforeNow":
-      return `less(ticks(${ref}), ticks(utcNow()))`;
+      return `if(empty(${ref}), false, less(ticks(${ref}), ticks(utcNow())))`;
     case "afterNow":
-      return `greater(ticks(${ref}), ticks(utcNow()))`;
+      return `if(empty(${ref}), false, greater(ticks(${ref}), ticks(utcNow())))`;
     case "before":
-      return `less(ticks(${ref}), ticks(${dateLiteral(rule.value)}))`;
+      return `if(empty(${ref}), false, less(ticks(${ref}), ticks(${dateLiteral(rule.value)})))`;
     case "after":
-      return `greater(ticks(${ref}), ticks(${dateLiteral(rule.value)}))`;
+      return `if(empty(${ref}), false, greater(ticks(${ref}), ticks(${dateLiteral(rule.value)})))`;
     case "contains":
       return `contains(${textRef}, ${literal(source, rule)})`;
     case "startsWith":
@@ -204,10 +208,10 @@ export function buildTriggerCondition(
   source: TriggerSource,
   rules: TriggerRule[],
   join: TriggerJoin,
-  guard: TriggerGuard
+  guard: TriggerGuard,
+  groupJoin: TriggerJoin = "and"
 ): TriggerConditionResult {
   const active = rules.filter((rule) => rule.field.trim());
-  const parts = active.map((rule) => buildRule(source, rule));
   const guardExpression = buildGuard(source, guard);
   const notes = rules.flatMap((rule, index) => ruleNotes(source, rule, index));
 
@@ -217,15 +221,56 @@ export function buildTriggerCondition(
     else if (source === "dataverse" && !guidPattern.test(guard.value.trim())) notes.push("The loop guard compares the Modified By user's GUID (systemuserid).");
   }
 
-  // With "and", the guard is just one more rule. With "or", it must wrap the whole group.
-  const all = join === "and" ? [...parts, ...(guardExpression ? [guardExpression] : [])] : parts;
-  let combinedBody = "";
-  if (all.length === 1) combinedBody = all[0];
-  else if (all.length > 1) combinedBody = `${join}(${all.join(", ")})`;
+  // Rules are joined within each group first, then the groups are joined with groupJoin.
+  const groupNumbers = [...new Set(active.map((rule) => rule.group ?? 1))].sort((a, b) => a - b);
+  const groups = groupNumbers.map((group) => active.filter((rule) => (rule.group ?? 1) === group).map((rule) => buildRule(source, rule)));
+  const joinAll = (operator: TriggerJoin, parts: string[]) => (parts.length === 1 ? parts[0] : `${operator}(${parts.join(", ")})`);
+  const grouped = groups.length > 1;
+  const groupBodies = groups.map((parts) => joinAll(join, parts));
+  const parts = grouped ? groupBodies : groups[0] ?? [];
+  const partsJoin = grouped ? groupJoin : join;
 
-  if (join === "or" && guardExpression) combinedBody = combinedBody ? `and(${combinedBody}, ${guardExpression})` : guardExpression;
+  // With "and", the guard is just one more rule. With "or", it must wrap the whole condition.
+  const all = partsJoin === "and" ? [...parts, ...(guardExpression ? [guardExpression] : [])] : parts;
+  let combinedBody = all.length > 0 ? joinAll(partsJoin, all) : "";
+  if (partsJoin === "or" && guardExpression) combinedBody = combinedBody ? `and(${combinedBody}, ${guardExpression})` : guardExpression;
 
   const combined = combinedBody ? "@" + combinedBody : "";
-  const separate = join === "and" || parts.length <= 1 ? [...parts, ...(guardExpression ? [guardExpression] : [])].map((part) => "@" + part) : [];
+  const separate = partsJoin === "and" || parts.length <= 1 ? [...parts, ...(guardExpression ? [guardExpression] : [])].map((part) => "@" + part) : [];
+  if (grouped && join === groupJoin) notes.push(`Groups only matter when the join inside a group differs from the join between groups. Both are "${join}" now.`);
   return { combined, separate, notes };
+}
+
+export type ChangedColumnsHelp = { label: string; value: string; notes: string[] };
+
+/**
+ * How to run a flow only when particular columns change. A trigger condition only sees the item as
+ * it is now, so it can't tell what changed. Each connector has its own way to do this.
+ */
+export function changedColumnsHelp(source: TriggerSource, columns: string): ChangedColumnsHelp | null {
+  const names = columns.split(",").map((name) => name.trim()).filter(Boolean);
+  if (names.length === 0 || source === "other") return null;
+  if (source === "dataverse") {
+    return {
+      label: "Select columns (on the trigger)",
+      value: names.map((name) => name.toLowerCase()).join(","),
+      notes: [
+        "Paste this into Select columns on the When a row is added, modified or deleted trigger. The flow then runs only when one of these columns changes.",
+        "Use logical names, separated by commas with no spaces."
+      ]
+    };
+  }
+  const first = names[0].replace(/'/g, "''");
+  return {
+    label: "Expression for a Condition after Get changes for an item or a file (properties only)",
+    value: names.length === 1
+      ? `equals(body('Get_changes_for_an_item_or_a_file_(properties_only)')?['ColumnHasChanged']?['${first}'], true)`
+      : `or(${names.map((name) => `equals(body('Get_changes_for_an_item_or_a_file_(properties_only)')?['ColumnHasChanged']?['${name.replace(/'/g, "''")}'], true)`).join(", ")})`,
+    notes: [
+      "A SharePoint trigger condition can't tell which column changed, because it only sees the item as it is now.",
+      "Add the Get changes for an item or a file (properties only) action. Set Id to the trigger's ID, and Since to the trigger's Trigger Window Start Token.",
+      "Then add a Condition with this expression on the left, is equal to, and true on the right. Put the rest of the flow in its If yes branch.",
+      "Get changes needs versioning turned on for the list, which is the default."
+    ]
+  };
 }

@@ -556,7 +556,31 @@ function printBrokenGroup(group: PowerFxGroup, level: number, writer: LineWriter
   }
 }
 
+/**
+ * A formula copied from a .pa.yaml file or a property starts with "=". It isn't part of the
+ * formula, so it is set aside, the rest is formatted, and the "=" is put back with no space.
+ */
+function splitLeadingEquals(input: string) {
+  const match = /^\s*=(?!=)/.exec(input);
+  return match ? { prefix: "=", body: input.slice(match[0].length), offset: match[0].length } : { prefix: "", body: input, offset: 0 };
+}
+
+function withLeadingEquals(input: string, run: (body: string) => { output: string; issues: PowerFxIssue[]; maxDepth: number }) {
+  const { prefix, body, offset } = splitLeadingEquals(input);
+  if (!prefix) return run(input);
+  const result = run(body);
+  return {
+    output: result.output ? prefix + result.output : body.trim() ? prefix : "",
+    issues: result.issues.map((issue) => ({ ...issue, position: issue.position >= 0 ? issue.position + offset : issue.position })),
+    maxDepth: result.maxDepth
+  };
+}
+
 export function formatPowerFxFormula(input: string, options: Partial<PowerFxFormatOptions> = {}) {
+  return withLeadingEquals(input, (body) => formatBody(body, options));
+}
+
+function formatBody(input: string, options: Partial<PowerFxFormatOptions>) {
   const resolved = { ...defaultPowerFxFormatOptions, ...options };
   const tree = parsePowerFx(input, resolved.locale);
   const ctx: PrintContext = { options: resolved, minify: false };
@@ -577,6 +601,10 @@ export function formatPowerFxFormula(input: string, options: Partial<PowerFxForm
 }
 
 export function minifyPowerFxFormula(input: string, options: Partial<PowerFxFormatOptions> = {}) {
+  return withLeadingEquals(input, (body) => minifyBody(body, options));
+}
+
+function minifyBody(input: string, options: Partial<PowerFxFormatOptions>) {
   const resolved = { ...defaultPowerFxFormatOptions, ...options };
   const tree = parsePowerFx(input, resolved.locale);
   const ctx: PrintContext = { options: resolved, minify: true };
@@ -584,6 +612,26 @@ export function minifyPowerFxFormula(input: string, options: Partial<PowerFxForm
     .filter((statement) => statement.length > 0)
     .map((statement) => flatItems(statement, ctx) ?? "");
   return { output: statements.join(chainSeparator(resolved)), issues: tree.issues, maxDepth: tree.maxDepth };
+}
+
+/**
+ * Rewrites a formula written with semicolon separators (; between arguments, ;; between
+ * statements, a decimal comma) into comma separators, leaving everything else as typed.
+ * Used to run comma-syntax checks, such as the delegation checker, on either syntax.
+ */
+export function toCommaSeparators(input: string, locale: PowerFxLocale) {
+  if (locale === "en") return input;
+  let output = "";
+  let cursor = 0;
+  for (const token of tokenizePowerFx(input, locale).tokens) {
+    output += input.slice(cursor, token.start);
+    if (token.kind === "sep") output += ",";
+    else if (token.kind === "chain") output += ";";
+    else if (token.kind === "number") output += token.value.replace(",", ".");
+    else output += token.value;
+    cursor = token.start + token.value.length;
+  }
+  return output + input.slice(cursor);
 }
 
 /** Significant token values, used to prove formatting only changed whitespace. */
