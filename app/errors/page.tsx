@@ -6,12 +6,13 @@ import { getGuideBySlug, type Guide } from "@/lib/guides";
 
 export const metadata = {
   title: "Power Automate, Power Apps and Solution Error Messages and Fixes | BuilderVault",
-  description: "Look up a Power Automate or Power Apps error message and get its meaning, causes and fix. Covers InvalidTemplate, null values, Parse JSON, Filter Query, throttling, approvals, Dataverse, Patch errors and solution imports.",
+  description: "Look up a Power Automate or Power Apps error message and get its meaning, causes and fix. Covers InvalidTemplate, null values, Parse JSON, Filter Query, throttling, approvals, Dataverse, broken connections and sign-in, Patch errors and solution imports.",
   alternates: { canonical: "/errors" }
 };
 
 const productIntro: Record<string, string> = {
   "Power Automate": "Errors from a failed flow run, the expression editor or a trigger, including approvals and Dataverse actions.",
+  "Connections and sign-in": "Errors from broken connections, expired sign-ins, security policies, licences and permissions, with what you can fix yourself and what to ask an administrator.",
   "Power Apps": "Errors that appear when a canvas app saves or loads data, and notices from Power Apps Studio.",
   "Solution import": "Errors from importing, upgrading and uninstalling solutions, and from flows after a deployment."
 };

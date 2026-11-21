@@ -1,6 +1,6 @@
 import type { GuideBlock, GuideLink } from "../guides/types";
 
-export type ErrorProduct = "Power Automate" | "Power Apps" | "Solution import";
+export type ErrorProduct = "Power Automate" | "Power Apps" | "Solution import" | "Connections and sign-in";
 
 export type ErrorPage = {
   slug: string;
