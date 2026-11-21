@@ -46,7 +46,7 @@ export const sharePointQuickStartGuide: Guide = {
         ["Get files (properties only)", "Reads the columns of many files or folders in a library."],
         ["Get file content", "Reads the content of one file."],
         ["Create file", "Saves content as a file in a folder."],
-        ["Send an HTTP request to SharePoint", "Calls the SharePoint REST API for anything the other actions cannot do."]
+        ["Send an HTTP request to SharePoint", "Calls the SharePoint REST API for anything the other actions cannot do. The [SharePoint HTTP request builder](/tools/sharepoint-http-request-builder) writes the request."]
       ),
       p("**Get items** returns an array, even when it finds one item, so any value you pick from it puts your action inside an **Apply to each**. **Get item** returns a single item with no loop. If you already have the ID, always choose Get item.")
     ),
@@ -145,7 +145,7 @@ export const sharePointQuickStartGuide: Guide = {
       answer: "Update item needs a value for every required column of the list. Pass the existing value from the trigger or from a Get item action for any column you are not changing."
     }
   ],
-  relatedTools: ["odata-filter-query-builder", "trigger-condition-builder", "sharepoint-internal-name-helper", "sharepoint-column-formatting-builder"],
+  relatedTools: ["odata-filter-query-builder", "trigger-condition-builder", "sharepoint-internal-name-helper", "sharepoint-column-formatting-builder", "sharepoint-http-request-builder"],
   relatedPatterns: ["power-automate-avoid-infinite-update-loop", "get-more-than-5000-items-power-automate", "send-http-request-to-sharepoint-power-automate", "sharepoint-batch-create-update-items-power-automate"],
   relatedLinks: [
     { href: "/guides/sharepoint-get-items-filter-query", label: "Get items Filter Query by column type" },

@@ -22,6 +22,7 @@ import { PatchFormulaBuilder } from "@/components/tools/patch-formula-builder";
 import { ErrorMessageFinder } from "@/components/tools/error-message-finder";
 import { GalleryFilterBuilder } from "@/components/tools/gallery-filter-builder";
 import { RecurrencePlanner } from "@/components/tools/recurrence-planner";
+import { SharePointHttpBuilder } from "@/components/tools/sharepoint-http-builder";
 import type { ErrorEntry } from "@/lib/tools/error-finder";
 
 export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
@@ -46,6 +47,7 @@ export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { sl
   if (slug === "error-message-finder") return <ErrorMessageFinder entries={errorEntries} />;
   if (slug === "gallery-search-filter-builder") return <GalleryFilterBuilder />;
   if (slug === "recurrence-schedule-planner") return <RecurrencePlanner />;
+  if (slug === "sharepoint-http-request-builder") return <SharePointHttpBuilder />;
   return null;
 }
 

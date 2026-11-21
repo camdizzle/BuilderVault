@@ -1459,6 +1459,67 @@ Filter(
       }
     ]
   }),
+  item({
+    slug: "sharepoint-http-request-builder",
+    kind: "tool",
+    title: "SharePoint HTTP Request Builder for Power Automate",
+    eyebrow: "Free tool",
+    description: "Build the method, URI, headers and body for the Send an HTTP request to SharePoint action. Get, create, update and delete items, list files, create folders and change permissions, with the expression that reads the result.",
+    keywords: ["Send an HTTP request to SharePoint", "SharePoint REST API Power Automate", "SharePoint HTTP request update item", "break role inheritance Power Automate", "SharePoint REST $select $expand"],
+    audience: "Flow builders who need something the standard SharePoint actions can't do, such as setting item permissions, selecting lookup fields, or creating an item inside a folder.",
+    summaryBullets: [
+      "16 requests: get items with $select, $filter, $orderby and $top, get one item, list columns, create, update and delete items, attachments, files, folders and permissions.",
+      "Adds $expand automatically when a lookup or person column is in $select.",
+      "Writes create and update bodies with the item type and the right value for each column type, including lookups and people as their ID.",
+      "Gives the headers as JSON, including IF-MATCH and X-HTTP-Method for updates and deletes.",
+      "Gives the expression that reads the result, such as the items array or the new item's ID."
+    ],
+    examples: [
+      {
+        title: "Update two columns on the item that started the flow",
+        problem: "Change a status and a number without sending every column back.",
+        code: `Method:  POST
+Uri:     _api/web/lists/getbytitle('Requests')/items(@{triggerOutputs()?['body/ID']})
+Headers: {
+  "Accept": "application/json;odata=verbose",
+  "Content-Type": "application/json;odata=verbose",
+  "IF-MATCH": "*",
+  "X-HTTP-Method": "MERGE"
+}
+Body:    {
+  "__metadata": { "type": "SP.Data.RequestsListItem" },
+  "Status": "Approved",
+  "Amount": 250
+}`,
+        expectedResult: "Only Status and Amount change. MERGE keeps every other column as it was.",
+        commonMistakes: ["Using the column's display name instead of its internal name.", "Guessing the item type for a list that was renamed. Get it with $select=ListItemEntityTypeFullName."]
+      }
+    ],
+    relatedPatterns: ["send-http-request-to-sharepoint-power-automate", "sharepoint-item-level-permissions-break-inheritance-flow", "sharepoint-batch-create-update-items-power-automate", "get-more-than-5000-items-power-automate"],
+    relatedTools: ["odata-filter-query-builder", "sharepoint-internal-name-helper", "parse-json-schema-generator"],
+    faqs: [
+      {
+        question: "When should I use Send an HTTP request to SharePoint instead of the normal actions?",
+        answer: "When the normal actions can't do the job: setting permissions with specific permission levels, creating an item inside a folder, reading a lookup column's other fields, or reading the list's columns. For ordinary create, update and get, the standard actions are easier to maintain."
+      },
+      {
+        question: "Why does my request fail with a column that does not exist?",
+        answer: "REST uses internal names, which often differ from the display name, for example Request_x0020_Number. Use the List a list's columns request to find each internal name."
+      },
+      {
+        question: "What is the item type in the body?",
+        answer: "It is the list's ListItemEntityTypeFullName, such as SP.Data.RequestsListItem. SharePoint's documentation says create and update requests need it. The tool guesses it from the title, but a renamed list or a library has a different value, so read it once with the Get the list's item type request."
+      },
+      {
+        question: "Do I need an Authorization or X-RequestDigest header?",
+        answer: "No. The action signs in with the flow's SharePoint connection, so you only add the headers the tool shows."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. The request is built in your browser."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed

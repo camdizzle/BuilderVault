@@ -203,7 +203,7 @@ export const httpQuickStartGuide: Guide = {
         ["Licence", "Premium", "Premium"],
         ["Paired with", "Parse JSON, to read the answer", "Response, to answer the caller"]
       ),
-      p("Before you reach for either, check whether a connector already does the job. A connector handles sign-in for you and is easier to maintain. For SharePoint, the standard action **Send an HTTP request to SharePoint** calls the SharePoint API on the existing connection with no premium licence. The [SharePoint HTTP pattern](/patterns/send-http-request-to-sharepoint-power-automate) shows how."),
+      p("Before you reach for either, check whether a connector already does the job. A connector handles sign-in for you and is easier to maintain. For SharePoint, the standard action **Send an HTTP request to SharePoint** calls the SharePoint API on the existing connection with no premium licence. The [SharePoint HTTP pattern](/patterns/send-http-request-to-sharepoint-power-automate) shows how, and the [SharePoint HTTP request builder](/tools/sharepoint-http-request-builder) writes the request for you."),
       note("Administrators can block the HTTP connectors with a data loss prevention policy. If the flow will not save or is switched off as soon as you add one, see [the DLP error page](/errors/app-not-compliant-data-loss-prevention-policies).")
     ),
     section(

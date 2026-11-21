@@ -12,6 +12,7 @@ const turnOnFlowDoc = automateDoc("disable-flow", "Turn a flow on or off");
 
 const flowsGuide = { href: "/guides/hand-over-power-automate-flows-when-someone-leaves", label: "Hand over flows when someone leaves" };
 const troubleshootGuide = { href: "/guides/troubleshoot-failed-flow-run", label: "Troubleshoot a failed flow run" };
+const callFlowGuide = { href: "/guides/call-power-automate-flow-from-power-apps", label: "Call a flow from Power Apps" };
 
 /** The fix Microsoft gives for most of these errors: make the app read the flow's current definition again. */
 const readdFlowSteps = ol(
@@ -77,7 +78,7 @@ const invokerConnection: ErrorPage = {
   ],
   relatedTools: [],
   relatedPatterns: ["respond-to-power-app-return-values-from-flow", "connection-references-for-solution-flows"],
-  relatedLinks: [troubleshootGuide, flowsGuide],
+  relatedLinks: [callFlowGuide, troubleshootGuide, flowsGuide],
   relatedErrors: ["missingconnectionreference-connection-reference-was-not-given-by-invoker", "connectionauthorizationfailed-power-apps-flow", "flow-connection-property-doesnt-exist-available-properties"],
   sources: [flowIntegrationDoc, workingWithFlowsDoc]
 };
@@ -126,7 +127,7 @@ const connectionAuthorization: ErrorPage = {
   ],
   relatedTools: [],
   relatedPatterns: ["connection-references-for-solution-flows", "service-principal-application-user-deployments"],
-  relatedLinks: [flowsGuide, troubleshootGuide],
+  relatedLinks: [callFlowGuide, flowsGuide, troubleshootGuide],
   relatedErrors: ["invokerconnectionoverridefailed-power-apps-flow", "permission-denied-due-to-missing-connection-acl", "missingconnectionreference-connection-reference-was-not-given-by-invoker"],
   sources: [flowIntegrationDoc, flowAccessDoc]
 };
@@ -179,7 +180,7 @@ const triggerNotEnabled: ErrorPage = {
   ],
   relatedTools: [],
   relatedPatterns: ["power-automate-error-handling-kit"],
-  relatedLinks: [{ href: "/guides/power-automate-limits", label: "Power Automate limits" }, troubleshootGuide],
+  relatedLinks: [callFlowGuide, { href: "/guides/power-automate-limits", label: "Power Automate limits" }, troubleshootGuide],
   relatedErrors: ["flows-not-turned-on-after-solution-import-connection-references", "problem-with-the-flows-trigger", "invokerconnectionoverridefailed-power-apps-flow"],
   sources: [flowIntegrationDoc, turnOnFlowDoc, limitsDoc]
 };
@@ -230,7 +231,7 @@ const responseTimeout: ErrorPage = {
   ],
   relatedTools: [],
   relatedPatterns: ["respond-to-power-app-return-values-from-flow", "do-until-polling-loop-timeout-power-automate"],
-  relatedLinks: [{ href: "/guides/power-automate-limits", label: "Power Automate limits" }, troubleshootGuide],
+  relatedLinks: [callFlowGuide, { href: "/guides/power-automate-limits", label: "Power Automate limits" }, troubleshootGuide],
   relatedErrors: ["badgateway-502-power-automate", "429-rate-limit-exceeded-power-automate", "workflowtriggerisnotenabled-power-apps-flow"],
   sources: [flowIntegrationDoc, limitsDoc]
 };
@@ -277,7 +278,7 @@ const missingConnectionReference: ErrorPage = {
   ],
   relatedTools: ["solution-layering-checklist-generator"],
   relatedPatterns: ["connection-references-for-solution-flows"],
-  relatedLinks: [troubleshootGuide],
+  relatedLinks: [callFlowGuide, troubleshootGuide],
   relatedErrors: ["invokerconnectionoverridefailed-power-apps-flow", "flows-not-turned-on-after-solution-import-connection-references", "failed-to-install-the-flow-0x80040265"],
   sources: [flowIntegrationDoc, solutionLayersDoc, workingWithFlowsDoc]
 };
@@ -318,7 +319,7 @@ const failedToInstall: ErrorPage = {
   ],
   relatedTools: ["solution-layering-checklist-generator"],
   relatedPatterns: ["connection-references-for-solution-flows"],
-  relatedLinks: [troubleshootGuide],
+  relatedLinks: [callFlowGuide, troubleshootGuide],
   relatedErrors: ["workflowtriggerisnotenabled-power-apps-flow", "connectionauthorizationfailed-power-apps-flow", "invokerconnectionoverridefailed-power-apps-flow", "isv-code-aborted-the-operation-dataverse"],
   sources: [flowIntegrationDoc, learnDoc("power-apps/developer/data-platform/reference/web-service-error-codes", "Dataverse web service error codes")]
 };
