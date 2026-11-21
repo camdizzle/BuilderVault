@@ -1,5 +1,9 @@
 ﻿import Link from "next/link";
 import { SimplePage } from "@/components/layout/simple-page";
+import { proEnabled } from "@/lib/pro/config";
+
+// Reads PRO_ENABLED when the page is requested, so switching Pro on in Plesk needs no rebuild.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Free Access | BuilderVault",
@@ -7,6 +11,7 @@ export const metadata = {
 };
 
 export default function PricingPage() {
+  if (proEnabled()) return <ProPricing />;
   return (
     <SimplePage
       eyebrow="Free access"
@@ -31,6 +36,33 @@ export default function PricingPage() {
       </p>
       <Link className="button" href="/tools/power-fx-formatter" style={{ justifySelf: "start" }}>
         Try a free tool
+      </Link>
+    </SimplePage>
+  );
+}
+
+function ProPricing() {
+  return (
+    <SimplePage
+      eyebrow="Pricing"
+      lead="Every BuilderVault tool, pattern, guide and download is free without an account. Pro adds saved settings and history to the Power Fx formatter for $3 a month or $30 a year."
+      title="Free to use. Pro if you want more."
+    >
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+        <Plan
+          name="Free"
+          price="$0"
+          features={["Every browser tool, including the Power Fx formatter", "All patterns, guides, examples and error pages", "Cookbooks, standards, cheat sheets and download packs", "No account needed"]}
+        />
+        <Plan
+          name="Pro"
+          price="$3 a month"
+          features={["Or $30 a year, two months free", "Everything in Free", "Formatter settings saved to your account", "History of your last 50 saved formulas", "Sign in with an email link, cancel any time"]}
+          highlighted
+        />
+      </div>
+      <Link className="button" href="/pro" style={{ justifySelf: "start" }}>
+        See BuilderVault Pro
       </Link>
     </SimplePage>
   );

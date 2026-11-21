@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { FormatterProPanel } from "@/components/pro/formatter-pro-panel";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { checkDelegation, dataSourceLabels, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
@@ -118,6 +119,17 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
         <span className={`badge ${checks.severityClass}`}>{checks.severity}</span>
       </div>
       {linkStatus ? <p role="status" style={mutedText}>{linkStatus}</p> : null}
+      <FormatterProPanel
+        formula={formula}
+        onApplySettings={(saved) => {
+          setIndent(saved.indent);
+          setWidth(saved.width);
+          setLocale(saved.locale);
+          setSource(saved.source as DataSource);
+        }}
+        onLoadFormula={setFormula}
+        settings={{ indent, width, locale, source }}
+      />
       {result.issues.length > 0 ? (
         <div className="stat-tile" role="alert">
           <div className="eyebrow">Syntax check</div>

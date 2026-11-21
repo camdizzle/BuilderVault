@@ -692,3 +692,95 @@ button {
 .link-button:hover {
   text-decoration: underline;
 }
+
+/* BuilderVault Pro: header links, plan cards and the formatter's Pro panel */
+/* The account links join the header nav as ordinary items, so they wrap with it on small screens. */
+.account-menu {
+  display: contents;
+}
+
+.account-menu-pro {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pro-plan-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.pro-plan-grid form {
+  margin: 0;
+}
+
+.pro-plan-grid .button {
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  width: 100%;
+}
+
+.pro-notice {
+  background: var(--accent-soft);
+  border: 1px solid #b9ddd0;
+  border-radius: 8px;
+  color: #17201d;
+  line-height: 1.6;
+  margin: 0;
+  padding: 12px 16px;
+}
+
+.pro-notice.error {
+  background: #fdf1ef;
+  border-color: #efc4bb;
+}
+
+.pro-form {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.pro-form input[type="email"] {
+  border: 1px solid #aeb8b1;
+  border-radius: 8px;
+  font: inherit;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.pro-form .button {
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  justify-self: start;
+}
+
+.pro-history {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pro-history li {
+  align-items: center;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.pro-history code {
+  flex: 1 1 160px;
+  min-width: 0;
+  width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

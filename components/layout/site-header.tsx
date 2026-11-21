@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountMenu } from "@/components/pro/account-menu";
 
 export function SiteHeader() {
   return (
@@ -54,6 +55,7 @@ export function SiteHeader() {
           <Link href="/tools">Tools</Link>
           <Link href="/services">Get help</Link>
           <Link href="/about">About</Link>
+          <AccountMenu />
         </nav>
       </div>
     </header>

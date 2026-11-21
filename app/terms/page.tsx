@@ -1,4 +1,8 @@
 import { SimplePage } from "@/components/layout/simple-page";
+import { proEnabled } from "@/lib/pro/config";
+
+// Reads PRO_ENABLED when the page is requested, so the subscription terms appear when Pro is switched on.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Terms of Use | BuilderVault",
@@ -7,6 +11,7 @@ export const metadata = {
 };
 
 export default function TermsPage() {
+  const pro = proEnabled();
   return (
     <SimplePage
       eyebrow="Terms"
@@ -14,7 +19,7 @@ export default function TermsPage() {
       title="Terms of use."
     >
       <p>
-        <strong>Last updated:</strong> May 14, 2026
+        <strong>Last updated:</strong> {pro ? "November 21, 2026" : "May 14, 2026"}
       </p>
       <p>
         These terms are practical boilerplate for the current public version of
@@ -52,11 +57,36 @@ export default function TermsPage() {
         professionals when decisions require specialized review.
       </p>
       <h2>Accounts, payments, and subscriptions</h2>
-      <p>
-        BuilderVault does not currently offer paid subscriptions, payment
-        processing, or user accounts. If those features are added later, additional
-        terms may apply before you use them.
-      </p>
+      {pro ? (
+        <>
+          <p>
+            Every BuilderVault tool and page can be used without an account. Signing
+            in is optional and uses a link sent to your email address. You are
+            responsible for keeping access to that email address secure.
+          </p>
+          <p>
+            BuilderVault Pro is an optional subscription, billed in US dollars at $3
+            a month or $30 a year, plus any tax shown at checkout. Payments are
+            processed by Stripe. Pro renews automatically at the end of each period
+            until you cancel.
+          </p>
+          <p>
+            You can cancel at any time from Manage billing on your account page. Pro
+            then stays on until the end of the period you have already paid for. If
+            you believe you were charged in error, contact us and we will review it.
+          </p>
+          <p>
+            We may change Pro&apos;s features or price. We will email subscribers
+            before a price change applies to their next renewal.
+          </p>
+        </>
+      ) : (
+        <p>
+          BuilderVault does not currently offer paid subscriptions, payment
+          processing, or user accounts. If those features are added later, additional
+          terms may apply before you use them.
+        </p>
+      )}
       <h2>Intellectual property</h2>
       <p>
         BuilderVault owns or licenses the site design, organization, written
