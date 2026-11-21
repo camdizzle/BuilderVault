@@ -3,6 +3,7 @@ import { ErrorCard } from "@/components/errors/error-card";
 import { GuideCard } from "@/components/guides/guide-card";
 import { errorPages, errorProducts, getErrorsByProduct } from "@/lib/errors";
 import { getGuideBySlug, type Guide } from "@/lib/guides";
+import { errorProductAnchor } from "@/lib/navigation";
 
 export const metadata = {
   title: "Power Automate, Power Apps, Power Pages and Solution Error Messages and Fixes | BuilderVault",
@@ -43,7 +44,7 @@ export default function ErrorsPage() {
         </div>
 
         {errorProducts.map((product) => (
-          <section key={product} style={{ display: "grid", gap: 18 }}>
+          <section id={errorProductAnchor(product)} key={product} style={{ display: "grid", gap: 18 }}>
             <div>
               <div className="eyebrow">{product}</div>
               <h2 className="section-title">{product} errors</h2>

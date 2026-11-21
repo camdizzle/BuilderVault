@@ -479,22 +479,9 @@ button {
   margin: 0;
 }
 
-.compact-nav-group {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  justify-content: flex-end;
-}
-
 @media (max-width: 720px) {
   .platform-strip {
     grid-template-columns: 1fr;
-  }
-
-  .compact-nav-group {
-    gap: 10px;
-    justify-content: flex-start;
   }
 }
 
@@ -567,18 +554,22 @@ button {
 .footer-grid {
   display: grid;
   gap: 24px;
-  grid-template-columns: minmax(240px, 1.3fr) repeat(4, minmax(120px, 0.7fr));
+  grid-template-columns: minmax(220px, 1.3fr) repeat(5, minmax(120px, 0.7fr));
 }
 
 @media (max-width: 920px) {
   .footer-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .footer-grid > :first-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
-  .footer-grid {
-    grid-template-columns: 1fr;
+  .footer-grid > :first-child {
+    grid-column: 1 / -1;
   }
 }
 
