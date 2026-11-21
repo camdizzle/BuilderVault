@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { CookieSettingsButton } from "@/components/analytics/cookie-consent";
+import { errorProducts } from "@/lib/errors";
+import { errorProductAnchor } from "@/lib/navigation";
+import { tools } from "@/lib/resources";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -26,10 +29,11 @@ export function SiteFooter() {
           </p>
           <p style={{ fontSize: "0.9rem", marginBottom: 0 }}>© {year} BuilderVault.</p>
         </div>
-        <FooterGroup title="Learn" links={[["/patterns", "Patterns"], ["/resources", "Resources"], ["/examples", "Examples"], ["/guides", "Guides"], ["/functions", "Power Fx functions"], ["/errors", "Error library"], ["/cookbooks", "Cookbooks"], ["/downloads", "Free downloads"], ["/pmo", "PMO Toolkit"]]} />
-        <FooterGroup title="Tools" links={[["/tools/power-fx-formatter", "Power Fx Formatter"], ["/tools/sharepoint-internal-name-helper", "Internal Name Helper"], ["/tools/power-automate-expression-builder", "Expression Builder"], ["/tools/solution-layering-checklist-generator", "ALM Checklist"]]} />
-        <FooterGroup title="Company" links={[["/about", "About"], ["/services", "Get help"], ["/contact", "Contact"], ["/pricing", "Free access"]]} />
-        <FooterGroup title="Legal" links={[["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]}>
+        <FooterGroup title="Tools" links={[["/tools/power-fx-formatter", "Power Fx Formatter"], ["/tools/power-automate-expression-builder", "Expression Builder"], ["/tools/odata-filter-query-builder", "Filter Query Builder"], ["/tools/power-apps-delegation-checker", "Delegation Checker"], ["/tools/patch-formula-builder", "Patch Formula Builder"], ["/tools/date-format-tester", "Date Format Tester"], ["/tools/error-message-finder", "Error Message Finder"], ["/tools", `All ${tools.length} tools`]]} />
+        <FooterGroup title="Learn" links={[["/guides", "How-to guides"], ["/functions", "Power Fx functions"], ["/examples", "Worked examples"], ["/cookbooks", "Cookbooks"], ["/cheat-sheets", "Cheat sheets"], ["/standards", "Team standards"], ["/downloads", "Free downloads"], ["/pmo", "PMO Toolkit"]]} />
+        <FooterGroup title="Fix an error" links={[["/errors", "Error library"], ...errorProducts.map((product) => [`/errors#${errorProductAnchor(product)}`, product])]} />
+        <FooterGroup title="Patterns" links={[["/patterns", "Pattern library"], ["/collections", "Collections"], ["/power-apps", "Power Apps"], ["/power-automate", "Power Automate"], ["/sharepoint", "SharePoint"], ["/dataverse", "Dataverse"], ["/alm", "ALM and governance"]]} />
+        <FooterGroup title="Company" links={[["/about", "About"], ["/services", "Get help"], ["/contact", "Contact"], ["/pricing", "Free access"], ["/privacy", "Privacy"], ["/terms", "Terms"], ["/disclaimer", "Disclaimer"]]}>
           <CookieSettingsButton />
         </FooterGroup>
       </div>

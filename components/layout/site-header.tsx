@@ -1,62 +1,18 @@
 import Link from "next/link";
-import { AccountMenu } from "@/components/pro/account-menu";
+import { SiteNav } from "@/components/layout/site-nav";
+import { formatterLink, navMenus } from "@/lib/navigation";
 
 export function SiteHeader() {
   return (
-    <header
-      style={{
-        background: "rgba(247, 248, 245, 0.94)",
-        borderBottom: "1px solid var(--line)",
-        position: "sticky",
-        top: 0,
-        zIndex: 20
-      }}
-    >
-      <div
-        className="container"
-        style={{
-          alignItems: "center",
-          display: "flex",
-          gap: 20,
-          justifyContent: "space-between",
-          minHeight: 72
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            alignItems: "center",
-            display: "flex",
-            fontSize: "1.15rem",
-            fontWeight: 800,
-            gap: 10
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              background: "var(--accent)",
-              borderRadius: 6,
-              color: "white",
-              display: "grid",
-              height: 32,
-              placeItems: "center",
-              width: 32
-            }}
-          >
+    <header className="site-header">
+      <div className="container site-header-inner">
+        <Link className="site-logo" href="/">
+          <span aria-hidden="true" className="site-logo-mark">
             B
           </span>
           BuilderVault
         </Link>
-        <nav aria-label="Main navigation" className="compact-nav-group">
-          <Link href="/patterns">Patterns</Link>
-          <Link href="/resources">Resources</Link>
-          <Link href="/examples">Examples</Link>
-          <Link href="/tools">Tools</Link>
-          <Link href="/services">Get help</Link>
-          <Link href="/about">About</Link>
-          <AccountMenu />
-        </nav>
+        <SiteNav formatter={formatterLink} menus={navMenus} />
       </div>
     </header>
   );
