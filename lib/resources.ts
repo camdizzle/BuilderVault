@@ -244,7 +244,8 @@ export const tools: ResourceItem[] = [
       "Short calls stay on one line, and long calls break with one argument per line.",
       "Operators such as <>, >=, && and || stay intact, along with comments, quoted names, and text values.",
       "Supports comma locales and semicolon locales (; for arguments, ;; for chaining).",
-      "Flags unbalanced brackets and quotes, and common delegation risks inside Filter, LookUp, and Search.",
+      "Flags unbalanced brackets and quotes, and checks delegation for the data source you pick: SharePoint, Dataverse, SQL Server, or Excel.",
+      "Links each function in the formula to its page in the Power Fx function reference.",
       "Nothing is uploaded. The formula never leaves your browser."
     ],
     examples: [
@@ -305,7 +306,7 @@ With(
       },
       {
         question: "How accurate is the delegation check?",
-        answer: "It is a heuristic. It looks for functions and operators that commonly break delegation, such as Lower, Len, or the in operator inside Filter, and Search against SharePoint. Delegation depends on the data source and column type, so always confirm with the warnings in Studio."
+        answer: "It is a guide, not a guarantee. Pick the data source the formula runs against, and the formatter uses the same rules as the delegation checker to flag functions and operators that source can't delegate, such as Lower or the in operator inside Filter on SharePoint. Column types matter too, so always confirm with the warnings in Studio."
       }
     ]
   }),
@@ -438,9 +439,62 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       }
     ]
   }),
-  item({ slug: "power-automate-expression-builder", kind: "tool", title: "Power Automate Expression Builder", eyebrow: "Free tool", description: "Pick a common Power Automate expression for dates, null checks, arrays or conditions, fill in your own values and copy the result into a flow.", keywords: ["Power Automate expression builder", "flow expressions", "trigger conditions"], audience: "Flow builders who reuse the same expressions across business processes.", summaryBullets: ["Choose a template for dates, blank values, arrays or conditions.", "Replace the sample values with your own trigger or action outputs.", "Copy the finished expression into the expression editor.", "Each template notes what its inputs mean and where it is typically used."], examples: [{ title: "Expression templates", problem: "Give makers a safe starting point.", code: `Date: formatDateTime(<dateValue>, 'MMM d, yyyy')
-Null fallback: coalesce(<value>, '<fallback>')
-Choice trigger: @equals(triggerOutputs()?['body/<ChoiceColumn>/Value'], '<Choice>')`, expectedResult: "Makers can adapt snippets without hunting through run history for syntax.", commonMistakes: ["Copying expressions without replacing sample tokens", "Using expressions in the wrong connector context"] }], relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"] }),
+  item({
+    slug: "power-automate-expression-builder",
+    kind: "tool",
+    title: "Power Automate Expression Builder",
+    eyebrow: "Free tool",
+    description: "Build Power Automate expressions for dates, time zones, empty values, text, numbers, arrays, trigger conditions and approvals. Fill in your own values and copy an expression that handles nulls and quotes for you.",
+    keywords: ["Power Automate expression builder", "Power Automate expressions", "formatDateTime null", "coalesce Power Automate", "trigger condition expression"],
+    audience: "Flow builders who need a working expression quickly and don't want to debug a null or a missing quote in run history.",
+    summaryBullets: [
+      "Choose from 28 templates in seven groups: dates and times, text, numbers, arrays and loops, trigger conditions, approvals, and flow details.",
+      "Replace the sample values with your own trigger or action outputs. Text is quoted for you, with single quotes doubled.",
+      "Date and text templates check for empty values first, so the flow doesn't fail when a column is blank.",
+      "Each template explains its inputs and links to the error page for the mistake it avoids.",
+      "Nothing you type leaves your browser."
+    ],
+    examples: [
+      {
+        title: "Format a date that can be empty",
+        problem: "formatDateTime fails with a null error when a SharePoint date column is blank.",
+        code: `if(empty(triggerOutputs()?['body/DueDate']), '', formatDateTime(triggerOutputs()?['body/DueDate'], 'MMM d, yyyy'))`,
+        expectedResult: "A formatted date when there is one, and empty text when there isn't, with no failed run.",
+        commonMistakes: ["Formatting the date without checking it first", "Using coalesce, which doesn't catch empty text"]
+      },
+      {
+        title: "Read the first item without a loop",
+        problem: "Get items returns an array, so reading one column normally adds an Apply to each.",
+        code: `first(body('Get_items')?['value'])?['Title']`,
+        expectedResult: "The Title of the first row, or null when no rows came back.",
+        commonMistakes: ["Forgetting the ['value'] part", "Typing the action name with spaces instead of underscores"]
+      }
+    ],
+    relatedPatterns: ["power-automate-trigger-condition-status-changed", "coalesce-empty-null-handling-power-automate"],
+    relatedTools: ["date-format-tester", "trigger-condition-builder", "odata-filter-query-builder"],
+    faqs: [
+      {
+        question: "Where do I paste the expression?",
+        answer: "Click into an action field, open the expression editor (fx), paste it and select Add or OK. Don't add @ or @{ } around it there. Trigger conditions are the exception: they go in the trigger's Settings and start with @."
+      },
+      {
+        question: "Why does my expression fail when a column is empty?",
+        answer: "Functions such as formatDateTime, toLower and ticks fail when they are given null. The templates check with empty() or coalesce() first, so a blank column returns a fallback instead of failing the run."
+      },
+      {
+        question: "What is the difference between coalesce and empty?",
+        answer: "coalesce returns the first value that isn't null, so empty text still comes back as empty text. empty() is true for null, empty text, an empty array and an empty object, so if(empty(value), fallback, value) catches both."
+      },
+      {
+        question: "Why do action names have underscores?",
+        answer: "Expressions refer to actions by their internal name, which replaces spaces with underscores. An action shown as Get items is body('Get_items') in an expression."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. The expressions are built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
   item({
     slug: "parse-json-schema-generator",
     kind: "tool",
@@ -855,9 +909,13 @@ colRequests    Collection`,
       }
     ]
   }),
-  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide to get RGBA and ColorValue formulas.", "Copy the set as named formulas or as Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "Check text and background pairs for contrast before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `Set(gblColorPrimary, RGBA(15, 118, 110, 1));
-Set(gblColorSurface, RGBA(255, 255, 255, 1));
-Set(gblColorDanger, RGBA(185, 28, 28, 1));`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
+  item({ slug: "power-apps-color-token-generator", kind: "tool", title: "Power Apps Color Token Generator", eyebrow: "Free tool", description: "Turn brand hex colors into Power Fx color tokens. Enter your colors, then copy named formulas or variables to use across screens and components.", keywords: ["Power Apps colors", "Power Apps theme", "RGBA Power Fx"], audience: "Makers standardizing app colors across screens and components.", summaryBullets: ["Enter hex values from your brand guide, one per line with a name, to get RGBA formulas.", "Copy the set as named formulas, one theme record, or Set() variables.", "Reference the token names in Fill, Color and BorderColor so a brand change is one edit.", "See whether white or black text meets WCAG AA contrast on each color before you ship."], examples: [{ title: "Color token pattern", problem: "Avoid hardcoded colors throughout screens.", code: `// App.Formulas
+ColorPrimary = RGBA(15, 118, 110, 1);
+ColorSurface = RGBA(255, 255, 255, 1);
+ColorDanger = RGBA(185, 28, 28, 1);
+
+// On a button
+Fill = ColorPrimary`, expectedResult: "Makers update color choices in one place instead of editing each control.", commonMistakes: ["Hardcoding colors in every property", "Ignoring contrast", "Using color names that describe hue instead of purpose"] }], relatedPatterns: ["power-apps-accessible-status-text", "power-apps-componentized-header-pattern"] }),
   item({
     slug: "sharepoint-column-formatting-builder",
     kind: "tool",

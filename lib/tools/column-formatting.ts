@@ -120,7 +120,8 @@ export function personEmailFormat(subject: string, includeTitle: boolean) {
   const subjectParts: string[] = [];
   if (subject.trim()) subjectParts.push(expressionString(subject.trim() + (includeTitle ? " " : "")));
   if (includeTitle) subjectParts.push("[$Title]");
-  const subjectExpression = subjectParts.length > 0 ? ` + '?subject=' + ${subjectParts.join(" + ")}` : "";
+  // The subject is URL-encoded so characters such as & and # don't cut it short.
+  const subjectExpression = subjectParts.length > 0 ? ` + '?subject=' + encodeURIComponent(${subjectParts.join(" + ")})` : "";
   return {
     $schema: columnFormattingSchema,
     elmType: "a",

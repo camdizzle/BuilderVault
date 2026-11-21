@@ -1,7 +1,15 @@
 import { notFound } from "next/navigation";
 import { ResourceDetailPage } from "@/components/resources/resource-detail-page";
 import { ToolWidget } from "@/components/resources/tool-widget";
+import { functionPages, functionPath } from "@/lib/functions";
 import { tools, getResourceBySlug } from "@/lib/resources";
+
+/** Every function name the reference covers, with its page. "First, Last and LastN" covers three names. */
+function functionLinks() {
+  return functionPages.flatMap((page) =>
+    page.name.split(/,\s*|\s+and\s+/).map((name) => ({ name: name.trim(), href: functionPath(page) })).filter((link) => /^[A-Za-z]+$/.test(link.name))
+  );
+}
 
 export function generateStaticParams() {
   return tools.map((resource) => ({ slug: resource.slug }));
@@ -39,7 +47,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
     <ResourceDetailPage resource={resource}>
-      <ToolWidget slug={resource.slug} />
+      <ToolWidget functionLinks={resource.slug === "power-fx-formatter" ? functionLinks() : []} slug={resource.slug} />
     </ResourceDetailPage>
   );
 }
