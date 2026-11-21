@@ -6,7 +6,7 @@ import { getResourceBySlug, type ResourceItem } from "@/lib/resources";
 
 export const metadata = {
   title: "Power Fx and Power Automate How-To Guides | BuilderVault",
-  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, and quick starts for SharePoint, Outlook, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals and HTTP.",
+  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, handing over flows when someone leaves, and quick starts for SharePoint, Outlook, Outlook calendar, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals, HTTP, SQL Server and custom connectors.",
   alternates: { canonical: "/guides" }
 };
 
@@ -54,7 +54,7 @@ export default function GuidesPage() {
           <div className="eyebrow">How-to guides</div>
           <h1 className="page-title">How-to guides for Power Apps formulas and Power Automate flows.</h1>
           <p className="lead">
-            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>.
+            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>, and for one function at a time, the <Link href="/functions" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Fx function reference</Link>.
           </p>
         </div>
         {groups.map((group) => (

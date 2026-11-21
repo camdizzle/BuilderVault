@@ -7,6 +7,8 @@ import { outlookQuickStartGuide, sharePointQuickStartGuide, teamsQuickStartGuide
 import { dataverseQuickStartGuide, excelQuickStartGuide, formsQuickStartGuide } from "./connector-guides-2";
 import { oneDriveQuickStartGuide, plannerQuickStartGuide } from "./connector-guides-3";
 import { approvalsQuickStartGuide, httpQuickStartGuide } from "./connector-guides-4";
+import { customConnectorQuickStartGuide, outlookCalendarQuickStartGuide, sqlServerQuickStartGuide } from "./connector-guides-5";
+import { flowHandoverGuide } from "./flow-handover-guide";
 import { errorHandlingGuide, namedFormulasGuide, saveDataGuide, variablesGuide } from "./powerfx-guides-1";
 import { appStartGuide, findRecordsGuide, forAllGuide, textFormatGuide } from "./powerfx-guides-2";
 import type { Guide } from "./types";
@@ -41,6 +43,7 @@ export const guides: Guide[] = [
   complexColumnsGuide,
   troubleshootFailedRunGuide,
   flowLimitsGuide,
+  flowHandoverGuide,
   sharePointQuickStartGuide,
   outlookQuickStartGuide,
   teamsQuickStartGuide,
@@ -50,7 +53,10 @@ export const guides: Guide[] = [
   oneDriveQuickStartGuide,
   plannerQuickStartGuide,
   approvalsQuickStartGuide,
-  httpQuickStartGuide
+  httpQuickStartGuide,
+  outlookCalendarQuickStartGuide,
+  sqlServerQuickStartGuide,
+  customConnectorQuickStartGuide
 ];
 
 export const guidePath = (guide: Pick<Guide, "slug">) => `/guides/${guide.slug}`;
