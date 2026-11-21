@@ -6,6 +6,9 @@ import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell"
 import {
   dueDateFormat,
   isPowerAppsPlayUrl,
+  multiChoicePillsFormat,
+  rowClasses,
+  rowHighlightFormat,
   parseStatusRules,
   personEmailFormat,
   pillColors,
@@ -14,10 +17,12 @@ import {
   statusPillFormat
 } from "@/lib/tools/column-formatting";
 
-type TemplateKey = "status" | "dueDate" | "progress" | "person" | "appButton";
+type TemplateKey = "status" | "multiChoice" | "row" | "dueDate" | "progress" | "person" | "appButton";
 
 const templates: Record<TemplateKey, { label: string; columnType: string }> = {
   status: { label: "Status pill", columnType: "Choice or single line of text" },
+  multiChoice: { label: "Pills for multiple choices", columnType: "Choice that allows multiple selections" },
+  row: { label: "Color the whole row", columnType: "A view (Format current view, Advanced mode)" },
   dueDate: { label: "Due date highlight", columnType: "Date and time" },
   progress: { label: "Progress bar", columnType: "Number" },
   person: { label: "Email the person", columnType: "Person (single selection)" },
@@ -37,6 +42,7 @@ export function ColumnFormattingBuilder() {
   const [appUrl, setAppUrl] = useState("");
   const [buttonLabel, setButtonLabel] = useState("Open in app");
   const [parameterName, setParameterName] = useState("ID");
+  const [rowColumn, setRowColumn] = useState("Status");
 
   const rules = parseStatusRules(statusText);
   const days = Number.isFinite(Number(warningDays)) ? Math.max(0, Math.floor(Number(warningDays))) : 0;
@@ -46,7 +52,11 @@ export function ColumnFormattingBuilder() {
   const format =
     template === "status"
       ? statusPillFormat(rules)
-      : template === "dueDate"
+      : template === "multiChoice"
+        ? multiChoicePillsFormat(rules)
+        : template === "row"
+          ? rowHighlightFormat(rowColumn, rules)
+          : template === "dueDate"
         ? dueDateFormat(days)
         : template === "progress"
           ? progressBarFormat(scale, barColor)
@@ -55,7 +65,11 @@ export function ColumnFormattingBuilder() {
             : powerAppsButtonFormat(appUrl, buttonLabel, parameterName, barColor);
 
   const notes: string[] = [];
-  if (template === "status") {
+  if (template === "row") {
+    if (rules.some((rule) => !rowClasses[rule.color])) notes.push("Rows can only use SharePoint's built-in highlight colors: green, blue, amber and red. Rows for grey or purple values stay as they are.");
+    notes.push("Use the column's internal name. Values must match the column's values exactly, including capital letters.");
+  }
+  if (template === "status" || template === "multiChoice") {
     if (rules.length === 0) notes.push("Add at least one value, such as Approved|green.");
     if (rules.some((rule) => rule.value.includes("'"))) notes.push("A value contains an apostrophe. It is escaped in the JSON, but test the format on one view before rolling it out.");
     notes.push("Values must match the choices exactly, including capital letters. Any other value gets a grey pill.");
@@ -79,7 +93,7 @@ export function ColumnFormattingBuilder() {
   return (
     <ToolShell
       title="Column formatting builder"
-      description="Pick a layout, set the options, and copy the JSON. In SharePoint, select the column header, then Column settings, Format this column, Advanced mode, and paste it in."
+      description="Pick a layout, set the options, and copy the JSON. For a column, select the column header, then Column settings, Format this column, Advanced mode. For the whole row, open the view menu, then Format current view, Advanced mode."
     >
       <div className="badge-row">
         {(Object.keys(templates) as TemplateKey[]).map((key) => (
@@ -92,7 +106,13 @@ export function ColumnFormattingBuilder() {
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <div style={{ display: "grid", gap: 12, alignContent: "start" }}>
-          {template === "status" ? (
+          {template === "row" ? (
+            <label className="field">
+              <span>Column to check (internal name)</span>
+              <input onChange={(event) => setRowColumn(event.target.value)} spellCheck={false} value={rowColumn} />
+            </label>
+          ) : null}
+          {template === "status" || template === "multiChoice" || template === "row" ? (
             <label className="field">
               <span>Values, one per line as Value|color ({Object.keys(pillColors).join(", ")})</span>
               <textarea className="tool-textarea" onChange={(event) => setStatusText(event.target.value)} spellCheck={false} style={{ minHeight: 140 }} value={statusText} />
@@ -152,6 +172,20 @@ export function ColumnFormattingBuilder() {
 
         <div aria-label="Approximate preview" style={{ alignContent: "start", background: "#ffffff", border: "1px solid var(--line)", borderRadius: 8, color: "#201f1e", display: "grid", gap: 6, padding: 16 }}>
           <div className="eyebrow">Approximate preview</div>
+          {template === "multiChoice" ? (
+            <div style={{ ...previewRow, flexWrap: "wrap", gap: 4 }}>
+              {rules.slice(0, 3).map((rule) => (
+                <span key={rule.value} style={{ background: pillColors[rule.color].background, borderRadius: 12, color: pillColors[rule.color].text, fontWeight: 600, padding: "2px 10px" }}>{rule.value}</span>
+              ))}
+            </div>
+          ) : null}
+          {template === "row"
+            ? rules.map((rule, index) => (
+                <div key={index} style={{ ...previewRow, background: rowClasses[rule.color] ? pillColors[rule.color].background : "transparent", padding: "0 8px" }}>
+                  <span>Item with {rowColumn || "Status"} = {rule.value}</span>
+                </div>
+              ))
+            : null}
           {template === "status"
             ? [...rules, { value: "Any other value", color: "grey" as const }].map((rule, index) => (
                 <div key={index} style={previewRow}>
@@ -196,7 +230,7 @@ export function ColumnFormattingBuilder() {
         </div>
       </div>
 
-      <CopyCodeBlock code={JSON.stringify(format, null, 2)} copyEvent="Column Formatting Copied" label="Column formatting JSON" />
+      <CopyCodeBlock code={JSON.stringify(format, null, 2)} copyEvent="Column Formatting Copied" label={template === "row" ? "View formatting JSON" : "Column formatting JSON"} />
       <ToolNotes notes={notes} />
     </ToolShell>
   );

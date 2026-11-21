@@ -8,13 +8,14 @@ import { ExcelToPowerFx } from "@/components/tools/excel-to-power-fx";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { NamedFormulasConverter } from "@/components/tools/named-formulas-converter";
-import { Toggle, ToolShell } from "@/components/resources/tool-shell";
+import { ToolShell } from "@/components/resources/tool-shell";
 import { ColumnFormattingBuilder } from "@/components/tools/column-formatting-builder";
 import { DelegationChecker } from "@/components/tools/delegation-checker";
 import { PowerFxFormatter, type FunctionLink } from "@/components/tools/power-fx-formatter";
 import { ExpressionBuilder } from "@/components/tools/expression-builder";
 import { ColorTokenGenerator } from "@/components/tools/color-token-generator";
 import { ReleaseChecklistGenerator } from "@/components/tools/release-checklist-generator";
+import { AdaptiveCardBuilder } from "@/components/tools/adaptive-card-builder";
 import { PowerFxTableGenerator } from "@/components/tools/power-fx-table-generator";
 import { NamingLinter } from "@/components/tools/naming-linter";
 
@@ -141,139 +142,6 @@ function DataverseNamingHelper() {
         <strong style={{ fontSize: "1.3rem", overflowWrap: "anywhere" }}>{tableSchema}</strong>
       </div>
       <CopyCodeBlock code={worksheet} label="Naming worksheet" />
-    </ToolShell>
-  );
-}
-
-type CardFact = { title: string; value: string };
-
-const adaptiveCardTemplates = {
-  approval: {
-    label: "Approval request",
-    title: "Approval needed: @{triggerBody()?['Title']}",
-    body: "@{triggerBody()?['Author']?['DisplayName']} submitted a request that needs your decision.",
-    facts: "Request|@{triggerBody()?['Title']}\nRequested by|@{triggerBody()?['Author']?['DisplayName']}\nDue|@{formatDateTime(triggerBody()?['DueDate'], 'MMM d, yyyy')}",
-    actions: "Approve\nReject",
-    withComment: true
-  },
-  notification: {
-    label: "Notification",
-    title: "Request updated",
-    body: "The status of @{triggerBody()?['Title']} changed to @{triggerBody()?['Status']?['Value']}.",
-    facts: "Status|@{triggerBody()?['Status']?['Value']}\nUpdated by|@{triggerBody()?['Editor']?['DisplayName']}",
-    actions: "",
-    withComment: false
-  },
-  review: {
-    label: "Review with comments",
-    title: "Please review: @{triggerBody()?['Title']}",
-    body: "Add a comment and choose an outcome.",
-    facts: "Request|@{triggerBody()?['Title']}\nOwner|@{triggerBody()?['Author']?['Email']}",
-    actions: "Submit review",
-    withComment: true
-  }
-} as const;
-
-type CardTemplateKey = keyof typeof adaptiveCardTemplates;
-
-function AdaptiveCardBuilder() {
-  const [templateKey, setTemplateKey] = useState<CardTemplateKey>("approval");
-  const template = adaptiveCardTemplates[templateKey];
-  const [title, setTitle] = useState<string>(template.title);
-  const [body, setBody] = useState<string>(template.body);
-  const [factsText, setFactsText] = useState<string>(template.facts);
-  const [actionsText, setActionsText] = useState<string>(template.actions);
-  const [withComment, setWithComment] = useState<boolean>(template.withComment);
-  const [viewUrl, setViewUrl] = useState("");
-
-  function applyTemplate(key: CardTemplateKey) {
-    const next = adaptiveCardTemplates[key];
-    setTemplateKey(key);
-    setTitle(next.title);
-    setBody(next.body);
-    setFactsText(next.facts);
-    setActionsText(next.actions);
-    setWithComment(next.withComment);
-  }
-
-  const facts: CardFact[] = factsText
-    .split("\n")
-    .map((line) => line.split("|"))
-    .filter((parts) => parts[0]?.trim())
-    .map(([factTitle, ...rest]) => ({ title: factTitle.trim(), value: rest.join("|").trim() }));
-  const actions = actionsText.split("\n").map((line) => line.trim()).filter(Boolean);
-
-  const card = {
-    type: "AdaptiveCard",
-    $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
-    version: "1.4",
-    body: [
-      { type: "TextBlock", text: title, weight: "Bolder", size: "Medium", wrap: true },
-      ...(body ? [{ type: "TextBlock", text: body, wrap: true }] : []),
-      ...(facts.length > 0 ? [{ type: "FactSet", facts }] : []),
-      ...(withComment ? [{ type: "Input.Text", id: "comment", placeholder: "Add a comment", isMultiline: true }] : [])
-    ],
-    actions: [
-      ...actions.map((action) => ({ type: "Action.Submit", title: action, data: { decision: action } })),
-      ...(viewUrl.trim() ? [{ type: "Action.OpenUrl", title: "View item", url: viewUrl.trim() }] : [])
-    ]
-  };
-  const json = JSON.stringify(card, null, 2);
-
-  return (
-    <ToolShell title="Adaptive Card builder" description="Pick a starting layout, edit the text, facts, and buttons, then copy the JSON into the Post adaptive card in a chat or channel action in Power Automate. The preview is a simplified sketch, not the exact Teams rendering.">
-      <div className="badge-row">
-        {(Object.keys(adaptiveCardTemplates) as CardTemplateKey[]).map((key) => (
-          <Toggle checked={templateKey === key} key={key} label={adaptiveCardTemplates[key].label} onChange={() => applyTemplate(key)} />
-        ))}
-      </div>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <div style={{ display: "grid", gap: 12 }}>
-          <label className="field">
-            <span>Title</span>
-            <input value={title} onChange={(event) => setTitle(event.target.value)} />
-          </label>
-          <label className="field">
-            <span>Body text</span>
-            <input value={body} onChange={(event) => setBody(event.target.value)} />
-          </label>
-          <label className="field">
-            <span>Facts, one per line as Label|Value</span>
-            <textarea className="tool-textarea" onChange={(event) => setFactsText(event.target.value)} spellCheck={false} value={factsText} />
-          </label>
-          <label className="field">
-            <span>Buttons, one per line (leave empty for none)</span>
-            <textarea className="tool-textarea" onChange={(event) => setActionsText(event.target.value)} spellCheck={false} style={{ minHeight: 80 }} value={actionsText} />
-          </label>
-          <label className="field">
-            <span>View item link (optional)</span>
-            <input value={viewUrl} onChange={(event) => setViewUrl(event.target.value)} placeholder="@{triggerBody()?['{Link}']}" />
-          </label>
-          <Toggle checked={withComment} label="Include a comment box" onChange={setWithComment} />
-        </div>
-        <div className="adaptive-card-preview" aria-label="Card preview">
-          <strong style={{ fontSize: "1.05rem" }}>{title}</strong>
-          {body ? <p style={{ margin: 0 }}>{body}</p> : null}
-          {facts.length > 0 ? (
-            <dl style={{ display: "grid", gap: 4, gridTemplateColumns: "auto 1fr", margin: 0 }}>
-              {facts.map((fact) => (
-                <div key={fact.title} style={{ display: "contents" }}>
-                  <dt style={{ fontWeight: 700 }}>{fact.title}</dt>
-                  <dd style={{ margin: 0, overflowWrap: "anywhere" }}>{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-          {withComment ? <div className="adaptive-card-input">Add a comment</div> : null}
-          {actions.length > 0 || viewUrl.trim() ? (
-            <div className="badge-row">
-              {actions.map((action) => <span className="adaptive-card-button" key={action}>{action}</span>)}
-              {viewUrl.trim() ? <span className="adaptive-card-button">View item</span> : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
-      <CopyCodeBlock code={json} copyEvent="Adaptive Card Copied" label="Adaptive Card JSON (version 1.4)" />
     </ToolShell>
   );
 }

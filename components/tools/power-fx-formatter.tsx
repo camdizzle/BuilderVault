@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { checkDelegation, dataSourceLabels, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
+import { formulaFromHash, formatterLink, maxLinkedFormulaLength } from "@/lib/tools/formula-link";
 import { formatPowerFxFormula, minifyPowerFxFormula, toCommaSeparators, type PowerFxLocale } from "@/lib/tools/power-fx-format";
 import {
   analyzePowerFx,
@@ -31,6 +32,23 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
   const [width, setWidth] = useState(80);
   const [locale, setLocale] = useState<PowerFxLocale>("en");
   const [source, setSource] = useState<DataSource>("sharepoint");
+  const [linkStatus, setLinkStatus] = useState("");
+
+  // A link from another tool, or a shared link, carries the formula after #formula=.
+  useEffect(() => {
+    const linked = formulaFromHash(window.location.hash);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the hash is only readable in the browser, after the first render
+    if (linked !== null) setFormula(linked);
+  }, []);
+
+  async function copyShareLink() {
+    if (formula.length > maxLinkedFormulaLength) {
+      setLinkStatus("This formula is too long for a link. Copy the formula instead.");
+      return;
+    }
+    await navigator.clipboard.writeText(window.location.origin + formatterLink(formula));
+    setLinkStatus("Link copied. Anyone with the link sees this formula, so check it holds nothing private.");
+  }
   const result = useMemo(
     () => (mode === "format" ? formatPowerFxFormula(formula, { indent, width, locale }) : minifyPowerFxFormula(formula, { locale })),
     [formula, mode, indent, width, locale]
@@ -92,10 +110,14 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
         <button className="chip-button" disabled={!formatted} onClick={() => setFormula(formatted)} type="button">
           Replace input with result
         </button>
+        <button className="chip-button" disabled={!formula.trim()} onClick={copyShareLink} type="button">
+          Copy share link
+        </button>
         <span className="badge">{checks.lineCount} lines</span>
         <span className="badge">depth {checks.maxDepth}</span>
         <span className={`badge ${checks.severityClass}`}>{checks.severity}</span>
       </div>
+      {linkStatus ? <p role="status" style={mutedText}>{linkStatus}</p> : null}
       {result.issues.length > 0 ? (
         <div className="stat-tile" role="alert">
           <div className="eyebrow">Syntax check</div>

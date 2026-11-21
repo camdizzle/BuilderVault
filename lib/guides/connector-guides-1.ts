@@ -145,7 +145,7 @@ export const sharePointQuickStartGuide: Guide = {
       answer: "Update item needs a value for every required column of the list. Pass the existing value from the trigger or from a Get item action for any column you are not changing."
     }
   ],
-  relatedTools: ["odata-filter-query-builder", "trigger-condition-builder", "sharepoint-internal-name-helper"],
+  relatedTools: ["odata-filter-query-builder", "trigger-condition-builder", "sharepoint-internal-name-helper", "sharepoint-column-formatting-builder"],
   relatedPatterns: ["power-automate-avoid-infinite-update-loop", "get-more-than-5000-items-power-automate", "send-http-request-to-sharepoint-power-automate", "sharepoint-batch-create-update-items-power-automate"],
   relatedLinks: [
     { href: "/guides/sharepoint-get-items-filter-query", label: "Get items Filter Query by column type" },
@@ -471,7 +471,7 @@ body('Post_adaptive_card_and_wait_for_a_response')?['data']?['comment']`, "Expre
       answer: "Version 1.4 is a safe choice. Features from newer versions may be ignored or may stop the card from appearing."
     }
   ],
-  relatedTools: ["power-automate-expression-builder", "trigger-condition-builder"],
+  relatedTools: ["adaptive-card-preview-snippets", "power-automate-expression-builder", "trigger-condition-builder"],
   relatedPatterns: ["post-adaptive-card-and-wait-for-response", "mention-a-user-in-teams-adaptive-card", "teams-post-as-flow-bot-user-choose", "adaptive-card-input-form-teams-collect-data", "teams-reply-in-thread-channel-message"],
   relatedLinks: [
     { href: "/guides/power-automate-expressions-explained", label: "Read and write flow expressions" },

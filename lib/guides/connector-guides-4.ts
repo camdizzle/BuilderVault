@@ -165,7 +165,7 @@ export const approvalsQuickStartGuide: Guide = {
       answer: "A flow run can last 30 days, so an approval that is not answered in that time ends as timed out. Set a shorter timeout on the action and add a step that runs after a timeout to remind or escalate."
     }
   ],
-  relatedTools: ["trigger-condition-builder", "power-automate-expression-builder"],
+  relatedTools: ["trigger-condition-builder", "power-automate-expression-builder", "adaptive-card-preview-snippets"],
   relatedPatterns: ["power-automate-approval-with-sharepoint-status-sync", "power-automate-get-manager-approval-route", "power-automate-approval-timeout-escalation", "power-automate-start-approval-from-power-apps"],
   relatedLinks: [
     { href: "/errors/required-field-assignedto-contained-no-valid-users", label: "Error: 'assignedTo' contained no valid users" },

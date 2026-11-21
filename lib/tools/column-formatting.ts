@@ -162,3 +162,47 @@ export function powerAppsButtonFormat(appUrl: string, label: string, parameterNa
 export function isPowerAppsPlayUrl(url: string) {
   return /^https:\/\/apps\.powerapps\.com\/play\//i.test(url.trim());
 }
+
+export const rowFormattingSchema = "https://developer.microsoft.com/json-schemas/sp/v2/row-formatting.schema.json";
+
+/** One pill per selected value, for a choice column that allows multiple selections. */
+export function multiChoicePillsFormat(rules: StatusRule[]) {
+  const pick = (part: "background" | "text") =>
+    "=" + rules.reduceRight((otherwise, rule) => `if([$choice] == ${expressionString(rule.value)}, '${pillColors[rule.color][part]}', ${otherwise})`, `'${pillColors.grey[part]}'`);
+  return {
+    $schema: columnFormattingSchema,
+    elmType: "div",
+    style: { display: "flex", "flex-wrap": "wrap", gap: "4px" },
+    children: [
+      {
+        elmType: "div",
+        forEach: "choice in @currentField",
+        txtContent: "[$choice]",
+        style: {
+          padding: "2px 10px",
+          "border-radius": "12px",
+          "font-weight": "600",
+          "background-color": rules.length > 0 ? pick("background") : pillColors.grey.background,
+          color: rules.length > 0 ? pick("text") : pillColors.grey.text
+        }
+      }
+    ]
+  };
+}
+
+/** SharePoint's built-in row highlight classes, one per pill color. Grey and purple have no matching class. */
+export const rowClasses: Partial<Record<PillColor, string>> = {
+  green: "sp-field-severity--good",
+  blue: "sp-field-severity--low",
+  amber: "sp-field-severity--warning",
+  red: "sp-field-severity--severeWarning"
+};
+
+/** View formatting that colors the whole row by the value of one column. */
+export function rowHighlightFormat(column: string, rules: StatusRule[]) {
+  const name = column.trim().replace(/[^A-Za-z0-9_]/g, "") || "Status";
+  const usable = rules.filter((rule) => rowClasses[rule.color]);
+  const field = "[$" + name + "]";
+  const expression = "=" + usable.reduceRight((otherwise, rule) => `if(${field} == ${expressionString(rule.value)}, '${rowClasses[rule.color]}', ${otherwise})`, "''");
+  return { $schema: rowFormattingSchema, additionalRowClass: usable.length > 0 ? expression : "" };
+}

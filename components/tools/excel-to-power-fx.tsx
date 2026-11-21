@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { translateExcelFormula } from "@/lib/tools/excel-to-power-fx";
+import { formatterLink } from "@/lib/tools/formula-link";
 import { formatPowerFxFormula } from "@/lib/tools/power-fx-format";
 
 const sampleFormula = `=IF(AND(B2>=1000,C2="Approved"),ROUND(B2*0.1,2),IFERROR(VLOOKUP(A2,Rates!A:B,2,FALSE),0))`;
@@ -36,6 +37,13 @@ export function ExcelToPowerFx() {
       </label>
 
       <CopyCodeBlock code={result.formatted || "Paste an Excel formula to translate it."} copyEvent="Excel Translation Copied" label="Power Fx formula" />
+      {result.formatted ? (
+        <div>
+          <Link className="button secondary" href={formatterLink(result.formatted)}>
+            Check it in the Power Fx formatter
+          </Link>
+        </div>
+      ) : null}
       <ToolNotes notes={result.notes} title="Finish by hand" />
       <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>
         This is a starting point, not a guarantee. Test the result in your app, and use the{" "}

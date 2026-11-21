@@ -294,7 +294,7 @@ With(
       },
       {
         question: "Is my formula sent anywhere?",
-        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored."
+        answer: "No. Formatting runs entirely in your browser, and the formula is not uploaded or stored. Copy share link puts the formula in the part of the link after #, which browsers don't send to the server, but anyone you give the link to can read it."
       },
       {
         question: "Can formatting change what my formula does?",
@@ -326,6 +326,9 @@ Then renaming to: Status`, expectedResult: "Makers avoid internal names such as 
       "Quotes text and dates the way each connector expects, and doubles single quotes inside values.",
       "Handles yes/no (1 and 0 in SharePoint, true and false in Dataverse), choice, lookup, and person columns.",
       "Accepts flow expressions such as @{utcNow()} as values.",
+      "Groups conditions in brackets, such as (Status is Open or In Review) and Priority is High.",
+      "Adds Dataverse date functions such as LastXDays and ThisMonth, and ContainValues for multi-select choices.",
+      "Fills in sort order, row count and columns to return, and warns about the 100-item default on Get items.",
       "Warns about display names with spaces, uppercase Dataverse names, and values in the wrong format."
     ],
     examples: [
@@ -650,8 +653,10 @@ Relationship: bv_Customer_ServiceRequests`, expectedResult: "The data model stay
       "Builds conditions for SharePoint, Dataverse, and any other trigger that returns a body.",
       "Reads choice values through /Value and people through /Email for SharePoint, and lookups through _name_value for Dataverse.",
       "Wraps text in coalesce() so an empty column doesn't make contains() or startsWith() fail.",
-      "Compares dates with ticks() so date and time formats don't matter.",
-      "Can add a loop guard that ignores changes made by the flow's own account."
+      "Compares dates with ticks() so date and time formats don't matter, and checks for an empty date first so the condition can't fail.",
+      "Groups rules in brackets, such as (Status is Open or In Review) and Urgent is Yes.",
+      "Can add a loop guard that ignores changes made by the flow's own account.",
+      "Shows how to run only when a column changes: Select columns for Dataverse, and Get changes for SharePoint."
     ],
     examples: [
       {
@@ -765,7 +770,7 @@ If(varIsAdmin, AdminScreen, HomeScreen)`,
       }
     ]
   }),
-  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Swap the sample text for dynamic content once the card is in your flow."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
+  item({ slug: "adaptive-card-preview-snippets", kind: "tool", title: "Adaptive Card Builder for Teams", eyebrow: "Free tool", description: "Build Teams Adaptive Card JSON for approval, notification, and review flows. Edit the text, facts, and buttons, preview the layout, and copy the payload into Power Automate.", keywords: ["Adaptive Card snippets", "Teams card Power Automate", "approval card"], audience: "Flow builders who send Teams cards from Power Automate.", summaryBullets: ["Start from an approval, notification or review layout.", "Edit the heading, message, facts and buttons and see the preview change.", "Add a dropdown, a date picker or a comment box, and put the message and facts side by side.", "Copy the JSON into Post card in a chat or channel, or Post adaptive card and wait for a response.", "Copy the expressions that read the button, dropdown, date and comment from the response."], examples: [{ title: "Fact block", problem: "Show scannable request metadata.", code: `{ "type": "FactSet", "facts": [
   { "title": "Request", "value": "@{triggerBody()?['Title']}" },
   { "title": "Owner", "value": "@{triggerBody()?['Author']?['Email']}" }
 ] }`, expectedResult: "Teams cards remain compact and readable.", commonMistakes: ["Testing only in desktop Teams", "Forgetting JSON escaping", "Using too many facts"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "adaptive-card-fact-set-from-sharepoint-items"] }),
@@ -925,8 +930,9 @@ Fill = ColorPrimary`, expectedResult: "Makers update color choices in one place 
     keywords: ["SharePoint column formatting JSON", "SharePoint JSON formatting", "SharePoint status pill JSON", "SharePoint progress bar column", "open Power Apps from SharePoint list"],
     audience: "Makers who use SharePoint lists behind Power Apps and Power Automate and want the list itself to be easy to scan.",
     summaryBullets: [
-      "Five layouts that cover the most common list needs: status, due date, progress, person, and an app button.",
-      "Status pills take your own values and colors, with a grey fallback for anything else.",
+      "Seven layouts that cover the most common list needs: status, multiple choices, whole-row colors, due date, progress, person, and an app button.",
+      "Status pills take your own values and colors, with a grey fallback for anything else. Multi-select choice columns get one pill per value.",
+      "Row formatting colors the whole row in a view, using SharePoint's built-in highlight colors.",
       "Due date highlights turn red when overdue and amber a set number of days before.",
       "Progress bars work with 0 to 100 numbers and with percentage columns stored as 0 to 1.",
       "The Power Apps button passes the item ID to your app as a URL parameter."
@@ -999,7 +1005,7 @@ Set(
     summaryBullets: [
       "Checks the formula against the data source you pick, because each source delegates a different set of functions.",
       "Flags functions applied to a column inside Filter, LookUp, and CountIf, and skips ones applied to a value such as User().Email or a text box.",
-      "Covers Search, the in operator, IsBlank, aggregates, FirstN and LastN, and table shaping functions.",
+      "Covers Search, the in and ! operators, IsBlank, text functions, aggregates, FirstN and LastN, and table shaping functions.",
       "Separates hard problems from limits, such as Dataverse aggregates that stop at 50,000 rows.",
       "Includes a reference table of what each data source delegates."
     ],
@@ -1039,11 +1045,11 @@ Filter(
       },
       {
         question: "How is this different from the check in the Power Fx Formatter?",
-        answer: "The formatter gives general hints while it formats. This tool checks against one data source, tells problems apart from limits, suggests a rewrite for each finding, and shows the full support table for that source."
+        answer: "Both use the same rules. The formatter shows the findings while it formats your formula. This tool adds the full support table for each data source, so you can see what is delegated before you write the formula."
       },
       {
         question: "How accurate is it?",
-        answer: "It follows Microsoft's delegation documentation for each connector, and it reads your formula as text. It can't see your column types, and connectors change over time, so treat it as a first pass and confirm with the warning triangle in Power Apps Studio."
+        answer: "The support table was checked row by row against Microsoft's delegation tables for SharePoint, Dataverse and SQL Server in November 2026. The tool reads your formula as text, so it can't see your column types, and connectors change over time. Treat it as a first pass and confirm with the warning triangle in Power Apps Studio."
       },
       {
         question: "Why isn't Lower(User().Email) flagged?",

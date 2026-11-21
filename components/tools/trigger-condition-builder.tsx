@@ -5,6 +5,7 @@ import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
   buildTriggerCondition,
+  changedColumnsHelp,
   fieldTypesFor,
   operatorNeedsValue,
   triggerFieldTypeLabels,
@@ -41,7 +42,12 @@ export function TriggerConditionBuilder() {
   const [rules, setRules] = useState<TriggerRule[]>(starterRules.sharepoint);
   const [guardEnabled, setGuardEnabled] = useState(false);
   const [guardValue, setGuardValue] = useState("");
-  const result = buildTriggerCondition(source, rules, join, { enabled: guardEnabled, value: guardValue });
+  const [groupJoin, setGroupJoin] = useState<TriggerJoin>("and");
+  const [useGroups, setUseGroups] = useState(false);
+  const [changedColumns, setChangedColumns] = useState("");
+  const result = buildTriggerCondition(source, useGroups ? rules : rules.map((rule) => ({ ...rule, group: 1 })), join, { enabled: guardEnabled, value: guardValue }, groupJoin);
+  const changed = changedColumnsHelp(source, changedColumns);
+  const groupCount = Math.max(1, ...rules.map((rule) => rule.group ?? 1));
 
   function switchSource(next: TriggerSource) {
     setSource(next);
@@ -76,12 +82,24 @@ export function TriggerConditionBuilder() {
           </select>
         </label>
         <label className="field">
-          <span>Start the flow when</span>
+          <span>{useGroups ? "Inside each group, start when" : "Start the flow when"}</span>
           <select value={join} onChange={(event) => setJoin(event.target.value as TriggerJoin)}>
             <option value="and">All rules match (and)</option>
             <option value="or">Any rule matches (or)</option>
           </select>
         </label>
+        {useGroups ? (
+          <label className="field">
+            <span>Between groups, start when</span>
+            <select value={groupJoin} onChange={(event) => setGroupJoin(event.target.value as TriggerJoin)}>
+              <option value="and">All groups match (and)</option>
+              <option value="or">Any group matches (or)</option>
+            </select>
+          </label>
+        ) : null}
+      </div>
+      <div className="badge-row">
+        <Toggle checked={useGroups} label="Group rules, such as (A or B) and C" onChange={setUseGroups} />
       </div>
 
       <div style={{ display: "grid", gap: 14 }}>
@@ -109,6 +127,16 @@ export function TriggerConditionBuilder() {
                   ))}
                 </select>
               </label>
+              {useGroups ? (
+                <label className="field">
+                  <span>Group</span>
+                  <select value={rule.group ?? 1} onChange={(event) => updateRule(index, { group: Number(event.target.value) })}>
+                    {Array.from({ length: Math.min(groupCount + 1, rules.length) }, (_, group) => (
+                      <option key={group + 1} value={group + 1}>Group {group + 1}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               {operatorNeedsValue(rule.operator) ? (
                 <label className="field">
                   <span>Value</span>
@@ -133,7 +161,7 @@ export function TriggerConditionBuilder() {
         <div>
           <button
             className="button secondary"
-            onClick={() => setRules((current) => [...current, { field: "", type: "text", operator: "equals", value: "" }])}
+            onClick={() => setRules((current) => [...current, { field: "", type: "text", operator: "equals", value: "", group: current[current.length - 1]?.group ?? 1 }])}
             type="button"
           >
             Add rule
@@ -162,6 +190,25 @@ export function TriggerConditionBuilder() {
         />
       ) : null}
       <ToolNotes notes={result.notes} />
+
+      {source !== "other" ? (
+        <fieldset style={{ border: "1px solid var(--line)", borderRadius: 8, display: "grid", gap: 10, margin: 0, padding: 14 }}>
+          <legend style={{ fontWeight: 800, padding: "0 6px" }}>Only when a column changes (optional)</legend>
+          <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>
+            A trigger condition sees the item as it is now, not what changed. Enter the columns to watch to get the {source === "dataverse" ? "Select columns value for the trigger" : "steps and expression for SharePoint"}.
+          </p>
+          <label className="field">
+            <span>{source === "dataverse" ? "Logical names, comma separated" : "Internal names, comma separated"}</span>
+            <input placeholder={source === "dataverse" ? "statuscode, ownerid" : "Status, Priority"} spellCheck={false} value={changedColumns} onChange={(event) => setChangedColumns(event.target.value)} />
+          </label>
+          {changed ? (
+            <>
+              <CopyCodeBlock code={changed.value} copyEvent="Trigger Condition Copied" label={changed.label} />
+              <ToolNotes notes={changed.notes} title="How to use it" />
+            </>
+          ) : null}
+        </fieldset>
+      ) : null}
     </ToolShell>
   );
 }
