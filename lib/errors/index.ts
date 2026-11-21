@@ -3,6 +3,8 @@ import { connectionErrorsOne } from "./connection-errors-1";
 import { connectionErrorsTwo } from "./connection-errors-2";
 import { approvalErrors } from "./approval-errors";
 import { dataverseErrors } from "./dataverse-errors";
+import { desktopFlowErrors } from "./desktop-flow-errors";
+import { powerPagesErrors } from "./power-pages-errors";
 import { flowErrorsOne } from "./flow-errors-1";
 import { flowErrorsTwo } from "./flow-errors-2";
 import { solutionErrors } from "./solution-errors";
@@ -11,9 +13,9 @@ import type { ErrorPage, ErrorProduct } from "./types";
 export type { ErrorPage, ErrorProduct } from "./types";
 export { errorSections } from "./types";
 
-export const errorPages: ErrorPage[] = [...flowErrorsOne, ...flowErrorsTwo, ...approvalErrors, ...dataverseErrors, ...connectionErrorsOne, ...connectionErrorsTwo, ...appErrors, ...solutionErrors];
+export const errorPages: ErrorPage[] = [...flowErrorsOne, ...flowErrorsTwo, ...approvalErrors, ...dataverseErrors, ...connectionErrorsOne, ...connectionErrorsTwo, ...appErrors, ...solutionErrors, ...desktopFlowErrors, ...powerPagesErrors];
 
-export const errorProducts: ErrorProduct[] = ["Power Automate", "Connections and sign-in", "Power Apps", "Solution import"];
+export const errorProducts: ErrorProduct[] = ["Power Automate", "Connections and sign-in", "Power Apps", "Solution import", "Desktop flows", "Power Pages"];
 
 export const errorPath = (page: Pick<ErrorPage, "slug">) => `/errors/${page.slug}`;
 

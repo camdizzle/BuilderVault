@@ -4,6 +4,8 @@ import { ResourceCard } from "@/components/resources/resource-card";
 import { GuideCard } from "@/components/guides/guide-card";
 import { ErrorCard } from "@/components/errors/error-card";
 import { errorPages } from "@/lib/errors";
+import { FunctionCard } from "@/components/functions/function-card";
+import { functionPages, getFunctionBySlug, type FunctionPage } from "@/lib/functions";
 import { guides } from "@/lib/guides";
 import { resourceGroups } from "@/lib/resources";
 
@@ -13,6 +15,9 @@ export const metadata = {
 };
 
 export default function ResourcesPage() {
+  const featuredFunctions = ["filter", "patch", "lookup", "iferror"]
+    .map((slug) => getFunctionBySlug(slug))
+    .filter((page): page is FunctionPage => Boolean(page));
   const featured = [resourceGroups[0].items[0], resourceGroups[1].items[6], resourceGroups[2].items[0], resourceGroups[3].items[1]];
 
   return (
@@ -71,6 +76,19 @@ export default function ResourcesPage() {
           </div>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             {guides.slice(0, 4).map((guide) => <GuideCard guide={guide} key={guide.slug} />)}
+          </div>
+        </section>
+
+        <section style={{ display: "grid", gap: 18 }}>
+          <div style={{ alignItems: "end", display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "space-between" }}>
+            <div>
+              <div className="eyebrow">Power Fx function reference</div>
+              <h2 className="section-title">Power Apps functions, explained</h2>
+            </div>
+            <Link className="button secondary" href="/functions">View all {functionPages.length}</Link>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            {featuredFunctions.map((page) => <FunctionCard key={page.slug} page={page} />)}
           </div>
         </section>
 

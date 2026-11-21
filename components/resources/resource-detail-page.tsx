@@ -5,6 +5,7 @@ import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { errorPath, getErrorsForTool } from "@/lib/errors";
+import { functionPath, getFunctionsForTool } from "@/lib/functions";
 import { getGuidesForTool, guidePath } from "@/lib/guides";
 import { getPublishedPatternBySlug } from "@/lib/patterns/patterns";
 import { getRelatedTools, type ResourceItem } from "@/lib/resources";
@@ -30,6 +31,7 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
   const relatedTools = isTool ? getRelatedTools(resource) : [];
   const toolGuides = isTool ? getGuidesForTool(resource.slug) : [];
   const toolErrors = isTool ? getErrorsForTool(resource.slug) : [];
+  const toolFunctions = isTool ? getFunctionsForTool(resource.slug) : [];
   const relatedPatterns = resource.relatedPatterns
     .map((slug) => getPublishedPatternBySlug(slug))
     .filter((pattern): pattern is Pattern => Boolean(pattern));
@@ -120,6 +122,18 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
                       <Link href={guidePath(guide)} style={{ fontWeight: 800 }}>{guide.title}</Link>
                       <p style={{ color: "#415049", lineHeight: 1.6, margin: "4px 0 0" }}>{guide.description}</p>
                     </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {toolFunctions.length > 0 ? (
+              <section style={{ display: "grid", gap: 14 }}>
+                <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Power Fx function reference</h2>
+                <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>Syntax, examples and delegation notes for the functions you are most likely to check with this tool.</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 18px" }}>
+                  {toolFunctions.map((page) => (
+                    <Link href={functionPath(page)} key={page.slug} style={{ fontWeight: 800 }}>{page.name}</Link>
                   ))}
                 </div>
               </section>
