@@ -5,6 +5,9 @@ import { ResourceCard } from "@/components/resources/resource-card";
 import { PlatformIcon, platformLinks } from "@/components/platform/platform-icon";
 import { getSuggestedCollections } from "@/lib/patterns/collections";
 import { getFeaturedPatterns, getPatternStats } from "@/lib/patterns/patterns";
+import { errorPages } from "@/lib/errors";
+import { functionPages } from "@/lib/functions";
+import { guides } from "@/lib/guides";
 import { cheatSheets, cookbooks, standards, tools } from "@/lib/resources";
 
 export default function HomePage() {
@@ -64,11 +67,12 @@ export default function HomePage() {
 
       <section style={{ padding: "44px 0" }}>
         <div className="container">
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
             <Metric label="Power Platform patterns" value={stats.totalPatterns} />
-            <Metric label="Free examples" value={stats.freePatterns} />
-            <Metric label="Resource guides" value={cookbooks.length + standards.length + cheatSheets.length + tools.length} />
-            <Metric label="Core categories" value={stats.categories} />
+            <Metric label="Free browser tools" value={tools.length} />
+            <Metric label="How-to guides" value={guides.length} />
+            <Metric label="Error fixes" value={errorPages.length} />
+            <Metric label="Power Fx functions" value={functionPages.length} />
           </div>
         </div>
       </section>
@@ -93,7 +97,7 @@ export default function HomePage() {
             <div className="eyebrow">Builder resources</div>
             <h2 className="section-title">Fast references for the problems makers search for most.</h2>
             <p className="lead">
-              Inspired by practical Power Platform learning sites, these pages are designed for fast lookup: what to use, starter code, expected result, and common mistakes.
+              Each page is built for fast lookup: what to use, starter code, the expected result, and the common mistakes to avoid.
             </p>
           </div>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
