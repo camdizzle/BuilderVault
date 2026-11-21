@@ -145,7 +145,12 @@ export function PatchFormulaBuilder() {
       <p style={{ color: "#415049", lineHeight: 1.6, margin: 0 }}>
         The control names are guessed from common prefixes such as txt, cmb, dp and tgl. If yours are named differently, type the full value instead, such as{" "}
         <code>TextInput1.Text</code>. The{" "}
-        <Link href="/cheat-sheets/patch-sharepoint-columns-cheat-sheet" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Patch SharePoint columns cheat sheet</Link>{" "}
+        <Link
+          href={source === "sharepoint" ? "/cheat-sheets/patch-sharepoint-columns-cheat-sheet" : "/cheat-sheets/patch-dataverse-columns-cheat-sheet"}
+          style={{ color: "var(--accent-strong)", fontWeight: 800 }}
+        >
+          {source === "sharepoint" ? "Patch SharePoint columns cheat sheet" : "Patch Dataverse columns cheat sheet"}
+        </Link>{" "}
         explains each record shape.
       </p>
     </ToolShell>

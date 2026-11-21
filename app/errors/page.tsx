@@ -6,14 +6,15 @@ import { getGuideBySlug, type Guide } from "@/lib/guides";
 
 export const metadata = {
   title: "Power Automate, Power Apps, Power Pages and Solution Error Messages and Fixes | BuilderVault",
-  description: "Look up a Power Automate or Power Apps error message and get its meaning, causes and fix. Covers InvalidTemplate, null values, Parse JSON, Filter Query, throttling, approvals, Dataverse, broken connections and sign-in, Patch errors, solution imports, desktop flows and the Power Pages Web API.",
+  description: "Look up a Power Automate or Power Apps error message and get its meaning, causes and fix. Covers InvalidTemplate, null values, Parse JSON, Filter Query, throttling, approvals, Dataverse plug-ins and limits, flows called from Power Apps, broken connections and sign-in, Patch errors, solution imports, desktop flows and the Power Pages Web API.",
   alternates: { canonical: "/errors" }
 };
 
 const productIntro: Record<string, string> = {
   "Power Automate": "Errors from a failed flow run, the expression editor or a trigger, including approvals and Dataverse actions.",
   "Connections and sign-in": "Errors from broken connections, expired sign-ins, security policies, licences and permissions, with what you can fix yourself and what to ask an administrator.",
-  "Power Apps": "Errors that appear when a canvas app saves or loads data, and notices from Power Apps Studio.",
+  "Power Apps": "Errors that appear when a canvas app saves or loads data or runs a flow, and notices from Power Apps Studio.",
+  Dataverse: "Errors from plug-ins and custom code on Dataverse tables, database timeouts, and the service protection limits that throttle busy flows and integrations.",
   "Solution import": "Errors from importing, upgrading and uninstalling solutions, and from flows after a deployment.",
   "Desktop flows": "Errors from Power Automate for desktop: browser and UI automation, machine sign-in, unattended sessions and desktop flow connections.",
   "Power Pages": "Errors from the Power Pages Web API and site security: exposed columns, table permissions, request tokens and table names."

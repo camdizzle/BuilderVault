@@ -21,6 +21,7 @@ import { NamingLinter } from "@/components/tools/naming-linter";
 import { PatchFormulaBuilder } from "@/components/tools/patch-formula-builder";
 import { ErrorMessageFinder } from "@/components/tools/error-message-finder";
 import { GalleryFilterBuilder } from "@/components/tools/gallery-filter-builder";
+import { RecurrencePlanner } from "@/components/tools/recurrence-planner";
 import type { ErrorEntry } from "@/lib/tools/error-finder";
 
 export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
@@ -44,6 +45,7 @@ export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { sl
   if (slug === "patch-formula-builder") return <PatchFormulaBuilder />;
   if (slug === "error-message-finder") return <ErrorMessageFinder entries={errorEntries} />;
   if (slug === "gallery-search-filter-builder") return <GalleryFilterBuilder />;
+  if (slug === "recurrence-schedule-planner") return <RecurrencePlanner />;
   return null;
 }
 

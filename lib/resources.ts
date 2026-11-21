@@ -205,6 +205,160 @@ ResolvedOn`, expectedResult: "Support can search for failures by request or user
 
 export const cheatSheets: ResourceItem[] = [
   item({ slug: "patch-sharepoint-columns-cheat-sheet", kind: "cheat-sheet", title: "Patch SharePoint Columns Cheat Sheet", eyebrow: "Cheat sheet", description: "Quick examples for patching text, choice, person, lookup, date, yes/no, and metadata columns from Power Apps.", keywords: ["Patch SharePoint columns", "Power Apps person field", "Power Apps choice field"], audience: "Makers who know the field they need to save and want the correct Patch shape quickly.", summaryBullets: ["Person fields need claims-shaped records.", "Choice fields need records with Value.", "Lookup fields need Id and Value.", "Dates should be validated before save."], examples: [{ title: "Choice field", problem: "Patch a SharePoint choice column from a combo box.", code: `Patch(Requests, galRequests.Selected, { Priority: { Value: cmbPriority.Selected.Value } })`, expectedResult: "Priority stores the selected choice value.", commonMistakes: ["Patching only text when SharePoint expects a choice record"] }, { title: "Lookup field", problem: "Patch a lookup column from a selected record.", code: `Patch(Requests, galRequests.Selected, { Customer: { Id: cmbCustomer.Selected.ID, Value: cmbCustomer.Selected.Title } })`, expectedResult: "The lookup points to the selected customer item.", commonMistakes: ["Using ID instead of Id", "Omitting the display value"] }], relatedPatterns: ["patch-sharepoint-choice-field", "patch-sharepoint-lookup-field", "patch-sharepoint-people-picker-power-apps"] }),
+  item({
+    slug: "patch-dataverse-columns-cheat-sheet",
+    kind: "cheat-sheet",
+    title: "Patch Dataverse Columns Cheat Sheet",
+    eyebrow: "Cheat sheet",
+    description: "The Patch value for every Dataverse column type in Power Apps: text, numbers, dates, Yes/No, choices, multi-select choices, lookups, Owner and Customer, images, and how to clear a value.",
+    keywords: ["Patch Dataverse choice column", "Patch Dataverse lookup Power Apps", "Patch Owner Dataverse", "Patch Yes/No Dataverse", "Patch multi-select choice Dataverse"],
+    audience: "Makers saving to Dataverse with Patch, especially anyone who learned Patch on SharePoint, where choices and people need different shapes.",
+    summaryBullets: [
+      "Choices take the option itself, such as 'Status (Requests)'.Approved, never text and never a { Value: } record.",
+      "Yes/No columns take true or false.",
+      "Lookups take a whole row from the related table, from LookUp or a combo box's Selected.",
+      "Owner and Customer are polymorphic lookups: they take a row from either of their tables.",
+      "Use the column's display name in Power Apps, in single quotes when it has spaces."
+    ],
+    examples: [
+      {
+        title: "Text, numbers and dates",
+        problem: "Read values from text inputs and a date picker. Text inputs always give text, so numbers need Value.",
+        code: `Patch(
+    Requests,
+    Defaults(Requests),
+    {
+        Title: txtTitle.Text,
+        Amount: Value(txtAmount.Text),
+        Quantity: Round(Value(txtQuantity.Text), 0),
+        'Due Date': dpDue.SelectedDate
+    }
+)`,
+        expectedResult: "A new row with the text, the amount, a whole number quantity and the due date.",
+        commonMistakes: ["Passing txtAmount.Text to a number or currency column.", "Sending a decimal to a whole number column. Round it first."]
+      },
+      {
+        title: "Yes/No",
+        problem: "A Yes/No column stores a boolean, so it takes true or false.",
+        code: `Patch(Requests, galRequests.Selected, { Urgent: tglUrgent.Value })
+
+// or a fixed value
+Patch(Requests, galRequests.Selected, { Urgent: true })`,
+        expectedResult: "Urgent is set from the toggle, or to Yes.",
+        commonMistakes: ["Patching the label text, such as \"Yes\"."]
+      },
+      {
+        title: "Choice",
+        problem: "Dataverse stores a choice as a number, and Power Apps names each option. Patch the option, not its label.",
+        code: `// A choice that belongs to this table
+Patch(Requests, galRequests.Selected, { Status: 'Status (Requests)'.Approved })
+
+// A global choice uses its own name
+Patch(Requests, galRequests.Selected, { Priority: Priority.High })
+
+// From a combo box whose Items is Choices(Requests.Status)
+Patch(Requests, galRequests.Selected, { Status: cmbStatus.Selected.Value })`,
+        expectedResult: "The status is stored as the option, in every language the app is used in.",
+        commonMistakes: ["Status: \"Approved\" (text) or Status: { Value: \"Approved\" } (the SharePoint shape).", "Filling the combo box from a hard-coded list of text instead of Choices()."]
+      },
+      {
+        title: "Multi-select choice",
+        problem: "A multi-select choice takes a table of options.",
+        code: `// From a combo box whose Items is Choices(Requests.Tags)
+Patch(Requests, galRequests.Selected, { Tags: cmbTags.SelectedItems })
+
+// Fixed options
+Patch(Requests, galRequests.Selected, { Tags: [ 'Tags (Requests)'.Finance, 'Tags (Requests)'.Urgent ] })`,
+        expectedResult: "The row holds exactly the options given. Options not listed are removed.",
+        commonMistakes: ["Passing one option where a table is expected.", "Forgetting that Patch replaces the whole set, so add the existing options if you mean to append."]
+      },
+      {
+        title: "Lookup",
+        problem: "A lookup takes a row from the related table, not its ID or name.",
+        code: `// A row found by a value
+Patch(
+    Requests,
+    galRequests.Selected,
+    { Account: LookUp(Accounts, 'Account Name' = "Contoso") }
+)
+
+// From a combo box whose Items is the Accounts table
+Patch(Requests, galRequests.Selected, { Account: cmbAccount.Selected })`,
+        expectedResult: "The request points to the chosen account.",
+        commonMistakes: ["Passing the account's GUID or name as text.", "Using a combo box that lists text values instead of rows."]
+      },
+      {
+        title: "Owner",
+        problem: "Owner can be a user or a team, and Patch accepts a row from either table.",
+        code: `// The signed-in user
+Patch(
+    Requests,
+    galRequests.Selected,
+    { Owner: LookUp(Users, 'Primary Email' = User().Email) }
+)
+
+// A team
+Patch(Requests, galRequests.Selected, { Owner: LookUp(Teams, 'Team Name' = "Finance") })`,
+        expectedResult: "The row is assigned to the user or the team.",
+        commonMistakes: ["Passing an email address as text.", "Looking the user up inside a loop. Look the user up once, for example in a named formula."]
+      },
+      {
+        title: "Customer",
+        problem: "A Customer column is a lookup to an account or a contact.",
+        code: `Patch(Contacts, galContacts.Selected, { 'Company Name': cmbAccount.Selected })
+
+// or a contact
+Patch(Cases, galCases.Selected, { Customer: LookUp(Contacts, 'Full Name' = "Sam Lee") })`,
+        expectedResult: "The customer points to the chosen account or contact.",
+        commonMistakes: ["Assuming the column only takes accounts."]
+      },
+      {
+        title: "Image",
+        problem: "An image column takes an image value, such as a photo from the camera or the image picker.",
+        code: `Patch(Requests, galRequests.Selected, { Photo: Camera1.Photo })
+
+// From an Add picture control
+Patch(Requests, galRequests.Selected, { Photo: AddMediaButton1.Media })`,
+        expectedResult: "The image is saved to the row's image column.",
+        commonMistakes: ["Patching the image's file name instead of the image."]
+      },
+      {
+        title: "Clear a value",
+        problem: "Set a column back to empty.",
+        code: `Patch(
+    Requests,
+    galRequests.Selected,
+    {
+        'Due Date': Blank(),
+        Account: Blank(),
+        Status: Blank()
+    }
+)`,
+        expectedResult: "The due date, account and status are empty. Required columns can't be cleared.",
+        commonMistakes: ["Using an empty string \"\" for a date, lookup or choice."]
+      }
+    ],
+    relatedPatterns: ["patch-dataverse-lookup-and-choice-columns", "dataverse-polymorphic-lookup-patch-power-apps", "power-apps-error-handling-iferror-patch"],
+    relatedTools: ["patch-formula-builder", "dataverse-table-naming-helper"],
+    faqs: [
+      {
+        question: "How do I Patch a choice column in Dataverse?",
+        answer: "Patch the option, such as 'Status (Requests)'.Approved for a choice that belongs to the table, or the global choice's name followed by the option, such as Priority.High. Don't patch the label text."
+      },
+      {
+        question: "How do I Patch a lookup column in Dataverse?",
+        answer: "Give it a whole row from the related table, for example LookUp(Accounts, 'Account Name' = \"Contoso\") or a combo box's Selected when the combo box lists that table."
+      },
+      {
+        question: "Why does my SharePoint Patch formula fail on Dataverse?",
+        answer: "SharePoint uses records such as { Value: \"Approved\" } for choices and a claims record for people. Dataverse uses the option itself for choices and a row from the Users table for people. The column shapes are different even when the column names match."
+      },
+      {
+        question: "What is the name of my choice in the formula?",
+        answer: "For a choice that belongs to one table, Power Apps names it after the column and the table, such as 'Status (Requests)'. For a global choice, it uses the choice's own name. Type the name and a dot in the formula bar, and Power Apps lists the options."
+      }
+    ]
+  }),
   item({ slug: "power-apps-gallery-filtering-cheat-sheet", kind: "cheat-sheet", title: "Power Apps Gallery Filtering Cheat Sheet", eyebrow: "Cheat sheet", description: "Delegation-aware gallery filter formulas for search boxes, status chips, date ranges, user filters, and queue screens.", keywords: ["Power Apps gallery filter", "delegation", "Search gallery"], audience: "Makers building galleries that need to keep working after the list gets large.", summaryBullets: ["Start with delegable filters first.", "Use StartsWith for SharePoint search when possible.", "Combine status and ownership filters carefully.", "Avoid wrapping columns in non-delegable transformations."], examples: [{ title: "Status and search", problem: "Filter a request gallery by status and title search.", code: `Filter(
     Requests,
     RequestStatus.Value = cmbStatus.Selected.Value,
@@ -1240,6 +1394,68 @@ Filter(
       {
         question: "Is my formula sent anywhere?",
         answer: "No. The formula is built in your browser, and nothing you type is uploaded or stored."
+      }
+    ]
+  }),
+  item({
+    slug: "recurrence-schedule-planner",
+    kind: "tool",
+    title: "Power Automate Recurrence Schedule Planner",
+    eyebrow: "Free tool",
+    description: "Preview the next 10 runs of a Power Automate Recurrence trigger in your time zone and in UTC. Set the interval, frequency, start time, days, hours and minutes, see what daylight saving time does, and copy the trigger definition.",
+    keywords: ["Power Automate recurrence trigger", "Power Automate schedule flow time zone", "recurrence trigger daylight saving", "Power Automate run every weekday", "scheduled cloud flow start time"],
+    audience: "Anyone setting up a scheduled cloud flow who wants to know exactly when it will run before saving it, especially across time zones and daylight saving changes.",
+    summaryBullets: [
+      "Shows the next 10 run times in the trigger's time zone and in UTC.",
+      "Covers Minute, Hour, Day, Week and Month, with days, hours and minutes for Day and Week schedules.",
+      "Flags daylight saving changes, times between 2:00 and 3:00 AM, and months without the start day.",
+      "Explains the documented rules: no start time means the first run is immediate, and a time zone only applies with a start time.",
+      "Gives the trigger definition, so you can check it against Peek code in your flow."
+    ],
+    examples: [
+      {
+        title: "Weekdays at 9 AM Eastern Time",
+        problem: "Run a report every weekday morning, at the same local time all year.",
+        code: `{
+  "type": "Recurrence",
+  "recurrence": {
+    "frequency": "Week",
+    "interval": 1,
+    "schedule": {
+      "hours": [9],
+      "minutes": [0],
+      "weekDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    },
+    "startTime": "2027-01-04T00:00:00",
+    "timeZone": "Eastern Standard Time"
+  }
+}`,
+        expectedResult: "The flow runs at 9:00 AM Eastern on weekdays. The UTC time moves by an hour when daylight saving starts and ends, so the local time doesn't.",
+        commonMistakes: ["Leaving At these minutes empty, so the runs use the start time's minute.", "Leaving the time zone empty, so 9:00 means 9:00 UTC."]
+      }
+    ],
+    relatedPatterns: [],
+    relatedTools: ["date-format-tester", "trigger-condition-builder", "power-automate-expression-builder"],
+    faqs: [
+      {
+        question: "Why did my scheduled flow run as soon as I saved it?",
+        answer: "With no start time, the Recurrence trigger runs once straight away, then counts on from that run. Set a start time to control the first run."
+      },
+      {
+        question: "Why does my scheduled flow run an hour early or late in summer?",
+        answer: "The trigger has no time zone, so its times are UTC and don't move with daylight saving time. Select your time zone and a start time, and the trigger keeps the same local time all year."
+      },
+      {
+        question: "Why does the start time need a Z at the end?",
+        answer: "Only when no time zone is selected. The Z marks the time as UTC. With a time zone selected, leave the Z off, because Microsoft says a Z makes the trigger ignore the time zone."
+      },
+      {
+        question: "How accurate is the preview?",
+        answer: "It follows Microsoft's documented Recurrence rules. Microsoft notes runs can start up to a minute late, and simple schedules count from the last run, so they can drift. For schedules every two or more weeks, compare with the preview the trigger shows."
+      },
+      {
+        question: "Is anything sent anywhere?",
+        answer: "No. The run times are worked out in your browser."
       }
     ]
   }),
