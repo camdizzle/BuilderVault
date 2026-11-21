@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { AccountMenu } from "@/components/pro/account-menu";
 import type { NavLink, NavMenu } from "@/lib/navigation";
 
 type SiteNavProps = {
@@ -82,6 +83,8 @@ export function SiteNav({ menus, formatter }: SiteNavProps) {
         </ul>
       </nav>
 
+      <AccountMenu className="site-nav-account" />
+
       <Link className="button site-nav-cta" href={formatter.href}>
         {formatter.label}
       </Link>
@@ -134,6 +137,7 @@ export function SiteNav({ menus, formatter }: SiteNavProps) {
           <div className="site-nav-mobile-extra">
             <Link href="/about">About</Link>
             <Link href="/services">Get help</Link>
+            <AccountMenu />
           </div>
           <Link className="button site-nav-mobile-cta" href={formatter.href}>
             {formatter.label}
