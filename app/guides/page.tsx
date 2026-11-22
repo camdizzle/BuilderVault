@@ -12,6 +12,11 @@ export const metadata = {
 
 const groups = [
   {
+    eyebrow: "Power Apps basics",
+    title: "New to Power Apps",
+    text: "Pick a data source, build a first canvas app on a SharePoint list, and share it with your team. These guides are part of the step-by-step learning path."
+  },
+  {
     eyebrow: "Power Fx how-to",
     title: "Power Apps formula guides",
     text: "Fix, tidy and speed up Power Fx formulas, choose between functions that look alike, and handle variables, saving and errors."
@@ -54,7 +59,7 @@ export default function GuidesPage() {
           <div className="eyebrow">How-to guides</div>
           <h1 className="page-title">How-to guides for Power Apps formulas and Power Automate flows.</h1>
           <p className="lead">
-            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>, and for one function at a time, the <Link href="/functions" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Fx function reference</Link>.
+            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. New to Power Apps? Follow the <Link href="/start" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>step-by-step learning path</Link>. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>, and for one function at a time, the <Link href="/functions" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Fx function reference</Link>.
           </p>
         </div>
         {groups.map((group) => (

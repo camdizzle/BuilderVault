@@ -86,8 +86,9 @@ export const navMenus: NavMenu[] = [
     id: "learn",
     label: "Learn",
     featured: {
-      title: "Popular guides",
+      title: "Start learning",
       links: [
+        { href: "/start", label: "Learn Power Apps step by step", note: "A seven-step path for new makers" },
         { href: "/guides/format-power-fx-formulas", label: "Format Power Fx formulas", note: "Readable formulas your team can maintain" },
         { href: "/guides/power-apps-delegation-warning-explained", label: "Delegation warnings explained", note: "What the yellow triangle means" },
         { href: "/guides/fix-common-power-fx-formula-errors", label: "Fix common formula errors", note: "The errors makers hit most" }
