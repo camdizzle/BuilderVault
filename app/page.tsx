@@ -42,6 +42,7 @@ export default function HomePage() {
               <div className="eyebrow">Choose your path</div>
               <h2 style={{ fontSize: "1.5rem", lineHeight: 1.15, margin: "10px 0 0" }}>What do you need right now?</h2>
             </div>
+            <PathLink href="/start" label="I'm new to Power Apps" text="Follow seven steps from a SharePoint list to a shared canvas app, with a checkpoint at the end of each." />
             <PathLink href="/tools/power-fx-formatter" label="I need to clean up a formula" text="Format, minify, and check a Power Fx formula for syntax and delegation problems in your browser." />
             <PathLink href="/patterns" label="I need a pattern" text="Search implementation guidance, formulas, flows, schemas, and troubleshooting notes." />
             <PathLink href="/cookbooks" label="I need a recipe" text="Use task-based examples for Patch, collections, expressions, and SharePoint schemas." />

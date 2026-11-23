@@ -13,11 +13,15 @@ import { flowHandoverGuide } from "./flow-handover-guide";
 import { errorHandlingGuide, namedFormulasGuide, saveDataGuide, variablesGuide } from "./powerfx-guides-1";
 import { appStartGuide, findRecordsGuide, forAllGuide, textFormatGuide } from "./powerfx-guides-2";
 import { sharePointGalleryGuide } from "./powerfx-guides-3";
+import { chooseDataSourceGuide, firstCanvasAppGuide, shareAppGuide } from "./basics-guides";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
 
 export const guides: Guide[] = [
+  chooseDataSourceGuide,
+  firstCanvasAppGuide,
+  shareAppGuide,
   commonErrorsGuide,
   missingBracketGuide,
   delegationWarningGuide,
