@@ -33,6 +33,13 @@ export default function TopicPage() {
           </div>
         </div>
 
+        <section className="card" style={{ display: "grid", gap: 10, padding: 24 }}>
+          <h2 className="section-title" style={{ fontSize: "1.4rem", margin: 0 }}>New to Power Automate?</h2>
+          <p style={{ color: "#415049", lineHeight: 1.7, margin: 0 }}>
+            Start with the <Link href="/start/flows" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Automate learning path</Link>: six steps from a flow you run yourself to flows your team relies on, each with a checkpoint. Its first step is <Link href="/guides/create-first-power-automate-cloud-flow" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>creating your first cloud flow</Link>.
+          </p>
+        </section>
+
         <section style={{ display: "grid", gap: 18 }}>
           <h2 className="section-title">Recommended collections</h2>
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>

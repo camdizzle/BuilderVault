@@ -4,7 +4,7 @@
 export type PathLink = {
   href: string;
   label: string;
-  kind: "Guide" | "Tool" | "Function" | "Reference" | "Pattern" | "Library";
+  kind: "Guide" | "Tool" | "Function" | "Reference" | "Pattern" | "Library" | "Path";
   note: string;
 };
 
@@ -33,7 +33,8 @@ export const learningPath: PathStep[] = [
     links: [
       { href: "/guides/choose-data-source-power-apps", label: "Choose a data source for your first app", kind: "Guide", note: "SharePoint, Dataverse, Dataverse for Teams and Excel compared" },
       { href: "/tools/sharepoint-internal-name-helper", label: "SharePoint internal name helper", kind: "Tool", note: "See the internal name a column will get before you create it" },
-      { href: "/patterns/sharepoint-lookup-vs-choice-design", label: "Choose lookup columns vs choice columns", kind: "Pattern", note: "The column decision new lists get wrong most often" }
+      { href: "/patterns/sharepoint-lookup-vs-choice-design", label: "Choose lookup columns vs choice columns", kind: "Pattern", note: "The column decision new lists get wrong most often" },
+      { href: "/guides/model-driven-vs-canvas-apps", label: "Model-driven vs canvas apps", kind: "Guide", note: "Why this path builds a canvas app, and when you'd choose model-driven" }
     ],
     checkpoint: "You can say which data source your app will use and why, and you have a list or table with a few sample rows in it."
   },
@@ -125,7 +126,8 @@ export const learningPath: PathStep[] = [
       { href: "/guides/call-power-automate-flow-from-power-apps", label: "Call a flow from Power Apps", kind: "Guide", note: "Pass values in and get values back" },
       { href: "/guides/power-automate-sharepoint-quick-start", label: "SharePoint in Power Automate", kind: "Guide", note: "One complete flow on a list" },
       { href: "/guides/power-automate-approvals-quick-start", label: "Approvals in Power Automate", kind: "Guide", note: "Send a request for approval and read the outcome" },
-      { href: "/guides/troubleshoot-failed-flow-run", label: "Troubleshoot a failed flow run", kind: "Guide", note: "Read the run history" }
+      { href: "/guides/troubleshoot-failed-flow-run", label: "Troubleshoot a failed flow run", kind: "Guide", note: "Read the run history" },
+      { href: "/start/flows", label: "Learn Power Automate step by step", kind: "Path", note: "Six steps for going further with flows" }
     ],
     checkpoint: "A button in your app runs a flow that sends an email or starts an approval, and you can find the run in the flow's history."
   },
@@ -165,6 +167,6 @@ export const learningPathFaqs = [
   },
   {
     question: "Should I learn canvas apps or model-driven apps first?",
-    answer: "Most makers start with canvas apps, because they work with SharePoint lists and give full control over the screens. Model-driven apps are built on Dataverse tables and suit data-heavy business systems. This path covers canvas apps."
+    answer: "Most makers start with canvas apps, because they work with SharePoint lists and give full control over the screens. Model-driven apps are built on Dataverse tables and suit data-heavy business systems. This path covers canvas apps, and the model-driven vs canvas apps guide compares the two."
   }
 ];

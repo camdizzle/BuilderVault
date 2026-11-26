@@ -98,7 +98,7 @@ With(
     { question: "How do I get the ID of a record created with Patch?", answer: "Patch returns the saved record. Store it, Set(varNew, Patch(Requests, Defaults(Requests), {...})), then read varNew.ID." },
     { question: "What is the difference between Patch and SubmitForm?", answer: "SubmitForm saves the values of an Edit form control, checks its validation and runs OnSuccess or OnFailure. Patch saves any values you give it, from any controls or none, and leaves validation and error handling to you." }
   ],
-  relatedFunctions: ["submitform", "collect", "remove", "iferror", "forall"],
+  relatedFunctions: ["submitform", "collect", "remove", "iferror", "forall", "refresh"],
   relatedGuides: ["power-apps-patch-vs-submitform-vs-collect", "power-fx-iferror-and-app-onerror"],
   relatedErrors: ["function-patch-has-some-invalid-arguments", "network-error-patch-requested-operation-is-invalid", "patch-conflicts-exist-with-changes-on-the-server", "field-title-is-required-power-apps"],
   relatedPatterns: ["patch-sharepoint-choice-field", "patch-dataverse-lookup-and-choice-columns", "power-apps-error-handling-iferror-patch", "power-apps-bulk-update-selected-gallery-items"],
@@ -341,7 +341,7 @@ ResetForm(frmRequest); Back()`),
     { question: "What does ResetForm do?", answer: "It puts every field back to its starting value and runs the form's OnReset. If the form was in New mode, it switches back to Edit mode." },
     { question: "Should I use SubmitForm or Patch?", answer: "Use SubmitForm with an Edit form when the fields map to one record and you want built-in validation. Use Patch when you save values from controls outside a form, several records at once, or need full control." }
   ],
-  relatedFunctions: ["patch", "notify", "navigate"],
+  relatedFunctions: ["patch", "notify", "navigate", "reset"],
   relatedGuides: ["power-apps-patch-vs-submitform-vs-collect"],
   relatedErrors: ["field-title-is-required-power-apps", "entry-is-required-or-has-an-invalid-value", "specified-column-is-read-only-power-apps"],
   relatedPatterns: ["power-apps-form-mode-new-edit-view", "submit-multiple-power-apps-forms"],

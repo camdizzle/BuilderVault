@@ -76,6 +76,7 @@ const staticRoutes: Array<{
   { route: "/examples", changeFrequency: "weekly", priority: 0.84 },
   { route: "/guides", changeFrequency: "weekly", priority: 0.84 },
   { route: "/start", changeFrequency: "monthly", priority: 0.86 },
+  { route: "/start/flows", changeFrequency: "monthly", priority: 0.84 },
   { route: "/errors", changeFrequency: "weekly", priority: 0.84 },
   { route: "/functions", changeFrequency: "weekly", priority: 0.84 },
   { route: "/downloads", changeFrequency: "monthly", priority: 0.7 },

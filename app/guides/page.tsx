@@ -14,7 +14,12 @@ const groups = [
   {
     eyebrow: "Power Apps basics",
     title: "New to Power Apps",
-    text: "Pick a data source, build a first canvas app on a SharePoint list, and share it with your team. These guides are part of the step-by-step learning path."
+    text: "Pick a data source, choose between canvas and model-driven apps, build a first canvas app on a SharePoint list, and share it with your team. Most of these guides are part of the step-by-step learning path."
+  },
+  {
+    eyebrow: "Power Automate basics",
+    title: "New to Power Automate",
+    text: "What a cloud flow is, the three flow types, and a first flow built and tested step by step. This is where the Power Automate learning path starts."
   },
   {
     eyebrow: "Power Fx how-to",
@@ -59,7 +64,7 @@ export default function GuidesPage() {
           <div className="eyebrow">How-to guides</div>
           <h1 className="page-title">How-to guides for Power Apps formulas and Power Automate flows.</h1>
           <p className="lead">
-            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. New to Power Apps? Follow the <Link href="/start" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>step-by-step learning path</Link>. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>, and for one function at a time, the <Link href="/functions" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Fx function reference</Link>.
+            Each guide answers one question, shows the formula or expression before and after, and points to the free tool that does the checking for you. The guides are checked against Microsoft&apos;s documentation. New to Power Apps? Follow the <Link href="/start" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>step-by-step learning path</Link>, or the <Link href="/start/flows" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Automate path</Link> for flows. For a specific error message, see the <Link href="/errors" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>error library</Link>, and for one function at a time, the <Link href="/functions" style={{ color: "var(--accent-strong)", fontWeight: 700 }}>Power Fx function reference</Link>.
           </p>
         </div>
         {groups.map((group) => (
