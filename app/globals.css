@@ -1156,3 +1156,229 @@ button {
     padding: 16px;
   }
 }
+
+/* Power Fx formatter: input and output side by side, coloured output, review tabs. */
+.fx-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge.fx-bad {
+  background: #fdecec;
+  border-color: #f3b4b4;
+  color: var(--danger);
+}
+
+.fx-editor {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.fx-pane {
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  overflow: hidden;
+}
+
+.fx-input {
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+
+.fx-output {
+  background: #14211d;
+  color: #e8fff6;
+}
+
+.fx-pane-head,
+.fx-pane-foot {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  font-weight: 800;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 8px 12px;
+}
+
+.fx-input .fx-pane-head {
+  border-bottom: 1px solid var(--line);
+  color: #25342e;
+}
+
+.fx-output .fx-pane-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #b8d8ce;
+}
+
+.fx-pane-foot {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  min-height: 40px;
+}
+
+.fx-pane-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.fx-pane button {
+  background: #f3f6f2;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #25342e;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 800;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.fx-pane-foot button {
+  background: transparent;
+  border: 0;
+  color: var(--accent-strong);
+  min-height: 28px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.fx-output button {
+  background: #f8fafc;
+  border: 0;
+  color: #14211d;
+}
+
+.fx-output button.fx-primary {
+  background: #5eead4;
+}
+
+.fx-pane button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fx-input textarea {
+  background: transparent;
+  border: 0;
+  color: var(--foreground);
+  flex: 1;
+  font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  min-height: 300px;
+  outline: none;
+  padding: 12px 14px;
+  resize: vertical;
+  white-space: pre;
+}
+
+.fx-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.fx-code {
+  counter-reset: fx-line;
+  flex: 1;
+  font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+  max-height: 640px;
+  overflow: auto;
+  padding: 12px 14px 12px 0;
+  white-space: pre;
+}
+
+.fx-line::before {
+  color: #5b7068;
+  content: counter(fx-line);
+  counter-increment: fx-line;
+  display: inline-block;
+  margin-right: 14px;
+  text-align: right;
+  user-select: none;
+  width: 3em;
+}
+
+.fx-empty {
+  color: #9fb8af;
+  padding-left: 14px;
+}
+
+.fx-function { color: #7dd3fc; }
+.fx-string { color: #fcd34d; }
+.fx-number { color: #fdba74; }
+.fx-keyword { color: #c4b5fd; }
+.fx-enum { color: #c4b5fd; }
+.fx-variable { color: #f9a8d4; }
+.fx-name { color: #a7f3d0; }
+.fx-comment { color: #7f948c; font-style: italic; }
+.fx-punctuation { color: #94a3b8; }
+
+.fx-tabs {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.fx-tabs button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  font-weight: 800;
+  gap: 6px;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.fx-tabs button.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.fx-count {
+  background: #fde68a;
+  border-radius: 999px;
+  color: #713f12;
+  font-size: 0.75rem;
+  padding: 1px 7px;
+}
+
+@media (max-width: 900px) {
+  /* On phones the editor comes straight after the instructions; the checks and options follow it. */
+  .tool-panel > :first-child {
+    order: -2;
+  }
+
+  .tool-panel > .fx-editor {
+    order: -1;
+  }
+
+  .fx-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fx-pane {
+    min-height: 0;
+  }
+
+  .fx-input textarea {
+    min-height: 200px;
+  }
+}
+
