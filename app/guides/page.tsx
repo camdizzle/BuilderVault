@@ -6,7 +6,7 @@ import { getResourceBySlug, type ResourceItem } from "@/lib/resources";
 
 export const metadata = {
   title: "Power Fx and Power Automate How-To Guides | BuilderVault",
-  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, handing over flows when someone leaves, and quick starts for SharePoint, Outlook, Outlook calendar, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals, HTTP, SQL Server and custom connectors.",
+  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, handing over flows when someone leaves, connection references and environment variables, managed and unmanaged solutions, worked examples with the free tools, and quick starts for SharePoint, Outlook, Outlook calendar, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals, HTTP, SQL Server and custom connectors.",
   alternates: { canonical: "/guides" }
 };
 
@@ -37,6 +37,16 @@ const groups = [
     text: "Filter data, control triggers, read expressions, check limits and troubleshoot failed runs."
   },
   {
+    eyebrow: "Worked examples",
+    title: "Worked examples with the free tools",
+    text: "One real task from start to finish, using two or three tools together, including the mistake a later change usually introduces and how the tools catch it."
+  },
+  {
+    eyebrow: "ALM and deployment",
+    title: "Move apps and flows between environments",
+    text: "Connection references, environment variables and deployment settings files, so the same solution runs in development, test and production without editing it after each import."
+  },
+  {
     eyebrow: "Power Automate connectors",
     title: "Connector quick starts",
     text: "The triggers and actions worth knowing for each connector, with one complete flow to build."
@@ -51,7 +61,8 @@ const toolSlugs = [
   "parse-json-schema-generator",
   "power-automate-expression-builder",
   "power-apps-naming-linter",
-  "excel-to-power-fx"
+  "excel-to-power-fx",
+  "deployment-settings-generator"
 ];
 
 export default function GuidesPage() {

@@ -138,6 +138,7 @@ Reset(dpTo)`),
   relatedTools: ["gallery-search-filter-builder", "power-apps-delegation-checker", "power-fx-formatter"],
   relatedPatterns: ["power-apps-search-with-multiple-fields", "avoid-delegation-warnings-sharepoint-filters", "delegation-safe-date-range-filter", "power-apps-empty-state-gallery", "sort-gallery-by-column-header-power-apps"],
   relatedLinks: [
+    { href: "/guides/worked-example-gallery-formula-builder-formatter-delegation-checker", label: "Worked example: build and check a gallery formula" },
     { href: "/guides/power-fx-lookup-vs-filter-vs-search", label: "LookUp vs Filter vs Search" },
     { href: "/guides/power-apps-delegation-warning-explained", label: "Power Apps delegation warning explained" },
     { href: "/cheat-sheets/power-apps-gallery-filtering-cheat-sheet", label: "Gallery filtering cheat sheet" }

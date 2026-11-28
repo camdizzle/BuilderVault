@@ -274,6 +274,18 @@ export default async function PatternDetailPage({ params }: PatternDetailPagePro
                 ))}
               </div>
             </div>
+            {pattern.relatedLinks && pattern.relatedLinks.length > 0 ? (
+              <div className="card" style={{ padding: 20 }}>
+                <h2 style={{ fontSize: "1.15rem", marginTop: 0 }}>Tools and references</h2>
+                <div style={{ display: "grid", gap: 10 }}>
+                  {pattern.relatedLinks.map((link) => (
+                    <Link href={link.href} key={link.href}>
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {relatedCollections.length > 0 ? (
               <div className="card" style={{ padding: 20 }}>
                 <h2 style={{ fontSize: "1.15rem", marginTop: 0 }}>Related collections</h2>

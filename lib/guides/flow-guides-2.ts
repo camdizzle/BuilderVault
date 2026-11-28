@@ -120,6 +120,7 @@ body('Parse_JSON')?['lines']?[0]?['sku']`, "Expression"),
   relatedPatterns: ["power-automate-parse-json-from-power-apps", "coalesce-empty-null-handling-power-automate", "power-automate-try-catch-scope-error-handling"],
   relatedLinks: [
     { href: "/errors/parse-json-schema-validation-failed-expected-string-got-null", label: "Error: Expected String but got Null" },
+    { href: "/guides/worked-example-trigger-condition-parse-json-asset-tag-flow", label: "Worked example: a null-safe Parse JSON schema" },
     { href: "/errors/property-cannot-be-selected-power-automate", label: "Error: Property cannot be selected" },
     { href: "/guides/power-automate-expressions-explained", label: "Read and write flow expressions" }
   ],

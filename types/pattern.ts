@@ -51,7 +51,14 @@ export interface Pattern {
   primaryKeyword?: string;
   secondaryKeywords?: string[];
   faqs?: PatternFaq[];
+  /** Tools, cheat sheets and guides that go with this pattern. Shown beside it. */
+  relatedLinks?: PatternLink[];
 }
+
+export type PatternLink = {
+  href: string;
+  label: string;
+};
 
 export type PatternFaq = {
   question: string;

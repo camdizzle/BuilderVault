@@ -291,6 +291,7 @@ const flowsOffAfterImport: ErrorPage = {
   relatedTools: ["deployment-settings-generator"],
   relatedPatterns: ["connection-references-for-solution-flows", "turn-on-flows-after-solution-import", "deployment-settings-file-pac-cli", "service-principal-application-user-deployments"],
   relatedLinks: [
+    { href: "/guides/power-platform-connection-references-environment-variables", label: "Connection references and environment variables explained" },
     { href: "/guides/troubleshoot-failed-flow-run", label: "Troubleshoot a failed flow run" },
     { href: "/errors/app-not-compliant-data-loss-prevention-policies", label: "Error: App isn't compliant with data loss prevention policies" }
   ],

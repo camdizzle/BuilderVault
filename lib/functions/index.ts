@@ -5,12 +5,13 @@ import { logicFunctions } from "./logic-functions";
 import { textDateFunctions } from "./text-date-functions";
 import { appFunctions } from "./app-functions";
 import { refreshFunction, resetFunction } from "./reset-refresh-functions";
+import { isMatchFunction } from "./ismatch-functions";
 import type { FunctionCategory, FunctionPage } from "./types";
 
 export type { FunctionCategory, FunctionPage } from "./types";
 export { categoryIntro, functionCategories } from "./types";
 
-export const functionPages: FunctionPage[] = [...findFunctions, ...shapeFunctions, ...saveFunctions, ...logicFunctions, ...textDateFunctions, ...appFunctions, resetFunction, refreshFunction];
+export const functionPages: FunctionPage[] = [...findFunctions, ...shapeFunctions, ...saveFunctions, ...logicFunctions, ...textDateFunctions, ...appFunctions, resetFunction, refreshFunction, isMatchFunction];
 
 export const functionPath = (page: Pick<FunctionPage, "slug">) => `/functions/${page.slug}`;
 
