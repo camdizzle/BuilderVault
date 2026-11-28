@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -43,12 +43,12 @@ const valuePlaceholders: Record<FilterColumnType, string> = {
 };
 
 export function FilterQueryBuilder() {
-  const [target, setTarget] = useState<FilterTarget>("sharepoint");
-  const [join, setJoin] = useState<FilterJoin>("and");
-  const [groupJoin, setGroupJoin] = useState<FilterJoin>("and");
-  const [useGroups, setUseGroups] = useState(false);
-  const [rows, setRows] = useState<FilterCondition[]>(starterRows.sharepoint);
-  const [options, setOptions] = useState<QueryOptions>({ orderBy: "", descending: false, top: "", select: "" });
+  const [target, setTarget] = useSavedState<FilterTarget>("target", "sharepoint");
+  const [join, setJoin] = useSavedState<FilterJoin>("join", "and");
+  const [groupJoin, setGroupJoin] = useSavedState<FilterJoin>("groupJoin", "and");
+  const [useGroups, setUseGroups] = useSavedState("useGroups", false);
+  const [rows, setRows] = useSavedState<FilterCondition[]>("rows", starterRows.sharepoint);
+  const [options, setOptions] = useSavedState<QueryOptions>("options", { orderBy: "", descending: false, top: "", select: "" });
   const result = buildFilterQuery(target, useGroups ? rows : rows.map((row) => ({ ...row, group: 1 })), join, groupJoin);
   const extras = buildQueryOptions(target, options);
   const groupCount = Math.max(1, ...rows.map((row) => row.group ?? 1));

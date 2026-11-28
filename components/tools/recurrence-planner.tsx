@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { intervalLimits, planRecurrence, recurrenceTimeZones, weekDays, type RecurrenceFrequency, type WeekDay } from "@/lib/tools/recurrence";
@@ -25,13 +26,13 @@ const chip = (active: boolean) => ({
 });
 
 export function RecurrencePlanner() {
-  const [frequency, setFrequency] = useState<RecurrenceFrequency>("Week");
-  const [interval, setIntervalValue] = useState("1");
-  const [timeZone, setTimeZone] = useState("Eastern Standard Time");
-  const [startTime, setStartTime] = useState("2027-01-04T00:00");
-  const [days, setDays] = useState<WeekDay[]>(["Monday", "Wednesday", "Friday"]);
-  const [hours, setHours] = useState("9");
-  const [minutes, setMinutes] = useState("0");
+  const [frequency, setFrequency] = useSavedState<RecurrenceFrequency>("frequency", "Week");
+  const [interval, setIntervalValue] = useSavedState("interval", "1");
+  const [timeZone, setTimeZone] = useSavedState("timeZone", "Eastern Standard Time");
+  const [startTime, setStartTime] = useSavedState("startTime", "2027-01-04T00:00");
+  const [days, setDays] = useSavedState<WeekDay[]>("days", ["Monday", "Wednesday", "Friday"]);
+  const [hours, setHours] = useSavedState("hours", "9");
+  const [minutes, setMinutes] = useSavedState("minutes", "0");
   // The clock is read in the browser after the first render, so the server and the browser render the same page.
   const [now, setNow] = useState<Date | null>(null);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -32,17 +32,17 @@ const templates: Record<TemplateKey, { label: string; columnType: string }> = {
 const previewRow = { alignItems: "center", display: "flex", gap: 12, minHeight: 34 } as const;
 
 export function ColumnFormattingBuilder() {
-  const [template, setTemplate] = useState<TemplateKey>("status");
-  const [statusText, setStatusText] = useState("Approved|green\nIn review|amber\nRejected|red\nDraft|grey");
-  const [warningDays, setWarningDays] = useState("7");
-  const [scale, setScale] = useState<"percent" | "fraction">("percent");
-  const [barColor, setBarColor] = useState("#0f766e");
-  const [subject, setSubject] = useState("About:");
-  const [includeTitle, setIncludeTitle] = useState(true);
-  const [appUrl, setAppUrl] = useState("");
-  const [buttonLabel, setButtonLabel] = useState("Open in app");
-  const [parameterName, setParameterName] = useState("ID");
-  const [rowColumn, setRowColumn] = useState("Status");
+  const [template, setTemplate] = useSavedState<TemplateKey>("template", "status");
+  const [statusText, setStatusText] = useSavedState("statusText", "Approved|green\nIn review|amber\nRejected|red\nDraft|grey");
+  const [warningDays, setWarningDays] = useSavedState("warningDays", "7");
+  const [scale, setScale] = useSavedState<"percent" | "fraction">("scale", "percent");
+  const [barColor, setBarColor] = useSavedState("barColor", "#0f766e");
+  const [subject, setSubject] = useSavedState("subject", "About:");
+  const [includeTitle, setIncludeTitle] = useSavedState("includeTitle", true);
+  const [appUrl, setAppUrl] = useSavedState("appUrl", "");
+  const [buttonLabel, setButtonLabel] = useSavedState("buttonLabel", "Open in app");
+  const [parameterName, setParameterName] = useSavedState("parameterName", "ID");
+  const [rowColumn, setRowColumn] = useSavedState("rowColumn", "Status");
 
   const rules = parseStatusRules(statusText);
   const days = Number.isFinite(Number(warningDays)) ? Math.max(0, Math.floor(Number(warningDays))) : 0;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -37,14 +37,14 @@ const sourceLabels: Record<TriggerSource, string> = {
 };
 
 export function TriggerConditionBuilder() {
-  const [source, setSource] = useState<TriggerSource>("sharepoint");
-  const [join, setJoin] = useState<TriggerJoin>("and");
-  const [rules, setRules] = useState<TriggerRule[]>(starterRules.sharepoint);
-  const [guardEnabled, setGuardEnabled] = useState(false);
-  const [guardValue, setGuardValue] = useState("");
-  const [groupJoin, setGroupJoin] = useState<TriggerJoin>("and");
-  const [useGroups, setUseGroups] = useState(false);
-  const [changedColumns, setChangedColumns] = useState("");
+  const [source, setSource] = useSavedState<TriggerSource>("source", "sharepoint");
+  const [join, setJoin] = useSavedState<TriggerJoin>("join", "and");
+  const [rules, setRules] = useSavedState<TriggerRule[]>("rules", starterRules.sharepoint);
+  const [guardEnabled, setGuardEnabled] = useSavedState("guardEnabled", false);
+  const [guardValue, setGuardValue] = useSavedState("guardValue", "");
+  const [groupJoin, setGroupJoin] = useSavedState<TriggerJoin>("groupJoin", "and");
+  const [useGroups, setUseGroups] = useSavedState("useGroups", false);
+  const [changedColumns, setChangedColumns] = useSavedState("changedColumns", "");
   const result = buildTriggerCondition(source, useGroups ? rules : rules.map((rule) => ({ ...rule, group: 1 })), join, { enabled: guardEnabled, value: guardValue }, groupJoin);
   const changed = changedColumnsHelp(source, changedColumns);
   const groupCount = Math.max(1, ...rules.map((rule) => rule.group ?? 1));

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import Link from "next/link";
@@ -24,8 +25,8 @@ function format(expression: string) {
 }
 
 export function NamedFormulasConverter() {
-  const [input, setInput] = useState(sampleOnStart);
-  const [convertCollections, setConvertCollections] = useState(true);
+  const [input, setInput] = useSavedState("input", sampleOnStart);
+  const [convertCollections, setConvertCollections] = useSavedState("convertCollections", true);
   const result = useMemo(() => convertOnStart(input, { convertCollections }), [convertCollections, input]);
 
   const formulas = formulasText(result.converted, format);

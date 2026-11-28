@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       title="Privacy policy."
     >
       <p>
-        <strong>Last updated:</strong> {pro ? "November 21, 2026" : "November 20, 2026"}
+        <strong>Last updated:</strong> November 28, 2026
       </p>
       <p>
         This policy is provided as practical boilerplate for the current public
@@ -118,6 +118,14 @@ export default function PrivacyPage() {
         preferences locally in your browser. This information stays on your device
         unless a future account feature is added. Clearing your browser data may
         remove these saved preferences.
+      </p>
+      <p>
+        The free tools remember what you last typed in them, such as a formula, a
+        filter or a list of columns, in your browser&apos;s local storage, so it is
+        still there when you come back. It is never sent to BuilderVault or anyone
+        else. Each tool has a &quot;Forget&quot; button under it that clears what
+        that tool saved, and clearing your browser data clears all of it. Avoid
+        leaving private data in a tool on a shared computer.
       </p>
       <h2>How we use information</h2>
       <p>

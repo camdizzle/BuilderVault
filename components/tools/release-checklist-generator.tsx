@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { buildReleaseChecklist, checklistText, releaseContentLabels, type ReleaseContents, type ReleaseTarget } from "@/lib/tools/release-checklist";
 
@@ -17,8 +18,8 @@ const initialContents: ReleaseContents = {
 };
 
 export function ReleaseChecklistGenerator() {
-  const [target, setTarget] = useState<ReleaseTarget>("Test");
-  const [contents, setContents] = useState<ReleaseContents>(initialContents);
+  const [target, setTarget] = useSavedState<ReleaseTarget>("target", "Test");
+  const [contents, setContents] = useSavedState<ReleaseContents>("contents", initialContents);
   const text = useMemo(() => checklistText(target, buildReleaseChecklist(target, contents)), [target, contents]);
 
   return (

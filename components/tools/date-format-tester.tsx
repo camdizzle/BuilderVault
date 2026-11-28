@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -18,11 +18,11 @@ function toInputValue(date: Date) {
 }
 
 export function DateFormatTester() {
-  const [format, setFormat] = useState("MMM d, yyyy h:mm tt");
-  const [sample, setSample] = useState("2026-03-09T14:05:07");
-  const [timeZoneId, setTimeZoneId] = useState("UTC");
-  const [flowSource, setFlowSource] = useState("utcNow()");
-  const [appSource, setAppSource] = useState("Now()");
+  const [format, setFormat] = useSavedState("format", "MMM d, yyyy h:mm tt");
+  const [sample, setSample] = useSavedState("sample", "2026-03-09T14:05:07");
+  const [timeZoneId, setTimeZoneId] = useSavedState("timeZoneId", "UTC");
+  const [flowSource, setFlowSource] = useSavedState("flowSource", "utcNow()");
+  const [appSource, setAppSource] = useSavedState("appSource", "Now()");
 
   const zone = timeZones.find((candidate) => candidate.id === timeZoneId) ?? timeZones[0];
   const instant = new Date(sample.length === 16 ? sample + ":00Z" : sample + "Z");

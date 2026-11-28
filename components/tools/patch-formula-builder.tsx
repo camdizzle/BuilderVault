@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { formatterLink } from "@/lib/tools/formula-link";
@@ -34,15 +35,15 @@ const valueHelp: Record<PatchColumnType, string> = {
 };
 
 export function PatchFormulaBuilder() {
-  const [source, setSource] = useState<PatchSource>("sharepoint");
-  const [table, setTable] = useState("Requests");
-  const [mode, setMode] = useState<PatchMode>("create");
-  const [target, setTarget] = useState("");
-  const [columns, setColumns] = useState<PatchColumn[]>(starterColumns);
-  const [ifError, setIfError] = useState(true);
-  const [keepResult, setKeepResult] = useState(false);
-  const [resultVariable, setResultVariable] = useState("varSavedRecord");
-  const [resetControls, setResetControls] = useState(true);
+  const [source, setSource] = useSavedState<PatchSource>("source", "sharepoint");
+  const [table, setTable] = useSavedState("table", "Requests");
+  const [mode, setMode] = useSavedState<PatchMode>("mode", "create");
+  const [target, setTarget] = useSavedState("target", "");
+  const [columns, setColumns] = useSavedState<PatchColumn[]>("columns", starterColumns);
+  const [ifError, setIfError] = useSavedState("ifError", true);
+  const [keepResult, setKeepResult] = useSavedState("keepResult", false);
+  const [resultVariable, setResultVariable] = useSavedState("resultVariable", "varSavedRecord");
+  const [resetControls, setResetControls] = useSavedState("resetControls", true);
 
   const result = buildPatch({ source, table, mode, target, columns, ifError, resultVariable: keepResult ? resultVariable : "", resetControls });
 

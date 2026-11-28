@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SavedToolFooter } from "@/components/tools/saved-state";
 
 export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -17,6 +18,7 @@ export function ToolShell({ children, title, description }: { children: ReactNod
         <p className="tool-instructions">{description}</p>
       </div>
       {children}
+      <SavedToolFooter />
     </section>
   );
 }

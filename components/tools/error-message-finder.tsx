@@ -1,14 +1,15 @@
 "use client";
 
+import { useSavedState } from "@/components/tools/saved-state";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ToolShell } from "@/components/resources/tool-shell";
 import { createErrorFinder, statusHint, type ErrorEntry } from "@/lib/tools/error-finder";
 
 const sample = `Unable to process template language expressions in action 'Compose' inputs at line '0' and column '0': 'The template language function 'split' expects its first parameter to be of type string. The provided value is of type 'Null'.`;
 
 export function ErrorMessageFinder({ entries }: { entries: ErrorEntry[] }) {
-  const [text, setText] = useState(sample);
+  const [text, setText] = useSavedState("text", sample);
   const find = useMemo(() => createErrorFinder(entries), [entries]);
   const matches = useMemo(() => find(text), [find, text]);
   const hint = statusHint(text);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { analyzeSample, type SchemaReport } from "@/lib/tools/json-schema";
@@ -22,11 +23,11 @@ const sampleJson = `{
 }`;
 
 export function ParseJsonSchemaGenerator() {
-  const [json, setJson] = useState(sampleJson);
-  const [actionName, setActionName] = useState("Parse JSON");
-  const [allowNulls, setAllowNulls] = useState(true);
-  const [numbersAsNumber, setNumbersAsNumber] = useState(true);
-  const [includeRequired, setIncludeRequired] = useState(false);
+  const [json, setJson] = useSavedState("json", sampleJson);
+  const [actionName, setActionName] = useSavedState("actionName", "Parse JSON");
+  const [allowNulls, setAllowNulls] = useSavedState("allowNulls", true);
+  const [numbersAsNumber, setNumbersAsNumber] = useSavedState("numbersAsNumber", true);
+  const [includeRequired, setIncludeRequired] = useSavedState("includeRequired", false);
 
   const result = useMemo((): { report?: SchemaReport; error?: string } => {
     if (!json.trim()) return { error: "Paste a sample JSON payload to generate a schema." };
