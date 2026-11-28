@@ -382,7 +382,161 @@ Patch(Requests, galRequests.Selected, { Photo: AddMediaButton1.Media })`,
       { "title": "Priority", "value": "@{triggerBody()?['Priority']?['Value']}" }
     ] }
   ]
-}`, expectedResult: "Reviewers receive a structured Teams message with the key request facts.", commonMistakes: ["Overloading the card with every field", "Not testing mobile Teams", "Using action labels that do not match flow logic"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "mention-a-user-in-teams-adaptive-card"] })
+}`, expectedResult: "Reviewers receive a structured Teams message with the key request facts.", commonMistakes: ["Overloading the card with every field", "Not testing mobile Teams", "Using action labels that do not match flow logic"] }], relatedPatterns: ["post-adaptive-card-and-wait-for-response", "mention-a-user-in-teams-adaptive-card"] }),
+  item({
+    slug: "power-fx-regex-cheat-sheet",
+    kind: "cheat-sheet",
+    title: "Power Fx Regex Cheat Sheet",
+    eyebrow: "Cheat sheet",
+    description: "Regular expressions for IsMatch, Match and MatchAll in Power Apps: the defaults for each function, MatchOptions, the Match enum, the syntax that works, ready-made validation patterns, and the stricter Power Fx 1.0 rules.",
+    keywords: ["Power Apps regex cheat sheet", "IsMatch examples Power Apps", "Power Fx regular expressions", "MatchOptions Power Apps", "Match.Email Power Apps"],
+    audience: "Makers who need to validate or pull values out of text in a canvas app and want the pattern that works the first time.",
+    summaryBullets: [
+      "In Power Apps, IsMatch checks the whole text by default (Complete). Match and MatchAll look anywhere in the text (Contains).",
+      "Matching is case-sensitive unless you add MatchOptions.IgnoreCase.",
+      "The pattern must be a constant: text in quotes, Match enum values, or both joined with &.",
+      "Match returns a record, or blank when nothing matches. MatchAll returns a table, which is empty when nothing matches.",
+      "Write new patterns for the Power Fx 1.0 rules: escape a literal hyphen inside [ ], and prefer named submatches."
+    ],
+    examples: [
+      {
+        title: "Which function to use",
+        problem: "Each function answers a different question, and each has its own default for where the pattern must match.",
+        code: `IsMatch(text, pattern)   // true or false. Default: Complete (the whole text)
+Match(text, pattern)     // the first match as a record, or blank. Default: Contains
+MatchAll(text, pattern)  // every match as a table, or an empty table. Default: Contains
+
+// The record Match returns (and each row of MatchAll)
+FullMatch    // the text that matched
+StartMatch   // where it starts. The first character is 1
+SubMatches   // a table with a Value column, one row per ( ) group
+<name>       // one column for each named submatch (?<name>...)`,
+        expectedResult: "IsMatch for validation, Match to read one value out of text, MatchAll to collect every value.",
+        commonMistakes: ["Testing Match with IsEmpty, or MatchAll with IsBlank. It is the other way round.", "Forgetting that StartMatch counts from 1, not 0."]
+      },
+      {
+        title: "MatchOptions",
+        problem: "Options go in the third argument. Join several with &.",
+        code: `MatchOptions.Complete      // whole text. Adds ^ and $
+MatchOptions.Contains      // anywhere in the text
+MatchOptions.BeginsWith    // from the start. Adds ^
+MatchOptions.EndsWith      // up to the end. Adds $
+MatchOptions.IgnoreCase    // A and a are the same
+MatchOptions.Multiline     // ^ and $ match at each line
+
+IsMatch(txtCode.Text, "[A-Z]{3}", MatchOptions.BeginsWith & MatchOptions.IgnoreCase)
+
+// Inline options do the same, at the very start of the pattern only
+IsMatch(txtCode.Text, "(?i)[A-Z]{3}\\d{2}")`,
+        expectedResult: "abc at the start of the text passes the first check. abc12 passes the second.",
+        commonMistakes: ["Using MatchOptions.DotAll or MatchOptions.FreeSpacing. They aren't available in Power Apps.", "Putting (?i) part way through the pattern."]
+      },
+      {
+        title: "Syntax that works",
+        problem: "The pieces you will use most. Inside a Power Fx text value, a backslash is typed once.",
+        code: `.          any character except a line break
+\\d  \\D     a digit / not a digit
+\\w  \\W     a letter, digit or underscore / not one
+\\s  \\S     whitespace / not whitespace
+\\p{L}      any letter, in any language
+[abc]      a, b or c          [^abc]  anything else
+[A-Z0-9]   a range            [\\-.]   a hyphen or a dot
+^  $       start / end of the text (or line, with Multiline)
+\\b         a word boundary
+?  *  +    0 or 1 / 0 or more / 1 or more
+{5} {2,4}  exactly 5 / between 2 and 4
+*? +?      as few as possible
+a|b        a or b
+(?:...)    a group that isn't captured
+(?<id>...) a named submatch, read back with \\k<id>
+(?=...) (?!...) (?<=...) (?<!...)   lookahead and lookbehind
+\\.  \\(  \\[  escape a character that has a meaning`,
+        expectedResult: "Enough to build most validation and extraction patterns.",
+        commonMistakes: ["Typing \\\\d because other languages need it. Power Fx text has no backslash escapes, so \\d is typed once.", "Forgetting to escape a dot in a domain or a decimal. An unescaped . matches any character."]
+      },
+      {
+        title: "The Match enum",
+        problem: "Predefined patterns you can join with & instead of writing the regex yourself.",
+        code: `Match.Digit           \\d        Match.MultipleDigits   \\d+     Match.OptionalDigits   \\d*
+Match.Letter          \\p{L}     Match.MultipleLetters  \\p{L}+  Match.OptionalLetters  \\p{L}*
+Match.Space           \\s        Match.MultipleSpaces   \\s+     Match.OptionalSpaces   \\s*
+Match.NonSpace        \\S        Match.MultipleNonSpaces \\S+    Match.OptionalNonSpaces \\S*
+Match.Period  \\.   Match.Comma  ,   Match.Hyphen  -   Match.LeftParen  \\(   Match.RightParen  \\)
+Match.Tab  \\t   Match.Any  .   Match.Email
+
+IsMatch(txtEmail.Text, Match.Email)
+IsMatch(txtAmount.Text, Match.MultipleDigits & Match.Period & Match.OptionalDigits)`,
+        expectedResult: "joan@contoso.com passes the email check. 123.45 passes the amount check, and 123 fails it because there is no period.",
+        commonMistakes: ["Treating Match.Email as full validation. It checks for an @ and a dot in the domain, and lets some invalid addresses through.", "Putting the enum inside the quotes. Join it with & instead: \"A\" & Match.MultipleDigits."]
+      },
+      {
+        title: "Ready-made validation patterns",
+        problem: "Patterns for common text inputs. IsMatch checks the whole text, so no ^ or $ is needed.",
+        code: `IsMatch(txtRequestId.Text, "REQ-\\d{5}")                          // REQ-00042
+IsMatch(txtQty.Text, "\\d+")                                    // whole number
+IsMatch(txtPrice.Text, "\\d+(\\.\\d{1,2})?")                        // 12 or 12.50
+IsMatch(txtPostcode.Text, "[A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2}", MatchOptions.IgnoreCase)  // UK postcode
+IsMatch(txtZip.Text, "\\d{5}(\\-\\d{4})?")                           // US ZIP or ZIP+4
+IsMatch(txtPhone.Text, "\\(?\\d{3}\\)?[ .\\-]?\\d{3}[ .\\-]?\\d{4}")       // (425) 555-0100
+IsMatch(txtLink.Text, "https://\\S+", MatchOptions.IgnoreCase)    // a web address
+IsMatch(txtCode.Text, "[A-Z0-9]{8}")                            // 8 capitals or digits
+IsMatch(txtUser.Text, "\\S+")                                    // no spaces at all
+!IsMatch(txtName.Text, "\\d", MatchOptions.Contains)              // no digits anywhere`,
+        expectedResult: "Each check returns true only for text in that shape. Show a message or disable the save button when it is false.",
+        commonMistakes: ["Forgetting that an empty input fails these checks. Test IsBlank first if the field is optional.", "Validating only in the app. Add a column validation in SharePoint or a business rule in Dataverse if other apps write to the same data."]
+      },
+      {
+        title: "Pull values out of text",
+        problem: "Named submatches turn parts of the match into columns you can read.",
+        code: `// The email inside angle brackets
+Match("Bob Jones <bob.jones@contoso.com>", "<(?<email>" & Match.Email & ")>").email
+// "bob.jones@contoso.com"
+
+// First and last name
+With(Match(txtFullName.Text, "(?<first>\\S+)\\s+(?<last>.+)"),
+    { First: first, Last: last })
+
+// Every hashtag in a post, as a table with one Value column
+ForAll(MatchAll(txtPost.Text, "#(?<tag>\\w+)"), tag)`,
+        expectedResult: "Text values you can show in a label, Patch to a column or collect.",
+        commonMistakes: ["Reading a column of a blank Match result. Check IsBlank(Match(...)) first, or wrap the read in Coalesce.", "Using Match in a gallery's Items on a large list. Match isn't delegated, so it only sees the rows already loaded."]
+      },
+      {
+        title: "Stricter rules in Power Fx 1.0",
+        problem: "Power Apps is moving to the Power Fx 1.0 regex rules. Patterns written this way work under both.",
+        code: `[\\-a]      not [-a]       escape a literal hyphen inside [ ]
+[\\[a]      not [[a]       escape an opening bracket inside [ ]
+[a\\^]      not [a^]       escape ^ unless it starts the class
+[\\{\\}]     not [{}]       escape curly braces inside [ ]
+\\x0b       not \\v         no \\v and no octal codes such as \\012
+a+         not a++        no possessive quantifiers
+(?<n>a)\\k<n>  not (a)\\1   use named submatches and \\k<name>
+(?i) at the start only     inline options can't appear later`,
+        expectedResult: "Patterns that keep working when the Power Fx 1.0 compatibility switch is turned on for your app.",
+        commonMistakes: ["Mixing named and numbered submatches in one pattern. Power Fx 1.0 doesn't allow it.", "Relying on ( ) groups being captured. Under Power Fx 1.0, plain groups only capture with MatchOptions.NumberedSubMatches."]
+      }
+    ],
+    relatedPatterns: ["sharepoint-column-list-validation-formulas"],
+    relatedTools: ["power-fx-regex-tester"],
+    faqs: [
+      {
+        question: "Why does IsMatch return false when the pattern is clearly in the text?",
+        answer: "In Power Apps, IsMatch uses MatchOptions.Complete by default, so the pattern has to cover the whole text. Add MatchOptions.Contains to look anywhere, or MatchOptions.BeginsWith or EndsWith for one end."
+      },
+      {
+        question: "How do I make a check case-insensitive?",
+        answer: "Add MatchOptions.IgnoreCase as the third argument, or start the pattern with (?i). Join it to another option with &, for example MatchOptions.Contains & MatchOptions.IgnoreCase."
+      },
+      {
+        question: "Can I build the pattern from a variable?",
+        answer: "No. The pattern must be a constant. You can join quoted text and Match enum values with &, but not variables, controls or data. When the rule depends on a choice, put a few fixed IsMatch calls in a Switch."
+      },
+      {
+        question: "Does Match.Email check that an address is real?",
+        answer: "No. It checks the shape: text, an @, and a domain with at least one dot. Microsoft notes that it accepts some invalid addresses and rejects some valid ones, so use it as a quick check on a form."
+      }
+    ]
+  })
 ];
 
 export const tools: ResourceItem[] = [
@@ -1520,6 +1674,70 @@ Body:    {
       }
     ]
   }),
+  item({
+    slug: "power-fx-regex-tester",
+    kind: "tool",
+    title: "Power Fx Regex Tester",
+    eyebrow: "Free tool",
+    description: "Test a regular expression for IsMatch, Match or MatchAll in Power Apps. See true or false for each sample value, or the FullMatch, StartMatch and submatches a Match returns, then copy the formula with the right MatchOptions.",
+    keywords: ["Power Apps regex", "IsMatch Power Apps", "Power Fx regular expression", "MatchAll Power Apps", "Power Apps validate input pattern"],
+    audience: "Makers validating text inputs such as IDs, postcodes and phone numbers, and anyone pulling values out of text with Match or MatchAll.",
+    summaryBullets: [
+      "Uses the Power Apps defaults: IsMatch checks the whole text, while Match and MatchAll find the pattern anywhere.",
+      "Tests each sample line on its own for IsMatch, so you can check good and bad values side by side.",
+      "Shows the record or table Match and MatchAll return, with FullMatch, StartMatch, named submatches and SubMatches.",
+      "Warns about pattern features that Power Fx blocks, such as an unescaped hyphen in [ ] or the (?s) option.",
+      "Writes the formula with MatchOptions and doubles any quotes in the pattern."
+    ],
+    examples: [
+      {
+        title: "Validate a request ID",
+        problem: "Only accept IDs like REQ-00042 in a text input before saving.",
+        code: `// btnSave.DisplayMode
+If(IsMatch(txtRequestId.Text, "REQ-\\d{5}"), DisplayMode.Edit, DisplayMode.Disabled)`,
+        expectedResult: "The button is only enabled when the whole text is REQ- followed by exactly five digits. IsMatch checks the whole text by default in Power Apps, so REQ-000421 fails.",
+        commonMistakes: ["Adding ^ and $ yourself. IsMatch already uses MatchOptions.Complete in Power Apps.", "Expecting req-00042 to pass. Matching is case-sensitive unless you add MatchOptions.IgnoreCase."]
+      },
+      {
+        title: "Pull a number out of text",
+        problem: "Read the ticket number from a subject line such as \"Re: Ticket #1042 - printer\".",
+        code: `Match(txtSubject.Text, "#(?<ticket>\\d+)").ticket`,
+        expectedResult: "\"1042\" as text. Wrap it in Value() to get a number. If there is no match, Match returns blank.",
+        commonMistakes: ["Using MatchAll when you only need the first match.", "Reading .ticket without checking for blank first when the subject might not contain a number."]
+      },
+      {
+        title: "List every match",
+        problem: "Show all ticket numbers mentioned in a notes field.",
+        code: `Concat(MatchAll(txtNotes.Text, "#(\\d+)"), FullMatch, ", ")`,
+        expectedResult: "\"#1042, #1043, #998\" for the text \"Fixed in #1042, see also #1043 and #998.\"",
+        commonMistakes: ["Testing the result with IsBlank. MatchAll returns an empty table when nothing matches, so use IsEmpty."]
+      }
+    ],
+    relatedPatterns: ["sharepoint-column-list-validation-formulas"],
+    relatedTools: ["power-fx-formatter", "excel-to-power-fx"],
+    faqs: [
+      {
+        question: "Why does my pattern match in the tester but not in IsMatch?",
+        answer: "Check where the pattern has to match. In Power Apps, IsMatch uses MatchOptions.Complete by default, so the pattern must cover the whole text. Match and MatchAll use Contains, so the pattern can match anywhere. Choose the same option in the tester that your formula uses."
+      },
+      {
+        question: "Can the pattern come from a variable or a text input?",
+        answer: "No. Power Apps needs the pattern to be a constant, such as a text value in quotes or Match enum values joined with &. If you need a pattern that changes, use a Switch over a few fixed patterns."
+      },
+      {
+        question: "How do I put a double quote in a pattern?",
+        answer: "Double it, as in any Power Fx text value. The tester does this for you when it writes the formula."
+      },
+      {
+        question: "Is this the same regex engine Power Apps uses?",
+        answer: "The tester runs your pattern with the regular expressions built into your browser, using the Power Apps defaults for each function. Power Fx is stricter about some syntax, and the tester warns about the differences it knows. Test the final formula in your app before you rely on it."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. Patterns and sample text are tested in your browser and saved only in this browser."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed
@@ -1541,7 +1759,7 @@ export function getResourceBySlug(kind: ResourceKind, slug: string) {
   return allResources.find((resource) => resource.kind === kind && resource.slug === slug);
 }
 
-/** Tools linked from a tool page: the ones it lists, plus every tool that lists it. */
+/** Tools linked from a page: the ones it lists, plus every tool that lists it. */
 export function getRelatedTools(resource: ResourceItem) {
   const slugs = new Set(resource.relatedTools ?? []);
   for (const tool of tools) {

@@ -29,7 +29,7 @@ const parentLabelByKind = {
 
 export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
   const isTool = resource.kind === "tool";
-  const relatedTools = isTool ? getRelatedTools(resource) : [];
+  const relatedTools = getRelatedTools(resource);
   const toolGuides = isTool ? getGuidesForTool(resource.slug) : [];
   const toolErrors = isTool ? getErrorsForTool(resource.slug) : [];
   const toolFunctions = isTool ? getFunctionsForTool(resource.slug) : [];

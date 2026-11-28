@@ -65,6 +65,7 @@ export const toolCatalog: Record<string, ToolCatalogEntry> = {
   "csv-to-power-fx-table": { group: "power-apps", glyph: "Tb", tagline: "Turn CSV, Excel rows or JSON into a Power Fx Table()." },
   "power-apps-naming-linter": { group: "power-apps", glyph: "Ab", tagline: "Check control, screen and variable names against a convention." },
   "power-apps-color-token-generator": { group: "power-apps", glyph: "#", tagline: "Turn brand hex colors into Power Fx color tokens." },
+  "power-fx-regex-tester": { group: "power-apps", glyph: "Rx", tagline: "Test IsMatch, Match and MatchAll patterns with Power Apps defaults." },
   "trigger-condition-builder": { group: "power-automate", glyph: "If", tagline: "Trigger conditions that stop a flow running on every change." },
   "parse-json-schema-generator": { group: "power-automate", glyph: "JS", tagline: "A Parse JSON schema that won't fail on empty fields." },
   "date-format-tester": { group: "power-automate", glyph: "Dt", tagline: "Test formatDateTime and time zone strings on a sample date." },

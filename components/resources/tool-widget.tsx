@@ -5,6 +5,7 @@ import { DateFormatTester } from "@/components/tools/date-format-tester";
 import { useMemo } from "react";
 import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-generator";
 import { ExcelToPowerFx } from "@/components/tools/excel-to-power-fx";
+import { RegexTester } from "@/components/tools/regex-tester";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { NamedFormulasConverter } from "@/components/tools/named-formulas-converter";
@@ -45,6 +46,7 @@ function ToolWidgetInner({ slug, functionLinks = [], errorEntries = [] }: { slug
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "parse-json-schema-generator") return <ParseJsonSchemaGenerator />;
   if (slug === "excel-to-power-fx") return <ExcelToPowerFx />;
+  if (slug === "power-fx-regex-tester") return <RegexTester />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
   if (slug === "onstart-to-named-formulas") return <NamedFormulasConverter />;
