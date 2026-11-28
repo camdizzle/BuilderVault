@@ -28,6 +28,14 @@ Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,Reque
 
 const mutedText = { color: "#415049", lineHeight: 1.6, margin: 0 } as const;
 
+/** The delegation guide for each data source in the Data source option. */
+const delegationGuideBySource: Record<DataSource, { href: string; label: string }> = {
+  sharepoint: { href: "/guides/power-apps-delegation-sharepoint", label: "Delegation with SharePoint lists" },
+  dataverse: { href: "/guides/power-apps-delegation-dataverse", label: "Delegation with Dataverse" },
+  sql: { href: "/guides/power-apps-delegation-sql-server", label: "Delegation with SQL Server" },
+  excel: { href: "/guides/power-apps-delegation-excel", label: "Delegation with Excel" }
+};
+
 const storageKey = "buildervault:power-fx-formatter:formula";
 
 type TabId = "review" | "delegation" | "explain" | "functions" | "patterns";
@@ -385,7 +393,10 @@ function DelegationPanel({
         <h3 style={{ fontSize: "1.2rem", margin: "6px 0" }}>{heading}</h3>
         <p style={mutedText}>
           Delegation depends on the data source and column type, so pick the source this formula runs against in the Data source option above and confirm against the warnings in Power Apps Studio. For the full support table, use the{" "}
-          <Link href="/tools/power-apps-delegation-checker">delegation checker</Link> or read the <Link href="/power-apps/delegation">delegation guide</Link>.
+          <Link href="/tools/power-apps-delegation-checker">delegation checker</Link>.
+        </p>
+        <p style={mutedText}>
+          <Link href={delegationGuideBySource[source].href} style={{ fontWeight: 800 }}>{delegationGuideBySource[source].label}</Link>: what {dataSourceLabels[source]} can run, and a delegable replacement for each common warning.
         </p>
       </div>
       {findings.length > 0 ? (

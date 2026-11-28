@@ -15,6 +15,7 @@ import { appStartGuide, findRecordsGuide, forAllGuide, textFormatGuide } from ".
 import { sharePointGalleryGuide } from "./powerfx-guides-3";
 import { chooseDataSourceGuide, firstCanvasAppGuide, shareAppGuide } from "./basics-guides";
 import { firstFlowGuide, modelDrivenVsCanvasGuide } from "./basics-guides-2";
+import { dataverseDelegationGuide, excelDelegationGuide, sharePointDelegationGuide, sqlDelegationGuide } from "./delegation-guides";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
@@ -28,6 +29,10 @@ export const guides: Guide[] = [
   commonErrorsGuide,
   missingBracketGuide,
   delegationWarningGuide,
+  sharePointDelegationGuide,
+  dataverseDelegationGuide,
+  sqlDelegationGuide,
+  excelDelegationGuide,
   formatFormulasGuide,
   slowFormulasGuide,
   separatorsGuide,
