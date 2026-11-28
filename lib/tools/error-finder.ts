@@ -8,6 +8,8 @@ export type ErrorEntry = {
   variants: string[];
   keywords: string[];
   quickAnswer: string;
+  /** Tools that help fix this error. */
+  tools?: Array<{ href: string; title: string }>;
 };
 
 export type ErrorMatch = { entry: ErrorEntry; score: number; matched: string[] };

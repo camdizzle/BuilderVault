@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { buildPowerFxTable, cleanName, type TableOutputMode, type TableResult } from "@/lib/tools/power-fx-table";
@@ -29,11 +30,11 @@ const kindLabels: Record<TableResult["columns"][number]["kind"], string> = {
 };
 
 export function PowerFxTableGenerator() {
-  const [input, setInput] = useState(sampleCsv);
-  const [name, setName] = useState("colProducts");
-  const [mode, setMode] = useState<TableOutputMode>("clearCollect");
-  const [semicolonLocale, setSemicolonLocale] = useState(false);
-  const [detectTypes, setDetectTypes] = useState(true);
+  const [input, setInput] = useSavedState("input", sampleCsv);
+  const [name, setName] = useSavedState("name", "colProducts");
+  const [mode, setMode] = useSavedState<TableOutputMode>("mode", "clearCollect");
+  const [semicolonLocale, setSemicolonLocale] = useSavedState("semicolonLocale", false);
+  const [detectTypes, setDetectTypes] = useSavedState("detectTypes", true);
 
   const outcome = useMemo((): { result?: TableResult; error?: string } => {
     if (!input.trim()) return { error: "Paste CSV with a header row, or a JSON array of objects." };

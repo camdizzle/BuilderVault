@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import {
@@ -32,25 +33,25 @@ const starterFields: SpField[] = [
 ];
 
 export function SharePointHttpBuilder() {
-  const [operation, setOperation] = useState<SpHttpOperation>("get-items");
-  const [site, setSite] = useState("");
-  const [list, setList] = useState("Requests");
-  const [listBy, setListBy] = useState<"title" | "guid">("title");
-  const [itemId, setItemId] = useState("triggerOutputs()?['body/ID']");
-  const [select, setSelect] = useState("Id,Title,Status,Author/Title");
-  const [filter, setFilter] = useState("Status eq 'Submitted'");
-  const [orderBy, setOrderBy] = useState("Created desc");
-  const [top, setTop] = useState("100");
-  const [fields, setFields] = useState<SpField[]>(starterFields);
-  const [entityType, setEntityType] = useState("");
-  const [folder, setFolder] = useState("");
-  const [scope, setScope] = useState<"item" | "list">("item");
-  const [copyRoleAssignments, setCopyRoleAssignments] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [roleName, setRoleName] = useState("Contribute");
-  const [principalId, setPrincipalId] = useState("");
-  const [roleId, setRoleId] = useState("");
-  const [actionName, setActionName] = useState("Send an HTTP request to SharePoint");
+  const [operation, setOperation] = useSavedState<SpHttpOperation>("operation", "get-items");
+  const [site, setSite] = useSavedState("site", "");
+  const [list, setList] = useSavedState("list", "Requests");
+  const [listBy, setListBy] = useSavedState<"title" | "guid">("listBy", "title");
+  const [itemId, setItemId] = useSavedState("itemId", "triggerOutputs()?['body/ID']");
+  const [select, setSelect] = useSavedState("select", "Id,Title,Status,Author/Title");
+  const [filter, setFilter] = useSavedState("filter", "Status eq 'Submitted'");
+  const [orderBy, setOrderBy] = useSavedState("orderBy", "Created desc");
+  const [top, setTop] = useSavedState("top", "100");
+  const [fields, setFields] = useSavedState<SpField[]>("fields", starterFields);
+  const [entityType, setEntityType] = useSavedState("entityType", "");
+  const [folder, setFolder] = useSavedState("folder", "");
+  const [scope, setScope] = useSavedState<"item" | "list">("scope", "item");
+  const [copyRoleAssignments, setCopyRoleAssignments] = useSavedState("copyRoleAssignments", false);
+  const [groupName, setGroupName] = useSavedState("groupName", "");
+  const [roleName, setRoleName] = useSavedState("roleName", "Contribute");
+  const [principalId, setPrincipalId] = useSavedState("principalId", "");
+  const [roleId, setRoleId] = useSavedState("roleId", "");
+  const [actionName, setActionName] = useSavedState("actionName", "Send an HTTP request to SharePoint");
 
   const result = buildSharePointRequest({
     operation,

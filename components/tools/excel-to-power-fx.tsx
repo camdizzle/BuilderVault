@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { translateExcelFormula } from "@/lib/tools/excel-to-power-fx";
@@ -14,8 +15,8 @@ B2 = Value(txtAmount.Text)
 C2 = drpStatus.Selected.Value`;
 
 export function ExcelToPowerFx() {
-  const [formula, setFormula] = useState(sampleFormula);
-  const [references, setReferences] = useState(sampleReferences);
+  const [formula, setFormula] = useSavedState("formula", sampleFormula);
+  const [references, setReferences] = useSavedState("references", sampleReferences);
 
   const result = useMemo(() => {
     const translated = translateExcelFormula(formula, references);

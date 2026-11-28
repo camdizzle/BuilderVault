@@ -35,7 +35,7 @@ export function CookieConsentBanner() {
   return (
     <section aria-label="Cookie consent" className="cookie-banner" role="region">
       <p>
-        BuilderVault uses Google Analytics cookies to see which pages and tools are useful. Nothing is stored unless you accept.{" "}
+        BuilderVault uses Google Analytics cookies to see which pages and tools are useful. These cookies are only set if you accept.{" "}
         <Link href="/privacy">Privacy policy</Link>
       </p>
       <div className="cookie-banner-actions">

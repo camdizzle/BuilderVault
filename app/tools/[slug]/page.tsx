@@ -22,7 +22,13 @@ function errorEntries() {
     message: page.message,
     variants: page.variants,
     keywords: page.keywords,
-    quickAnswer: page.quickAnswer
+    quickAnswer: page.quickAnswer,
+    tools: page.relatedTools
+      .filter((slug) => slug !== "error-message-finder")
+      .flatMap((slug) => {
+        const tool = getResourceBySlug("tool", slug);
+        return tool ? [{ href: tool.path, title: tool.title }] : [];
+      })
   }));
 }
 

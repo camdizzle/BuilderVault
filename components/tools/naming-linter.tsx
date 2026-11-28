@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { ToolShell } from "@/components/resources/tool-shell";
 import { findingsTable, lintNames, parsePrefixOverrides } from "@/lib/tools/naming-lint";
@@ -32,8 +33,8 @@ const cell = { borderBottom: "1px solid var(--line)", padding: "8px 10px 8px 0",
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
 export function NamingLinter() {
-  const [source, setSource] = useState(sampleSource);
-  const [overridesText, setOverridesText] = useState("");
+  const [source, setSource] = useSavedState("source", sampleSource);
+  const [overridesText, setOverridesText] = useSavedState("overridesText", "");
   const report = useMemo(() => lintNames(source, parsePrefixOverrides(overridesText)), [overridesText, source]);
   const total = report.items.length;
 

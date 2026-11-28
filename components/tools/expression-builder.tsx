@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { buildExpression, expressionTemplates, templateGroups, type TemplateGroup } from "@/lib/tools/expression-templates";
 
 export function ExpressionBuilder() {
-  const [group, setGroup] = useState<TemplateGroup>("Dates and times");
-  const [templateId, setTemplateId] = useState(expressionTemplates[0].id);
-  const [values, setValues] = useState<Record<string, Record<string, string>>>({});
+  const [group, setGroup] = useSavedState<TemplateGroup>("group", "Dates and times");
+  const [templateId, setTemplateId] = useSavedState("templateId", expressionTemplates[0].id);
+  const [values, setValues] = useSavedState<Record<string, Record<string, string>>>("values", {});
   const inGroup = expressionTemplates.filter((template) => template.group === group);
   const template = expressionTemplates.find((candidate) => candidate.id === templateId) ?? inGroup[0];
   const typed = values[template.id] ?? {};

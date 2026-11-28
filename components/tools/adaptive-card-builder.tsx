@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { buildCard, parseFacts, parseLines, responseExpressions } from "@/lib/tools/adaptive-card";
 
@@ -35,19 +35,19 @@ const adaptiveCardTemplates = {
 type CardTemplateKey = keyof typeof adaptiveCardTemplates;
 
 export function AdaptiveCardBuilder() {
-  const [templateKey, setTemplateKey] = useState<CardTemplateKey>("approval");
+  const [templateKey, setTemplateKey] = useSavedState<CardTemplateKey>("templateKey", "approval");
   const template = adaptiveCardTemplates[templateKey];
-  const [title, setTitle] = useState<string>(template.title);
-  const [body, setBody] = useState<string>(template.body);
-  const [factsText, setFactsText] = useState<string>(template.facts);
-  const [actionsText, setActionsText] = useState<string>(template.actions);
-  const [withComment, setWithComment] = useState<boolean>(template.withComment);
-  const [viewUrl, setViewUrl] = useState("");
-  const [choicesText, setChoicesText] = useState("");
-  const [choiceLabel, setChoiceLabel] = useState("Priority");
-  const [withDate, setWithDate] = useState(false);
-  const [dateLabel, setDateLabel] = useState("Due date");
-  const [twoColumns, setTwoColumns] = useState(false);
+  const [title, setTitle] = useSavedState<string>("title", template.title);
+  const [body, setBody] = useSavedState<string>("body", template.body);
+  const [factsText, setFactsText] = useSavedState<string>("factsText", template.facts);
+  const [actionsText, setActionsText] = useSavedState<string>("actionsText", template.actions);
+  const [withComment, setWithComment] = useSavedState<boolean>("withComment", template.withComment);
+  const [viewUrl, setViewUrl] = useSavedState("viewUrl", "");
+  const [choicesText, setChoicesText] = useSavedState("choicesText", "");
+  const [choiceLabel, setChoiceLabel] = useSavedState("choiceLabel", "Priority");
+  const [withDate, setWithDate] = useSavedState("withDate", false);
+  const [dateLabel, setDateLabel] = useSavedState("dateLabel", "Due date");
+  const [twoColumns, setTwoColumns] = useSavedState("twoColumns", false);
 
   function applyTemplate(key: CardTemplateKey) {
     const next = adaptiveCardTemplates[key];

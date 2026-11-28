@@ -6,7 +6,8 @@ import { FormatterProPanel } from "@/components/pro/formatter-pro-panel";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { trackEvent } from "@/lib/analytics";
-import { checkDelegation, dataSourceLabels, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
+import { checkDelegation, dataSourceLabels, delegationGuideBySource, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
+import { findRegexCall, regexTesterLink } from "@/lib/tools/regex-tester";
 import { formulaFromHash, formatterLink, maxLinkedFormulaLength } from "@/lib/tools/formula-link";
 import { highlightLines } from "@/lib/tools/power-fx-highlight";
 import { formatPowerFxFormula, minifyPowerFxFormula, toCommaSeparators, type PowerFxLocale } from "@/lib/tools/power-fx-format";
@@ -134,6 +135,9 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
   const lines = useMemo(() => highlightLines(formatted), [formatted]);
 
   const hasFormula = Boolean(formula.trim());
+  // Other tools that can take this formula further.
+  const regexCall = useMemo(() => findRegexCall(formula), [formula]);
+  const hasPatch = /\bPatch\s*\(/.test(formula);
   const reviewCount = checks.items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length;
   const tabs: Array<{ id: TabId; label: string; count?: number }> = [
     { id: "review", label: "Review", count: reviewCount },
@@ -300,6 +304,17 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
 
       <div aria-labelledby="fx-tab-review" hidden={tab !== "review"} id="fx-panel-review" role="tabpanel">
         <div style={{ display: "grid", gap: 18 }}>
+          {hasPatch || regexCall ? (
+            <div className="badge-row">
+              <span style={{ color: "var(--muted)", fontSize: "0.92rem" }}>Take it further:</span>
+              {hasPatch ? (
+                <Link className="badge" href="/tools/patch-formula-builder">Build a Patch from your columns</Link>
+              ) : null}
+              {regexCall ? (
+                <Link className="badge" href={regexTesterLink(regexCall.fn, regexCall.pattern)}>Test this {regexCall.fn} pattern</Link>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             {checks.items.map((item) => (
               <div className="stat-tile" key={item.title}>
@@ -385,7 +400,10 @@ function DelegationPanel({
         <h3 style={{ fontSize: "1.2rem", margin: "6px 0" }}>{heading}</h3>
         <p style={mutedText}>
           Delegation depends on the data source and column type, so pick the source this formula runs against in the Data source option above and confirm against the warnings in Power Apps Studio. For the full support table, use the{" "}
-          <Link href="/tools/power-apps-delegation-checker">delegation checker</Link> or read the <Link href="/power-apps/delegation">delegation guide</Link>.
+          <Link href="/tools/power-apps-delegation-checker">delegation checker</Link>.
+        </p>
+        <p style={mutedText}>
+          <Link href={delegationGuideBySource[source].href} style={{ fontWeight: 800 }}>{delegationGuideBySource[source].label}</Link>: what {dataSourceLabels[source]} can run, and a delegable replacement for each common warning.
         </p>
       </div>
       {findings.length > 0 ? (

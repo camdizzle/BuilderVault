@@ -1515,3 +1515,41 @@ button {
 .tool-card.featured .tool-glyph {
   background: #ffffff;
 }
+
+/* Line under each tool saying its entries are remembered in this browser. */
+.saved-tool-footer {
+  align-items: center;
+  border-top: 1px solid #cfe3da;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  gap: 8px 14px;
+  padding-top: 12px;
+}
+
+.saved-tool-footer button {
+  background: none;
+  border: 0;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.tool-trust-line {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  gap: 6px 16px;
+  line-height: 1.55;
+  margin: 12px 0 0;
+}
+
+.tool-trust-line a {
+  color: var(--accent-strong);
+  font-weight: 700;
+}

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { formatterLink } from "@/lib/tools/formula-link";
@@ -39,14 +40,14 @@ const controlPlaceholder: Record<GalleryFilterType, string> = {
 };
 
 export function GalleryFilterBuilder() {
-  const [source, setSource] = useState<GallerySource>("sharepoint");
-  const [table, setTable] = useState("Requests");
-  const [useSearch, setUseSearch] = useState(true);
-  const [searchControl, setSearchControl] = useState("txtSearch");
-  const [searchColumns, setSearchColumns] = useState("Title");
-  const [filters, setFilters] = useState<GalleryFilter[]>(starterFilters);
-  const [sortColumn, setSortColumn] = useState("Created");
-  const [sortDescending, setSortDescending] = useState(true);
+  const [source, setSource] = useSavedState<GallerySource>("source", "sharepoint");
+  const [table, setTable] = useSavedState("table", "Requests");
+  const [useSearch, setUseSearch] = useSavedState("useSearch", true);
+  const [searchControl, setSearchControl] = useSavedState("searchControl", "txtSearch");
+  const [searchColumns, setSearchColumns] = useSavedState("searchColumns", "Title");
+  const [filters, setFilters] = useSavedState<GalleryFilter[]>("filters", starterFilters);
+  const [sortColumn, setSortColumn] = useSavedState("sortColumn", "Created");
+  const [sortDescending, setSortDescending] = useSavedState("sortDescending", true);
 
   const result = buildGalleryItems({
     source,

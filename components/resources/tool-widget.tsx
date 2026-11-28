@@ -2,9 +2,11 @@
 
 import { FilterQueryBuilder } from "@/components/tools/filter-query-builder";
 import { DateFormatTester } from "@/components/tools/date-format-tester";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ParseJsonSchemaGenerator } from "@/components/tools/parse-json-schema-generator";
+import { DeploymentSettingsGenerator } from "@/components/tools/deployment-settings-generator";
 import { ExcelToPowerFx } from "@/components/tools/excel-to-power-fx";
+import { RegexTester } from "@/components/tools/regex-tester";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { TriggerConditionBuilder } from "@/components/tools/trigger-condition-builder";
 import { NamedFormulasConverter } from "@/components/tools/named-formulas-converter";
@@ -24,14 +26,29 @@ import { GalleryFilterBuilder } from "@/components/tools/gallery-filter-builder"
 import { RecurrencePlanner } from "@/components/tools/recurrence-planner";
 import { SharePointHttpBuilder } from "@/components/tools/sharepoint-http-builder";
 import type { ErrorEntry } from "@/lib/tools/error-finder";
+import { SavedToolBoundary, SavedToolContext, useSavedState } from "@/components/tools/saved-state";
 
-export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
+export function ToolWidget(props: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
+  // The formatter keeps its own saved formula, so it is left out of the shared saving.
+  const savedSlug = props.slug === "power-fx-formatter" ? null : props.slug;
+  return (
+    <SavedToolBoundary slug={props.slug}>
+      <SavedToolContext.Provider value={savedSlug}>
+        <ToolWidgetInner {...props} />
+      </SavedToolContext.Provider>
+    </SavedToolBoundary>
+  );
+}
+
+function ToolWidgetInner({ slug, functionLinks = [], errorEntries = [] }: { slug: string; functionLinks?: FunctionLink[]; errorEntries?: ErrorEntry[] }) {
   if (slug === "power-fx-formatter") return <PowerFxFormatter functionLinks={functionLinks} />;
   if (slug === "odata-filter-query-builder") return <FilterQueryBuilder />;
   if (slug === "date-format-tester") return <DateFormatTester />;
   if (slug === "sharepoint-internal-name-helper") return <SharePointInternalNameHelper />;
   if (slug === "parse-json-schema-generator") return <ParseJsonSchemaGenerator />;
   if (slug === "excel-to-power-fx") return <ExcelToPowerFx />;
+  if (slug === "deployment-settings-generator") return <DeploymentSettingsGenerator />;
+  if (slug === "power-fx-regex-tester") return <RegexTester />;
   if (slug === "power-automate-expression-builder") return <ExpressionBuilder />;
   if (slug === "trigger-condition-builder") return <TriggerConditionBuilder />;
   if (slug === "onstart-to-named-formulas") return <NamedFormulasConverter />;
@@ -52,7 +69,7 @@ export function ToolWidget({ slug, functionLinks = [], errorEntries = [] }: { sl
 }
 
 function SharePointInternalNameHelper() {
-  const [displayName, setDisplayName] = useState("Request Status");
+  const [displayName, setDisplayName] = useSavedState("displayName", "Request Status");
   const encodedName = useMemo(() => toSharePointEncodedInternalName(displayName), [displayName]);
   const cleanName = useMemo(() => toSharePointInternalName(displayName), [displayName]);
   const needsEncoding = encodedName !== displayName.trim();
@@ -87,10 +104,10 @@ Power Automate / REST: use ${needsEncoding ? encodedName.slice(0, 32) : cleanNam
 }
 
 function DataverseNamingHelper() {
-  const [prefix, setPrefix] = useState("bv");
-  const [displayName, setDisplayName] = useState("Service Request");
-  const [pluralName, setPluralName] = useState("");
-  const [columns, setColumns] = useState("Request Name\nDue Date\nPriority\nAssigned To");
+  const [prefix, setPrefix] = useSavedState("prefix", "bv");
+  const [displayName, setDisplayName] = useSavedState("displayName", "Service Request");
+  const [pluralName, setPluralName] = useSavedState("pluralName", "");
+  const [columns, setColumns] = useSavedState("columns", "Request Name\nDue Date\nPriority\nAssigned To");
   const cleanPrefix = prefix.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
   const plural = pluralName.trim() || pluralize(displayName.trim());
   const tableSchema = cleanPrefix + "_" + toPascalIdentifier(displayName);

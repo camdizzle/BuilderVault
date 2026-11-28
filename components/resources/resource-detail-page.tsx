@@ -12,6 +12,7 @@ import { getRelatedTools, type ResourceItem } from "@/lib/resources";
 import type { Pattern } from "@/types/pattern";
 import { absoluteUrl } from "@/lib/site";
 import { getToolCatalogEntry, getToolGroup } from "@/lib/tool-catalog";
+import { ToolTrustLine } from "@/components/resources/tool-trust-line";
 
 const parentPathByKind = {
   cookbook: "/cookbooks",
@@ -29,7 +30,7 @@ const parentLabelByKind = {
 
 export function ResourceDetailPage({ children, resource }: { children?: ReactNode; resource: ResourceItem }) {
   const isTool = resource.kind === "tool";
-  const relatedTools = isTool ? getRelatedTools(resource) : [];
+  const relatedTools = getRelatedTools(resource);
   const toolGuides = isTool ? getGuidesForTool(resource.slug) : [];
   const toolErrors = isTool ? getErrorsForTool(resource.slug) : [];
   const toolFunctions = isTool ? getFunctionsForTool(resource.slug) : [];
@@ -77,7 +78,12 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
           </>
         )}
 
-        {isTool ? <div className="tool-stage">{children}</div> : null}
+        {isTool ? (
+          <div className="tool-stage">
+            {children}
+            <ToolTrustLine path={resource.path} slug={resource.slug} title={resource.title} />
+          </div>
+        ) : null}
 
         <div className="grid content-with-aside">
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>

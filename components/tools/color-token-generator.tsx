@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
+import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { parseTokens, textAdvice, tokensFormula, type TokenOutputMode } from "@/lib/tools/color-tokens";
 
@@ -19,9 +20,9 @@ const modes: Array<{ mode: TokenOutputMode; label: string; prefix: string; where
 ];
 
 export function ColorTokenGenerator() {
-  const [text, setText] = useState(sample);
-  const [mode, setMode] = useState<TokenOutputMode>("namedFormulas");
-  const [prefixes, setPrefixes] = useState<Record<TokenOutputMode, string>>({ namedFormulas: "Color", themeRecord: "Theme", variables: "gblColor" });
+  const [text, setText] = useSavedState("text", sample);
+  const [mode, setMode] = useSavedState<TokenOutputMode>("mode", "namedFormulas");
+  const [prefixes, setPrefixes] = useSavedState<Record<TokenOutputMode, string>>("prefixes", { namedFormulas: "Color", themeRecord: "Theme", variables: "gblColor" });
   const { tokens, issues } = useMemo(() => parseTokens(text), [text]);
   const current = modes.find((entry) => entry.mode === mode) ?? modes[0];
   const formula = tokens.length > 0 ? tokensFormula(tokens, mode, prefixes[mode]) : "Add at least one color, such as Primary #0f766e.";

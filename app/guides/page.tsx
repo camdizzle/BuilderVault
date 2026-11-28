@@ -27,6 +27,11 @@ const groups = [
     text: "Fix, tidy and speed up Power Fx formulas, choose between functions that look alike, and handle variables, saving and errors."
   },
   {
+    eyebrow: "Delegation by data source",
+    title: "Delegation for your data source",
+    text: "What SharePoint, Dataverse, SQL Server and Excel can and can't run for a Power Apps formula, with a delegable replacement for each common warning."
+  },
+  {
     eyebrow: "Power Automate how-to",
     title: "Power Automate flow guides",
     text: "Filter data, control triggers, read expressions, check limits and troubleshoot failed runs."

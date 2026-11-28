@@ -12,6 +12,14 @@ export const dataSourceLabels: Record<DataSource, string> = {
   excel: "Excel table (OneDrive)"
 };
 
+/** The delegation guide for each data source. */
+export const delegationGuideBySource: Record<DataSource, { href: string; label: string }> = {
+  sharepoint: { href: "/guides/power-apps-delegation-sharepoint", label: "Delegation with SharePoint lists" },
+  dataverse: { href: "/guides/power-apps-delegation-dataverse", label: "Delegation with Dataverse" },
+  sql: { href: "/guides/power-apps-delegation-sql-server", label: "Delegation with SQL Server" },
+  excel: { href: "/guides/power-apps-delegation-excel", label: "Delegation with Excel" }
+};
+
 export type DelegationRule = {
   key: string;
   label: string;
@@ -32,9 +40,9 @@ export const delegationRules: DelegationRule[] = [
   { key: "sum", label: "Sum, Average, Min, Max", group: "Aggregate", support: s("no", "partial", "yes"), notes: { dataverse: "Delegated on number columns for up to 50,000 rows, and not on views.", sql: "Delegated on number columns." }, fix: "Keep a running total in a column, or total a filtered set that is known to be small." },
   { key: "countrows", label: "CountRows", group: "Aggregate", support: s("no", "partial", "no"), notes: { dataverse: "On a whole table it returns a cached count. For an exact count under 50,000 rows, use CountIf(table, true)." }, fix: "Count a filtered set that is known to be small, or store the count." },
   { key: "countif", label: "CountIf", group: "Aggregate", support: s("no", "partial", "no"), notes: { dataverse: "Delegated for up to 50,000 rows." }, fix: "Count a filtered set that is known to be small, or store the count." },
-  { key: "compare", label: "=, <>, <, >, <=, >=", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "<, >, <= and >= aren't delegated on text or Yes/No columns, and the ID column only supports =.", dataverse: "Choice columns only support = and <>.", sql: "<, >, <= and >= aren't delegated on text or bit columns." } },
+  { key: "compare", label: "=, <>, <, >, <=, >=", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "<, >, <=, >= and <> aren't delegated on text or Yes/No columns, and the ID column only supports =.", dataverse: "Choice columns only support = and <>.", sql: "<, >, <= and >= aren't delegated on text or bit columns." } },
   { key: "logic", label: "And, Or (&&, ||)", group: "Inside a filter", support: s("yes", "yes", "yes") },
-  { key: "not", label: "Not (!)", group: "Inside a filter", support: s("no", "yes", "yes"), fix: "Compare with <> instead, such as Status.Value <> \"Closed\"." },
+  { key: "not", label: "Not (!)", group: "Inside a filter", support: s("no", "yes", "yes"), fix: "Name the values you want with = joined by ||, such as Status.Value = \"Open\" || Status.Value = \"In progress\". SharePoint doesn't delegate <> on text either." },
   { key: "startswith", label: "StartsWith", group: "Inside a filter", support: s("yes", "yes", "yes"), notes: { sharepoint: "Not delegated on a choice or lookup column's value.", sql: "The column must be the first argument." } },
   { key: "endswith", label: "EndsWith", group: "Inside a filter", support: s("no", "no", "yes"), notes: { sql: "The column must be the first argument." }, fix: "Use StartsWith if you can, or store the ending in its own column." },
   { key: "in", label: "in (contains text, or is in a list)", group: "Inside a filter", support: s("no", "yes", "yes"), notes: { dataverse: "Only for columns on the table itself, not on a related table.", sql: "Only as \"text\" in Column. Column in a list isn't delegated." }, fix: "Use StartsWith, or compare with = against each value joined with ||." },
