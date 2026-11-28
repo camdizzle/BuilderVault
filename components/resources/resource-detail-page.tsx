@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { DownloadPromo } from "@/components/growth/download-promo";
 import { NewsletterSignup } from "@/components/growth/newsletter-signup";
 import { ServicesCta } from "@/components/growth/services-cta";
@@ -11,6 +11,7 @@ import { getPublishedPatternBySlug } from "@/lib/patterns/patterns";
 import { getRelatedTools, type ResourceItem } from "@/lib/resources";
 import type { Pattern } from "@/types/pattern";
 import { absoluteUrl } from "@/lib/site";
+import { getToolCatalogEntry, getToolGroup } from "@/lib/tool-catalog";
 
 const parentPathByKind = {
   cookbook: "/cookbooks",
@@ -50,31 +51,36 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
     : null;
 
   return (
-    <article style={{ padding: "54px 0" }}>
+    <article style={{ padding: isTool ? "24px 0 54px" : "54px 0" }}>
       {structuredData ? (
         <script dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} type="application/ld+json" />
       ) : null}
-      <div className="container" style={{ display: "grid", gap: 30 }}>
-        <nav aria-label="Breadcrumb" className="badge-row">
-          <Link href="/resources" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Resources</Link>
-          <span aria-hidden="true" style={{ color: "var(--muted)" }}>/</span>
-          <Link href={parentPathByKind[resource.kind]} style={{ color: "var(--accent-strong)", fontWeight: 800 }}>
-            {parentLabelByKind[resource.kind]}
-          </Link>
-        </nav>
+      <div className="container" style={{ display: "grid", gap: isTool ? 20 : 30 }}>
+        {isTool ? <ToolHeader resource={resource} /> : (
+          <>
+            <nav aria-label="Breadcrumb" className="badge-row">
+              <Link href="/resources" style={{ color: "var(--accent-strong)", fontWeight: 800 }}>Resources</Link>
+              <span aria-hidden="true" style={{ color: "var(--muted)" }}>/</span>
+              <Link href={parentPathByKind[resource.kind]} style={{ color: "var(--accent-strong)", fontWeight: 800 }}>
+                {parentLabelByKind[resource.kind]}
+              </Link>
+            </nav>
 
-        <header style={{ maxWidth: 940 }}>
-          <div className="eyebrow">{resource.eyebrow}</div>
-          <h1 className="page-title">{resource.title}</h1>
-          <p className="lead">{resource.description}</p>
-          <div className="badge-row" style={{ marginTop: 18 }}>
-            {resource.keywords.map((keyword) => <span className="badge" key={keyword}>{keyword}</span>)}
-          </div>
-        </header>
+            <header style={{ maxWidth: 940 }}>
+              <div className="eyebrow">{resource.eyebrow}</div>
+              <h1 className="page-title">{resource.title}</h1>
+              <p className="lead">{resource.description}</p>
+              <div className="badge-row" style={{ marginTop: 18 }}>
+                {resource.keywords.map((keyword) => <span className="badge" key={keyword}>{keyword}</span>)}
+              </div>
+            </header>
+          </>
+        )}
+
+        {isTool ? <div className="tool-stage">{children}</div> : null}
 
         <div className="grid content-with-aside">
           <div className="card" style={{ display: "grid", gap: 28, padding: 24 }}>
-            {isTool ? children : null}
             {isTool ? <NewsletterSignup placement={"tool:" + resource.slug} title="Get new tools and Power Fx tips by email" /> : null}
             <section style={{ display: "grid", gap: 12 }}>
               <h2 className="section-title" style={{ fontSize: "1.8rem" }}>Who this helps</h2>
@@ -206,5 +212,27 @@ export function ResourceDetailPage({ children, resource }: { children?: ReactNod
         </div>
       </div>
     </article>
+  );
+}
+
+/** Compact header for tool pages, so the tool itself starts near the top of the screen. */
+function ToolHeader({ resource }: { resource: ResourceItem }) {
+  const entry = getToolCatalogEntry(resource.slug);
+  const group = getToolGroup(entry.group);
+  return (
+    <header className="tool-header" style={{ "--tool-color": group.color, "--tool-bg": group.background } as CSSProperties}>
+      <nav aria-label="Breadcrumb" className="tool-breadcrumb">
+        <Link href="/tools">Tools</Link>
+        <span aria-hidden="true">/</span>
+        <Link href={"/tools#" + group.id}>{group.label}</Link>
+      </nav>
+      <div className="tool-header-row">
+        <span aria-hidden="true" className="tool-glyph">{entry.glyph}</span>
+        <div>
+          <h1 className="tool-title">{resource.title}</h1>
+          <p className="tool-lead">{resource.description}</p>
+        </div>
+      </div>
+    </header>
   );
 }
