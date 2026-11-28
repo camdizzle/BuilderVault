@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Toggle, ToolNotes, ToolShell } from "@/components/resources/tool-shell";
 import { useSavedState } from "@/components/tools/saved-state";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
@@ -10,6 +10,7 @@ import {
   maxMatches,
   powerFxFormula,
   regexWarnings,
+  regexFromHash,
   runRegex,
   type RegexAnchor,
   type RegexFunction,
@@ -44,6 +45,17 @@ export function RegexTester() {
   const [multiline, setMultiline] = useSavedState("multiline", false);
   const [lineByLine, setLineByLine] = useSavedState("lineByLine", true);
   const [input, setInput] = useSavedState("input", "txtRequestId.Text");
+
+  // The formatter links here with the function and pattern after #, so they replace what was saved.
+  useEffect(() => {
+    const linked = regexFromHash(window.location.hash);
+    if (!linked) return;
+    setFn(linked.fn);
+    setPattern(linked.pattern);
+    setAnchor("default");
+    // Only on the first load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const settings = useMemo(() => ({ fn, pattern, anchor, ignoreCase, multiline }), [fn, pattern, anchor, ignoreCase, multiline]);
   const warnings = useMemo(() => regexWarnings(pattern), [pattern]);

@@ -12,6 +12,14 @@ export const dataSourceLabels: Record<DataSource, string> = {
   excel: "Excel table (OneDrive)"
 };
 
+/** The delegation guide for each data source. */
+export const delegationGuideBySource: Record<DataSource, { href: string; label: string }> = {
+  sharepoint: { href: "/guides/power-apps-delegation-sharepoint", label: "Delegation with SharePoint lists" },
+  dataverse: { href: "/guides/power-apps-delegation-dataverse", label: "Delegation with Dataverse" },
+  sql: { href: "/guides/power-apps-delegation-sql-server", label: "Delegation with SQL Server" },
+  excel: { href: "/guides/power-apps-delegation-excel", label: "Delegation with Excel" }
+};
+
 export type DelegationRule = {
   key: string;
   label: string;

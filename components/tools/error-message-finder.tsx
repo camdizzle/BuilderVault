@@ -47,6 +47,14 @@ export function ErrorMessageFinder({ entries }: { entries: ErrorEntry[] }) {
                 <Link href={match.entry.href}>{match.entry.title}</Link>
               </strong>
               <p style={{ color: "#415049", lineHeight: 1.6, margin: "6px 0 0" }}>{match.entry.quickAnswer}</p>
+              {match.entry.tools && match.entry.tools.length > 0 ? (
+                <div className="badge-row" style={{ marginTop: 10 }}>
+                  <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>Fix it with:</span>
+                  {match.entry.tools.map((tool) => (
+                    <Link className="badge" href={tool.href} key={tool.href}>{tool.title}</Link>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))
         )}

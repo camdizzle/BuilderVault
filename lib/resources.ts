@@ -1738,6 +1738,74 @@ If(IsMatch(txtRequestId.Text, "REQ-\\d{5}"), DisplayMode.Edit, DisplayMode.Disab
       }
     ]
   }),
+  item({
+    slug: "deployment-settings-generator",
+    kind: "tool",
+    title: "Deployment Settings File Generator",
+    eyebrow: "Free tool",
+    description: "Build the deploymentSettings.json file that sets connection references and environment variables when you import a Power Platform solution with pac solution import or Azure DevOps. One file per target environment, with checks for missing values and display names used by mistake.",
+    keywords: ["deployment settings file", "deploymentSettings.json", "pac solution import settings-file", "connection references environment variables import", "Power Platform Build Tools settings file"],
+    audience: "Developers and admins automating solution imports to test and production, who need a settings file per environment instead of filling in connections by hand after every import.",
+    summaryBullets: [
+      "Writes the EnvironmentVariables and ConnectionReferences file Microsoft documents, with one file for each target environment.",
+      "Loads the starting file from pac solution create-settings, so you only fill in the values.",
+      "Turns a connector name such as shared_sharepointonline into the full ConnectorId.",
+      "Keeps just the ID when you paste a connection's whole address.",
+      "Flags missing values, schema names with spaces, missing publisher prefixes and duplicates.",
+      "Gives the pac commands to create the starting file and import with the finished one."
+    ],
+    examples: [
+      {
+        title: "A file for the test environment",
+        problem: "Set a SharePoint site address and a SharePoint connection when the solution is imported to test.",
+        code: `{
+  "EnvironmentVariables": [
+    {
+      "SchemaName": "contoso_SharePointSiteUrl",
+      "Value": "https://contoso.sharepoint.com/sites/requests-test"
+    }
+  ],
+  "ConnectionReferences": [
+    {
+      "LogicalName": "contoso_sharedsharepointonline_1a2b3",
+      "ConnectionId": "ef3d1cbb2c3b4e7987e02486584689d3",
+      "ConnectorId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+    }
+  ]
+}`,
+        expectedResult: "On import, the environment variable gets the test site address and the connection reference uses that connection, with no prompts.",
+        commonMistakes: ["Using the display name instead of the schema name or logical name.", "Copying a connection ID from the development environment. Each environment has its own connections."]
+      },
+      {
+        title: "Create and use the file with pac",
+        problem: "Make a starting file from the exported solution, fill it in, then import with it.",
+        code: `pac solution create-settings --solution-zip ./Requests_managed.zip --settings-file ./deploymentSettings.Test.json
+pac solution import --path ./Requests_managed.zip --settings-file ./deploymentSettings.Test.json`,
+        expectedResult: "The first command lists every connection reference and environment variable in the solution with empty values. The second imports with the values you filled in.",
+        commonMistakes: ["Importing while your pac auth profile points at the wrong environment. Check it with pac auth list first."]
+      }
+    ],
+    relatedPatterns: ["deployment-settings-file-pac-cli", "connection-references-for-solution-flows", "dataverse-environment-variables-canvas-apps-flows", "azure-devops-pipeline-power-platform-build-tools"],
+    relatedTools: ["solution-layering-checklist-generator", "dataverse-table-naming-helper"],
+    faqs: [
+      {
+        question: "Where do I find a connection ID?",
+        answer: "Open Power Apps in the target environment, open the connection from the Connections list, and copy the ID from the address bar. You can paste the whole address into the tool and it keeps only the ID."
+      },
+      {
+        question: "Why does import fail on a connection reference?",
+        answer: "Import checks that the owner of the connection reference can use each connection. Use a connection owned by that account, or share the connection with it."
+      },
+      {
+        question: "Can I keep this file in source control?",
+        answer: "Yes. Microsoft's guide says you can store it in source control. It holds connection IDs and environment variable values, not passwords, but check that no value in it is something you would not commit."
+      },
+      {
+        question: "Is anything I type sent anywhere?",
+        answer: "No. The file is built in your browser, and your entries are saved only in this browser."
+      }
+    ]
+  }),
   item({ slug: "solution-layering-checklist-generator", kind: "tool", title: "Solution Layering Checklist Generator", eyebrow: "Free tool", description: "Build a deployment checklist for a Power Platform solution release. Choose what the release contains and copy a checklist covering layering, managed import, environment variables and connection references.", keywords: ["solution layering", "Power Platform ALM checklist", "managed solution import"], audience: "Developers and admins preparing releases across environments.", summaryBullets: ["Choose the components in your release to get a checklist that fits it.", "Covers export from development, import to test and production, and checks afterwards.", "Includes environment variables, connection references, flows and unmanaged layer checks.", "Copy the checklist into your release notes or work item."], examples: [{ title: "Deployment checklist", problem: "Prevent avoidable release failures.", code: `- Solution exported from clean dev environment
 - Managed solution imported to test
 - Environment variables reviewed

@@ -62,3 +62,22 @@ test("formula output", () => {
     'Match(txtInput.Text, "a", MatchOptions.BeginsWith & MatchOptions.IgnoreCase)'
   );
 });
+
+test("findRegexCall reads the pattern of the first IsMatch, Match or MatchAll", async () => {
+  const { findRegexCall } = await import("../../lib/tools/regex-tester.ts");
+  assert.deepEqual(findRegexCall('If(IsMatch(txtId.Text, "REQ-\\d{5}"), 1, 0)'), { fn: "IsMatch", pattern: "REQ-\\d{5}" });
+  assert.deepEqual(findRegexCall('Match(Concatenate("a", ","), "say ""hi""", MatchOptions.IgnoreCase)'), { fn: "Match", pattern: 'say "hi"' });
+  assert.deepEqual(findRegexCall('MatchAll(Left(txt.Text, 3), "#(\\d+)")'), { fn: "MatchAll", pattern: "#(\\d+)" });
+  assert.equal(findRegexCall('IsMatch(txtEmail.Text, Match.Email)'), null);
+  assert.equal(findRegexCall('IsMatch(txt.Text, "A" & Match.MultipleDigits)'), null);
+  assert.equal(findRegexCall('Patch(Requests, Defaults(Requests), { Title: "x" })'), null);
+});
+
+test("regex tester links round-trip", async () => {
+  const { regexTesterLink, regexFromHash } = await import("../../lib/tools/regex-tester.ts");
+  const link = regexTesterLink("Match", "(?<id>\\d+) & \"x\"");
+  const hash = link.slice(link.indexOf("#"));
+  assert.deepEqual(regexFromHash(hash), { fn: "Match", pattern: "(?<id>\\d+) & \"x\"" });
+  assert.equal(regexFromHash("#fn=Nope&pattern=x"), null);
+  assert.equal(regexFromHash(""), null);
+});

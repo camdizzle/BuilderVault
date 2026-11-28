@@ -6,7 +6,8 @@ import { FormatterProPanel } from "@/components/pro/formatter-pro-panel";
 import { Toggle, ToolShell } from "@/components/resources/tool-shell";
 import { CopyCodeBlock } from "@/components/ui/copy-code-block";
 import { trackEvent } from "@/lib/analytics";
-import { checkDelegation, dataSourceLabels, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
+import { checkDelegation, dataSourceLabels, delegationGuideBySource, type DataSource, type DelegationFinding } from "@/lib/tools/delegation-check";
+import { findRegexCall, regexTesterLink } from "@/lib/tools/regex-tester";
 import { formulaFromHash, formatterLink, maxLinkedFormulaLength } from "@/lib/tools/formula-link";
 import { highlightLines } from "@/lib/tools/power-fx-highlight";
 import { formatPowerFxFormula, minifyPowerFxFormula, toCommaSeparators, type PowerFxLocale } from "@/lib/tools/power-fx-format";
@@ -27,14 +28,6 @@ const sampleFormula = `IfError(
 Set(varSavedRequest,Patch(Requests,Defaults(Requests),{Title:txtTitle.Text,RequestStatus:{Value:"Submitted"},DueDate:dpDueDate.SelectedDate}));Notify("Request saved.",NotificationType.Success),Notify("The request could not be saved.",NotificationType.Error))`;
 
 const mutedText = { color: "#415049", lineHeight: 1.6, margin: 0 } as const;
-
-/** The delegation guide for each data source in the Data source option. */
-const delegationGuideBySource: Record<DataSource, { href: string; label: string }> = {
-  sharepoint: { href: "/guides/power-apps-delegation-sharepoint", label: "Delegation with SharePoint lists" },
-  dataverse: { href: "/guides/power-apps-delegation-dataverse", label: "Delegation with Dataverse" },
-  sql: { href: "/guides/power-apps-delegation-sql-server", label: "Delegation with SQL Server" },
-  excel: { href: "/guides/power-apps-delegation-excel", label: "Delegation with Excel" }
-};
 
 const storageKey = "buildervault:power-fx-formatter:formula";
 
@@ -142,6 +135,9 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
   const lines = useMemo(() => highlightLines(formatted), [formatted]);
 
   const hasFormula = Boolean(formula.trim());
+  // Other tools that can take this formula further.
+  const regexCall = useMemo(() => findRegexCall(formula), [formula]);
+  const hasPatch = /\bPatch\s*\(/.test(formula);
   const reviewCount = checks.items.filter((item) => item.level === "Review" || item.level === "Caution" || item.level === "Cleanup").length;
   const tabs: Array<{ id: TabId; label: string; count?: number }> = [
     { id: "review", label: "Review", count: reviewCount },
@@ -308,6 +304,17 @@ export function PowerFxFormatter({ functionLinks }: { functionLinks: FunctionLin
 
       <div aria-labelledby="fx-tab-review" hidden={tab !== "review"} id="fx-panel-review" role="tabpanel">
         <div style={{ display: "grid", gap: 18 }}>
+          {hasPatch || regexCall ? (
+            <div className="badge-row">
+              <span style={{ color: "var(--muted)", fontSize: "0.92rem" }}>Take it further:</span>
+              {hasPatch ? (
+                <Link className="badge" href="/tools/patch-formula-builder">Build a Patch from your columns</Link>
+              ) : null}
+              {regexCall ? (
+                <Link className="badge" href={regexTesterLink(regexCall.fn, regexCall.pattern)}>Test this {regexCall.fn} pattern</Link>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             {checks.items.map((item) => (
               <div className="stat-tile" key={item.title}>

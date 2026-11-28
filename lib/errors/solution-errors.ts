@@ -288,7 +288,7 @@ const flowsOffAfterImport: ErrorPage = {
     { question: "Who owns the flows after a solution import?", answer: "The user who performs the import owns the flows, connection references and other components in the solution." },
     { question: "Does importing an update turn my flows off?", answer: "Flows in the solution are turned off and on again during the import. A flow that was already off in the target environment stays off after an update." }
   ],
-  relatedTools: [],
+  relatedTools: ["deployment-settings-generator"],
   relatedPatterns: ["connection-references-for-solution-flows", "turn-on-flows-after-solution-import", "deployment-settings-file-pac-cli", "service-principal-application-user-deployments"],
   relatedLinks: [
     { href: "/guides/troubleshoot-failed-flow-run", label: "Troubleshoot a failed flow run" },

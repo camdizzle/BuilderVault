@@ -170,3 +170,75 @@ export function powerFxFormula(settings: RegexSettings, input: string) {
   if (options.length > 0) args.push(options.join(" & "));
   return `${settings.fn}(${args.join(", ")})`;
 }
+
+/** Reads a Power Fx text literal that starts at index start (on the opening quote). */
+function readStringLiteral(text: string, start: number): { value: string; end: number } | null {
+  let value = "";
+  for (let index = start + 1; index < text.length; index += 1) {
+    if (text[index] !== '"') {
+      value += text[index];
+      continue;
+    }
+    if (text[index + 1] === '"') {
+      value += '"';
+      index += 1;
+      continue;
+    }
+    return { value, end: index + 1 };
+  }
+  return null;
+}
+
+/**
+ * Finds the first IsMatch, Match or MatchAll call whose pattern is a plain text value, so the
+ * formatter can offer to open it in the regex tester. Patterns built with & or the Match enum are skipped.
+ */
+export function findRegexCall(formula: string): { fn: RegexFunction; pattern: string } | null {
+  const call = /\b(IsMatch|MatchAll|Match)\s*\(/g;
+  let found: RegExpExecArray | null;
+  while ((found = call.exec(formula)) !== null) {
+    let depth = 0;
+    let index = found.index + found[0].length;
+    // Skip the first argument: everything up to the comma at this call's own level.
+    for (; index < formula.length; index += 1) {
+      const char = formula[index];
+      if (char === '"') {
+        const literal = readStringLiteral(formula, index);
+        if (!literal) return null;
+        index = literal.end - 1;
+      } else if (char === "(" || char === "[" || char === "{") depth += 1;
+      else if (char === ")" || char === "]" || char === "}") {
+        if (depth === 0) break;
+        depth -= 1;
+      } else if ((char === "," || char === ";") && depth === 0) break;
+    }
+    if (formula[index] !== "," && formula[index] !== ";") continue;
+    const rest = formula.slice(index + 1);
+    const leading = rest.length - rest.trimStart().length;
+    if (rest[leading] !== '"') continue;
+    const literal = readStringLiteral(rest, leading);
+    if (!literal) continue;
+    const after = rest.slice(literal.end).trimStart();
+    if (!/^[,)]/.test(after) && !after.startsWith(";")) continue;
+    return { fn: found[1] as RegexFunction, pattern: literal.value };
+  }
+  return null;
+}
+
+export const regexTesterPath = "/tools/power-fx-regex-tester";
+
+/** A link that opens the regex tester with a function and pattern filled in. */
+export function regexTesterLink(fn: RegexFunction, pattern: string) {
+  return `${regexTesterPath}#fn=${fn}&pattern=${encodeURIComponent(pattern)}`;
+}
+
+/** Reads #fn=...&pattern=... from a link. Returns null when the hash doesn't hold both. */
+export function regexFromHash(hash: string): { fn: RegexFunction; pattern: string } | null {
+  const match = /^#fn=(IsMatch|MatchAll|Match)&pattern=([\s\S]*)$/.exec(hash);
+  if (!match) return null;
+  try {
+    return { fn: match[1] as RegexFunction, pattern: decodeURIComponent(match[2]) };
+  } catch {
+    return null;
+  }
+}

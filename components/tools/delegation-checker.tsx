@@ -3,7 +3,9 @@
 import { useSavedState } from "@/components/tools/saved-state";
 import { useMemo } from "react";
 import { ToolShell } from "@/components/resources/tool-shell";
-import { checkDelegation, dataSourceLabels, delegationRules, delegationSources, type DataSource, type Support } from "@/lib/tools/delegation-check";
+import Link from "next/link";
+import { checkDelegation, dataSourceLabels, delegationGuideBySource, delegationRules, delegationSources, type DataSource, type Support } from "@/lib/tools/delegation-check";
+import { formatterLink } from "@/lib/tools/formula-link";
 
 const sampleFormula = `Filter(
     Requests,
@@ -86,6 +88,17 @@ export function DelegationChecker() {
           ) : null}
         </div>
       ))}
+
+      <div className="badge-row">
+        {formula.trim() ? (
+          <Link className="button secondary" href={formatterLink(formula)}>
+            Format it in the Power Fx formatter
+          </Link>
+        ) : null}
+        <Link className="button secondary" href={delegationGuideBySource[source].href}>
+          {delegationGuideBySource[source].label}
+        </Link>
+      </div>
 
       <div style={{ minWidth: 0 }}>
         <h3 style={{ fontSize: "1.2rem", margin: "0 0 10px" }}>What {dataSourceLabels[source]} delegates</h3>

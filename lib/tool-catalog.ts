@@ -51,13 +51,26 @@ export type ToolCatalogEntry = {
   tagline: string;
   /** Shown in the "Most used" row on the tools index. */
   popular?: boolean;
+  /**
+   * Set only after the tool's rules were checked against these Microsoft pages. Shown under the tool.
+   * Re-check and update the date when Microsoft changes the pages.
+   */
+  docs?: { what: string; checked: string; sources: Array<{ label: string; href: string }> };
+};
+
+const delegationDocs = {
+  checked: "2026-11-28",
+  sources: [
+    { label: "Delegation overview", href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/delegation-overview" },
+    { label: "SharePoint delegation", href: "https://learn.microsoft.com/power-apps/maker/canvas-apps/connections/connection-sharepoint-online" }
+  ]
 };
 
 export const toolCatalog: Record<string, ToolCatalogEntry> = {
-  "power-fx-formatter": { group: "power-apps", glyph: "Fx", tagline: "Format, minify and review a formula, with a delegation check.", popular: true },
+  "power-fx-formatter": { group: "power-apps", glyph: "Fx", tagline: "Format, minify and review a formula, with a delegation check.", popular: true, docs: { what: "The delegation check", ...delegationDocs } },
   "power-automate-expression-builder": { group: "power-automate", glyph: "{ }", tagline: "Expressions for dates, empty values, text, arrays and approvals.", popular: true },
   "odata-filter-query-builder": { group: "power-automate", glyph: "?=", tagline: "Filter Query text for Get items and List rows, quoted correctly.", popular: true },
-  "power-apps-delegation-checker": { group: "power-apps", glyph: "Dg", tagline: "See which functions delegate for SharePoint, Dataverse, SQL or Excel." },
+  "power-apps-delegation-checker": { group: "power-apps", glyph: "Dg", tagline: "See which functions delegate for SharePoint, Dataverse, SQL or Excel.", docs: { what: "The delegation rules", ...delegationDocs } },
   "patch-formula-builder": { group: "power-apps", glyph: "Pa", tagline: "Pick columns and controls, get a typed Patch wrapped in IfError." },
   "gallery-search-filter-builder": { group: "power-apps", glyph: "Ga", tagline: "A delegation-friendly gallery Items formula with search and filters." },
   "excel-to-power-fx": { group: "power-apps", glyph: "XL", tagline: "Translate Excel formulas such as VLOOKUP and SUMIF into Power Fx." },
@@ -65,7 +78,16 @@ export const toolCatalog: Record<string, ToolCatalogEntry> = {
   "csv-to-power-fx-table": { group: "power-apps", glyph: "Tb", tagline: "Turn CSV, Excel rows or JSON into a Power Fx Table()." },
   "power-apps-naming-linter": { group: "power-apps", glyph: "Ab", tagline: "Check control, screen and variable names against a convention." },
   "power-apps-color-token-generator": { group: "power-apps", glyph: "#", tagline: "Turn brand hex colors into Power Fx color tokens." },
-  "power-fx-regex-tester": { group: "power-apps", glyph: "Rx", tagline: "Test IsMatch, Match and MatchAll patterns with Power Apps defaults." },
+  "power-fx-regex-tester": { group: "power-apps", glyph: "Rx", tagline: "Test IsMatch, Match and MatchAll patterns with Power Apps defaults.",
+    docs: {
+      what: "The defaults, options and warnings",
+      checked: "2026-11-28",
+      sources: [
+        { label: "Regular expressions in Power Fx", href: "https://learn.microsoft.com/power-platform/power-fx/regular-expressions" },
+        { label: "IsMatch, Match and MatchAll", href: "https://learn.microsoft.com/power-platform/power-fx/reference/function-ismatch" }
+      ]
+    }
+  },
   "trigger-condition-builder": { group: "power-automate", glyph: "If", tagline: "Trigger conditions that stop a flow running on every change." },
   "parse-json-schema-generator": { group: "power-automate", glyph: "JS", tagline: "A Parse JSON schema that won't fail on empty fields." },
   "date-format-tester": { group: "power-automate", glyph: "Dt", tagline: "Test formatDateTime and time zone strings on a sample date." },
@@ -75,6 +97,19 @@ export const toolCatalog: Record<string, ToolCatalogEntry> = {
   "sharepoint-column-formatting-builder": { group: "sharepoint-dataverse", glyph: "CF", tagline: "Column formatting JSON for status pills, bars, dates and links." },
   "sharepoint-http-request-builder": { group: "sharepoint-dataverse", glyph: "API", tagline: "Build Send an HTTP request to SharePoint calls for a flow." },
   "dataverse-table-naming-helper": { group: "sharepoint-dataverse", glyph: "Dv", tagline: "Schema and logical names for tables and columns from your prefix." },
+  "deployment-settings-generator": {
+    group: "fix-release",
+    glyph: "DS",
+    tagline: "A deploymentSettings.json per environment for pac and DevOps imports.",
+    docs: {
+      what: "The file format and pac commands",
+      checked: "2026-11-28",
+      sources: [
+        { label: "Pre-populate connection references and environment variables", href: "https://learn.microsoft.com/power-platform/alm/conn-ref-env-variables-build-tools" },
+        { label: "pac solution", href: "https://learn.microsoft.com/power-platform/developer/cli/reference/solution" }
+      ]
+    }
+  },
   "error-message-finder": { group: "fix-release", glyph: "!", tagline: "Paste an error message and find the page that explains the fix." },
   "solution-layering-checklist-generator": { group: "fix-release", glyph: "Ck", tagline: "A release checklist that fits what your solution contains." }
 };

@@ -1538,3 +1538,18 @@ button {
   padding: 0;
   text-decoration: underline;
 }
+
+.tool-trust-line {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  gap: 6px 16px;
+  line-height: 1.55;
+  margin: 12px 0 0;
+}
+
+.tool-trust-line a {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
