@@ -55,6 +55,7 @@ export const navMenus: NavMenu[] = [
           tool("excel-to-power-fx", "Excel formula to Power Fx"),
           tool("onstart-to-named-formulas", "OnStart to named formulas"),
           tool("csv-to-power-fx-table", "CSV and JSON to Power Fx table"),
+          tool("power-fx-regex-tester", "Regex tester for IsMatch"),
           tool("power-apps-naming-linter", "Naming convention checker"),
           tool("power-apps-color-token-generator", "Color token generator")
         ]
@@ -77,6 +78,7 @@ export const navMenus: NavMenu[] = [
           tool("sharepoint-column-formatting-builder", "Column formatting JSON builder"),
           tool("dataverse-table-naming-helper", "Dataverse table naming helper"),
           tool("solution-layering-checklist-generator", "Solution layering checklist"),
+          tool("deployment-settings-generator", "Deployment settings file generator"),
           tool("error-message-finder", "Error message finder")
         ]
       }

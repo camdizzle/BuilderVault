@@ -5402,6 +5402,16 @@
         "question": "Why does my flow not pick up a changed environment variable?",
         "answer": "A flow reads environment variable values when it is turned on. After changing a value, turn the flow off and on again."
       }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/guides/power-platform-connection-references-environment-variables",
+        "label": "Connection references and environment variables explained"
+      },
+      {
+        "href": "/tools/deployment-settings-generator",
+        "label": "Deployment settings file generator"
+      }
     ]
   },
   {
@@ -5815,6 +5825,16 @@
         "question": "Why are my flows off after importing a solution?",
         "answer": "Most often a connection reference was not mapped to a connection, or the flow owner lacks a licence for a premium connector."
       }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/guides/power-platform-connection-references-environment-variables",
+        "label": "Connection references and environment variables explained"
+      },
+      {
+        "href": "/tools/deployment-settings-generator",
+        "label": "Deployment settings file generator"
+      }
     ]
   },
   {
@@ -5898,6 +5918,16 @@
       {
         "question": "Is it safe to store the settings file in source control?",
         "answer": "Yes, if it holds only non-secret values. Use the secret variable type with Azure Key Vault for anything sensitive."
+      }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/guides/power-platform-connection-references-environment-variables",
+        "label": "Connection references and environment variables explained"
+      },
+      {
+        "href": "/tools/deployment-settings-generator",
+        "label": "Deployment settings file generator"
       }
     ]
   },
@@ -18703,6 +18733,7 @@
     ],
     "relatedPatterns": [
       "sharepoint-calculated-column-vs-power-apps-formula",
+      "validate-power-apps-form-with-ismatch",
       "validate-required-fields-before-patch",
       "govern-required-fields-by-lifecycle-stage"
     ],
@@ -18893,6 +18924,109 @@
       {
         "question": "Why set internal names explicitly?",
         "answer": "Apps and flows refer to internal names, which cannot be changed later. Fixed names keep every environment identical."
+      }
+    ]
+  },
+  {
+    "id": "pat-1665",
+    "slug": "validate-power-apps-form-with-ismatch",
+    "title": "Validate a Power Apps form with IsMatch",
+    "shortDescription": "Check emails, codes, numbers and phone numbers as the user types, show a message under each input, and only enable Submit when everything passes.",
+    "fullDescription": "Use IsMatch with a regular expression or a Match enum value to check each text input against the format it needs. One error label per input shows a specific message, the Submit button reads those labels, and the values are cleaned up with Trim, Lower and Upper before they are written to the list.",
+    "category": "Power Apps",
+    "subCategory": "Form validation",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Beginner",
+    "tags": [
+      "IsMatch",
+      "Validation",
+      "Regular Expressions",
+      "Forms",
+      "Text Input"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "45 minutes",
+    "problemStatement": "Users type cost centres, emails and quantities in whatever format they like. Bad values reach the list, reports break, and the person who submitted the request only finds out when someone emails them days later.",
+    "whenToUse": [
+      "Text inputs that must follow a known format, such as an ID, a code, an email address or a whole number",
+      "Forms where you want the user to fix a value before it is sent, not after",
+      "Any field that a flow, report or other system reads later and expects in one format"
+    ],
+    "whenNotToUse": [
+      "Picking from a known list of values. Use a dropdown or combo box, so there is nothing to validate",
+      "Checks that need data, such as whether a cost centre exists. Use LookUp against the list of cost centres instead",
+      "As the only check on important data. Add a column validation rule in SharePoint or a business rule in Dataverse too, because data can arrive from other places"
+    ],
+    "formulaOrCode": "// One error label under each text input. Each label only shows once the\n// user has typed something, so an empty form isn't covered in red.\n// IsMatch checks the whole text by default in Power Apps.\n\n// lblEmailError.Text:    \"Enter an email address, such as name@contoso.com.\"\n// lblEmailError.Visible\n!IsBlank(txtEmail.Text) && !IsMatch(Trim(txtEmail.Text), Match.Email)\n\n// lblCostCentreError.Text:    \"Use the format CC-1234.\"\n// lblCostCentreError.Visible\n!IsBlank(txtCostCentre.Text) &&\n!IsMatch(Trim(txtCostCentre.Text), \"CC-[0-9]{4}\", MatchOptions.Complete & MatchOptions.IgnoreCase)\n\n// lblQuantityError.Text:    \"Enter a whole number from 1 to 999.\"\n// lblQuantityError.Visible\n!IsBlank(txtQuantity.Text) && !IsMatch(Trim(txtQuantity.Text), \"[1-9][0-9]{0,2}\")\n\n// lblPhoneError.Text:    \"Use digits, spaces or hyphens, with an optional + at the start.\"\n// lblPhoneError.Visible  (phone is optional)\n!IsBlank(txtPhone.Text) && !IsMatch(Trim(txtPhone.Text), \"\\+?[0-9][0-9 \\-]{5,18}[0-9]\")\n\n// btnSubmit.DisplayMode: required fields filled in and no error showing.\n// Reading the labels keeps each pattern in one place.\nIf(\n    IsBlank(txtEmail.Text) || IsBlank(txtCostCentre.Text) || IsBlank(txtQuantity.Text) ||\n    lblEmailError.Visible || lblCostCentreError.Visible ||\n    lblQuantityError.Visible || lblPhoneError.Visible,\n    DisplayMode.Disabled,\n    DisplayMode.Edit\n)\n\n// btnSubmit.OnSelect: write the cleaned-up values, not the raw text\nIfError(\n    Patch(\n        'Equipment Requests',\n        Defaults('Equipment Requests'),\n        {\n            Title: Trim(txtTitle.Text),\n            'Requester Email': Lower(Trim(txtEmail.Text)),\n            'Cost Centre': Upper(Trim(txtCostCentre.Text)),\n            Quantity: Value(Trim(txtQuantity.Text)),\n            Phone: Trim(txtPhone.Text)\n        }\n    );\n    Notify(\"Request sent.\", NotificationType.Success);\n    Reset(txtTitle); Reset(txtEmail); Reset(txtCostCentre); Reset(txtQuantity); Reset(txtPhone),\n    Notify(\"The request couldn't be sent: \" & FirstError.Message, NotificationType.Error)\n)",
+    "stepByStepInstructions": [
+      "Add a label under each text input that needs checking, named to match, such as lblEmailError under txtEmail. Set its Color to your error color and its Text to a message that says what the right format looks like.",
+      "Set each label's Visible to the formula above. The !IsBlank part keeps the label hidden until the user has typed something.",
+      "Write each pattern in the Power Fx regex tester first. Paste a few good and bad values, one per line, and check that only the good ones pass.",
+      "Set the Submit button's DisplayMode to the If formula above. It reads the error labels, so each pattern is written once.",
+      "In the button's OnSelect, write Trim, Lower or Upper versions of the values, so the list holds one format whatever the user typed.",
+      "Give each text input a HintText that shows the format, such as CC-1234, so users get it right the first time.",
+      "Test with a value that is almost right, such as CC-123, cc-1234 and a trailing space, before you publish."
+    ],
+    "commonMistakes": [
+      "Adding ^ and $ to the pattern. IsMatch already checks the whole text by default in Power Apps.",
+      "Putting the pattern in a variable or reading it from a list. The pattern must be a constant in the formula, so Power Apps rejects anything else.",
+      "Forgetting that matching is case-sensitive. cc-1234 fails CC-[0-9]{4} unless you add MatchOptions.IgnoreCase.",
+      "Leaving a literal hyphen unescaped inside [ ]. Write [0-9 \\-], not [0-9 -], which the stricter Power Fx 1.0 rules reject.",
+      "Treating Match.Email as proof that the address works. It checks the shape only, so send a confirmation if delivery matters.",
+      "Showing every error while the form is still empty, which makes a new form look broken."
+    ],
+    "troubleshooting": [
+      "If a value passes in the regex tester but fails in the app, check for a space at the start or end. Wrap the input in Trim() before testing it.",
+      "If a pattern with \\d accepts digits from other scripts in a newer Power Fx host, use [0-9], which only matches 0 to 9 everywhere.",
+      "If Power Apps reports that the pattern isn't valid, paste it into the regex tester. It warns about syntax that Power Fx blocks, such as an unescaped hyphen in [ ].",
+      "If the Submit button never enables, add a label showing each part of the DisplayMode formula to see which one is still true.",
+      "If an input is inside an Edit form card, use that card's control name, such as DataCardValue5, in place of txtEmail."
+    ],
+    "relatedPatterns": [
+      "validate-required-fields-before-patch",
+      "sharepoint-column-list-validation-formulas",
+      "power-pages-basic-form-javascript-validation"
+    ],
+    "relatedLinks": [
+      {
+        "href": "/tools/power-fx-regex-tester#fn=IsMatch&pattern=CC-%5B0-9%5D%7B4%7D",
+        "label": "Test the cost centre pattern in the regex tester"
+      },
+      {
+        "href": "/cheat-sheets/power-fx-regex-cheat-sheet",
+        "label": "Power Fx regex cheat sheet"
+      }
+    ],
+    "createdAt": "2026-11-28",
+    "updatedAt": "2026-11-28",
+    "seoTitle": "Validate a Power Apps form with IsMatch: patterns and error labels",
+    "seoDescription": "Check emails, codes, whole numbers and phone numbers in a Power Apps form with IsMatch, show a message under each input, and enable Submit only when every value passes.",
+    "primaryKeyword": "Power Apps IsMatch validation",
+    "secondaryKeywords": [
+      "Power Apps form validation",
+      "IsMatch email Power Apps",
+      "Power Apps regex validation",
+      "validate text input Power Apps",
+      "Power Apps disable submit button until valid"
+    ],
+    "faqs": [
+      {
+        "question": "Do I need ^ and $ in an IsMatch pattern?",
+        "answer": "No. In Power Apps, IsMatch uses MatchOptions.Complete by default, so the pattern already has to match the whole text. Match and MatchAll are different: they look for the pattern anywhere."
+      },
+      {
+        "question": "Is Match.Email enough to validate an email address?",
+        "answer": "It checks for an @ and a domain with a dot, which catches most typing mistakes. It can't tell whether the mailbox exists. To accept only your own domain, use a pattern such as [A-Za-z0-9._%+\\-]+@contoso\\.com with MatchOptions.IgnoreCase."
+      },
+      {
+        "question": "Can the IsMatch pattern come from a variable or a SharePoint list?",
+        "answer": "No. The pattern and the options must be constants written in the formula. If different records need different formats, use Switch over a few fixed IsMatch calls."
+      },
+      {
+        "question": "Why use [0-9] instead of \\d?",
+        "answer": "In the current Power Fx rules, \\d also matches digits from other writing systems. [0-9] matches only 0 to 9 in every Power Fx host, which is usually what a code or quantity needs."
       }
     ]
   }

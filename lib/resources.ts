@@ -516,7 +516,7 @@ a+         not a++        no possessive quantifiers
         commonMistakes: ["Mixing named and numbered submatches in one pattern. Power Fx 1.0 doesn't allow it.", "Relying on ( ) groups being captured. Under Power Fx 1.0, plain groups only capture with MatchOptions.NumberedSubMatches."]
       }
     ],
-    relatedPatterns: ["sharepoint-column-list-validation-formulas"],
+    relatedPatterns: ["validate-power-apps-form-with-ismatch", "sharepoint-column-list-validation-formulas"],
     relatedTools: ["power-fx-regex-tester"],
     faqs: [
       {
@@ -1713,7 +1713,7 @@ If(IsMatch(txtRequestId.Text, "REQ-\\d{5}"), DisplayMode.Edit, DisplayMode.Disab
         commonMistakes: ["Testing the result with IsBlank. MatchAll returns an empty table when nothing matches, so use IsEmpty."]
       }
     ],
-    relatedPatterns: ["sharepoint-column-list-validation-formulas"],
+    relatedPatterns: ["validate-power-apps-form-with-ismatch", "sharepoint-column-list-validation-formulas"],
     relatedTools: ["power-fx-formatter", "excel-to-power-fx"],
     faqs: [
       {
