@@ -16,8 +16,8 @@ import { sharePointGalleryGuide } from "./powerfx-guides-3";
 import { chooseDataSourceGuide, firstCanvasAppGuide, shareAppGuide } from "./basics-guides";
 import { firstFlowGuide, modelDrivenVsCanvasGuide } from "./basics-guides-2";
 import { dataverseDelegationGuide, excelDelegationGuide, sharePointDelegationGuide, sqlDelegationGuide } from "./delegation-guides";
-import { connectionReferencesEnvironmentVariablesGuide } from "./alm-guides";
-import { galleryToolsWorkedExample } from "./worked-example-guides";
+import { connectionReferencesEnvironmentVariablesGuide, managedVsUnmanagedGuide } from "./alm-guides";
+import { galleryToolsWorkedExample, patchToolsWorkedExample, reminderFlowWorkedExample } from "./worked-example-guides";
 import type { Guide } from "./types";
 
 export type { Guide, GuideBlock, GuideLink, GuideSection } from "./types";
@@ -47,6 +47,8 @@ export const guides: Guide[] = [
   findRecordsGuide,
   sharePointGalleryGuide,
   galleryToolsWorkedExample,
+  patchToolsWorkedExample,
+  reminderFlowWorkedExample,
   forAllGuide,
   appStartGuide,
   textFormatGuide,
@@ -65,6 +67,7 @@ export const guides: Guide[] = [
   flowLimitsGuide,
   flowHandoverGuide,
   connectionReferencesEnvironmentVariablesGuide,
+  managedVsUnmanagedGuide,
   sharePointQuickStartGuide,
   outlookQuickStartGuide,
   teamsQuickStartGuide,

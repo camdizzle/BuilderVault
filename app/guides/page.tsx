@@ -6,7 +6,7 @@ import { getResourceBySlug, type ResourceItem } from "@/lib/resources";
 
 export const metadata = {
   title: "Power Fx and Power Automate How-To Guides | BuilderVault",
-  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, handing over flows when someone leaves, connection references and environment variables, and quick starts for SharePoint, Outlook, Outlook calendar, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals, HTTP, SQL Server and custom connectors.",
+  description: "Step-by-step guides for Power Apps formulas and Power Automate flows: formula errors, delegation, formatting, Filter Query, trigger conditions, Parse JSON, expressions, flow limits, troubleshooting failed runs, variables, named formulas, saving data, error handling, handing over flows when someone leaves, connection references and environment variables, managed and unmanaged solutions, worked examples with the free tools, and quick starts for SharePoint, Outlook, Outlook calendar, Teams, Excel, Forms, Dataverse, OneDrive, Planner, Approvals, HTTP, SQL Server and custom connectors.",
   alternates: { canonical: "/guides" }
 };
 
@@ -35,6 +35,11 @@ const groups = [
     eyebrow: "Power Automate how-to",
     title: "Power Automate flow guides",
     text: "Filter data, control triggers, read expressions, check limits and troubleshoot failed runs."
+  },
+  {
+    eyebrow: "Worked examples",
+    title: "Worked examples with the free tools",
+    text: "One real task from start to finish, using two or three tools together, including the mistake a later change usually introduces and how the tools catch it."
   },
   {
     eyebrow: "ALM and deployment",

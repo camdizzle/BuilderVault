@@ -175,3 +175,127 @@ pac solution import --path ./Requests_managed.zip --settings-file ./deploymentSe
     learnDoc("power-platform/alm/conn-ref-env-variables-build-tools", "Pre-populate connection references and environment variables")
   ]
 };
+
+// Checked against Microsoft's "Solution concepts", "Solution layers" and "Create and update solutions"
+// ALM pages on 2026-11-28.
+
+export const managedVsUnmanagedGuide: Guide = {
+  slug: "power-platform-managed-vs-unmanaged-solutions",
+  title: "Managed vs unmanaged solutions: which to use where, and how to ship updates",
+  shortTitle: "Managed vs unmanaged solutions",
+  description: "When to use an unmanaged or a managed solution, why production should only get managed ones, how layers decide what runs, the difference between upgrade, update and patch, and what deleting a managed solution removes.",
+  eyebrow: "ALM and deployment",
+  keywords: [
+    "managed vs unmanaged solution",
+    "Power Platform managed solution",
+    "unmanaged solution production",
+    "solution upgrade vs update vs patch",
+    "solution layers unmanaged layer"
+  ],
+  published,
+  updated: published,
+  quickAnswer: "Build in an unmanaged solution in a development environment, export it as managed, and import the managed copy into test and production. A managed solution can't be edited or exported where it is installed, so production can only change through a new import. Ship changes as an upgrade, which also removes components you deleted. Don't edit managed components in production: the change goes into an unmanaged layer on top that overrides every later release.",
+  sections: [
+    section(
+      "the-difference",
+      "The difference in one table",
+      table(
+        ["", "Unmanaged", "Managed"],
+        ["Where it belongs", "The development environment", "Test, user acceptance and production"],
+        ["Can you edit its components?", "Yes", "No. You add a component to an unmanaged solution to change it, which leaves an unmanaged change on top"],
+        ["Can you export it?", "Yes, as unmanaged or as managed", "No"],
+        ["Deleting it", "Removes only the solution. Its components stay in the environment", "Removes its components, and the data in its custom tables and columns"],
+        ["Keep in source control?", "Yes. It is the source of truth", "Treat it as a build output, made by exporting the unmanaged solution as managed"]
+      ),
+      p("You can't import a managed solution into the environment that holds the unmanaged original, so testing the managed version always needs a second environment.")
+    ),
+    section(
+      "the-rule",
+      "The rule that saves most trouble",
+      ol(
+        "Create your own **publisher** and prefix before you build anything, and use one publisher for the whole app. The prefix becomes part of every table and column name and can't be changed on components that already exist.",
+        "Build everything inside one unmanaged solution in development.",
+        "Export it as **managed** for every other environment. Keep the unmanaged export in source control.",
+        "Import the managed solution into test, then production, with the same file.",
+        "Make every change in development and ship it again. Never fix things directly in production."
+      ),
+      tool("dataverse-table-naming-helper", "See the schema and logical names your publisher prefix gives tables and columns, before you create them.")
+    ),
+    section(
+      "layers",
+      "Layers: why an edit in production sticks",
+      p("Each component in an environment has a stack of layers. Every managed solution that touches it adds a managed layer, the most recently installed on top. Above all of them sits one **unmanaged layer**, which holds every unmanaged change, including edits made by hand in that environment."),
+      p("For most components the top layer wins. Only model-driven apps, forms and site maps are merged across layers. So if someone edits a managed flow or column in production, that unmanaged change sits on top and keeps winning, even after you import a newer managed version underneath it. The edit also creates a dependency that stops the managed solution being uninstalled."),
+      ul(
+        "To find these, open a component in the solution and choose **See solution layers**. An unmanaged layer at the top in production is a change made outside your release process.",
+        "Remove the unmanaged layer there to let the managed version take effect again, after copying anything worth keeping back into development.",
+        "Use managed properties to stop certain components being customized in production at all."
+      ),
+      tool("solution-layering-checklist-generator", "Pick what your release contains and get a checklist that includes looking for unmanaged layers before and after the import.")
+    ),
+    section(
+      "updates",
+      "Shipping a change: upgrade, update or patch",
+      p("When you import a newer version of a managed solution that is already installed, the import offers these options:"),
+      table(
+        ["Option", "What it does", "Use it when"],
+        ["Upgrade", "Replaces the old version. Components you removed in development are deleted", "Almost always. It keeps production matching development"],
+        ["Stage for upgrade", "Imports the new version alongside the old, so you can migrate data before choosing **Apply upgrade**", "You removed a table or column and need to move its data first"],
+        ["Update", "Replaces the old version but never deletes components", "You want to keep something you removed in development, for now"],
+        ["Patch", "A small add-on to a parent solution that can add or change components but not delete them", "Rarely. Microsoft doesn't recommend patches, because they lock the parent solution and complicate source control"]
+      ),
+      p("Raise the version number in development before each export, so each import is clearly newer. For automated imports, set connection references and environment variable values in a [deployment settings file](/guides/power-platform-connection-references-environment-variables).")
+    ),
+    section(
+      "deleting",
+      "Before you delete a managed solution",
+      note("Deleting (uninstalling) a managed solution removes its custom tables and the custom columns it added to other tables, with all the data in them. Export the data first if there is any chance you need it."),
+      p("Deleting is also blocked while anything depends on the solution, such as another solution built on top of it or an unmanaged change to one of its components. Remove those first, starting with the solution installed last.")
+    ),
+    section(
+      "errors",
+      "Errors you'll meet",
+      table(
+        ["Message", "What it means"],
+        ["[The solution is already installed as a managed solution](/errors/solution-already-installed-as-managed-solution-unmanaged-mode)", "You tried to import the unmanaged version where the managed one is installed"],
+        ["[A holding solution for an upgrade exists](/errors/holding-solution-upgrade-exists-cannot-update-solution)", "A staged upgrade is waiting. Apply or delete it before importing again"],
+        ["[Import failed due to missing dependencies](/errors/import-failed-due-to-missing-dependencies)", "The solution needs a component or solution the target doesn't have"],
+        ["[The solution can't be deleted due to dependencies](/errors/solution-cannot-be-deleted-due-to-dependencies)", "Something else still uses a component in it"]
+      )
+    )
+  ],
+  faqs: [
+    {
+      question: "Should I import unmanaged solutions into production?",
+      answer: "No. An unmanaged solution in production can be edited by anyone with access, its components stay behind when it is deleted, and its changes sit in the unmanaged layer on top of everything. Import managed solutions into every environment except development."
+    },
+    {
+      question: "Can I edit a managed solution?",
+      answer: "Not directly. To change a managed component you add it to an unmanaged solution, which creates an unmanaged layer on top that overrides later managed imports. Make the change in development and import a new version instead."
+    },
+    {
+      question: "What is the difference between upgrade and update when importing a solution?",
+      answer: "Both replace the installed version. An upgrade also deletes components that are no longer in the new version. An update never deletes anything, so removed components stay in the environment."
+    },
+    {
+      question: "Can I convert a managed solution back to unmanaged?",
+      answer: "No. A managed solution can't be exported. Keep the unmanaged version in your development environment and in source control, because it is the only copy you can change."
+    }
+  ],
+  relatedTools: ["solution-layering-checklist-generator", "deployment-settings-generator", "dataverse-table-naming-helper"],
+  relatedPatterns: [
+    "export-import-managed-solution-pac-cli",
+    "solution-upgrade-update-patch-difference",
+    "solution-publisher-prefix-naming-standard",
+    "power-platform-pipelines-dev-test-prod"
+  ],
+  relatedLinks: [
+    { href: "/guides/power-platform-connection-references-environment-variables", label: "Connection references and environment variables" },
+    { href: "/alm/solutions", label: "Solution and deployment patterns" }
+  ],
+  sources: [
+    learnDoc("power-platform/alm/solution-concepts-alm", "Solution concepts"),
+    learnDoc("power-platform/alm/solution-layers-alm", "Solution layers"),
+    learnDoc("power-platform/alm/update-solutions-alm", "Create and update solutions")
+  ]
+};

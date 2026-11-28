@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { GuideCard } from "@/components/guides/guide-card";
 import { ResourceCard } from "@/components/resources/resource-card";
+import { guides } from "@/lib/guides";
 import { exampleGuides } from "@/lib/example-guides";
 import { cookbooks, cheatSheets, tools } from "@/lib/resources";
 
@@ -28,6 +30,16 @@ export default function ExamplesPage() {
             </Link>
           ))}
         </div>
+        <section style={{ display: "grid", gap: 18 }}>
+          <div>
+            <div className="eyebrow">Step by step with the free tools</div>
+            <h2 className="section-title">Follow one task from start to finish.</h2>
+            <p style={{ color: "#415049", lineHeight: 1.7, margin: "8px 0 0" }}>Each walk-through uses two or three tools together on a real task, including the mistake a later change usually brings in and how to catch it.</p>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+            {guides.filter((guide) => guide.eyebrow === "Worked examples").map((guide) => <GuideCard guide={guide} key={guide.slug} />)}
+          </div>
+        </section>
         <section style={{ display: "grid", gap: 18 }}>
           <div>
             <div className="eyebrow">Related resources</div>
