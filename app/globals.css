@@ -1078,3 +1078,81 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Tool pages: compact header so the tool starts near the top of the screen. */
+.tool-header {
+  display: grid;
+  gap: 10px;
+}
+
+.tool-breadcrumb {
+  align-items: center;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.tool-breadcrumb a {
+  color: var(--accent-strong);
+}
+
+.tool-breadcrumb span {
+  color: var(--muted);
+}
+
+.tool-header-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+}
+
+.tool-glyph {
+  align-items: center;
+  background: var(--tool-bg, var(--accent-soft));
+  border-radius: 10px;
+  color: var(--tool-color, var(--accent-strong));
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 900;
+  height: 48px;
+  justify-content: center;
+  margin-top: 4px;
+  width: 48px;
+}
+
+.tool-title {
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  line-height: 1.1;
+  margin: 0 0 6px;
+}
+
+.tool-lead {
+  color: #44514b;
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 900px;
+}
+
+.tool-instructions {
+  color: #415049;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .tool-glyph {
+    display: none;
+  }
+
+  .tool-lead {
+    font-size: 0.95rem;
+  }
+
+  .tool-panel {
+    padding: 16px;
+  }
+}

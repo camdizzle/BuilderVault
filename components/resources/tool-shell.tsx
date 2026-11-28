@@ -11,11 +11,10 @@ export function Toggle({ label, checked, onChange }: { label: string; checked: b
 
 export function ToolShell({ children, title, description }: { children: ReactNode; title: string; description: string }) {
   return (
-    <section className="tool-panel">
+    <section aria-label={title} className="tool-panel">
       <div>
-        <div className="eyebrow">Interactive tool</div>
-        <h2 className="section-title" style={{ fontSize: "1.8rem" }}>{title}</h2>
-        <p style={{ color: "#415049", lineHeight: 1.7, marginBottom: 0 }}>{description}</p>
+        <h2 className="sr-only">{title}</h2>
+        <p className="tool-instructions">{description}</p>
       </div>
       {children}
     </section>
