@@ -444,3 +444,279 @@ Body:    Your request was due on @{formatDateTime(items('Apply_to_each')?['DueDa
     automateDoc("run-scheduled-tasks", "Run flows on a schedule")
   ]
 };
+
+// Trigger condition and Parse JSON example. The conditions, schema and expressions below are what
+// lib/tools/trigger-condition.ts and lib/tools/json-schema.ts produce for these inputs.
+
+const assetSample = `{
+  "assetTag": "AT-10442",
+  "model": "Latitude 7450",
+  "serial": null,
+  "assignedTo": { "email": "sam.lee@contoso.com", "name": "Sam Lee" },
+  "issuedOn": "2026-11-28"
+}`;
+
+export const triggerParseJsonWorkedExample: Guide = {
+  slug: "worked-example-trigger-condition-parse-json-asset-tag-flow",
+  title: "Worked example: a flow that runs once per approval and reads an API reply safely",
+  shortTitle: "Trigger conditions and Parse JSON, worked example",
+  description: "Build an asset tag flow that only starts when a request is approved, doesn't trigger itself when it updates the item, and reads the asset system's JSON reply without failing on empty fields, using the trigger condition builder and the Parse JSON schema generator.",
+  eyebrow: "Worked examples",
+  keywords: [
+    "Power Automate trigger condition example",
+    "trigger condition SharePoint choice column",
+    "Power Automate infinite loop trigger condition",
+    "Parse JSON schema null",
+    "Parse JSON Expected String but got Null",
+    "Power Automate asset tag flow"
+  ],
+  published,
+  updated: published,
+  quickAnswer: "Put the rules in the trigger, not in a Condition action: Status equals Approved, AssetTagIssued is false, and the item wasn't last changed by the flow's own account. The trigger condition builder writes those as one expression. Then generate the Parse JSON schema from a real reply with null allowed on every property, so a reply with an empty field doesn't fail the run.",
+  sections: [
+    section(
+      "scenario",
+      "The flow",
+      p("IT keeps equipment requests in a SharePoint list, Equipment Requests. When a request's **Status** becomes Approved, a flow asks the asset system for a new asset tag, writes the tag back to the item and ticks **AssetTagIssued**."),
+      p("Built the obvious way, with **When an item is created or modified** and a Condition action, this flow has two problems. It runs on every edit to every request, and the **Update item** at the end changes the item, which starts the flow again. The Condition stops the second run from doing anything, but it still runs, and every run counts towards your Power Automate limits."),
+      table(
+        ["Column", "Type", "Internal name"],
+        ["Status", "Choice", "Status"],
+        ["Asset tag issued", "Yes/No", "AssetTagIssued"],
+        ["Asset tag", "Single line of text", "AssetTag"]
+      ),
+      note("Trigger conditions use internal names. If a column was created with a space, its internal name has _x0020_ in it. Check it with the [SharePoint internal name helper](/tools/sharepoint-internal-name-helper).")
+    ),
+    section(
+      "condition",
+      "Step 1: Build the trigger condition",
+      p("In the [trigger condition builder](/tools/trigger-condition-builder), choose **SharePoint**, keep **All rules match (and)**, and add two rules:"),
+      table(
+        ["Column", "Type", "Operator", "Value"],
+        ["`Status`", "Choice", "equals", "Approved"],
+        ["`AssetTagIssued`", "Yes/No", "is No", ""]
+      ),
+      p("Turn on **Ignore changes made by the flow's own account** and enter the flow's service account, `svc-flows@contoso.com`. That is the account behind the flow's SharePoint connection, so it is the one recorded as **Modified By** when the flow updates the item. The builder gives one condition for a single box:"),
+      code(`@and(equals(triggerOutputs()?['body/Status/Value'], 'Approved'), not(equals(triggerOutputs()?['body/AssetTagIssued'], true)), not(equals(toLower(coalesce(triggerOutputs()?['body/Editor/Email'], '')), 'svc-flows@contoso.com')))`, "One trigger condition"),
+      p("And the same rules split into three, one per box, which is easier to read later:"),
+      code(`@equals(triggerOutputs()?['body/Status/Value'], 'Approved')
+@not(equals(triggerOutputs()?['body/AssetTagIssued'], true))
+@not(equals(toLower(coalesce(triggerOutputs()?['body/Editor/Email'], '')), 'svc-flows@contoso.com'))`, "Three trigger conditions"),
+      ul(
+        "**`Status/Value`**: a choice column arrives as a record, so the label is in `Value`. Comparing `body/Status` to 'Approved' is never true.",
+        "**`not(equals(..., true))`** rather than `equals(..., false)`: an item created before the column existed has no value at all, and this form treats that as not issued.",
+        "**The loop guard** stops the flow's own update from starting it again, whatever else the item looks like. With AssetTagIssued it is a second lock: either one on its own would stop the loop."
+      ),
+      p("Paste them into the trigger's **Settings**, **Trigger conditions**. Several boxes must all be true for the flow to run, so three boxes behave the same as the single combined condition."),
+      tool("trigger-condition-builder", "Choose SharePoint or Dataverse, add rules by column type, and copy one condition or one per box, with an optional loop guard for the flow's own account.")
+    ),
+    section(
+      "parse-json",
+      "Step 2: Read the asset system's reply",
+      p("The flow calls the asset system with the **HTTP** action, which needs a Premium licence, and gets this reply for a laptop that hasn't been serialised yet:"),
+      code(assetSample, "Reply body"),
+      p("**Generate from sample** in Parse JSON types each property from this one reply, so `model` and `assetTag` become plain strings. The next reply with an empty model then fails with `Invalid type. Expected String but got Null`. In the [Parse JSON schema generator](/tools/parse-json-schema-generator), paste the reply and turn on **Allow null on every property**:"),
+      code(`{
+  "type": "object",
+  "properties": {
+    "assetTag": { "type": ["string", "null"] },
+    "model": { "type": ["string", "null"] },
+    "serial": {},
+    "assignedTo": {
+      "type": ["object", "null"],
+      "properties": {
+        "email": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+    "issuedOn": { "type": ["string", "null"] }
+  }
+}`, "Parse JSON schema"),
+      p("`serial` is `{}` because the sample only ever had null in it, so the generator can't tell its type and accepts anything. The tool says so in its notes. Paste a reply that has a serial number if you have one, to get a typed schema, or leave it as it is."),
+      p("The generator also gives the expressions for reading each value. Use them in **Update item**:"),
+      table(
+        ["Update item field", "Expression"],
+        ["Asset tag", "`body('Parse_JSON')?['assetTag']`"],
+        ["Asset tag issued", "Yes"],
+        ["Assigned to (email)", "`body('Parse_JSON')?['assignedTo']?['email']`"]
+      ),
+      p("The `?` before each `[` returns null instead of failing when a property is missing, which matches the schema that allows null."),
+      tool("parse-json-schema-generator", "Paste a sample reply to get a schema that accepts null, the paths that were only ever null, and copy-ready expressions for each value.")
+    ),
+    section(
+      "check",
+      "Step 3: Check it",
+      ol(
+        "Edit a request that is Draft. The flow doesn't run, and there is no run in its history.",
+        "Set a request to Approved. One run starts, writes the asset tag, and ticks AssetTagIssued.",
+        "Check that no second run started after the Update item. If one did, the guard's email doesn't match the account on the flow's SharePoint connection.",
+        "Approve a request for a device with no model in the asset system. The run should still succeed, with an empty model."
+      ),
+      note("A trigger condition with a mistake in it, such as a misspelt column, is simply never true, so the flow never runs and shows no error. If nothing happens after step 2, paste one rule at a time to find the one that is wrong.")
+    )
+  ],
+  faqs: [
+    {
+      question: "How do I stop a Power Automate flow from triggering itself when it updates the item?",
+      answer: "Add a trigger condition that ignores changes made by the flow's own account, such as @not(equals(toLower(coalesce(triggerOutputs()?['body/Editor/Email'], '')), 'svc-flows@contoso.com')). Use the account behind the flow's SharePoint connection. A column the flow sets, such as AssetTagIssued, gives a second check."
+    },
+    {
+      question: "How do I write a trigger condition for a SharePoint choice column?",
+      answer: "Compare the Value inside the choice: @equals(triggerOutputs()?['body/Status/Value'], 'Approved'). Use the column's internal name, not its display name."
+    },
+    {
+      question: "How do I fix Expected String but got Null in Parse JSON?",
+      answer: "Change the property's type in the schema to [\"string\", \"null\"] so it accepts an empty value. The Parse JSON schema generator can do this for every property at once."
+    }
+  ],
+  relatedTools: ["trigger-condition-builder", "parse-json-schema-generator", "sharepoint-internal-name-helper"],
+  relatedPatterns: ["power-automate-trigger-condition-status-changed", "power-automate-avoid-infinite-update-loop"],
+  relatedLinks: [
+    { href: "/guides/power-automate-trigger-conditions-guide", label: "Trigger conditions guide" },
+    { href: "/guides/power-automate-parse-json-guide", label: "Parse JSON guide" },
+    { href: "/errors/parse-json-schema-validation-failed-expected-string-got-null", label: "Fix: Expected String but got Null" }
+  ],
+  sources: [
+    automateDoc("triggers-introduction", "Get started with triggers"),
+    learnDoc("azure/logic-apps/workflow-definition-language-functions-reference", "Reference guide to workflow expression functions")
+  ]
+};
+
+// Excel to Power Fx and named formulas example. The translations, delegation finding and
+// App.Formulas output below are what lib/tools/excel-to-power-fx.ts, lib/tools/delegation-check.ts
+// and lib/tools/named-formulas.ts produce for these inputs.
+
+const onStartBefore = `Set(varTaxRate, 0.2);
+Set(varCurrentUser, User());
+ClearCollect(colDepartments, Departments);
+Set(varIsAdmin, !IsBlank(LookUp(Admins, Email = User().Email)));
+Navigate(If(varIsAdmin, scrAdmin, scrHome))`;
+
+export const excelNamedFormulasWorkedExample: Guide = {
+  slug: "worked-example-excel-to-power-fx-named-formulas",
+  title: "Worked example: move a spreadsheet's formulas into a Power App, and its setup out of OnStart",
+  shortTitle: "Excel to Power Fx and named formulas, worked example",
+  description: "Take the formulas from an Excel request tracker, translate them to Power Fx with the Excel to Power Fx converter, catch the one that won't scale with the delegation checker, then move the app's setup from OnStart to named formulas and StartScreen.",
+  eyebrow: "Worked examples",
+  keywords: [
+    "Excel formula to Power Apps",
+    "convert Excel formula to Power Fx",
+    "VLOOKUP in Power Apps",
+    "SUMIF in Power Apps",
+    "OnStart to named formulas",
+    "Power Apps StartScreen instead of Navigate"
+  ],
+  published,
+  updated: published,
+  quickAnswer: "Translate each Excel formula with the converter and map cell references to columns, such as D2 to ThisItem.DueDate. Then replace the converter's placeholder table and column names with your own, and run anything that totals a whole column through the delegation checker. Finally, move settings and lookups from App.OnStart to App.Formulas, and replace Navigate in OnStart with App.StartScreen, which can read named formulas but not variables.",
+  sections: [
+    section(
+      "scenario",
+      "The spreadsheet",
+      p("A team tracks purchase requests in Excel and is moving them to a SharePoint list, Requests, with a canvas app on top. The sheet has one row per request and a tax rate in cell H1:"),
+      table(
+        ["Column", "Holds", "SharePoint column"],
+        ["B", "Category", "Category (text)"],
+        ["C", "Status", "Status (choice)"],
+        ["D", "Due date", "DueDate (date)"],
+        ["E", "Cost", "Cost (number)"],
+        ["H1", "Tax rate, 0.2", "None. It becomes a named formula"]
+      ),
+      p("A separate sheet, Categories, lists each category with its approver in column C. That becomes a second SharePoint list, Categories, with the columns Name and Approver.")
+    ),
+    section(
+      "translate",
+      "Step 1: Translate the formulas",
+      p("Paste each formula into the [Excel to Power Fx converter](/tools/excel-to-power-fx). In the reference map, say what each cell becomes, one per line, such as `D2 = ThisItem.DueDate`. In a gallery or a form, the current row is `ThisItem`."),
+      table(
+        ["Excel", "Reference map", "Power Fx"],
+        ["`=IF(D2<TODAY(),TODAY()-D2,0)`", "`D2 = ThisItem.DueDate`", "`If(ThisItem.DueDate < Today(), Today() - ThisItem.DueDate, 0)`"],
+        ["`=IFERROR(E2*(1+$H$1),0)`", "`E2 = ThisItem.Cost`, `H1 = varTaxRate`", "`IfError(ThisItem.Cost * (1 + varTaxRate), 0)`"],
+        ["`=VLOOKUP(B2,Categories!A:C,3,FALSE)`", "`B2 = ThisItem.Category`", "`LookUp(YourTable, KeyColumn = ThisItem.Category, ResultColumn)`"],
+        ["`=SUMIF(C:C,\"Open\",E:E)`", "None", "`Sum(Filter(YourTable, CriteriaColumn = \"Open\"), ValueColumn)`"]
+      ),
+      p("The first two are ready to use. For the last two the converter can't know your table, so it uses placeholder names and says so in its notes. Replace them:"),
+      code(`// Approver for this row's category
+LookUp(Categories, Name = ThisItem.Category, Approver)
+
+// Total cost of open requests. Status is a choice column, so compare its Value
+Sum(Filter(Requests, Status.Value = "Open"), Cost)`, "With your own names"),
+      p("LookUp always matches exactly, which is what `FALSE` meant in the VLOOKUP, and it returns the whole value from the column you name instead of a column number."),
+      p("The days overdue formula works, but Microsoft recommends against subtracting dates directly, because time zones can give odd results. DateDiff says what it means and counts whole days:"),
+      code(`If(
+    ThisItem.DueDate < Today(),
+    DateDiff(ThisItem.DueDate, Today(), TimeUnit.Days),
+    0
+)`, "Days overdue"),
+      tool("excel-to-power-fx", "Paste an Excel formula and a map from cells to columns to get the Power Fx version, with notes on anything you still need to replace.")
+    ),
+    section(
+      "delegation",
+      "Step 2: Check the total",
+      p("A spreadsheet adds up every row. An app only does that when the data source can do the work. Paste the total into the [delegation checker](/tools/power-apps-delegation-checker) with SharePoint selected:"),
+      table(
+        ["Part", "Result"],
+        ["`Filter`", "Delegated"],
+        ["`Sum`", "Problem: Sum is not delegated to SharePoint list. It only totals the rows the app loaded, 500 by default and at most 2,000, and ignores the rest without an error."]
+      ),
+      p("The checker's fix is to keep a running total in a column, or total a filtered set that is known to be small. Open requests are usually a short list, so this total is fine while it stays under the app's data row limit. A year-to-date total of every request isn't, and belongs in a flow that writes the total to a column or a summary list."),
+      tool("power-apps-delegation-checker", "Paste a formula and pick SharePoint, Dataverse or SQL Server to see which parts are sent to the data source and which only see the first rows.")
+    ),
+    section(
+      "named-formulas",
+      "Step 3: Move the setup out of OnStart",
+      p("The tax rate in H1 needs a home in the app. The app already has an OnStart that sets it along with a few other things:"),
+      code(onStartBefore, "App.OnStart before"),
+      p("Paste it into the [OnStart to named formulas converter](/tools/onstart-to-named-formulas) with **Also convert ClearCollect of data that never changes** on, since the departments list doesn't change while the app runs. Four statements move to **App.Formulas**:"),
+      code(`varTaxRate = 0.2;
+varCurrentUser = User();
+colDepartments = Departments;
+varIsAdmin = !IsBlank(LookUp(Admins, Email = User().Email));`, "App.Formulas"),
+      p("The converter keeps `Navigate(If(varIsAdmin, scrAdmin, scrHome))` in OnStart, because Navigate is an action and actions stay there. Its notes say two more things to check before you switch:"),
+      ul(
+        "Search the app for `Set(varTaxRate` and the other names. If any of them is set, collected into or patched anywhere else, leave that one in OnStart.",
+        "Collections that become named formulas are read-only. If a screen adds to `colDepartments` with Collect, keep it as a collection."
+      ),
+      p("The names keep their `var` and `col` prefixes, so every formula that uses them still works without changes.")
+    ),
+    section(
+      "start-screen",
+      "Step 4: Replace Navigate with StartScreen",
+      p("Navigate in OnStart is retired, and it makes the app wait for all of OnStart before it shows anything. Set the first screen with **App.StartScreen** instead:"),
+      code(`If(varIsAdmin, scrAdmin, scrHome)`, "App.StartScreen"),
+      p("This only works because step 3 made `varIsAdmin` a named formula. StartScreen can't read global variables or collections, even ones set in OnStart, but it can read named formulas."),
+      p("OnStart is now empty, and the app shows its first screen without waiting for it. Named formulas are worked out when they are first needed, so the Admins lookup runs when StartScreen asks for it, and `colDepartments` loads when a screen first shows it."),
+      p("To test it in Studio, hover over **App** in the Tree view, select **...**, and choose **Navigate to StartScreen**.")
+    )
+  ],
+  faqs: [
+    {
+      question: "How do I convert a VLOOKUP to Power Apps?",
+      answer: "Use LookUp(Table, KeyColumn = Value, ResultColumn). For =VLOOKUP(B2,Categories!A:C,3,FALSE) in a gallery that is LookUp(Categories, Name = ThisItem.Category, Approver). LookUp always matches exactly."
+    },
+    {
+      question: "How do I write SUMIF in Power Apps?",
+      answer: "Use Sum(Filter(Table, Condition), Column), such as Sum(Filter(Requests, Status.Value = \"Open\"), Cost). On a SharePoint list Sum isn't delegated, so it only totals the rows the app loaded."
+    },
+    {
+      question: "Why can't StartScreen see my variable?",
+      answer: "StartScreen can't read global variables or collections, including ones set in OnStart. Make the value a named formula in App.Formulas, which StartScreen can read."
+    },
+    {
+      question: "Should I use Navigate in OnStart?",
+      answer: "No. Using Navigate in OnStart is retired and delays the first screen. Put the screen choice in App.StartScreen instead."
+    }
+  ],
+  relatedTools: ["excel-to-power-fx", "power-apps-delegation-checker", "onstart-to-named-formulas"],
+  relatedPatterns: ["power-apps-deep-link-open-record-param", "power-apps-user-defined-functions-reuse-logic"],
+  relatedLinks: [
+    { href: "/guides/power-fx-named-formulas-explained", label: "Named formulas explained" },
+    { href: "/guides/power-apps-faster-app-start-concurrent-onstart", label: "Make an app start faster" },
+    { href: "/guides/power-apps-delegation-warning-explained", label: "Delegation warnings explained" }
+  ],
+  sources: [
+    powerFxDoc("reference/object-app", "App object: Formulas, OnStart and StartScreen"),
+    powerFxDoc("reference/function-dateadd-datediff", "DateAdd, DateDiff and TimeZoneOffset functions"),
+    powerFxDoc("reference/operators", "Operators and identifiers")
+  ]
+};

@@ -3872,6 +3872,16 @@
         "question": "Does a trigger condition save flow runs?",
         "answer": "Yes. When the condition is false the flow does not start, so nothing appears in run history and no run is counted."
       }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/tools/trigger-condition-builder",
+        "label": "Trigger condition builder"
+      },
+      {
+        "href": "/guides/worked-example-trigger-condition-parse-json-asset-tag-flow",
+        "label": "Worked example: trigger condition with a loop guard"
+      }
     ]
   },
   {
@@ -4359,6 +4369,16 @@
       {
         "question": "Can I update a SharePoint item without triggering flows?",
         "answer": "A system update through validateUpdateListItem avoids a new version and Modified change, but it is safest to pair it with a trigger condition."
+      }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/tools/trigger-condition-builder",
+        "label": "Trigger condition builder"
+      },
+      {
+        "href": "/guides/worked-example-trigger-condition-parse-json-asset-tag-flow",
+        "label": "Worked example: trigger condition with a loop guard"
       }
     ]
   },
@@ -6177,6 +6197,12 @@
       {
         "question": "Does the pipeline deploy managed solutions?",
         "answer": "Yes. It exports from development and imports the solution as managed into each target stage."
+      }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/guides/power-platform-pipelines-guide",
+        "label": "Power Platform pipelines guide"
       }
     ]
   },
@@ -12484,6 +12510,12 @@
       {
         "question": "What is delegated deployment?",
         "answer": "A stage setting that runs the deployment as a service principal or the stage owner, so makers do not need rights in production."
+      }
+    ],
+    "relatedLinks": [
+      {
+        "href": "/guides/power-platform-pipelines-guide",
+        "label": "Power Platform pipelines guide"
       }
     ]
   },
@@ -18986,6 +19018,7 @@
     ],
     "relatedPatterns": [
       "validate-required-fields-before-patch",
+      "extract-text-with-match-matchall-power-apps",
       "sharepoint-column-list-validation-formulas",
       "power-pages-basic-form-javascript-validation"
     ],
@@ -18997,6 +19030,10 @@
       {
         "href": "/cheat-sheets/power-fx-regex-cheat-sheet",
         "label": "Power Fx regex cheat sheet"
+      },
+      {
+        "href": "/functions/ismatch",
+        "label": "IsMatch, Match and MatchAll reference"
       }
     ],
     "createdAt": "2026-11-28",
@@ -19027,6 +19064,106 @@
       {
         "question": "Why use [0-9] instead of \\d?",
         "answer": "In the current Power Fx rules, \\d also matches digits from other writing systems. [0-9] matches only 0 to 9 in every Power Fx host, which is usually what a code or quantity needs."
+      }
+    ]
+  },
+  {
+    "id": "pat-1666",
+    "slug": "extract-text-with-match-matchall-power-apps",
+    "title": "Extract values from text with Match and MatchAll",
+    "shortDescription": "Pull a request number, a name and email, or every ID mentioned in a notes field out of free text, with named submatches and a check for no match.",
+    "fullDescription": "Match returns the first place a pattern fits as a record, and MatchAll returns every place as a table. Named submatches turn the parts you care about into columns, so a subject line, a sender line or a notes field becomes values the app can use.",
+    "category": "Power Apps",
+    "subCategory": "Text handling",
+    "platform": [
+      "Power Apps"
+    ],
+    "difficulty": "Intermediate",
+    "tags": [
+      "Match",
+      "MatchAll",
+      "Regular Expressions",
+      "Text",
+      "Named Submatches"
+    ],
+    "isPremium": false,
+    "estimatedTimeSaved": "40 minutes",
+    "problemStatement": "Useful values arrive buried in text: a request number in an email subject, a name and address in one line, several IDs in a notes field. Left, Mid and Find break as soon as the text shifts by one character.",
+    "whenToUse": [
+      "Text that follows a recognisable shape, such as REQ-00042, an email address or an amount",
+      "Reading several parts of one line at once, such as a name and an email",
+      "Finding every occurrence of something in a longer text"
+    ],
+    "whenNotToUse": [
+      "Splitting text on a fixed separator such as a comma. Split is simpler and faster",
+      "Searching a large data source. Match and MatchAll aren't delegated, so use them on text already in the app",
+      "Parsing JSON. Use ParseJSON instead"
+    ],
+    "formulaOrCode": "// 1. One value: the request number in a subject such as \"RE: [REQ-00042] New laptop\".\n//    Match returns blank when there is no match, so check before reading .id.\nWith(\n    { m: Match(txtSubject.Text, \"\\[(?<id>REQ-[0-9]{5})\\]\") },\n    If(IsBlank(m), \"\", m.id)\n)\n\n// 2. Several parts at once: \"Sam Lee <sam.lee@contoso.com>\"\nWith(\n    { m: Match(txtFrom.Text, \"(?<name>[^<]+?)\\s*<(?<email>[^>]+)>\") },\n    If(\n        IsBlank(m),\n        Notify(\"Use the form Name <email>.\", NotificationType.Warning),\n        Set(varContact, { Name: m.name, Email: Lower(m.email) })\n    )\n)\n\n// 3. Every value: all request numbers mentioned in a notes field.\n//    MatchAll returns a table, empty when nothing matches.\ngalLinkedRequests.Items:\n    MatchAll(txtNotes.Text, \"REQ-[0-9]{5}\")\n\n// Show FullMatch in the gallery, or join them into one line\nConcat(MatchAll(txtNotes.Text, \"REQ-[0-9]{5}\"), FullMatch, \", \")\n\n// How many?\nCountRows(MatchAll(txtNotes.Text, \"REQ-[0-9]{5}\"))\n\n// 4. Turn the matches into IDs you can look up (small tables only)\nForAll(\n    MatchAll(txtNotes.Text, \"REQ-(?<num>[0-9]{5})\"),\n    { RequestNumber: Value(num) }\n)\n\n// 5. A number out of free text: \"Total due: 1250.50 GBP\"\nValue(Match(txtInvoiceLine.Text, \"(?<amount>[0-9]+(?:\\.[0-9]{2})?)\").amount)",
+    "stepByStepInstructions": [
+      "Collect three or four real examples of the text, including one that should not match.",
+      "Write the pattern in the Power Fx regex tester with Match or MatchAll selected, and paste the examples as sample text.",
+      "Name each part you want with (?<name>...), and check the named submatches the tester shows for each example.",
+      "Copy the formula into the app. Wrap a Match in With so it runs once, and check IsBlank before reading a column.",
+      "For MatchAll, check IsEmpty, or let an empty gallery show the empty state.",
+      "Convert what you read with Value, DateValue or Lower before you save it."
+    ],
+    "commonMistakes": [
+      "Reading m.id without checking IsBlank(m) first, which returns blank silently when the text has no match.",
+      "Testing MatchAll with IsBlank. It returns an empty table, not blank, so use IsEmpty.",
+      "Expecting a case-insensitive match. Add MatchOptions.IgnoreCase as the third argument if req-00042 should match.",
+      "Building the pattern from a variable or a column. The pattern must be a constant in the formula.",
+      "Naming a submatch FullMatch or StartMatch, which clashes with the columns Match already returns.",
+      "Leaving a dot unescaped in a pattern for an amount or a domain, so it matches any character."
+    ],
+    "troubleshooting": [
+      "If Match returns blank for text that looks right, paste that exact text into the regex tester. A non-breaking space or a different dash is the usual cause.",
+      "If a named submatch column is missing, check that the name starts with a letter and appears as (?<name>...) in the pattern.",
+      "If MatchAll returns overlapping or too many results, make the pattern more specific, for example by adding a word boundary \\b at each end.",
+      "If Power Apps reports that the pattern isn't valid, check the stricter Power Fx 1.0 rules in the regex tester's warnings, such as an unescaped hyphen in [ ]."
+    ],
+    "relatedPatterns": [
+      "validate-power-apps-form-with-ismatch",
+      "sharepoint-column-list-validation-formulas"
+    ],
+    "relatedLinks": [
+      {
+        "href": "/tools/power-fx-regex-tester#fn=Match&pattern=%5C%5B%28%3F%3Cid%3EREQ-%5B0-9%5D%7B5%7D%29%5C%5D",
+        "label": "Test the request number pattern in the regex tester"
+      },
+      {
+        "href": "/functions/ismatch",
+        "label": "IsMatch, Match and MatchAll reference"
+      },
+      {
+        "href": "/cheat-sheets/power-fx-regex-cheat-sheet",
+        "label": "Power Fx regex cheat sheet"
+      }
+    ],
+    "createdAt": "2026-11-28",
+    "updatedAt": "2026-11-28",
+    "seoTitle": "Extract values from text in Power Apps with Match and MatchAll",
+    "seoDescription": "Pull a request number, a name and email, or every ID in a notes field out of text in Power Apps with Match, MatchAll and named submatches, and handle text with no match.",
+    "primaryKeyword": "Power Apps Match function",
+    "secondaryKeywords": [
+      "Power Apps MatchAll",
+      "extract text Power Apps",
+      "Power Apps regex extract",
+      "named submatch Power Apps",
+      "get number from text Power Apps"
+    ],
+    "faqs": [
+      {
+        "question": "What is the difference between Match and MatchAll?",
+        "answer": "Match returns the first match as a record, or blank when there is none. MatchAll returns every match as a table, which is empty when there are none."
+      },
+      {
+        "question": "How do I read a named submatch?",
+        "answer": "Name the part with (?<name>...) in the pattern, then read it as a column: Match(txtSubject.Text, \"\\[(?<id>REQ-[0-9]{5})\\]\").id. Check the Match isn't blank first."
+      },
+      {
+        "question": "Should I use Match or Split?",
+        "answer": "Use Split when the text is cut on a fixed separator, such as a comma. Use Match when you need to find a value by its shape somewhere in the text."
       }
     ]
   }

@@ -302,6 +302,7 @@ FullName(ThisItem.FirstName, ThisItem.LastName) & ": " & DaysLeft(ThisItem.DueDa
   relatedPatterns: ["use-named-formulas-for-app-constants", "power-apps-user-defined-functions-reuse-logic", "power-apps-current-user-profile-cache", "power-apps-concurrent-load-data-faster"],
   relatedLinks: [
     { href: "/guides/power-fx-set-vs-updatecontext-vs-with", label: "Set, UpdateContext or With" },
+    { href: "/guides/worked-example-excel-to-power-fx-named-formulas", label: "Worked example: OnStart to named formulas and StartScreen" },
     { href: "/guides/power-apps-faster-app-start-concurrent-onstart", label: "Faster app start with Concurrent and App.OnStart" },
     { href: "/guides/speed-up-slow-power-fx-formulas", label: "Speed up slow Power Fx formulas" }
   ],

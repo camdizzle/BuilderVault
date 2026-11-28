@@ -83,7 +83,7 @@ parameters('Support Email (contoso_SupportEmail)')`, "Flow expression")
     section(
       "import",
       "Supply the values on import",
-      p("When you import the solution by hand, the import wizard asks for a connection for each connection reference and a value for each environment variable that has none. Variables that already have a value show where it came from, so check them rather than clicking through. Pipelines in Power Platform show the environment variable values in the same way."),
+      p("When you import the solution by hand, the import wizard asks for a connection for each connection reference and a value for each environment variable that has none. Variables that already have a value show where it came from, so check them rather than clicking through. [Pipelines in Power Platform](/guides/power-platform-pipelines-guide) show the environment variable values in the same way."),
       p("For an automated import with the Power Platform CLI or Azure DevOps, put the values in a deployment settings file instead:"),
       code(`{
   "EnvironmentVariables": [
@@ -290,6 +290,7 @@ export const managedVsUnmanagedGuide: Guide = {
     "power-platform-pipelines-dev-test-prod"
   ],
   relatedLinks: [
+    { href: "/guides/power-platform-pipelines-guide", label: "Power Platform pipelines" },
     { href: "/guides/power-platform-connection-references-environment-variables", label: "Connection references and environment variables" },
     { href: "/alm/solutions", label: "Solution and deployment patterns" }
   ],
@@ -297,5 +298,147 @@ export const managedVsUnmanagedGuide: Guide = {
     learnDoc("power-platform/alm/solution-concepts-alm", "Solution concepts"),
     learnDoc("power-platform/alm/solution-layers-alm", "Solution layers"),
     learnDoc("power-platform/alm/update-solutions-alm", "Create and update solutions")
+  ]
+};
+
+// Checked against Microsoft's "Overview of pipelines in Power Platform", "Run pipelines in Power
+// Platform" and "Set up pipelines in the platform host" pages on 2026-11-28.
+
+export const pipelinesGuide: Guide = {
+  slug: "power-platform-pipelines-guide",
+  title: "Power Platform pipelines: deploy solutions from development to production",
+  shortTitle: "Power Platform pipelines",
+  description: "What pipelines in Power Platform do, the difference between personal pipelines and a custom host, how to run a deployment, what the pipeline checks before it imports, and the limits that catch people out.",
+  eyebrow: "ALM and deployment",
+  keywords: [
+    "Power Platform pipelines",
+    "pipelines in Power Platform",
+    "deploy solution to production Power Apps",
+    "Power Platform pipelines setup",
+    "personal pipelines Power Platform",
+    "Deployment Pipeline Configuration"
+  ],
+  published,
+  updated: published,
+  quickAnswer: "A pipeline deploys a solution from a development environment to test and production with a button in the maker portal, instead of exporting and importing it by hand. It exports the solution as managed, checks connection references and environment variables, and imports it as an upgrade into each stage in order. Target environments must be Managed Environments. Personal pipelines need no setup but are limited to two targets and can't be shared. A custom host gives you shared pipelines, approvals and deployment as a service account.",
+  sections: [
+    section(
+      "what-it-does",
+      "What a pipeline does",
+      p("A pipeline links one development environment to one or more stages, such as Test and then Production. When a maker deploys, the pipeline:"),
+      ol(
+        "Exports the solution from development as soon as you choose Deploy, and stores a managed and an unmanaged copy in the pipelines host. The managed copy is what gets deployed.",
+        "Checks the solution against the next stage and asks for a connection for each connection reference and a value for each environment variable.",
+        "Imports the managed solution into the stage. The default import is an upgrade that doesn't overwrite unmanaged customizations.",
+        "Records the run, so the pipeline's history shows who deployed which version and when."
+      ),
+      p("The same artifact then moves to the next stage. Production gets exactly the file that was tested, not a fresh export that might include changes made since. The stored unmanaged copy is useful too: download it to set up another development environment or to put it in source control."),
+      note("Pipelines only deploy managed solutions. Keep the unmanaged solution in development and in source control, because it is the only copy you can change. See [Managed vs unmanaged solutions](/guides/power-platform-managed-vs-unmanaged-solutions).")
+    ),
+    section(
+      "personal-or-custom",
+      "Personal pipelines or a custom host",
+      table(
+        ["", "Personal pipelines (platform host)", "Custom host"],
+        ["Setup", "None. Makers create them from the solution's Pipelines page", "An admin creates a host environment and installs the pipelines app"],
+        ["Targets", "Up to two stages", "As many stages as you need"],
+        ["Sharing", "Only the maker who created it can use it", "Shared with makers and groups"],
+        ["Approvals and gates", "No", "Pre-export and pre-deployment steps, which a flow can approve or reject"],
+        ["Deploy as", "The maker", "The maker, or a service principal or the pipeline owner with delegated deployment"],
+        ["Extend with flows or extra tables", "No", "Yes, in the host environment"],
+        ["Best for", "One maker moving their own app to test and production", "Teams, production systems and anything that needs an approval"]
+      ),
+      p("Start with personal pipelines if you're one maker shipping your own app. Move to a custom host when a second person needs to deploy, when production needs an approval, or when makers shouldn't have rights to import into production themselves."),
+      p("A custom host is usually a Production environment with Dataverse that is used for nothing else. It doesn't need its own standalone licence. Keeping it separate means the deployment history survives when development or test is reset.")
+    ),
+    section(
+      "requirements",
+      "What you need before the first run",
+      ul(
+        "**Managed Environments** turned on for every environment in the pipeline except the host and Developer-type environments. From October 2026, admins are warned about pipelines that deploy to an environment that isn't managed, and deployments to it are blocked 30 days later unless they enable it or ask for one extension.",
+        "**Dataverse** in every environment. Default and Teams environments can't be targets of a personal pipeline.",
+        "**A solution** that holds the app, flows and tables. Pipelines can't deploy the default solution.",
+        "**Connection references and environment variables** for every connection and setting that differs between environments. See [Connection references and environment variables](/guides/power-platform-connection-references-environment-variables).",
+        "**Connections in each target**, ideally owned by a service account, so flows can be turned on after import.",
+        "**Permission to import** in each target for whoever deploys, unless the stage uses delegated deployment.",
+        "**The same tenant.** Pipelines can't deploy to an environment in another tenant."
+      ),
+      table(
+        ["Environment", "Type", "Standalone licence"],
+        ["Pipelines host", "Production", "Not needed"],
+        ["Development", "Developer", "Not needed"],
+        ["Test", "Developer", "Not needed"],
+        ["Production", "Production", "Needed"]
+      ),
+      p("That is Microsoft's own example setup. Every Managed Environment needs licences with premium use rights, which is why using Developer environments for development and test keeps the cost down.")
+    ),
+    section(
+      "run",
+      "Run a deployment",
+      ol(
+        "In your development environment, open **Solutions** and select the unmanaged solution.",
+        "Choose **Pipelines** in the left pane, or **Overview** and then **Deploy**.",
+        "Pick the stage, such as **Deploy to Test**, and choose **Deploy here**.",
+        "Choose **Now** or schedule it for **Later**, then **Next**. The pipeline runs its preflight checks for missing dependencies and other common problems.",
+        "Pick a connection for each connection reference and check each environment variable value. These are the same prompts as a manual import.",
+        "Add deployment notes, such as what changed, and choose **Deploy**."
+      ),
+      p("If the run shows as pending, an admin has added an approval or another step that runs first. **Run history** on the same page shows each deployment and the error when one fails. A scheduled deployment can be cancelled there before it starts."),
+      tool("deployment-settings-generator", "Pipelines ask for connection and variable values in the deployment pane. If you also deploy with the Power Platform CLI or Azure DevOps, the generator makes the settings file those imports need, one per environment.")
+    ),
+    section(
+      "catches",
+      "Things that catch people out",
+      table(
+        ["What happens", "Why", "What to do"],
+        ["Production gets an older build than you expected", "The pipeline deploys the artifact that went to test. A change made in development since then doesn't travel unless you deploy it to test again", "Increase the solution version and deploy to test again, then to production"],
+        ["You can't deploy straight to production", "Stages must be deployed in order", "Deploy to test first. That is the point of the pipeline"],
+        ["A change you saved doesn't arrive", "Pipelines don't publish unmanaged customizations before exporting", "Publish the app, or **Publish all customizations**, before you deploy"],
+        ["Pipelines don't appear", "They aren't shown in the default solution, in managed solutions or in target environments", "Open your own unmanaged solution in development"],
+        ["You can't ship two solutions together", "One deployment carries one solution", "Deploy them one after another, dependencies first. The same pipeline works for both"],
+        ["You can't go back to an older version", "Only higher versions can be deployed unless redeploying is turned on", "Turn on the pipeline setting that allows redeploying previous versions, then use **Run history**"],
+        ["Flows in production are owned by the person who deployed", "The deploying identity owns what it imports", "Use delegated deployment with a service principal or a service account, so ownership doesn't follow whoever pressed the button"],
+        ["Someone edited a component in production", "The edit goes into an unmanaged layer that hides later deployments of it", "Remove the active customization and make the change in development instead"]
+      ),
+      p("Pipelines also can't deploy to another tenant, and environments in different regions need cross-geo deployments turned on in the host.")
+    )
+  ],
+  faqs: [
+    {
+      question: "Do Power Platform pipelines need a premium licence?",
+      answer: "Every environment that must be a Managed Environment needs licences with premium use rights. Microsoft's example setup uses Developer environments for development and test and a Production environment as the host, none of which need a standalone licence, so only production does."
+    },
+    {
+      question: "What is the difference between personal pipelines and a custom pipelines host?",
+      answer: "Personal pipelines use the platform host, need no setup, and allow one development environment and two targets, but can't be shared or extended. A custom host is an environment an admin sets up, with shared pipelines, any number of stages, approvals and delegated deployment."
+    },
+    {
+      question: "Do pipelines deploy managed or unmanaged solutions?",
+      answer: "Managed. The pipeline exports your unmanaged solution from development as managed and imports that into each stage."
+    },
+    {
+      question: "Why didn't my latest change reach production?",
+      answer: "The pipeline deploys the same artifact that went to the previous stage. A change made after the test deployment isn't included until you deploy a new version to test. Pipelines also don't publish customizations before export, so publish first."
+    },
+    {
+      question: "Can I add an approval before production?",
+      answer: "Yes, with a custom host. Turn on the pre-deployment step for the production stage and handle it with a flow that asks for approval and then completes or rejects the deployment."
+    }
+  ],
+  relatedTools: ["deployment-settings-generator", "solution-layering-checklist-generator"],
+  relatedPatterns: [
+    "power-platform-pipelines-dev-test-prod",
+    "power-platform-pipelines-approval-pre-deployment",
+    "azure-devops-pipeline-power-platform-build-tools"
+  ],
+  relatedLinks: [
+    { href: "/guides/power-platform-managed-vs-unmanaged-solutions", label: "Managed vs unmanaged solutions" },
+    { href: "/guides/power-platform-connection-references-environment-variables", label: "Connection references and environment variables" },
+    { href: "/alm/solutions", label: "Solution and deployment patterns" }
+  ],
+  sources: [
+    learnDoc("power-platform/alm/pipelines", "Overview of pipelines in Power Platform"),
+    learnDoc("power-platform/alm/run-pipeline", "Run pipelines in Power Platform"),
+    learnDoc("power-platform/alm/platform-host-pipelines", "Set up pipelines in the platform host")
   ]
 };

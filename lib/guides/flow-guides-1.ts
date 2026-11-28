@@ -685,6 +685,7 @@ export const triggerConditionsGuide: Guide = {
   relatedPatterns: ["power-automate-trigger-condition-status-changed", "power-automate-avoid-infinite-update-loop", "dataverse-trigger-filter-select-columns"],
   relatedLinks: [
     { href: "/cheat-sheets/power-automate-trigger-conditions-cheat-sheet", label: "Power Automate Trigger Conditions Cheat Sheet" },
+    { href: "/guides/worked-example-trigger-condition-parse-json-asset-tag-flow", label: "Worked example: trigger conditions with a loop guard" },
     { href: "/errors/problem-with-the-flows-trigger", label: "Error: There is a problem with the flow's trigger" }
   ],
   sources: [
