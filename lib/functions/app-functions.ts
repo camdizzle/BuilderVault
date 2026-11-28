@@ -241,7 +241,7 @@ Navigate(scrEdit, ScreenTransition.None, { locRecord: Blank(), locMode: "New" })
     { question: "What is the difference between Navigate and Back?", answer: "Navigate goes to the screen you name and remembers where you came from. Back returns to the previous screen in that history, using the reverse transition." },
     { question: "How do I set which screen the app opens on?", answer: "Set the StartScreen property of the App object to the screen, or a formula that picks one, such as If(Param(\"id\") <> \"\", scrDetails, scrHome)." }
   ],
-  relatedFunctions: ["updatecontext", "set", "submitform"],
+  relatedFunctions: ["updatecontext", "set", "submitform", "reset"],
   relatedGuides: ["power-apps-faster-app-start-concurrent-onstart"],
   relatedErrors: [],
   relatedPatterns: ["power-apps-form-mode-new-edit-view", "refresh-selected-request-after-patch"],
